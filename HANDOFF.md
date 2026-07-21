@@ -3,6 +3,10 @@
 ## 1. Workspace & Architecture Overview
 - **Repository:** Agentic App Harness (`c:\Harness` / `jf1shh/agentic-app-harness`)
 - **Live GitHub Pages Showcase:** `https://jf1shh.github.io/agentic-app-harness/`
+- **Live Applications Deployed:**
+  - `MoodDiner`: `https://jf1shh.github.io/agentic-app-harness/mood-diner/`
+  - `Travel Packing App`: `https://jf1shh.github.io/agentic-app-harness/travel-packing-app/`
+  - `Smart Recipe Manager`: `https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/`
 - **Monorepo Structure:**
   - `projects/portfolio-hub`: Master Showcase Web Portal (Port 3009).
   - `projects/mood-diner`: Smart Restaurant Recommender, Table Booking & PWA/Android App (Port 5173).

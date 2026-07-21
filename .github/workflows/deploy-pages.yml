@@ -1,4 +1,4 @@
-name: Deploy Portfolio Hub to GitHub Pages
+name: Deploy Portfolio Hub & All Apps to GitHub Pages
 
 on:
   push:
@@ -29,17 +29,40 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache-dependency-path: projects/portfolio-hub/package-lock.json
 
-      - name: Install Portfolio Hub Dependencies
+      # 1. Build Portfolio Hub (Root Showcase Site)
+      - name: Build Portfolio Hub
         run: |
           cd projects/portfolio-hub
           npm install --legacy-peer-deps
-
-      - name: Build Portfolio Hub Production Bundle
-        run: |
-          cd projects/portfolio-hub
           npm run build
+
+      # 2. Build MoodDiner App -> dist/mood-diner
+      - name: Build MoodDiner App
+        run: |
+          cd projects/mood-diner
+          npm install --legacy-peer-deps
+          npm run build
+          mkdir -p ../portfolio-hub/dist/mood-diner
+          cp -r dist/* ../portfolio-hub/dist/mood-diner/
+
+      # 3. Build Travel Packing App -> dist/travel-packing-app
+      - name: Build Travel Packing App
+        run: |
+          cd projects/travel-packing-app
+          npm install --legacy-peer-deps
+          npm run build
+          mkdir -p ../portfolio-hub/dist/travel-packing-app
+          cp -r out/* ../portfolio-hub/dist/travel-packing-app/
+
+      # 4. Build Smart Kitchen Recipe Manager -> dist/smart-recipe-app
+      - name: Build Smart Recipe App
+        run: |
+          cd projects/smart-recipe-app
+          npm install --legacy-peer-deps
+          npm run build
+          mkdir -p ../portfolio-hub/dist/smart-recipe-app
+          cp -r out/* ../portfolio-hub/dist/smart-recipe-app/
 
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3

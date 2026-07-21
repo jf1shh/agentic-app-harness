@@ -37,7 +37,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     capacitorAndroid: true,
     monetized: true,
     specPath: 'specs/mood-diner-spec.md',
-    demoUrl: 'http://localhost:5173',
+    demoUrl: 'https://jf1shh.github.io/agentic-app-harness/mood-diner/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/mood-diner',
   },
   {
@@ -57,7 +57,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     capacitorAndroid: true,
     monetized: true,
     specPath: 'specs/travel-packing-app-spec.md',
-    demoUrl: 'http://localhost:3000',
+    demoUrl: 'https://jf1shh.github.io/agentic-app-harness/travel-packing-app/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/travel-packing-app',
   },
   {
@@ -77,7 +77,7 @@ export const PROJECTS_DATA: ProjectItem[] = [
     capacitorAndroid: false,
     monetized: false,
     specPath: 'specs/smart-recipe-app.md',
-    demoUrl: 'http://localhost:3001',
+    demoUrl: 'https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/smart-recipe-app',
   },
 ];
