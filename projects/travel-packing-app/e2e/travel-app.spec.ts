@@ -1,42 +1,35 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test.describe('Travel Packing App', () => {
+test.describe('Travel Packing App V3', () => {
   test('should pass accessibility scans (a11y)', async ({ page }) => {
     await page.goto('/');
-    
-    // We disable 'color-contrast' temporarily if there are base Next.js false positives on gradient backgrounds,
-    // but typically we want to run the full suite.
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
-    
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 
-  test('should generate a packing list and mark an item as packed', async ({ page }) => {
+  test('should generate a wearability report and identify dead weight', async ({ page }) => {
     await page.goto('/');
 
-    // Fill out the form
-    await page.fill('input[placeholder="e.g. Hawaii"]', 'Hawaii');
+    // Verify initial state
+    await expect(page.locator('h1:has-text("PackRight V4")')).toBeVisible();
+
+    // Click Analyze
+    await page.click('button.btn-primary');
+
+    // Verify UI updated with Report
+    await expect(page.locator('h2:has-text("Wardrobe Wearability Report")')).toBeVisible();
     
-    const dateInputs = page.locator('input[type="date"]');
-    await dateInputs.nth(0).fill('2026-08-01');
-    await dateInputs.nth(1).fill('2026-08-05');
+    // Verify Flexibility Score is rendered (some percentage)
+    await expect(page.locator('h3:has-text("Flexibility Score")')).toBeVisible();
 
-    // Click the swimming activity
-    await page.click('button:has-text("Swimming")');
+    // Verify Dead Weight box rendered
+    const deadWeightBox = page.locator('.glass-panel').filter({ has: page.locator('h3:has-text("Dead Weight")') }).last();
+    await expect(deadWeightBox).toBeVisible();
 
-    // Generate list
-    await page.click('button:has-text("Generate Packing List")');
-
-    // Verify UI updated
-    await expect(page.locator('h2:has-text("Trip to Hawaii")')).toBeVisible();
-    await expect(page.locator('text=Swimsuit')).toBeVisible();
-
-    // Mark swimsuit as packed
-    const swimsuitItem = page.locator('li', { hasText: 'Swimsuit' });
-    await swimsuitItem.click();
-
-    // Verify it got checked
-    await expect(swimsuitItem.locator('text=✓')).toBeVisible();
+    // Verify 3 days were scheduled
+    await expect(page.locator('h4:has-text("Day 1")')).toBeVisible();
+    await expect(page.locator('h4:has-text("Day 2")')).toBeVisible();
+    await expect(page.locator('h4:has-text("Day 3")')).toBeVisible();
   });
 });
