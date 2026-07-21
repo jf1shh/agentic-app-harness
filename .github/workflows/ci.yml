@@ -1,0 +1,33 @@
+name: Harness Testing Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-apps:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Test Suite across all Apps
+        shell: pwsh
+        run: |
+          $projects = Get-ChildItem -Path ./projects -Directory
+          foreach ($project in $projects) {
+            Write-Host "Running tests for $($project.Name)"
+            ./scripts/test-app.ps1 -AppName $project.Name
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Tests failed for $($project.Name)" -ForegroundColor Red
+              exit 1
+            }
+          }
