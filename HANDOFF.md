@@ -9,6 +9,8 @@
   1. Mandatory updating of `.md` documentation after every session.
   2. Mandatory creation/maintenance of a dedicated `HANDOFF.md` for AI agent context transfer.
   3. Mandatory execution of the continuous learning loop (`/learn`) to persist lessons and best practices into `AGENTS.md`.
+- Renamed main monorepo repository to `agentic-app-harness` and synchronized all documentation and scripts.
+- Performed codebase cleanup: pruned unmapped `legacy-travel-packing-optimizer` directory, cleared stale build caches (`.next`), and removed temporary test report outputs (`playwright-report`, `test-results`).
 
 ## Active Rules & Invariants
 - Spec is the single source of truth (`specs/`).
