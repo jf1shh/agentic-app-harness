@@ -1,16 +1,17 @@
-# Project Specification: Travel Packing App (PackRight V3)
+# Project Specification: Travel Packing App (PackRight V4)
 
 ## 1. Product Overview
-**Name:** Travel Packing App (PackRight V3 - Wardrobe Analyzer)
-**Description:** An intelligent wardrobe analyzer and outfit scheduler. It calculates valid outfits based on strict pairing rules, multi-role garments, fabric warmth, and daily weather/activity constraints. It outputs a "Wearability Report" and schedules outfits across the trip without consecutive-day repeats.
+**Name:** Travel Packing App (PackRight V4 - Wardrobe Analyzer)
+**Description:** An intelligent wardrobe analyzer and outfit scheduler. It calculates valid outfits based on strict pairing rules (color math, material thermals, daily weather/activity constraints). It outputs a "Wearability Report" and "Knapsack Physics Report" and schedules outfits across the trip without consecutive-day repeats.
 **Target Audience:** Advanced travelers who want flexible, highly interchangeable capsule wardrobes rather than just piece counts.
 
 ## 2. Core Features
-- [ ] Mock 3-day default itinerary representing different weather/activity contexts (e.g. Day 1: Hot/Sightseeing, Day 2: Cool/Transit, Day 3: Warm/Casual).
-- [ ] Complex Wardrobe Engine that enforces garment pairing rules and exclusion tags (e.g. "this top doesn't pair with these pants").
-- [ ] Multi-role garment handling (e.g. a buttondown acts as a top OR a topper).
-- [ ] Consecutive-day base outfit repeat prevention.
-- [ ] Wearability Report detailing Flexibility Score, MVP item, and Dead Weight (unused items).
+- [x] Live Weather integration (Open-Meteo) for dynamic itinerary warmth targets.
+- [x] Complex Wardrobe Engine that enforces garment pairing rules, color matching, and exclusion tags.
+- [x] Multi-role garment handling and dynamic Material Thermals (Cashmere vs Linen).
+- [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
+- [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules).
+- [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)
@@ -27,8 +28,11 @@ interface Garment {
   category: string; 
   roles: ('top' | 'bottom' | 'topper' | 'layer')[];
   colors: string[];
-  warmth: number; // 1 (Silk) to 10 (Heavy Wool)
+  warmth: number; // Dynamically computed based on fabric
   exclusionTags: string[]; // e.g., ['clash_navy', 'formal_only']
+  weightGrams: number;
+  volumeCm3: number;
+  time?: 'day' | 'evening';
 }
 
 interface Outfit {
@@ -41,8 +45,9 @@ interface Outfit {
 
 interface DayItinerary {
   dayNumber: number;
-  weatherWarmthTarget: number; // Max warmth allowed for hot days, Min for cold days
-  activity: string; // e.g., "sightseeing", "transit"
+  weatherWarmthTarget: number;
+  activity: string;
+  maxTempC?: number;
 }
 ```
 
@@ -56,7 +61,8 @@ interface DayItinerary {
 - **Security & Privacy:** Ensure no PII is logged. Audit dependencies.
 - **Accessibility (A11y):** Playwright + Axe-core must pass without violations.
 
-## 7. Acceptance Criteria
-1. The engine successfully filters out combinations based on exclusion tags.
+## 7. Acceptance Criteria (V4)
+1. The engine successfully filters out combinations based on exclusion tags, color logic, and material heat.
 2. The engine schedules outfits such that Day N base != Day N-1 base.
-3. Wearability Report correctly identifies items that were never used in any scheduled outfit as "Dead Weight".
+3. Wearability Report correctly identifies items that were never used in any scheduled outfit as "Dead Weight" and suggests swaps.
+4. Knapsack Physics accurately alerts users if their packed volume exceeds their airline's carry-on limits.

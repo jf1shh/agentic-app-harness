@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧳 PackRight V4: Travel Packing App
 
-## Getting Started
+PackRight V4 is an intelligent wardrobe analyzer and packing optimization engine built in Next.js. It merges strict, mathematical packing logic with live weather data, knapsack physics, and modern web architecture.
 
-First, run the development server:
+## 🌟 Core Features
+
+- **Live Weather Integration**: Uses Open-Meteo to dynamically fetch 5-day forecasts based on geolocation and generate a targeted warmth profile for each day.
+- **Advanced Wardrobe Permutation**: Generates outfits using strict, mathematically enforced rules:
+  - Exclusion Tags (e.g., no clashing patterns)
+  - Color Pairing (e.g., Pink and Red are mathematically excluded from pairing)
+  - Time-of-Day Shifts (e.g., Evening activities strictly schedule evening-wear)
+  - Hot Weather Filter (No exclusively dark-colored outfits on hot days)
+  - Dynamic Material Thermals (Cashmere scores highly; Linen scores low)
+- **Knapsack Physics Engine**: Calculates the precise volume and weight of your generated wardrobe against real-world airline baggage constraints (e.g., Emirates, Delta) and specific suitcase models (e.g., Away Carry-On).
+- **Smart Swaps**: Analyzes failed permutations and "Dead Weight" to recommend highly targeted item swaps to boost your wardrobe's overall Flexibility Score.
+- **Digital Closet**: Uses Client-side AI (`@imgly/background-removal`) to automatically remove backgrounds from uploaded garment photos and stores them locally via IndexedDB.
+
+## 🚀 Getting Started
+
+First, install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🧪 Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project is rigorously tested using the AI Building Harness constraints:
+- **Unit Tests**: `npm run test` (Vitest coverage for the Wardrobe and Knapsack engines)
+- **E2E & Accessibility**: `npx playwright test` (Axe-Core accessibility scans and UI testing)
+- **Linting & Security**: Enforces zero `any` types and strictly audited dependencies.
 
-## Learn More
+## 📝 Future Roadmap (TODOs)
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] **Mobile App Port**: Migrate the core logic engine into React Native for iOS/Android distribution.
+- [ ] **Multi-City Itineraries**: Expand the weather fetcher and itinerary generator to handle complex trips with varying climates (e.g., 2 days in London, 3 days in Rome).
+- [ ] **Expanded Archetypes**: Add more default packing palettes (e.g., "Boho Chic", "Business Casual", "Athleisure").
+- [ ] **Luggage 3D Visualization**: Use Three.js to visually display how much space is left in the suitcase.
+- [ ] **Community Sharing**: Allow users to export their `WearabilityReport` and share their packing lists via a unique URL.
