@@ -13,6 +13,7 @@ PackRight V4 is an intelligent wardrobe analyzer and packing optimization engine
   - Dynamic Material Thermals (Cashmere scores highly; Linen scores low)
 - **Knapsack Physics Engine**: Calculates the precise volume and weight of your generated wardrobe against real-world airline baggage constraints (e.g., Emirates, Delta) and specific suitcase models (e.g., Away Carry-On).
 - **Smart Swaps**: Analyzes failed permutations and "Dead Weight" to recommend highly targeted item swaps to boost your wardrobe's overall Flexibility Score.
+- **Physical Packing Checklist**: Provides an interactive checklist with automatically calculated trip essentials ($N$ pairs of underwear/socks) and persistent `localStorage` progress tracking.
 - **Digital Closet**: Uses Client-side AI (`@imgly/background-removal`) to automatically remove backgrounds from uploaded garment photos and stores them locally via IndexedDB.
 
 ## 🚀 Getting Started
@@ -35,8 +36,7 @@ This project is rigorously tested using the AI Building Harness constraints:
 
 ## 📝 Future Roadmap (TODOs)
 
+- [x] **Physical Packing Checklist**: Interactive checklist with persistent `localStorage` state.
+- [ ] **Non-Clothing Gear Categories**: Expand Knapsack Physics to include tech pouches, toiletry kits, and document organizers.
+- [ ] **Multi-City Itineraries**: Expand weather fetcher and itinerary generator to handle complex multi-city trips with varying climates.
 - [ ] **Mobile App Port**: Migrate the core logic engine into React Native for iOS/Android distribution.
-- [ ] **Multi-City Itineraries**: Expand the weather fetcher and itinerary generator to handle complex trips with varying climates (e.g., 2 days in London, 3 days in Rome).
-- [ ] **Expanded Archetypes**: Add more default packing palettes (e.g., "Boho Chic", "Business Casual", "Athleisure").
-- [ ] **Luggage 3D Visualization**: Use Three.js to visually display how much space is left in the suitcase.
-- [ ] **Community Sharing**: Allow users to export their `WearabilityReport` and share their packing lists via a unique URL.

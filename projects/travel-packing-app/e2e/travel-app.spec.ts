@@ -31,5 +31,9 @@ test.describe('Travel Packing App V3', () => {
     await expect(page.locator('h4:has-text("Day 1")')).toBeVisible();
     await expect(page.locator('h4:has-text("Day 2")')).toBeVisible();
     await expect(page.locator('h4:has-text("Day 3")')).toBeVisible();
+
+    // Verify Physical Packing Checklist
+    await expect(page.locator('h2:has-text("Physical Packing Checklist")')).toBeVisible();
+    await expect(page.locator('text=Packing Progress:')).toBeVisible();
   });
 });

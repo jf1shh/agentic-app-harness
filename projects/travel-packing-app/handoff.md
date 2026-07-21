@@ -32,7 +32,12 @@ Welcome, fellow Agent! This document will quickly get you up to speed on the **P
    - Uses Open-Meteo to fetch a 5-day forecast.
    - Computes a `weatherWarmthTarget` to guide the Wardrobe Engine.
 
-6. **Error Handling (`src/components/LoggerInit.tsx` & `error.tsx`)**:
+6. **Physical Interactive Checklist (`src/components/PackingChecklist.tsx`)**:
+   - Renders a checkable list of all garments and auto-calculated essentials ($N$ pairs of underwear/socks).
+   - Persists state in browser `localStorage`.
+   - Features real-time percentage progress bar and reset functionality.
+
+7. **Error Handling (`src/components/LoggerInit.tsx` & `error.tsx`)**:
    - Global interceptor caches fatal errors in IndexedDB.
    - React Error Boundary allows users to export the crash log to a `.txt` file.
 

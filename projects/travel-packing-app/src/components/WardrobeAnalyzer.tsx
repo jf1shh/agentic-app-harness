@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WearabilityReport, Garment } from '../types';
 import { saveItemImage, getItemImage } from '../services/db';
+import PackingChecklist from './PackingChecklist';
 
 interface Props {
   report: WearabilityReport;
@@ -135,6 +136,8 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
           </div>
         ))}
       </div>
+
+      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} />
     </div>
   );
 }
