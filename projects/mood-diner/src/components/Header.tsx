@@ -1,6 +1,55 @@
 import React from 'react';
-import { UtensilsCrossed, CalendarCheck, Sun, Snowflake, PlusCircle, CheckCircle2 } from 'lucide-react';
+import { UtensilsCrossed, CalendarCheck, Sun, Snowflake, PlusCircle, CheckCircle2, Crown } from 'lucide-react';
 import { WeatherCondition } from '../types';
+import { useMonetization } from '../lib/monetization/MonetizationContext';
+
+const HeaderProBadge: React.FC = () => {
+  const { plan, creditsRemaining, openPaywall } = useMonetization();
+
+  if (plan === 'pro') {
+    return (
+      <span
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '6px 12px',
+          borderRadius: '999px',
+          background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+          color: '#0f172a',
+          fontSize: '0.8rem',
+          fontWeight: 700,
+          boxShadow: '0 0 12px rgba(251, 191, 36, 0.4)'
+        }}
+      >
+        <Crown size={14} /> PRO ACTIVE
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={openPaywall}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        borderRadius: '999px',
+        border: '1px solid rgba(251, 191, 36, 0.4)',
+        background: 'rgba(251, 191, 36, 0.1)',
+        color: '#fbbf24',
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        cursor: 'pointer'
+      }}
+      id="upgrade-pro-btn"
+    >
+      <Crown size={14} />
+      <span>Upgrade Pro ({creditsRemaining} left)</span>
+    </button>
+  );
+};
 
 interface HeaderProps {
   weather: WeatherCondition;
@@ -67,6 +116,9 @@ export const Header: React.FC<HeaderProps> = ({
             <PlusCircle size={16} color="#f59e0b" />
             <span>+ Import Real Spot</span>
           </button>
+
+          {/* Pro Upgrade / Tier Badge */}
+          <HeaderProBadge />
 
           {/* Bookings Button */}
           <button

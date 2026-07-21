@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">mood-diner</string>
+    <string name="title_activity_main">mood-diner</string>
+    <string name="package_name">com.harness.mooddiner</string>
+    <string name="custom_url_scheme">com.harness.mooddiner</string>
+</resources>

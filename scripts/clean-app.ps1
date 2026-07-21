@@ -10,17 +10,9 @@ function Clean-SingleApp ($appPath) {
     if (Test-Path $appPath) {
         $appName = Split-Path $appPath -Leaf
         Write-Host "Cleaning build & test artifacts for $appName..." -ForegroundColor Cyan
-        $itemsToClean = @(
-            Join-Path $appPath ".next",
-            Join-Path $appPath "dist",
-            Join-Path $appPath "build",
-            Join-Path $appPath ".vite",
-            Join-Path $appPath "playwright-report",
-            Join-Path $appPath "test-results",
-            Join-Path $appPath "coverage",
-            Join-Path $appPath "tsconfig.tsbuildinfo"
-        )
-        foreach ($item in $itemsToClean) {
+        $targets = @(".next", "dist", "build", ".vite", "playwright-report", "test-results", "coverage", "tsconfig.tsbuildinfo")
+        foreach ($t in $targets) {
+            $item = Join-Path -Path $appPath -ChildPath $t
             if (Test-Path $item) {
                 Remove-Item -Path $item -Recurse -Force -ErrorAction SilentlyContinue
             }

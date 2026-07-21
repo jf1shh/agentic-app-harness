@@ -12,8 +12,10 @@ import { Restaurant, WeatherCondition, Reservation, TransportMode } from './type
 import { evaluateWeatherSuitability } from './utils/weatherEngine';
 import { isRestaurantOpenNow } from './utils/openStatus';
 import { Sun, AlertCircle } from 'lucide-react';
+import { MonetizationProvider } from './lib/monetization/MonetizationContext';
+import { ProPaywallModal } from './components/ProPaywallModal';
 
-export const App: React.FC = () => {
+export const AppContent: React.FC = () => {
   // State
   const [restaurants, setRestaurants] = useState<Restaurant[]>(() => {
     try {
@@ -228,6 +230,14 @@ export const App: React.FC = () => {
         onAddRestaurant={handleAddCustomRestaurant}
       />
 
+      <ProPaywallModal />
+
     </div>
   );
 };
+
+export const App: React.FC = () => (
+  <MonetizationProvider>
+    <AppContent />
+  </MonetizationProvider>
+);
