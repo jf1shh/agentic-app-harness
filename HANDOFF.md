@@ -1,7 +1,7 @@
 # AI Agent Handoff Document
 
 ## Workspace Overview
-- **Repository**: AI Harness Control Layer (`c:\Harness`)
+- **Repository**: Agentic App Harness (`c:\Harness` / `jf1shh/agentic-app-harness`)
 - **Architecture**: Monorepo with applications located in `projects/`, specifications in `specs/`, scripts in `scripts/`, and agent rules in `.agents/AGENTS.md`.
 
 ## Recent Changes & Session Summary

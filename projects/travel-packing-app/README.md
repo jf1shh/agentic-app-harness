@@ -29,7 +29,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## 🧪 Testing
 
-This project is rigorously tested using the AI Building Harness constraints:
+This project is rigorously tested using the Agentic App Harness constraints:
 - **Unit Tests**: `npm run test` (Vitest coverage for the Wardrobe and Knapsack engines)
 - **E2E & Accessibility**: `npx playwright test` (Axe-Core accessibility scans and UI testing)
 - **Linting & Security**: Enforces zero `any` types and strictly audited dependencies.

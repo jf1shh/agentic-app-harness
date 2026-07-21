@@ -1,6 +1,6 @@
-# AI Building Harness
+# Agentic App Harness
 
-Welcome to your specialized AI Building Harness. This repository is designed to facilitate **Spec-Driven Development (SDD)** with AI agents. 
+Welcome to your specialized Agentic App Harness. This repository is designed to facilitate **Spec-Driven Development (SDD)** with AI agents. 
 
 It acts as a monorepo for your applications (e.g., travel packing app, recipe app, restaurant finder) and enforces a strict, predictable workflow to prevent "intent drift" during AI code generation.
 

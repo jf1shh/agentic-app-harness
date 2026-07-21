@@ -19,7 +19,7 @@ $readmePath = Join-Path -Path $targetPath -ChildPath "README.md"
 $readmeContent = @"
 # $AppName
 
-This project was scaffolded by the AI Building Harness.
+This project was scaffolded by the Agentic App Harness.
 Please refer to `specs/$AppName-spec.md` for the single source of truth regarding architecture and requirements.
 "@
 Set-Content -Path $readmePath -Value $readmeContent
