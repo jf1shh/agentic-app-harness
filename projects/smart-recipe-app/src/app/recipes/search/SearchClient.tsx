@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { saveRecipeMarkdown } from '@/app/actions'
 
-export default function SearchClient({ saveAction }: { saveAction: (filename: string, markdown: string) => Promise<void> }) {
+export default function SearchClient() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Record<string, string>[]>([])
   const [loading, setLoading] = useState(false)
@@ -52,7 +53,7 @@ ${meal.strInstructions}
 
 ${meal.strYoutube ? `[Watch on YouTube](${meal.strYoutube})` : ''}
 `
-    await saveAction(filename, markdown)
+    await saveRecipeMarkdown(filename, markdown)
     setMessage(`Saved ${meal.strMeal} to catalog!`)
   }
 

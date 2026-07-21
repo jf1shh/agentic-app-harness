@@ -1,4 +1,4 @@
-import { getInventory, addInventoryItem, deleteInventoryItem } from '../actions'
+import { getInventory } from '../actions'
 import InventoryClient from './InventoryClient'
 
 export default async function InventoryPage() {
@@ -7,7 +7,7 @@ export default async function InventoryPage() {
   return (
     <div>
       <h1 className="text-center mb-8">Inventory Management</h1>
-      <InventoryClient initialInventory={inventory} addAction={addInventoryItem} deleteAction={deleteInventoryItem} />
+      <InventoryClient initialInventory={inventory} />
     </div>
   )
 }

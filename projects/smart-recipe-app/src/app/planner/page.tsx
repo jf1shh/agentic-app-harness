@@ -1,4 +1,4 @@
-import { getMealPlan, fetchAllRecipes, addMealPlanEntry, deleteMealPlanEntry } from '../actions'
+import { getMealPlan, fetchAllRecipes } from '../actions'
 import PlannerClient from './PlannerClient'
 
 export default async function PlannerPage() {
@@ -8,7 +8,7 @@ export default async function PlannerPage() {
   return (
     <div>
       <h1 className="text-center mb-8">Meal Prep Planner</h1>
-      <PlannerClient initialPlan={plan} recipes={recipes} addAction={addMealPlanEntry} deleteAction={deleteMealPlanEntry} />
+      <PlannerClient initialPlan={plan} recipes={recipes} />
     </div>
   )
 }

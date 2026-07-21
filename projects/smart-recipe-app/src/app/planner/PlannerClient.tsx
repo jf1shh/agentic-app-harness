@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { MealPlanEntry, RecipeEntry } from '@/lib/types'
+import { addMealPlanEntry, deleteMealPlanEntry } from '../actions'
 
-export default function PlannerClient({ initialPlan, recipes, addAction, deleteAction }: { initialPlan: MealPlanEntry[], recipes: RecipeEntry[], addAction: (date: string, recipeId: string, mealType: string) => Promise<void>, deleteAction: (id: string) => Promise<void> }) {
+export default function PlannerClient({ initialPlan, recipes }: { initialPlan: MealPlanEntry[], recipes: RecipeEntry[] }) {
+  const [plan, setPlan] = useState<MealPlanEntry[]>(initialPlan)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [recipeId, setRecipeId] = useState(recipes.length > 0 ? recipes[0].filename : '')
   const [mealType, setMealType] = useState('Dinner')
@@ -11,12 +13,18 @@ export default function PlannerClient({ initialPlan, recipes, addAction, deleteA
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!recipeId) return
-    await addAction(date, recipeId, mealType)
+    await addMealPlanEntry(date, recipeId, mealType)
+    setPlan(prev => [...prev, { id: `mp-${Date.now()}`, date, recipeId, mealType }])
+  }
+
+  const handleDelete = async (id: string) => {
+    await deleteMealPlanEntry(id)
+    setPlan(prev => prev.filter(entry => entry.id !== id))
   }
 
   // Group plan by date
   const groupedPlan: Record<string, MealPlanEntry[]> = {}
-  initialPlan.forEach(entry => {
+  plan.forEach(entry => {
     if (!groupedPlan[entry.date]) groupedPlan[entry.date] = []
     groupedPlan[entry.date].push(entry)
   })
@@ -75,7 +83,7 @@ export default function PlannerClient({ initialPlan, recipes, addAction, deleteA
                         <strong style={{ color: 'var(--secondary-color)', marginRight: '0.5rem' }}>{entry.mealType}:</strong>
                         <span style={{ textTransform: 'capitalize' }}>{entry.recipeId.replace('.md', '').replace(/_/g, ' ')}</span>
                       </div>
-                      <button onClick={() => deleteAction(entry.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Remove</button>
+                      <button onClick={() => handleDelete(entry.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Remove</button>
                     </li>
                   ))}
                 </ul>
