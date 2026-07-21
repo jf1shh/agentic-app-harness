@@ -11,6 +11,7 @@
   3. Mandatory execution of the continuous learning loop (`/learn`) to persist lessons and best practices into `AGENTS.md`.
 - Renamed main monorepo repository to `agentic-app-harness` and synchronized all documentation and scripts.
 - Performed codebase cleanup: pruned unmapped `legacy-travel-packing-optimizer` directory, cleared stale build caches (`.next`), and removed temporary test report outputs (`playwright-report`, `test-results`).
+- Integrated automated pre-build and post-build cleanup into `scripts/clean-app.ps1`, `scripts/test-app.ps1`, `package.json` scripts (`npm run clean`), and `.agents/AGENTS.md` (Section 5 rule).
 
 ## Active Rules & Invariants
 - Spec is the single source of truth (`specs/`).

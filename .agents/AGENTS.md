@@ -24,6 +24,7 @@ As an AI agent operating within this repository, you must strictly adhere to the
 - You must enforce strict Accessibility (a11y) rules using `@axe-core/playwright` within the E2E tests.
 - After implementing a feature, you **MUST** run the master verification script: `.\scripts\test-app.ps1 -AppName <AppName>`.
 - You cannot consider a feature complete unless the app passes all Security, Privacy, Optimization, A11y, and Functionality checks within the test script.
+- **Automated Build Cleanup**: Every build and test cycle MUST include automated pre-build and post-build cleanup of stale build caches (`.next`, `dist`, `build`, `tsconfig.tsbuildinfo`) and temporary test outputs (`playwright-report`, `test-results`) via `npm run clean` and `.\scripts\clean-app.ps1`.
 
 ## 6. Learned Lessons & Best Practices
 - **Authentic Real-World Datasets**: When building recommendation engines, prioritize authentic real-world data (real addresses, actual Google/Yelp ratings, real menus & pricing) and provide a live import mechanism so users can work with real locations.
