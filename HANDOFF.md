@@ -1,12 +1,17 @@
-# MoodDiner Agent Handoff Document
+# Agentic App Harness - AI Agent Handoff Document
 
-## 1. Project Overview & Current State
-- **Project Name:** MoodDiner (Smart Restaurant Recommender & Booking App)
-- **Location:** `projects/mood-diner`
-- **Spec:** `specs/mood-diner-spec.md`
-- **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1 -AppName mood-diner`), clean code with 0 linting/type errors, 100% unit (11/11) & E2E/a11y (4/4) test pass rate. Pushed to remote GitHub (`origin/master`).
+## 1. Workspace & Architecture Overview
+- **Repository:** Agentic App Harness (`c:\Harness` / `jf1shh/agentic-app-harness`)
+- **Live GitHub Pages Showcase:** `https://jf1shh.github.io/agentic-app-harness/`
+- **Live Applications Deployed:**
+  - `MoodDiner`: `https://jf1shh.github.io/agentic-app-harness/mood-diner/`
+  - `Travel Packing App`: `https://jf1shh.github.io/agentic-app-harness/travel-packing-app/`
+  - `Smart Recipe Manager`: `https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/`
+- **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1`), clean code with 0 linting/type errors, 100% unit & E2E/a11y test pass rate. Pushed to remote GitHub (`origin/master`).
 
 ## 2. Key Accomplishments
+- **Contract-First Zod Schema Validation & Type Inference:** Installed `zod` and established strict runtime schemas for `Restaurant`, `ReviewScores`, `ReviewComment`, `BookingDetails`, and `ProjectItem`.
+- **BDD Specification Standard:** Refactored E2E and Unit test suites to follow `Given [Context] -> When [User Action] -> Then [Expected Outcome]` format across `mood-diner` and `portfolio-hub`.
 - **Review Comment Vibe Parsing & Sentiment Analysis Engine:**
   - Scans customer review text comments and extracts mood signals (e.g., *"candlelit table"*, *"quiet romantic corner"*, *"high energy lounge"*, *"great birthday celebration"*).
   - Calculates a **Review Vibe Match Score (%)** for any selected mood (e.g. 96% Romantic Vibe Match).
