@@ -11,7 +11,9 @@ if (-Not (Test-Path $targetPath)) {
     exit 1
 }
 
-Set-Location $targetPath
+# Push-Location (not Set-Location) so the caller's working directory is restored
+# on exit instead of leaking runspace-wide.
+Push-Location $targetPath
 
 Write-Host "========================================="
 Write-Host "Building Mobile Container (Capacitor & PWA) for $AppName"
@@ -37,6 +39,7 @@ Write-Host "`n[3/5] Compiling production web bundle (npm run build)..." -Foregro
 npm run build
 if ($LASTEXITCODE -ne 0) {
     Write-Host "BUILD FAILED. Aborting mobile sync." -ForegroundColor Red
+    Pop-Location
     exit 1
 }
 
@@ -49,6 +52,9 @@ if (-Not (Test-Path "android")) {
 # 5. Sync web bundle to Android container
 Write-Host "`n[5/5] Syncing web bundle to Android native container..." -ForegroundColor Cyan
 npx cap sync android
+
+# Restore the caller's working directory (see Push-Location above).
+Pop-Location
 
 Write-Host "`n========================================="
 Write-Host "MOBILE BUILD COMPLETE FOR $AppName!" -ForegroundColor Green

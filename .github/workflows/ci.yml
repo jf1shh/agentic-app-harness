@@ -25,7 +25,7 @@ jobs:
           Get-ChildItem -Path ./projects -Directory | ForEach-Object {
             Write-Host "Installing dependencies for $($_.Name)..."
             Push-Location $_.FullName
-            npm install --include=dev --legacy-peer-deps
+            npm install --include=dev
             Pop-Location
           }
 

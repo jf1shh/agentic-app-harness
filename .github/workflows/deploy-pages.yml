@@ -40,14 +40,14 @@ jobs:
       - name: Build Portfolio Hub
         run: |
           cd projects/portfolio-hub
-          npm install --legacy-peer-deps
+          npm install
           npm run build
 
       # 2. Build MoodDiner App -> dist/mood-diner
       - name: Build MoodDiner App
         run: |
           cd projects/mood-diner
-          npm install --legacy-peer-deps
+          npm install
           npm run build
           mkdir -p ../portfolio-hub/dist/mood-diner
           cp -r dist/* ../portfolio-hub/dist/mood-diner/
@@ -56,7 +56,7 @@ jobs:
       - name: Build Travel Packing App
         run: |
           cd projects/travel-packing-app
-          npm install --legacy-peer-deps
+          npm install
           npm run build
           mkdir -p ../portfolio-hub/dist/travel-packing-app
           cp -r out/* ../portfolio-hub/dist/travel-packing-app/
@@ -65,7 +65,7 @@ jobs:
       - name: Build Smart Recipe App
         run: |
           cd projects/smart-recipe-app
-          npm install --legacy-peer-deps
+          npm install
           npm run build
           mkdir -p ../portfolio-hub/dist/smart-recipe-app
           cp -r out/* ../portfolio-hub/dist/smart-recipe-app/

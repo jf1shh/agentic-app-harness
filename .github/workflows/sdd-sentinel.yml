@@ -36,7 +36,7 @@ jobs:
           Get-ChildItem -Path projects -Directory | ForEach-Object {
             Write-Host "Installing dependencies for $($_.Name)..."
             Push-Location $_.FullName
-            npm install --include=dev --legacy-peer-deps
+            npm install --include=dev
             Pop-Location
           }
 
@@ -58,18 +58,19 @@ jobs:
           .\scripts\harness.ps1 test all
 
       - name: Post SDD Sentinel PR Review Comment
-        if: github.event_name == 'pull_request'
+        if: success() && github.event_name == 'pull_request'
         uses: actions/github-script@v9
         with:
           script: |
             const body = `### 🤖 SDD Sentinel & PR Quality Agent Report
 
-            ✅ **Spec Coverage & Schema Audit Passed!**
-            - **Contract-First Schemas**: Verified Zod runtime schemas in \`src/\`.
-            - **BDD Testing Standard**: Verified \`Given-When-Then\` scenario formatting.
-            - **Security & A11y Audit**: 0 vulnerabilities, 0 lint warnings, 0 WCAG AA accessibility violations.
+            ✅ **All automated harness gates passed on this PR.**
+            - **Spec & schema coverage audit** (\`validate-specs.ps1\`): every app has a spec, README, Zod schema, and BDD \`Given-When-Then\` E2E specs.
+            - **Master harness suite** (\`harness.ps1 test all\`): lint, type-check, Vitest unit tests, and Playwright E2E + \`@axe-core\` accessibility checks passed for all apps.
 
-            *Automated SDD Sentinel Agent comment for PR #${context.issue.number}.*`;
+            *This comment posts only when every gate above succeeds. See the workflow run logs for the exact check output.*
+
+            *Automated SDD Sentinel comment for PR #${context.issue.number}.*`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
