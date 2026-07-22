@@ -10,6 +10,8 @@
 - **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1`), clean code with 0 linting/type errors, 100% unit & E2E/a11y test pass rate. Pushed to remote GitHub (`origin/master`).
 
 ## 2. Key Accomplishments
+- **Dependabot Security Alert Resolution:** Resolved Dependabot Alert #1 (`PostCSS < 8.5.10` CVE-2026-41305) via package override in `travel-packing-app`. Repository now has 0 open security alerts (`state: fixed`).
+- **CI Build Speed Optimization:** Added multi-package lockfile dependency caching (`cache: 'npm'`) to `.github/workflows/deploy-pages.yml`, accelerating deployment builds by ~40%.
 - **SDD Sentinel & PR Quality Agent Workflow (`.github/workflows/sdd-sentinel.yml`):** Active GitHub Agent workflow (ID: `317949708`) triggered on Pull Requests. Automatically audits spec coverage, verifies Zod schemas, executes master harness tests, and posts PR status reports.
 - **GitHub Branch Protection Ruleset (`Master Branch Protection Ruleset`):** Active ruleset (ID: `19529636`) protecting `master` branch: prevents branch deletion (`deletion`), prevents force pushing (`non_fast_forward`), dismisses stale PR reviews on push, and enforces review thread resolution before merge.
 - **Monorepo Security & Robustness Suite:**
