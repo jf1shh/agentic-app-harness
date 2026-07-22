@@ -10,8 +10,10 @@
 - **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1`), clean code with 0 linting/type errors, 100% unit & E2E/a11y test pass rate. Pushed to remote GitHub (`origin/master`).
 
 ## 2. Key Accomplishments
-- **Contract-First Zod Schema Validation & Type Inference:** Installed `zod` and established strict runtime schemas for `Restaurant`, `ReviewScores`, `ReviewComment`, `BookingDetails`, and `ProjectItem`.
-- **BDD Specification Standard:** Refactored E2E and Unit test suites to follow `Given [Context] -> When [User Action] -> Then [Expected Outcome]` format across `mood-diner` and `portfolio-hub`.
+- **Master Harness CLI (`.\scripts\harness.ps1`):** Created unified CLI supporting `test all`, `test <app>`, `clean`, `validate`, `scaffold`, and `mobile` commands.
+- **Spec & Schema Coverage Validator (`.\scripts\validate-specs.ps1`):** Built static audit tool verifying specs, Zod schemas, project READMEs, and BDD test formatting across all projects.
+- **Open-Source GitHub Templates:** Created `PULL_REQUEST_TEMPLATE.md`, `feature_request.md`, `bug_report.md`, `LICENSE` (MIT), `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md`.
+- **AI Agent Skill Registry:** Created `.agents/skills/sdd-harness-guide/SKILL.md` skill definition for AI agents.
 - **Review Comment Vibe Parsing & Sentiment Analysis Engine:**
   - Scans customer review text comments and extracts mood signals (e.g., *"candlelit table"*, *"quiet romantic corner"*, *"high energy lounge"*, *"great birthday celebration"*).
   - Calculates a **Review Vibe Match Score (%)** for any selected mood (e.g. 96% Romantic Vibe Match).
