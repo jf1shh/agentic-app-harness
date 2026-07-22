@@ -5,7 +5,7 @@ description: Comprehensive operational guide for AI agents executing Spec-Driven
 
 # SDD Harness Operational Guide
 
-As an AI Agent operating within this monorepo (`c:\Harness`), follow these core execution procedures:
+As an AI Agent operating within this monorepo (`jf1shh/agentic-app-harness`), follow these core execution procedures:
 
 ## 1. Primary Workflow Execution Order
 

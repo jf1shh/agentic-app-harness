@@ -17,4 +17,4 @@ Please include:
 - Steps to reproduce or proof-of-concept code.
 - Impact assessment.
 
-Vulnerabilities will be evaluated and patched promptly with dependency override updates and automated security audits (`npm audit`).
+Vulnerabilities are monitored by weekly automated Dependabot scans (npm + GitHub Actions) that open alerts and update PRs. The harness test suite also runs `npm audit --audit-level=high` on every app as an advisory signal (it surfaces high-severity advisories as a warning rather than hard-failing the build, since transitive advisories are often unrelated to the change under test). Confirmed vulnerabilities are patched via dependency bumps or `overrides`.

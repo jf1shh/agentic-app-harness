@@ -1,7 +1,7 @@
 # Agentic App Harness - AI Agent Handoff Document
 
 ## 1. Workspace & Architecture Overview
-- **Repository:** Agentic App Harness (`c:\Harness` / `jf1shh/agentic-app-harness`)
+- **Repository:** Agentic App Harness (`jf1shh/agentic-app-harness`)
 - **Live GitHub Pages Showcase:** `https://jf1shh.github.io/agentic-app-harness/`
 - **Live Applications Deployed:**
   - `MoodDiner`: `https://jf1shh.github.io/agentic-app-harness/mood-diner/`
@@ -41,12 +41,12 @@
 - **Walking & Driving Radius Filters:** Transport distance filter for <15 min walk vs. driving radius.
 - **Smart Table Reservation Engine:** Instant table booking wizard with local persistence in **My Bookings**.
 
-## 3. Test & Compliance Metrics
-- **Security Audit:** `npm audit --audit-level=high` (0 vulnerabilities)
-- **Linting:** ESLint clean (0 errors, 0 warnings)
-- **Type Check:** `tsc --noEmit` clean (0 type errors)
-- **Unit Tests:** Vitest 11/11 tests passed (`reviewVibeParser`, `aggregateScoring`, `weatherEngine`, `openStatus`)
-- **E2E & Accessibility:** Playwright 4/4 tests passed with 0 axe accessibility violations
+## 3. Test & Compliance Gates
+Each app must pass, via `.\scripts\test-app.ps1 -AppName <app>`, the following gates in order:
+`npm audit` (advisory — warns, does not fail) → ESLint → `tsc --noEmit` → Vitest unit tests → Playwright E2E + `@axe-core` a11y.
+
+- **Current status:** All four apps pass these gates in CI (`Harness Testing Suite` green on `master`). Exact per-app test counts change as tests are added — see the CI run logs rather than a hard-coded number here.
+- **Contract-First Zod + BDD compliance:** Currently met by `mood-diner` and `portfolio-hub` only. `travel-packing-app` and `smart-recipe-app` do **not** yet use Zod or Given-When-Then E2E specs — run `.\scripts\validate-specs.ps1` for the live report. This is a known gap, not a completed mandate.
 
 ## 4. Next Steps for Next Agent / Session
 - Run `npm run dev` in `projects/mood-diner` to launch local dev server at `http://localhost:5173`.

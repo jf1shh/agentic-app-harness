@@ -64,11 +64,11 @@ jobs:
           script: |
             const body = `### 🤖 SDD Sentinel & PR Quality Agent Report
 
-            ✅ **All automated harness gates passed on this PR.**
-            - **Spec & schema coverage audit** (\`validate-specs.ps1\`): every app has a spec, README, Zod schema, and BDD \`Given-When-Then\` E2E specs.
+            ✅ **All required harness gates passed on this PR.**
+            - **Spec & schema coverage audit** (\`validate-specs.ps1\`): every app has a spec file and README. Contract-first Zod and BDD \`Given-When-Then\` compliance is reported per app in the run logs (not yet universal across the monorepo).
             - **Master harness suite** (\`harness.ps1 test all\`): lint, type-check, Vitest unit tests, and Playwright E2E + \`@axe-core\` accessibility checks passed for all apps.
 
-            *This comment posts only when every gate above succeeds. See the workflow run logs for the exact check output.*
+            *This comment posts only when the required gates above succeed. See the workflow run logs for the exact per-app check output.*
 
             *Automated SDD Sentinel comment for PR #${context.issue.number}.*`;
 
