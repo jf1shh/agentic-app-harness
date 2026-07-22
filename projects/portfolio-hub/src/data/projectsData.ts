@@ -1,25 +1,6 @@
-export interface ProjectItem {
-  id: string;
-  name: string;
-  tagline: string;
-  description: string;
-  category: 'Dining' | 'Utility' | 'Kitchen';
-  techStack: string[];
-  metrics: {
-    unitTests: number;
-    e2eTests: number;
-    a11yScore: string;
-    securityAudit: string;
-  };
-  pwaReady: boolean;
-  capacitorAndroid: boolean;
-  monetized: boolean;
-  specPath: string;
-  demoUrl: string;
-  githubUrl: string;
-}
+import { ProjectItem, ProjectItemSchema } from '../schemas';
 
-export const PROJECTS_DATA: ProjectItem[] = [
+const RAW_PROJECTS: ProjectItem[] = [
   {
     id: 'mood-diner',
     name: 'MoodDiner',
@@ -81,3 +62,6 @@ export const PROJECTS_DATA: ProjectItem[] = [
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/smart-recipe-app',
   },
 ];
+
+export const PROJECTS_DATA: ProjectItem[] = RAW_PROJECTS.map(item => ProjectItemSchema.parse(item));
+export type { ProjectItem };

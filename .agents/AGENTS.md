@@ -5,6 +5,7 @@ As an AI agent operating within this repository, you must strictly adhere to the
 ## 1. Spec is the Single Source of Truth
 - **NEVER** write code or generate new features without first reading the corresponding specification in the `specs/` directory.
 - The specification dictates architecture, data models, and acceptance criteria.
+- **Contract-First Schema Validation**: All application data models must be defined as runtime Zod schemas (`zod`) from which TypeScript types are inferred (`z.infer<typeof Schema>`), guaranteeing runtime data integrity across local storage, API imports, and component props.
 - If the user asks you to implement something that contradicts the spec, you MUST notify the user of the contradiction and ask if the spec should be updated.
 
 ## 2. No "Vibe Coding"
@@ -21,6 +22,7 @@ As an AI agent operating within this repository, you must strictly adhere to the
 ## 5. Mandatory Testing & Verification (CI/CD)
 - You must write unit tests (Vitest) for all core logic.
 - You must write End-to-End (E2E) tests using Playwright for critical user flows.
+- **BDD Specification Standard**: All E2E and Unit test scenarios must follow Behavior-Driven Development (BDD) formatting (`Given [Context] -> When [User Action] -> Then [Expected Outcome]`).
 - You must enforce strict Accessibility (a11y) rules using `@axe-core/playwright` within the E2E tests.
 - After implementing a feature, you **MUST** run the master verification script: `.\scripts\test-app.ps1 -AppName <AppName>`.
 - You cannot consider a feature complete unless the app passes all Security, Privacy, Optimization, A11y, and Functionality checks within the test script.
