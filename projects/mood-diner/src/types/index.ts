@@ -3,10 +3,21 @@ export interface ReviewSource {
   reviewCount: number; // e.g. 1420
 }
 
+export interface MichelinStatus {
+  stars?: 1 | 2 | 3;
+  bibGourmand?: boolean;
+  recommended?: boolean;
+  description?: string;
+}
+
 export interface AggregateScore {
   compositeScore: number; // 0 - 5.0 scale
   google: ReviewSource;
   yelp: ReviewSource;
+  tripAdvisor?: ReviewSource;
+  michelin?: MichelinStatus;
+  infatuationScore?: number; // 0 - 10.0 scale
+  openTable?: ReviewSource;
   sentimentSummary: string;
 }
 

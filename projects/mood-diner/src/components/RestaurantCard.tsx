@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Footprints, Car, CheckCircle2, AlertTriangle, Calendar, ExternalLink, Flame, ShieldCheck } from 'lucide-react';
+import { Star, Footprints, Car, CheckCircle2, AlertTriangle, Calendar, ExternalLink, Flame, Award } from 'lucide-react';
 import { Restaurant, WeatherCondition } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
 import { isRestaurantOpenNow } from '../utils/openStatus';
@@ -17,6 +17,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
 }) => {
   const weatherResult = evaluateWeatherSuitability(restaurant, weather);
   const isOpen = isRestaurantOpenNow(restaurant);
+  const agg = restaurant.aggregateScore;
 
   return (
     <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'var(--transition-smooth)' }}>
@@ -51,14 +52,15 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
           </span>
         </div>
 
-        {/* Bottom Banner inside Image: Cuisine & Real World Tag */}
+        {/* Bottom Banner inside Image: Cuisine & Michelin/Verified Tag */}
         <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '4px' }}>
             {restaurant.cuisine}
           </span>
-          {restaurant.isRealWorldVerified && (
-            <span style={{ fontSize: '0.72rem', color: '#6ee7b7', background: 'rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px', border: '1px solid rgba(16,185,129,0.4)' }}>
-              <ShieldCheck size={12} /> Authentic Restaurant
+          
+          {agg.michelin?.stars && (
+            <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.25)', padding: '2px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(245, 158, 11, 0.5)', fontWeight: 700 }}>
+              <Award size={12} /> Michelin {agg.michelin.stars}★
             </span>
           )}
         </div>
@@ -76,26 +78,42 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
           </p>
         </div>
 
-        {/* Aggregate Score Section */}
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 600 }}>Aggregate Score</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-              <Star size={18} fill="#f59e0b" color="#f59e0b" />
-              <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc' }}>
-                {restaurant.aggregateScore.compositeScore}
+        {/* Multi-Source Aggregate Score Section */}
+        <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 600 }}>Unified Multi-Source Score</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Star size={16} fill="#f59e0b" color="#f59e0b" />
+              <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc' }}>
+                {agg.compositeScore}
               </span>
               <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>/ 5.0</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+          {/* Sources Pills Grid */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             <span className="badge badge-google">
-              G {restaurant.aggregateScore.google.rating}★ ({restaurant.aggregateScore.google.reviewCount.toLocaleString()})
+              Google {agg.google.rating}★
             </span>
             <span className="badge badge-yelp">
-              Yelp {restaurant.aggregateScore.yelp.rating}★ ({restaurant.aggregateScore.yelp.reviewCount.toLocaleString()})
+              Yelp {agg.yelp.rating}★
             </span>
+            {agg.tripAdvisor && (
+              <span className="badge" style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                TripAdvisor {agg.tripAdvisor.rating}★
+              </span>
+            )}
+            {agg.openTable && (
+              <span className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#fda4af', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                OpenTable {agg.openTable.rating}★
+              </span>
+            )}
+            {agg.infatuationScore && (
+              <span className="badge" style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                Infatuation {agg.infatuationScore}/10
+              </span>
+            )}
           </div>
         </div>
 

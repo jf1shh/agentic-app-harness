@@ -45,6 +45,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
 
   const weatherResult = evaluateWeatherSuitability(restaurant, weather);
   const isSummer = weather.season === 'Summer';
+  const agg = restaurant.aggregateScore;
 
   const menuCategories = ['All', 'Appetizers', 'Mains', 'Desserts', 'Drinks'];
   const filteredMenuItems = selectedMenuCategory === 'All'
@@ -67,7 +68,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
   };
 
   const tabs: { id: TabType; label: string; icon: typeof Star }[] = [
-    { id: 'overview', label: 'Overview & Ratings', icon: Star },
+    { id: 'overview', label: 'Multi-Source Scores', icon: Star },
     { id: 'menu', label: 'Website Menu', icon: Utensils },
     { id: 'busy', label: 'Popular Times', icon: BarChart3 },
     { id: 'book', label: 'Reserve Table', icon: Calendar },
@@ -128,32 +129,57 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
         {/* Tab Contents */}
         <div style={{ padding: '24px' }}>
           
-          {/* TAB 1: OVERVIEW */}
+          {/* TAB 1: OVERVIEW & MULTI-SOURCE SCORES */}
           {activeTab === 'overview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
-              {/* Aggregate Score Panel */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              {/* Multi-Source Aggregate Panel */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unified Review Score</span>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                      Unified Multi-Source Rating
+                    </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                      <Star size={24} fill="#f59e0b" color="#f59e0b" />
-                      <span style={{ fontSize: '1.8rem', fontWeight: 800 }}>{restaurant.aggregateScore.compositeScore}</span>
-                      <span style={{ color: '#94a3b8' }}>/ 5.0 Composite</span>
+                      <Star size={26} fill="#f59e0b" color="#f59e0b" />
+                      <span style={{ fontSize: '2rem', fontWeight: 800 }}>{agg.compositeScore}</span>
+                      <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>/ 5.0 Composite</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <div className="badge badge-google" style={{ padding: '8px 12px', fontSize: '0.85rem' }}>
-                      Google: {restaurant.aggregateScore.google.rating} ★ ({restaurant.aggregateScore.google.reviewCount} reviews)
+
+                  {/* Sources Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                    <div className="badge badge-google" style={{ padding: '6px 10px' }}>
+                      Google: {agg.google.rating}★ ({agg.google.reviewCount.toLocaleString()})
                     </div>
-                    <div className="badge badge-yelp" style={{ padding: '8px 12px', fontSize: '0.85rem' }}>
-                      Yelp: {restaurant.aggregateScore.yelp.rating} ★ ({restaurant.aggregateScore.yelp.reviewCount} reviews)
+                    <div className="badge badge-yelp" style={{ padding: '6px 10px' }}>
+                      Yelp: {agg.yelp.rating}★ ({agg.yelp.reviewCount.toLocaleString()})
                     </div>
+                    {agg.tripAdvisor && (
+                      <div className="badge" style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '6px 10px' }}>
+                        TripAdvisor: {agg.tripAdvisor.rating}★ ({agg.tripAdvisor.reviewCount.toLocaleString()})
+                      </div>
+                    )}
+                    {agg.openTable && (
+                      <div className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#fda4af', border: '1px solid rgba(244, 63, 94, 0.3)', padding: '6px 10px' }}>
+                        OpenTable: {agg.openTable.rating}★ ({agg.openTable.reviewCount.toLocaleString()})
+                      </div>
+                    )}
+                    {agg.infatuationScore && (
+                      <div className="badge" style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '6px 10px' }}>
+                        Infatuation: {agg.infatuationScore}/10
+                      </div>
+                    )}
+                    {agg.michelin?.stars && (
+                      <div className="badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '6px 10px' }}>
+                        Michelin {agg.michelin.stars}★
+                      </div>
+                    )}
                   </div>
                 </div>
-                <p style={{ fontSize: '0.88rem', color: '#cbd5e1', fontStyle: 'italic', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
-                  "{restaurant.aggregateScore.sentimentSummary}"
+
+                <p style={{ fontSize: '0.88rem', color: '#cbd5e1', fontStyle: 'italic', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '6px' }}>
+                  "{agg.sentimentSummary}"
                 </p>
               </div>
 
