@@ -19,6 +19,23 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Monorepo Dependencies
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path ./projects -Directory | ForEach-Object {
+            Write-Host "Installing dependencies for $($_.Name)..."
+            Push-Location $_.FullName
+            npm install --include=dev --legacy-peer-deps
+            Pop-Location
+          }
+
+      - name: Install Playwright Browsers
+        shell: pwsh
+        run: |
+          Push-Location ./projects/mood-diner
+          npx playwright install --with-deps chromium
+          Pop-Location
+
       - name: Run Test Suite across all Apps
         shell: pwsh
         run: |
