@@ -17,7 +17,8 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg error:', err));
+          const baseUrl = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
+          navigator.serviceWorker.register(baseUrl + 'sw.js').catch(err => console.warn('SW reg info:', err));
         });
       }
     </script>

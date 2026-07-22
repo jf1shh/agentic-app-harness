@@ -1,14 +1,14 @@
-const CACHE_NAME = 'mooddiner-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
+const CACHE_NAME = 'mooddiner-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      const scopePath = self.location.pathname.replace('sw.js', '');
+      return cache.addAll([
+        scopePath,
+        scopePath + 'index.html',
+        scopePath + 'manifest.json'
+      ]).catch((err) => console.warn('SW cache warning:', err));
     }).then(() => self.skipWaiting())
   );
 });
