@@ -1,4 +1,16 @@
 import { InventoryItem, MealPlanEntry, RecipeEntry } from './types';
+import { InventorySchema, MealPlanSchema, RecipesSchema } from './schemas';
+import type { z } from 'zod';
+
+// Validate untrusted JSON read from localStorage against the contract-first
+// schemas. Anything that doesn't match (corrupted storage, an older data shape,
+// a tampered value) is rejected and the caller falls back to seed data instead
+// of letting a malformed object flow into the UI.
+function parseStored<T>(raw: string | null, schema: z.ZodType<T>, fallback: T): T {
+  if (!raw) return fallback;
+  const result = schema.safeParse(JSON.parse(raw));
+  return result.success ? result.data : fallback;
+}
 
 const INITIAL_INVENTORY: InventoryItem[] = [
   { id: 'inv-1', name: 'Fresh Basil', category: 'Herbs', quantity: '1 bunch', addedAt: new Date().toISOString() },
@@ -26,8 +38,7 @@ const INITIAL_MEAL_PLAN: MealPlanEntry[] = [
 export function readInventory(): InventoryItem[] {
   if (typeof window === 'undefined') return INITIAL_INVENTORY;
   try {
-    const saved = localStorage.getItem('smart_recipe_inventory');
-    return saved ? JSON.parse(saved) : INITIAL_INVENTORY;
+    return parseStored(localStorage.getItem('smart_recipe_inventory'), InventorySchema, INITIAL_INVENTORY);
   } catch {
     return INITIAL_INVENTORY;
   }
@@ -45,8 +56,7 @@ export function writeInventory(inventory: InventoryItem[]) {
 export function readMealPlan(): MealPlanEntry[] {
   if (typeof window === 'undefined') return INITIAL_MEAL_PLAN;
   try {
-    const saved = localStorage.getItem('smart_recipe_meal_plan');
-    return saved ? JSON.parse(saved) : INITIAL_MEAL_PLAN;
+    return parseStored(localStorage.getItem('smart_recipe_meal_plan'), MealPlanSchema, INITIAL_MEAL_PLAN);
   } catch {
     return INITIAL_MEAL_PLAN;
   }
@@ -64,8 +74,7 @@ export function writeMealPlan(mealPlan: MealPlanEntry[]) {
 export function readRecipes(): RecipeEntry[] {
   if (typeof window === 'undefined') return INITIAL_RECIPES;
   try {
-    const saved = localStorage.getItem('smart_recipe_recipes');
-    return saved ? JSON.parse(saved) : INITIAL_RECIPES;
+    return parseStored(localStorage.getItem('smart_recipe_recipes'), RecipesSchema, INITIAL_RECIPES);
   } catch {
     return INITIAL_RECIPES;
   }

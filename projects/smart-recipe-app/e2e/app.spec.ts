@@ -1,30 +1,33 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+// BDD (Given -> When -> Then) E2E specs per the harness standard.
 test.describe('Smart Recipe App', () => {
-  test('should load the dashboard and pass accessibility checks', async ({ page }) => {
+  test('Given a first-time visitor, When they open the dashboard, Then it loads and is accessible', async ({ page }) => {
+    // Given a first-time visitor
+    // When they open the dashboard
     await page.goto('/');
-    await expect(page.locator('h1')).toHaveText('Welcome to SmartRecipe');
 
+    // Then the welcome heading renders and there are no a11y violations
+    await expect(page.locator('h1')).toHaveText('Welcome to SmartRecipe');
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 
-  test('should add an inventory item', async ({ page }) => {
+  test('Given the inventory page, When a user adds an item, Then it appears in the list', async ({ page }) => {
+    // Given the inventory page is open
     await page.goto('/inventory');
-    
-    // Fill the form
+
+    // When the user fills in and submits a new item
     await page.fill('input[name="name"]', 'Test Tomato');
     await page.selectOption('select[name="category"]', 'fridge');
     await page.fill('input[name="quantity"]', '5');
-    
-    // Submit
     await page.click('button[type="submit"]');
 
-    // Verify it appears in the list
+    // Then the item appears in the inventory list
     await expect(page.locator('text=Test Tomato')).toBeVisible();
 
-    // Remove it to clean up
+    // (cleanup) remove the item so the test is repeatable
     const removeButton = page.locator('text=Test Tomato').locator('..').locator('..').locator('button', { hasText: 'Remove' }).first();
     if (await removeButton.isVisible()) {
       await removeButton.click();

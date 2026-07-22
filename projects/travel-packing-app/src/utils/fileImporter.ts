@@ -1,4 +1,5 @@
 import { Garment } from '../types';
+import { GarmentSchema } from '../schemas';
 import { getThermalValue } from './generator';
 
 const KNOWN_COLORS = [
@@ -76,7 +77,10 @@ export function parseClosetFile(fileContent: string): Garment[] {
     garments.push(createGarmentObj(count++, name, roles, colors, warmth));
   }
 
-  return garments;
+  // Contract-first: only return garments that satisfy the runtime schema, so a
+  // malformed or tampered closet file can never inject an invalid Garment into
+  // the wardrobe / knapsack engines downstream.
+  return garments.filter((g) => GarmentSchema.safeParse(g).success);
 }
 
 function autoDetectRoles(name: string): ('top' | 'bottom' | 'topper' | 'layer')[] {

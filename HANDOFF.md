@@ -46,7 +46,7 @@ Each app must pass, via `.\scripts\test-app.ps1 -AppName <app>`, the following g
 `npm audit` (advisory — warns, does not fail) → ESLint → `tsc --noEmit` → Vitest unit tests → Playwright E2E + `@axe-core` a11y.
 
 - **Current status:** All four apps pass these gates in CI (`Harness Testing Suite` green on `master`). Exact per-app test counts change as tests are added — see the CI run logs rather than a hard-coded number here.
-- **Contract-First Zod + BDD compliance:** Currently met by `mood-diner` and `portfolio-hub` only. `travel-packing-app` and `smart-recipe-app` do **not** yet use Zod or Given-When-Then E2E specs — run `.\scripts\validate-specs.ps1` for the live report. This is a known gap, not a completed mandate.
+- **Contract-First Zod + BDD compliance:** Met by all four apps. `travel-packing-app` and `smart-recipe-app` now define Zod schemas (validated at their localStorage / file-import boundaries) with `z.infer` types, and their E2E specs use `Given-When-Then`. This is enforced in CI: `sdd-sentinel.yml` runs `.\scripts\validate-specs.ps1 -Strict`, which fails the run on any Zod/BDD/README gap. Run `.\scripts\validate-specs.ps1` locally for the live report.
 
 ## 4. Next Steps for Next Agent / Session
 - Run `npm run dev` in `projects/mood-diner` to launch local dev server at `http://localhost:5173`.
