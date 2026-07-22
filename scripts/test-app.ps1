@@ -24,11 +24,17 @@ if (Test-Path $cleanScript) {
     & $cleanScript -AppName $AppName
 }
 
-Set-Location $targetPath
+# Push-Location (not Set-Location) so the working directory is restored on exit.
+# Set-Location leaks runspace-wide, which breaks callers that invoke this script
+# via a relative path in a loop (e.g. ci.yml).
+Push-Location $targetPath
 
 if (-Not (Test-Path "node_modules")) {
     Write-Host "`n[1/6] Installing dependencies..." -ForegroundColor Cyan
-    npm install
+    # --legacy-peer-deps keeps this consistent with deploy-pages.yml / sdd-sentinel.yml,
+    # which pre-install with the same flag; plain `npm install` fails on the current
+    # peer-dependency graph (vite 8 vs @vitejs/plugin-react peer range).
+    npm install --legacy-peer-deps
 }
 
 Write-Host "`n[2/6] Running Security & Dependency Audit (npm audit)..." -ForegroundColor Cyan
@@ -81,6 +87,9 @@ if ($LASTEXITCODE -ne 0) {
 if (Test-Path $cleanScript) {
     & $cleanScript -AppName $AppName
 }
+
+# Restore the caller's working directory (see Push-Location above).
+Pop-Location
 
 Write-Host "`n========================================="
 if ($errors -eq 0) {
