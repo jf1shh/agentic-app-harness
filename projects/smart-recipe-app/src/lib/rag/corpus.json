@@ -1,0 +1,162 @@
+[
+  {
+    "id": "pesto-pasta",
+    "title": "Classic Basil Pesto Pasta",
+    "cuisine": "Italian",
+    "tags": ["vegetarian", "quick", "pasta"],
+    "timeMinutes": 20,
+    "servings": 4,
+    "ingredients": ["basil", "olive oil", "pine nuts", "garlic", "parmesan", "pasta"],
+    "steps": ["Boil pasta until al dente.", "Blend basil, pine nuts, garlic, and oil into a paste.", "Stir in grated parmesan.", "Toss hot pasta with the pesto."]
+  },
+  {
+    "id": "garlic-butter-salmon",
+    "title": "Garlic Butter Salmon",
+    "cuisine": "American",
+    "tags": ["pescatarian", "gluten-free", "high-protein", "quick"],
+    "timeMinutes": 20,
+    "servings": 2,
+    "ingredients": ["salmon fillets", "garlic", "butter", "lemon", "parsley"],
+    "steps": ["Season salmon with salt and pepper.", "Sear 4 minutes per side.", "Melt butter with garlic and lemon.", "Spoon garlic butter over the salmon."]
+  },
+  {
+    "id": "chickpea-curry",
+    "title": "Coconut Chickpea Curry",
+    "cuisine": "Indian",
+    "tags": ["vegan", "gluten-free", "hearty", "spicy"],
+    "timeMinutes": 30,
+    "servings": 4,
+    "ingredients": ["chickpeas", "coconut milk", "onion", "garlic", "ginger", "curry powder", "tomato"],
+    "steps": ["Saute onion, garlic, and ginger.", "Add curry powder and tomato.", "Stir in chickpeas and coconut milk.", "Simmer 15 minutes until thick."]
+  },
+  {
+    "id": "veggie-stir-fry",
+    "title": "Rainbow Vegetable Stir-Fry",
+    "cuisine": "Chinese",
+    "tags": ["vegan", "quick", "healthy"],
+    "timeMinutes": 15,
+    "servings": 3,
+    "ingredients": ["broccoli", "bell pepper", "carrot", "soy sauce", "ginger", "garlic", "rice"],
+    "steps": ["Cook rice.", "Stir-fry vegetables over high heat.", "Add garlic, ginger, and soy sauce.", "Serve over rice."]
+  },
+  {
+    "id": "margherita-pizza",
+    "title": "Margherita Pizza",
+    "cuisine": "Italian",
+    "tags": ["vegetarian", "baked"],
+    "timeMinutes": 40,
+    "servings": 2,
+    "ingredients": ["pizza dough", "tomato", "mozzarella", "basil", "olive oil"],
+    "steps": ["Stretch the dough.", "Spread crushed tomato.", "Add mozzarella and basil.", "Bake at 250C until bubbling."]
+  },
+  {
+    "id": "beef-tacos",
+    "title": "Spiced Beef Tacos",
+    "cuisine": "Mexican",
+    "tags": ["high-protein", "spicy", "quick"],
+    "timeMinutes": 25,
+    "servings": 4,
+    "ingredients": ["ground beef", "taco seasoning", "tortillas", "onion", "cheese", "lettuce"],
+    "steps": ["Brown the beef with onion.", "Add taco seasoning and water.", "Simmer until thick.", "Fill tortillas and top with cheese and lettuce."]
+  },
+  {
+    "id": "thai-green-curry",
+    "title": "Thai Green Curry with Tofu",
+    "cuisine": "Thai",
+    "tags": ["vegan", "gluten-free", "spicy"],
+    "timeMinutes": 30,
+    "servings": 4,
+    "ingredients": ["tofu", "green curry paste", "coconut milk", "bamboo shoots", "basil", "rice"],
+    "steps": ["Fry green curry paste.", "Add coconut milk and simmer.", "Add tofu and bamboo shoots.", "Finish with basil and serve over rice."]
+  },
+  {
+    "id": "greek-salad",
+    "title": "Greek Village Salad",
+    "cuisine": "Mediterranean",
+    "tags": ["vegetarian", "gluten-free", "quick", "no-cook", "healthy"],
+    "timeMinutes": 10,
+    "servings": 4,
+    "ingredients": ["tomato", "cucumber", "red onion", "feta", "olives", "olive oil", "oregano"],
+    "steps": ["Chop tomato, cucumber, and onion.", "Add olives and feta.", "Dress with olive oil and oregano."]
+  },
+  {
+    "id": "miso-ramen",
+    "title": "Quick Miso Ramen",
+    "cuisine": "Japanese",
+    "tags": ["vegetarian", "soup", "hearty"],
+    "timeMinutes": 25,
+    "servings": 2,
+    "ingredients": ["ramen noodles", "miso paste", "vegetable broth", "mushroom", "scallion", "egg"],
+    "steps": ["Simmer broth with mushrooms.", "Whisk in miso paste.", "Cook noodles in the broth.", "Top with scallion and a soft egg."]
+  },
+  {
+    "id": "shakshuka",
+    "title": "Shakshuka (Eggs in Tomato)",
+    "cuisine": "Mediterranean",
+    "tags": ["vegetarian", "gluten-free", "high-protein"],
+    "timeMinutes": 25,
+    "servings": 3,
+    "ingredients": ["eggs", "tomato", "bell pepper", "onion", "garlic", "paprika", "cumin"],
+    "steps": ["Saute onion, pepper, and garlic.", "Add tomato, paprika, and cumin.", "Simmer into a thick sauce.", "Crack eggs on top and poach in the sauce."]
+  },
+  {
+    "id": "lentil-soup",
+    "title": "Hearty Red Lentil Soup",
+    "cuisine": "Middle Eastern",
+    "tags": ["vegan", "gluten-free", "soup", "hearty", "budget"],
+    "timeMinutes": 35,
+    "servings": 4,
+    "ingredients": ["red lentils", "carrot", "onion", "cumin", "vegetable broth", "lemon"],
+    "steps": ["Saute onion and carrot.", "Add lentils, cumin, and broth.", "Simmer until lentils break down.", "Finish with a squeeze of lemon."]
+  },
+  {
+    "id": "caprese-avocado-toast",
+    "title": "Caprese Avocado Toast",
+    "cuisine": "American",
+    "tags": ["vegetarian", "quick", "breakfast", "no-cook"],
+    "timeMinutes": 10,
+    "servings": 2,
+    "ingredients": ["bread", "avocado", "tomato", "mozzarella", "basil", "balsamic"],
+    "steps": ["Toast the bread.", "Mash avocado on top.", "Layer tomato and mozzarella.", "Finish with basil and balsamic."]
+  },
+  {
+    "id": "chicken-fried-rice",
+    "title": "Chicken Fried Rice",
+    "cuisine": "Chinese",
+    "tags": ["high-protein", "quick", "leftovers"],
+    "timeMinutes": 20,
+    "servings": 4,
+    "ingredients": ["cooked rice", "chicken", "egg", "peas", "carrot", "soy sauce", "scallion"],
+    "steps": ["Scramble the egg and set aside.", "Stir-fry chicken and vegetables.", "Add rice and soy sauce.", "Fold in egg and scallion."]
+  },
+  {
+    "id": "black-bean-quesadilla",
+    "title": "Black Bean Quesadilla",
+    "cuisine": "Mexican",
+    "tags": ["vegetarian", "quick", "budget", "kid-friendly"],
+    "timeMinutes": 15,
+    "servings": 2,
+    "ingredients": ["tortillas", "black beans", "cheese", "corn", "cumin", "salsa"],
+    "steps": ["Mash beans with cumin.", "Spread on a tortilla with cheese and corn.", "Fold and toast until golden.", "Serve with salsa."]
+  },
+  {
+    "id": "mushroom-risotto",
+    "title": "Creamy Mushroom Risotto",
+    "cuisine": "Italian",
+    "tags": ["vegetarian", "gluten-free", "hearty"],
+    "timeMinutes": 40,
+    "servings": 4,
+    "ingredients": ["arborio rice", "mushroom", "onion", "white wine", "vegetable broth", "parmesan"],
+    "steps": ["Saute mushrooms and onion.", "Toast the rice, then add wine.", "Add warm broth one ladle at a time, stirring.", "Finish with parmesan."]
+  },
+  {
+    "id": "banana-oat-pancakes",
+    "title": "Banana Oat Pancakes",
+    "cuisine": "American",
+    "tags": ["vegetarian", "gluten-free", "breakfast", "quick", "kid-friendly"],
+    "timeMinutes": 15,
+    "servings": 2,
+    "ingredients": ["banana", "oats", "egg", "milk", "cinnamon"],
+    "steps": ["Blend banana, oats, egg, and milk.", "Add cinnamon.", "Cook small pancakes on a griddle.", "Flip when bubbles form."]
+  }
+]
