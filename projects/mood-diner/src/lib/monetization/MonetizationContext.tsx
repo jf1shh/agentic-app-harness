@@ -9,7 +9,7 @@ export interface MonetizationContextType {
   isPaywallOpen: boolean;
   openPaywall: () => void;
   closePaywall: () => void;
-  useCredit: () => boolean; // returns true if allowed, false if limit reached and opens paywall
+  useCredit: () => boolean;
   upgradeToPro: () => void;
   downgradeToFree: () => void;
 }
@@ -89,10 +89,18 @@ export const MonetizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 };
 
+const DEFAULT_FALLBACK_CONTEXT: MonetizationContextType = {
+  plan: 'free',
+  creditsRemaining: 3,
+  isPaywallOpen: false,
+  openPaywall: () => {},
+  closePaywall: () => {},
+  useCredit: () => true,
+  upgradeToPro: () => {},
+  downgradeToFree: () => {},
+};
+
 export const useMonetization = (): MonetizationContextType => {
   const ctx = useContext(MonetizationContext);
-  if (!ctx) {
-    throw new Error('useMonetization must be used within a MonetizationProvider');
-  }
-  return ctx;
+  return ctx || DEFAULT_FALLBACK_CONTEXT;
 };

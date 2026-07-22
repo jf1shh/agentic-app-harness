@@ -10,12 +10,11 @@ import { PRESET_WEATHER } from './utils/weatherEngine';
 import { INITIAL_RESTAURANTS } from './data/restaurantsData';
 import { Restaurant, WeatherCondition, Reservation, TransportMode } from './types';
 import { evaluateWeatherSuitability } from './utils/weatherEngine';
+import { parseReviewCommentsForMood } from './utils/reviewVibeParser';
 import { isRestaurantOpenNow } from './utils/openStatus';
 import { Sun, AlertCircle } from 'lucide-react';
-import { MonetizationProvider } from './lib/monetization/MonetizationContext';
-import { ProPaywallModal } from './components/ProPaywallModal';
 
-export const AppContent: React.FC = () => {
+export const App: React.FC = () => {
   // State
   const [restaurants, setRestaurants] = useState<Restaurant[]>(() => {
     try {
@@ -69,7 +68,7 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // Filter & Weather Ranking Logic
+  // Filter & Weather / Comment Vibe Ranking Logic
   const filteredRestaurants = restaurants
     .filter((r) => {
       if (selectedOccasion !== 'All' && !r.occasions.includes(selectedOccasion)) return false;
@@ -80,9 +79,16 @@ export const AppContent: React.FC = () => {
       return true;
     })
     .sort((a, b) => {
-      const scoreA = evaluateWeatherSuitability(a, weather).weatherMatchScore;
-      const scoreB = evaluateWeatherSuitability(b, weather).weatherMatchScore;
-      return scoreB - scoreA; // Higher weather match score first
+      const weatherScoreA = evaluateWeatherSuitability(a, weather).weatherMatchScore;
+      const weatherScoreB = evaluateWeatherSuitability(b, weather).weatherMatchScore;
+      
+      const vibeScoreA = parseReviewCommentsForMood(a, selectedMood).vibeMatchScore;
+      const vibeScoreB = parseReviewCommentsForMood(b, selectedMood).vibeMatchScore;
+
+      const compositeRankA = weatherScoreA * 0.5 + vibeScoreA * 0.5;
+      const compositeRankB = weatherScoreB * 0.5 + vibeScoreB * 0.5;
+
+      return compositeRankB - compositeRankA; // Higher combined weather & comment vibe match first
     });
 
   const handleBookReservation = (resData: Omit<Reservation, 'id' | 'createdAt' | 'status'>) => {
@@ -120,7 +126,7 @@ export const AppContent: React.FC = () => {
             <Sun size={24} color="#f59e0b" />
             <div>
               <span style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.95rem' }}>
-                AI Weather Guard Active ({weather.temperatureF}°F - {weather.condition} {weather.season}):
+                AI Weather & Review Comment Vibe Guard Active ({weather.temperatureF}°F - {weather.condition} {weather.season}):
               </span>
               <span style={{ fontSize: '0.88rem', color: '#cbd5e1', marginLeft: '6px' }}>
                 {weather.summary}
@@ -184,6 +190,7 @@ export const AppContent: React.FC = () => {
                 key={restaurant.id}
                 restaurant={restaurant}
                 weather={weather}
+                selectedMood={selectedMood}
                 onSelect={(rest, tab) => {
                   setSelectedRestaurant(rest);
                   setModalInitialTab(tab || 'overview');
@@ -197,7 +204,7 @@ export const AppContent: React.FC = () => {
 
       {/* Footer */}
       <footer style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px 24px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b', marginTop: 'auto' }}>
-        MoodDiner AI — Real-World Iconic Dining • Aggregating Yelp & Google Reviews • Real Website Verification & Weather Intelligence
+        MoodDiner AI — Real-World Iconic Dining • Multi-Source Reviews & Comment Vibe Parsing • Weather Intelligence
       </footer>
 
       {/* Modals */}
@@ -230,14 +237,6 @@ export const AppContent: React.FC = () => {
         onAddRestaurant={handleAddCustomRestaurant}
       />
 
-      <ProPaywallModal />
-
     </div>
   );
 };
-
-export const App: React.FC = () => (
-  <MonetizationProvider>
-    <AppContent />
-  </MonetizationProvider>
-);

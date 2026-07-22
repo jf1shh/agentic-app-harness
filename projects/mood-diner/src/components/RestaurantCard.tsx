@@ -1,21 +1,25 @@
 import React from 'react';
-import { Star, Footprints, Car, CheckCircle2, AlertTriangle, Calendar, ExternalLink, Flame, Award } from 'lucide-react';
+import { Star, Footprints, Car, CheckCircle2, AlertTriangle, Calendar, ExternalLink, Flame, Award, MessageSquareQuote } from 'lucide-react';
 import { Restaurant, WeatherCondition } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
 import { isRestaurantOpenNow } from '../utils/openStatus';
+import { parseReviewCommentsForMood } from '../utils/reviewVibeParser';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
   weather: WeatherCondition;
+  selectedMood: string;
   onSelect: (restaurant: Restaurant, initialTab?: 'overview' | 'menu' | 'busy' | 'book') => void;
 }
 
 export const RestaurantCard: React.FC<RestaurantCardProps> = ({
   restaurant,
   weather,
+  selectedMood,
   onSelect,
 }) => {
   const weatherResult = evaluateWeatherSuitability(restaurant, weather);
+  const vibeResult = parseReviewCommentsForMood(restaurant, selectedMood);
   const isOpen = isRestaurantOpenNow(restaurant);
   const agg = restaurant.aggregateScore;
 
@@ -52,7 +56,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
           </span>
         </div>
 
-        {/* Bottom Banner inside Image: Cuisine & Michelin/Verified Tag */}
+        {/* Bottom Banner inside Image: Cuisine & Michelin Tag */}
         <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '4px' }}>
             {restaurant.cuisine}
@@ -116,6 +120,14 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
             )}
           </div>
         </div>
+
+        {/* Review Comment Vibe Match Badge */}
+        {selectedMood !== 'All' && (
+          <div style={{ background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '6px 10px', borderRadius: '6px', fontSize: '0.78rem', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <MessageSquareQuote size={14} style={{ flexShrink: 0 }} />
+            <span>Review Vibe Match: {vibeResult.vibeMatchScore}% ({vibeResult.summaryText})</span>
+          </div>
+        )}
 
         {/* AI Weather Suitability Badge */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>

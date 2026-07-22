@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MapPin, Footprints, Car, CheckCircle2, Clock, Utensils, BarChart3, Calendar, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { X, Star, MapPin, Footprints, Car, CheckCircle2, Clock, Utensils, BarChart3, Calendar, ShieldCheck, AlertTriangle, MessageSquareQuote } from 'lucide-react';
 import { Restaurant, WeatherCondition, Reservation, MenuItem } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
 import { formatOpeningHours } from '../utils/openStatus';
+import { parseReviewCommentsForMood } from '../utils/reviewVibeParser';
 
 type TabType = 'overview' | 'menu' | 'busy' | 'book';
 
@@ -44,6 +45,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
   if (!restaurant) return null;
 
   const weatherResult = evaluateWeatherSuitability(restaurant, weather);
+  const vibeResult = parseReviewCommentsForMood(restaurant, restaurant.moods[0] || 'Romantic');
   const isSummer = weather.season === 'Summer';
   const agg = restaurant.aggregateScore;
 
@@ -68,7 +70,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
   };
 
   const tabs: { id: TabType; label: string; icon: typeof Star }[] = [
-    { id: 'overview', label: 'Multi-Source Scores', icon: Star },
+    { id: 'overview', label: 'Multi-Source & Vibe', icon: Star },
     { id: 'menu', label: 'Website Menu', icon: Utensils },
     { id: 'busy', label: 'Popular Times', icon: BarChart3 },
     { id: 'book', label: 'Reserve Table', icon: Calendar },
@@ -181,6 +183,29 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
                 <p style={{ fontSize: '0.88rem', color: '#cbd5e1', fontStyle: 'italic', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '6px' }}>
                   "{agg.sentimentSummary}"
                 </p>
+              </div>
+
+              {/* Review Comment Vibe Extracts Section */}
+              <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ fontWeight: 700, color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }}>
+                    <MessageSquareQuote size={18} /> Customer Review Vibe Parsing Analysis
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                    {vibeResult.vibeMatchScore}% Vibe Match Score
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '12px' }}>{vibeResult.summaryText}</p>
+
+                {vibeResult.matchingQuotes.map((q) => (
+                  <div key={q.id} style={{ background: 'rgba(0,0,0,0.3)', borderLeft: '3px solid #8b5cf6', padding: '10px 14px', borderRadius: '0 8px 8px 0', marginBottom: '8px' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#f8fafc', fontStyle: 'italic' }}>"{q.commentText}"</p>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>— {q.author} ({q.source} Verified Review)</span>
+                      <span>{q.date} • Rating {q.rating}★</span>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Weather Recommendation Note */}

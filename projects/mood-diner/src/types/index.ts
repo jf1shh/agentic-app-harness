@@ -10,6 +10,16 @@ export interface MichelinStatus {
   description?: string;
 }
 
+export interface ReviewCommentSnippet {
+  id: string;
+  source: 'Google' | 'Yelp' | 'TripAdvisor' | 'OpenTable';
+  author: string;
+  rating: number;
+  date: string;
+  commentText: string;
+  detectedMoods: string[];
+}
+
 export interface AggregateScore {
   compositeScore: number; // 0 - 5.0 scale
   google: ReviewSource;
@@ -19,6 +29,7 @@ export interface AggregateScore {
   infatuationScore?: number; // 0 - 10.0 scale
   openTable?: ReviewSource;
   sentimentSummary: string;
+  reviewComments?: ReviewCommentSnippet[];
 }
 
 export interface MenuItem {
