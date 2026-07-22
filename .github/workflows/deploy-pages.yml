@@ -29,6 +29,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            projects/portfolio-hub/package-lock.json
+            projects/mood-diner/package-lock.json
+            projects/travel-packing-app/package-lock.json
+            projects/smart-recipe-app/package-lock.json
 
       # 1. Build Portfolio Hub (Root Showcase Site)
       - name: Build Portfolio Hub
