@@ -10,6 +10,7 @@
 - **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1`), clean code with 0 linting/type errors, 100% unit & E2E/a11y test pass rate. Pushed to remote GitHub (`origin/master`).
 
 ## 2. Key Accomplishments
+- **GitHub Branch Protection Ruleset (`Master Branch Protection Ruleset`):** Active ruleset (ID: `19529636`) protecting `master` branch: prevents branch deletion (`deletion`), prevents force pushing (`non_fast_forward`), dismisses stale PR reviews on push, and enforces review thread resolution before merge.
 - **Monorepo Security & Robustness Suite:**
   - **HTML Security Headers:** Added `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `Referrer-Policy: strict-origin-when-cross-origin` meta headers to `mood-diner` and `portfolio-hub` HTML headers.
   - **Universal XSS Sanitizer Utility:** Built ReDoS-safe input & object sanitizer (`securitySanitizer.ts`) stripping script tags and inline event handlers (`onerror=`, `onload=`). Tested via `securitySanitizer.test.ts` (3/3 unit tests passing).
