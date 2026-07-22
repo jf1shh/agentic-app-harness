@@ -13,6 +13,7 @@ test.describe('Travel Packing App V3', () => {
 
     // Verify initial state
     await expect(page.locator('h1:has-text("PackRight V4")')).toBeVisible();
+    await expect(page.locator('text=Wardrobe Source')).toBeVisible();
 
     // Click Analyze
     await page.click('button.btn-primary');

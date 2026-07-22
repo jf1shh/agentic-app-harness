@@ -37,7 +37,12 @@ Welcome, fellow Agent! This document will quickly get you up to speed on the **P
    - Persists state in browser `localStorage`.
    - Features real-time percentage progress bar and reset functionality.
 
-7. **Error Handling (`src/components/LoggerInit.tsx` & `error.tsx`)**:
+7. **Text & Markdown Closet Importer (`src/utils/fileImporter.ts`)**:
+   - Intelligent parser for plain text lines, Markdown bullet lists, or pipe-delimited files.
+   - Auto-detects garment roles (`top`, `bottom`, `topper`), color tags, and fabric warmth.
+   - Allows users to upload their actual personal clothes to schedule outfits and compute luggage physics.
+
+8. **Error Handling (`src/components/LoggerInit.tsx` & `error.tsx`)**:
    - Global interceptor caches fatal errors in IndexedDB.
    - React Error Boundary allows users to export the crash log to a `.txt` file.
 

@@ -31,5 +31,8 @@
     "jsdom": "^29.1.1",
     "typescript": "^5",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "sharp": "^0.35.0"
   }
 }

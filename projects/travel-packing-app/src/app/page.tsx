@@ -9,6 +9,7 @@ import { calculateKnapsackPhysics, PackingPhysicsReport } from '../utils/knapsac
 import { MODELS } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
+import { parseClosetFile } from '../utils/fileImporter';
 
 
 
@@ -29,6 +30,25 @@ export default function Home() {
   const [activity, setActivity] = useState('sightseeing');
   const [activeGarments, setActiveGarments] = useState<Garment[]>([]);
 
+  const [closetSource, setClosetSource] = useState<'archetype' | 'custom'>('archetype');
+  const [customGarments, setCustomGarments] = useState<Garment[]>([]);
+  const [customFileName, setCustomFileName] = useState('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCustomFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        const parsed = parseClosetFile(text);
+        setCustomGarments(parsed);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleAnalyze = async () => {
     setLoading(true);
     setError('');
@@ -40,15 +60,19 @@ export default function Home() {
       setItinerary(generatedItinerary);
 
       const tripDuration = generatedItinerary.length;
-      const generatedGarments = generateWardrobeFromArchetype(archetype, strategy, tripDuration);
-      setActiveGarments(generatedGarments);
+      
+      const garmentsToUse = closetSource === 'custom' && customGarments.length > 0
+        ? customGarments
+        : generateWardrobeFromArchetype(archetype, strategy, tripDuration);
 
-      const result = analyzeWardrobe(generatedGarments, generatedItinerary);
+      setActiveGarments(garmentsToUse);
+
+      const result = analyzeWardrobe(garmentsToUse, generatedItinerary);
       setReport(result);
 
       // Run Knapsack Physics
       const suitcase = MODELS.find(m => m.model === selectedSuitcase) || MODELS[0];
-      const physicsResult = calculateKnapsackPhysics(result, generatedGarments, suitcase, selectedAirline);
+      const physicsResult = calculateKnapsackPhysics(result, garmentsToUse, suitcase, selectedAirline);
       setPhysics(physicsResult);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -88,32 +112,76 @@ export default function Home() {
               <input id="end" type="date" className="input-field" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-            <div>
-              <label htmlFor="archetype" className="label">Fashion Archetype</label>
-              <select id="archetype" className="input-field" value={archetype} onChange={e => setArchetype(e.target.value)}>
-                <option value="quiet-luxury">Quiet Luxury</option>
-                <option value="gorpcore">Gorpcore</option>
-                <option value="scandi">Scandi Minimalist</option>
-              </select>
+
+          <div style={{ padding: '16px', backgroundColor: 'rgba(255, 255, 255, 0.5)', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px' }}>
+            <label className="label">Wardrobe Source</label>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+              <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input 
+                  type="radio" 
+                  name="closetSource" 
+                  checked={closetSource === 'archetype'} 
+                  onChange={() => setClosetSource('archetype')} 
+                />
+                Style Archetype Preset
+              </label>
+              <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input 
+                  type="radio" 
+                  name="closetSource" 
+                  checked={closetSource === 'custom'} 
+                  onChange={() => setClosetSource('custom')} 
+                />
+                Upload Custom Closet (.txt / .md)
+              </label>
             </div>
-            <div>
-              <label htmlFor="strategy" className="label">Packing Strategy</label>
-              <select id="strategy" className="input-field" value={strategy} onChange={e => setStrategy(e.target.value)}>
-                <option value="standard">Standard (Comfortable)</option>
-                <option value="flexible">Flexible & Efficient</option>
-                <option value="minimalist">Extreme Minimalist</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="activity" className="label">Default Activity</label>
-              <select id="activity" className="input-field" value={activity} onChange={e => setActivity(e.target.value)}>
-                <option value="sightseeing">📸 Sightseeing</option>
-                <option value="transit">✈️ Transit Day</option>
-                <option value="formal">🍷 Formal / Night Out</option>
-                <option value="casual">🚶 Casual</option>
-              </select>
-            </div>
+
+            {closetSource === 'archetype' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label htmlFor="archetype" className="label">Fashion Archetype</label>
+                  <select id="archetype" className="input-field" value={archetype} onChange={e => setArchetype(e.target.value)}>
+                    <option value="quiet-luxury">Quiet Luxury</option>
+                    <option value="gorpcore">Gorpcore</option>
+                    <option value="scandi">Scandi Minimalist</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="strategy" className="label">Packing Strategy</label>
+                  <select id="strategy" className="input-field" value={strategy} onChange={e => setStrategy(e.target.value)}>
+                    <option value="standard">Standard (Comfortable)</option>
+                    <option value="flexible">Flexible & Efficient</option>
+                    <option value="minimalist">Extreme Minimalist</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="activity" className="label">Default Activity</label>
+                  <select id="activity" className="input-field" value={activity} onChange={e => setActivity(e.target.value)}>
+                    <option value="sightseeing">📸 Sightseeing</option>
+                    <option value="transit">✈️ Transit Day</option>
+                    <option value="formal">🍷 Formal / Night Out</option>
+                    <option value="casual">🚶 Casual</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="closet-upload" className="label">Upload Wardrobe File (.txt or .md)</label>
+                <input 
+                  id="closet-upload" 
+                  type="file" 
+                  accept=".txt,.md" 
+                  onChange={handleFileUpload} 
+                  className="input-field" 
+                  style={{ cursor: 'pointer' }}
+                />
+                {customGarments.length > 0 && (
+                  <p style={{ marginTop: '8px', color: '#22c55e', fontSize: '0.9rem' }}>
+                    ✔ Loaded {customGarments.length} garments from {customFileName}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>

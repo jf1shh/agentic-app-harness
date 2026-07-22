@@ -14,7 +14,8 @@ PackRight V4 is an intelligent wardrobe analyzer and packing optimization engine
 - **Knapsack Physics Engine**: Calculates the precise volume and weight of your generated wardrobe against real-world airline baggage constraints (e.g., Emirates, Delta) and specific suitcase models (e.g., Away Carry-On).
 - **Smart Swaps**: Analyzes failed permutations and "Dead Weight" to recommend highly targeted item swaps to boost your wardrobe's overall Flexibility Score.
 - **Physical Packing Checklist**: Provides an interactive checklist with automatically calculated trip essentials ($N$ pairs of underwear/socks) and persistent `localStorage` progress tracking.
-- **Digital Closet**: Uses Client-side AI (`@imgly/background-removal`) to automatically remove backgrounds from uploaded garment photos and stores them locally via IndexedDB.
+- **Digital Closet File Importer**: Allows users to upload custom `.txt` or `.md` wardrobe files. Auto-detects roles, colors, and thermal scores to schedule outfits for their actual physical wardrobe.
+- **Digital Closet AI Visuals**: Uses Client-side AI (`@imgly/background-removal`) to automatically remove backgrounds from uploaded garment photos and stores them locally via IndexedDB.
 
 ## 🚀 Getting Started
 
@@ -37,6 +38,7 @@ This project is rigorously tested using the Agentic App Harness constraints:
 ## 📝 Future Roadmap (TODOs)
 
 - [x] **Physical Packing Checklist**: Interactive checklist with persistent `localStorage` state.
+- [x] **Text & Markdown Digital Closet Importer**: Upload custom `.txt` or `.md` files to schedule outfits for real wardrobes.
 - [ ] **Non-Clothing Gear Categories**: Expand Knapsack Physics to include tech pouches, toiletry kits, and document organizers.
 - [ ] **Multi-City Itineraries**: Expand weather fetcher and itinerary generator to handle complex multi-city trips with varying climates.
 - [ ] **Mobile App Port**: Migrate the core logic engine into React Native for iOS/Android distribution.
