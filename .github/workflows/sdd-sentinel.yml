@@ -1,4 +1,4 @@
-name: SDD Sentinel & PR Quality Agent
+name: SDD Sentinel (Spec & Quality Gate)
 
 on:
   pull_request:
@@ -62,7 +62,7 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const body = `### 🤖 SDD Sentinel & PR Quality Agent Report
+            const body = `### 🤖 SDD Sentinel — Spec & Quality Gate Report
 
             ✅ **All required harness gates passed on this PR.**
             - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap, so this is enforced, not aspirational.

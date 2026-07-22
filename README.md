@@ -1,8 +1,10 @@
 # Agentic App Harness
 
-Welcome to the **Agentic App Harness**. This monorepo is engineered for high-velocity **Spec-Driven Development (SDD)** with AI coding agents.
+A **spec-driven development (SDD) harness** for building and maintaining production-grade web & mobile apps with AI coding assistants — where the quality bar (runtime schemas, unit + E2E tests, accessibility, spec coverage) is **enforced in CI, not just documented**.
 
-It hosts fullstack web and mobile applications (e.g., `MoodDiner`, `Portfolio Showcase Hub`, `Travel Packing App`, `Smart Kitchen Recipe Manager`) and enforces strict SDD, Contract-First schema validation, BDD testing, and zero-drift harness engineering.
+> **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents (e.g. Claude Code) working under the strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. It is not itself a runtime AI/LLM system; the thing on display is the engineering process and tooling.
+
+It hosts four real, deployed applications and holds every one of them to the same enforced standard.
 
 ---
 
@@ -23,15 +25,16 @@ It hosts fullstack web and mobile applications (e.g., `MoodDiner`, `Portfolio Sh
   - `projects/travel-packing-app`: Smart Wardrobe Packing Assistant (Port 3000).
   - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3001).
 - `specs/`: Markdown specifications for every application. These are the **single source of truth**.
-- `scripts/`: Master verification, build cleanup, mobile initialization, and scaffolding scripts (`test-app.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`).
-- `.agents/`: Harness Control Layer. Contains `AGENTS.md` which dictates strict engineering rules for AI agents.
+- `scripts/`: Master harness CLI, verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`).
+- `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo.
 
 ---
 
-## Engineering Standards & Methodologies
+## Engineering Standards (enforced, not aspirational)
 
-1. **Spec-Driven Development (SDD)**: Specs dictate architecture, data models, and acceptance criteria before writing code.
-2. **Contract-First Schema Validation (Zod)**: All application data models are defined as runtime Zod schemas (`zod`), with inferred TypeScript types (`z.infer<typeof Schema>`).
-3. **Behavior-Driven Development (BDD)**: All E2E and Unit test suites follow `Given [Context] -> When [User Action] -> Then [Expected Outcome]` format.
-4. **Mandatory Testing & Verification**: All applications must pass `.\scripts\test-app.ps1 -AppName <AppName>` (Security, Lint, Type-Check, Vitest, Playwright, Axe A11y).
-5. **Continuous Learning Loops**: Lessons learned, edge cases, and user rules are automatically persisted in `.agents/AGENTS.md`.
+1. **Spec-Driven Development (SDD)**: Specs dictate architecture, data models, and acceptance criteria before code is written.
+2. **Contract-First Schema Validation (Zod)**: Every app defines its data models as runtime Zod schemas and infers its TypeScript types from them (`z.infer<typeof Schema>`), validating untrusted input (storage, imports) at the boundary.
+3. **Behavior-Driven Development (BDD)**: All E2E and unit scenarios follow `Given [Context] -> When [Action] -> Then [Outcome]`.
+4. **Mandatory Testing & Verification**: Each app must pass `.\scripts\test-app.ps1 -AppName <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility.
+5. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict` on pull requests — which **fails the build** if any app is missing a spec, Zod schema, or BDD specs. Compliance is a gate, not a claim.
+6. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated.
