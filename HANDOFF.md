@@ -10,6 +10,7 @@
 - **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1`), clean code with 0 linting/type errors, 100% unit & E2E/a11y test pass rate. Pushed to remote GitHub (`origin/master`).
 
 ## 2. Key Accomplishments
+- **SDD Sentinel & PR Quality Agent Workflow (`.github/workflows/sdd-sentinel.yml`):** Active GitHub Agent workflow (ID: `317949708`) triggered on Pull Requests. Automatically audits spec coverage, verifies Zod schemas, executes master harness tests, and posts PR status reports.
 - **GitHub Branch Protection Ruleset (`Master Branch Protection Ruleset`):** Active ruleset (ID: `19529636`) protecting `master` branch: prevents branch deletion (`deletion`), prevents force pushing (`non_fast_forward`), dismisses stale PR reviews on push, and enforces review thread resolution before merge.
 - **Monorepo Security & Robustness Suite:**
   - **HTML Security Headers:** Added `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `Referrer-Policy: strict-origin-when-cross-origin` meta headers to `mood-diner` and `portfolio-hub` HTML headers.
