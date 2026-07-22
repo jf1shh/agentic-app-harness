@@ -6,11 +6,24 @@
   --secondary: #f59e0b;
   --background: #f8fafc;
   --surface: #ffffff;
-  --surface-glass: rgba(255, 255, 255, 0.7);
+  --surface-glass: rgba(255, 255, 255, 0.75);
   --text: #0f172a;
   --text-muted: #64748b;
   --border: #e2e8f0;
   --success: #10b981;
+}
+
+[data-theme='dark'] {
+  --primary: #38bdf8;
+  --primary-hover: #0284c7;
+  --secondary: #fbbf24;
+  --background: #0f172a;
+  --surface: #1e293b;
+  --surface-glass: rgba(30, 41, 59, 0.85);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --success: #34d399;
 }
 
 * {
@@ -25,6 +38,10 @@ body {
   background-image: radial-gradient(circle at 100% 100%, #e0f2fe 0, #f8fafc 100%);
   color: var(--text);
   min-height: 100vh;
+}
+
+[data-theme='dark'] body {
+  background-image: radial-gradient(circle at 100% 100%, #1e293b 0, #0f172a 100%);
 }
 
 /* Base styles and Glassmorphism */
@@ -79,7 +96,8 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   transition: all 0.2s;
-  background: white;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .input-field:focus {

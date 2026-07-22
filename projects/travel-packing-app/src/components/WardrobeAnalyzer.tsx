@@ -55,13 +55,13 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '16px' }}>
-          <h3 style={{ fontSize: '1.2rem', color: '#64748b' }}>Flexibility Score</h3>
+          <h3 style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Flexibility Score</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
             {(report.flexibilityScore * 100).toFixed(0)}%
           </p>
         </div>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '16px' }}>
-          <h3 style={{ fontSize: '1.2rem', color: '#64748b' }}>MVP Item</h3>
+          <h3 style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>MVP Item</h3>
           <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)', marginTop: '8px' }}>
             {report.mvpItemId ? getGarmentName(report.mvpItemId) : 'None'}
           </p>
@@ -81,7 +81,7 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
           <h3 style={{ color: '#f59e0b', marginBottom: '8px' }}>💡 Smart Swap Suggestion</h3>
           <p><strong>Swap out:</strong> {getGarmentName(report.swapSuggestion.removeId)}</p>
           <p><strong>Swap in:</strong> {report.swapSuggestion.suggestion}</p>
-          <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '8px' }}><em>Why? {report.swapSuggestion.reason}</em></p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '8px' }}><em>Why? {report.swapSuggestion.reason}</em></p>
         </div>
       )}
 

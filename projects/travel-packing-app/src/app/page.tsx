@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import WardrobeAnalyzer from '../components/WardrobeAnalyzer';
 import { Garment, DayItinerary, WearabilityReport } from '../types';
 import { analyzeWardrobe } from '../utils/wardrobeEngine';
@@ -33,6 +33,32 @@ export default function Home() {
   const [closetSource, setClosetSource] = useState<'archetype' | 'custom'>('archetype');
   const [customGarments, setCustomGarments] = useState<Garment[]>([]);
   const [customFileName, setCustomFileName] = useState('');
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    try {
+      const savedTheme = localStorage.getItem('packright_theme') as 'light' | 'dark' | null;
+      if (savedTheme) return savedTheme;
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    } catch {
+      // Ignore fallback
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem('packright_theme', nextTheme);
+    } catch {
+      // Ignore fallback
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,9 +113,16 @@ export default function Home() {
 
   return (
     <main className="container" style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
-      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+      <header style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
+        <button 
+          onClick={toggleTheme} 
+          className="btn-secondary" 
+          style={{ position: 'absolute', right: 0, top: 0, fontSize: '0.9rem', padding: '6px 12px' }}
+        >
+          {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+        </button>
         <h1 suppressHydrationWarning style={{ fontSize: '2.5rem', marginBottom: '8px', color: 'var(--primary)' }}>PackRight V4</h1>
-        <p suppressHydrationWarning style={{ fontSize: '1.2rem', color: '#64748b' }}>Live Weather & Intelligent Wardrobe Analyzer</p>
+        <p suppressHydrationWarning style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Live Weather & Intelligent Wardrobe Analyzer</p>
       </header>
 
       <div className="glass-panel" style={{ padding: '24px' }}>
