@@ -2,6 +2,10 @@
 
 LexiVault is a 100% client-side, zero-telemetry financial RAG (Retrieval-Augmented Generation) and legal compliance engine tailored for lawyers, law firms, corporate counsel, and financial auditors.
 
+- **Live GitHub Pages App**: [https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/](https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/)
+
+---
+
 ## 🛡️ Enterprise Defense-in-Depth Hardening Layers
 1. **Zero-Exfiltration Content Security Policy (CSP)**: Meta CSP enforcing `connect-src 'self' data: blob:` to block all outbound HTTP/WebSocket network calls and prevent data exfiltration by browser extensions.
 2. **PBKDF2 Key Derivation (100,000 Iterations)**: AES-256 GCM key derivation using PBKDF2 with SHA-256 and cryptographic salts from user Vault Passphrases.
@@ -10,7 +14,29 @@ LexiVault is a 100% client-side, zero-telemetry financial RAG (Retrieval-Augment
 5. **Cryptographic Blockchain-Style Hash Chaining**: Every `AuditLogEntry` is chained to the previous entry's SHA-256 hash stamp. Modifying or deleting any past audit entry invalidates the entire chain.
 6. **Legal Classification Watermarks**: Overlay watermark (`CONFIDENTIAL & ATTORNEY-CLIENT PRIVILEGED`) across document previews and compliance report exports.
 
-## 🧪 Verification & Testing
+---
+
+## 🚀 Running Locally
+```bash
+# Navigate to application directory
+cd projects/legal-financial-rag
+
+# Install dependencies
+npm install
+
+# Run local development server (Port 3009)
+npm run dev -- --port 3009
+
+# Execute unit test suite
+npm run test
+
+# Execute E2E & accessibility tests
+npx playwright test
+```
+
+---
+
+## 🧪 Master Harness Verification
 Passed master harness verification suite: `.\scripts\test-app.ps1 -AppName legal-financial-rag`
 - **Security Audit**: 0 vulnerabilities (`npm audit`)
 - **Linting & Code Quality**: 0 errors/warnings (`eslint`)

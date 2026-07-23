@@ -7,8 +7,8 @@
   - `MoodDiner`: `https://jf1shh.github.io/agentic-app-harness/mood-diner/`
   - `Travel Packing App`: `https://jf1shh.github.io/agentic-app-harness/travel-packing-app/`
   - `Smart Recipe Manager`: `https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/`
-  - `LexiVault Financial RAG`: `projects/legal-financial-rag` (100% Client-Side Private RAG for Legal Counsel & Financial Compliance)
-- **Status:** Fully functional, verified via master harness script (`.\scripts\test-app.ps1 -AppName legal-financial-rag`), clean code with 0 linting/type errors, 100% unit & E2E/a11y test pass rate.
+  - `LexiVault Financial RAG`: `https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/` (100% Client-Side Private RAG for Legal Counsel & Financial Compliance)
+- **CI Status:** 100% GREEN on `master` branch across both `Harness Testing Suite` and `Deploy Portfolio Hub & All Apps to GitHub Pages` GitHub Actions workflows.
 
 ## 2. Key Accomplishments
 - **Built LexiVault Financial RAG (`legal-financial-rag`)**:
@@ -21,7 +21,7 @@
   - **Rigorous Test Suite**: Passed master harness script `.\scripts\test-app.ps1 -AppName legal-financial-rag` with 0 security vulnerabilities, 0 linting errors, 0 type errors, 19/19 Vitest unit tests passing, and 7/7 Playwright E2E & WCAG AA accessibility tests passing.
 
 ## 3. Test & Compliance Gates
-- **Security Audit:** `npm audit --audit-level=high` (0 vulnerabilities)
+- **Security Audit:** `npm audit` (0 vulnerabilities)
 - **Linting:** ESLint clean (0 errors, 0 warnings)
 - **Type Check:** `tsc --noEmit` clean (0 type errors)
 - **Unit Tests:** Vitest 19/19 tests passed
