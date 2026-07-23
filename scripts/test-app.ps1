@@ -29,7 +29,7 @@ if (Test-Path $cleanScript) {
 # via a relative path in a loop (e.g. ci.yml).
 Push-Location $targetPath
 
-if (-Not (Test-Path "node_modules")) {
+if (-Not (Test-Path "node_modules/@playwright/test")) {
     Write-Host "`n[1/6] Installing dependencies..." -ForegroundColor Cyan
     # Use `npm install` (not `npm ci`) intentionally: with the vite 8 / rolldown
     # toolchain, `npm ci` can skip a platform's optional native binary
