@@ -39,10 +39,12 @@ export async function deriveKeyFromPassphrase(
     saltBytes = window.crypto.getRandomValues(new Uint8Array(16));
   }
 
+  const saltBuffer = new Uint8Array(saltBytes);
+
   const derivedKey = await window.crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: saltBytes.buffer as ArrayBuffer,
+      salt: saltBuffer as unknown as BufferSource,
       iterations: 100000,
       hash: 'SHA-256',
     },
@@ -52,7 +54,7 @@ export async function deriveKeyFromPassphrase(
     ['encrypt', 'decrypt']
   );
 
-  const generatedSaltHex = Array.from(saltBytes)
+  const generatedSaltHex = Array.from(saltBuffer)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 
