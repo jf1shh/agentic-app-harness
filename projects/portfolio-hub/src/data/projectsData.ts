@@ -2,6 +2,26 @@ import { ProjectItem, ProjectItemSchema } from '../schemas';
 
 const RAW_PROJECTS: ProjectItem[] = [
   {
+    id: 'legal-financial-rag',
+    name: 'LexiVault Financial RAG',
+    tagline: '100% Private Client-Side Legal RAG & Security Engine',
+    description: 'Zero-telemetry legal contract analysis, clause-preserving chunker, BM25 text ranker, cosine vector similarity, automated PII redaction, PBKDF2 100k key derivation, and blockchain-style audit log.',
+    category: 'Legal',
+    techStack: ['React', 'Vite', 'TypeScript', 'Vitest', 'Playwright', 'Axe-Core', 'WebCrypto', 'PWA'],
+    metrics: {
+      unitTests: 19,
+      e2eTests: 7,
+      a11yScore: '100% WCAG 2.0 AA',
+      securityAudit: '0 High Vulnerabilities',
+    },
+    pwaReady: true,
+    capacitorAndroid: true,
+    monetized: true,
+    specPath: 'specs/legal-financial-rag-spec.md',
+    demoUrl: 'https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/',
+    githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/legal-financial-rag',
+  },
+  {
     id: 'mood-diner',
     name: 'MoodDiner',
     tagline: 'Weather-Aware Restaurant Recommender & Instant Table Booking Engine',

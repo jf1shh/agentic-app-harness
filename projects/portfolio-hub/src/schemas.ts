@@ -12,7 +12,7 @@ export const ProjectItemSchema = z.object({
   name: z.string(),
   tagline: z.string(),
   description: z.string(),
-  category: z.enum(['Dining', 'Utility', 'Kitchen']),
+  category: z.enum(['Dining', 'Utility', 'Kitchen', 'Legal']),
   techStack: z.array(z.string()),
   metrics: ProjectMetricsSchema,
   pwaReady: z.boolean(),

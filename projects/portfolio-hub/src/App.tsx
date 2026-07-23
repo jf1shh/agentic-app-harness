@@ -8,7 +8,7 @@ export const App: React.FC = () => {
   const [selectedSpecProject, setSelectedSpecProject] = useState<ProjectItem | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
-  const categories = ['All', 'Dining', 'Utility', 'Kitchen'];
+  const categories = ['All', 'Legal', 'Dining', 'Utility', 'Kitchen'];
 
   const filteredProjects = PROJECTS_DATA.filter((p) => {
     if (activeCategory === 'All') return true;

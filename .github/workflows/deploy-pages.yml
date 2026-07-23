@@ -35,6 +35,7 @@ jobs:
             projects/mood-diner/package-lock.json
             projects/travel-packing-app/package-lock.json
             projects/smart-recipe-app/package-lock.json
+            projects/legal-financial-rag/package-lock.json
 
       # 1. Build Portfolio Hub (Root Showcase Site)
       - name: Build Portfolio Hub
@@ -69,6 +70,15 @@ jobs:
           npm run build
           mkdir -p ../portfolio-hub/dist/smart-recipe-app
           cp -r out/* ../portfolio-hub/dist/smart-recipe-app/
+
+      # 5. Build LexiVault Legal Financial RAG -> dist/legal-financial-rag
+      - name: Build LexiVault Legal Financial RAG
+        run: |
+          cd projects/legal-financial-rag
+          npm install
+          npm run build
+          mkdir -p ../portfolio-hub/dist/legal-financial-rag
+          cp -r dist/* ../portfolio-hub/dist/legal-financial-rag/
 
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v5
