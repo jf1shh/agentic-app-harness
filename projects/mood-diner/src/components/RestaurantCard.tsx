@@ -172,7 +172,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
         </div>
 
         {/* CTA Buttons */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: 'auto', paddingTop: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '10px', marginTop: 'auto', paddingTop: '8px' }}>
           <button
             onClick={() => onSelect(restaurant, 'menu')}
             className="btn-secondary"

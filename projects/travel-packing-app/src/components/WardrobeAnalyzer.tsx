@@ -53,7 +53,7 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
     <div className="glass-panel" style={{ marginTop: '32px', padding: '24px' }}>
       <h2 style={{ marginBottom: '24px', color: 'var(--primary)' }}>Wardrobe Wearability Report</h2>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '16px', marginBottom: '16px' }}>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '16px' }}>
           <h3 style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Flexibility Score</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
@@ -86,7 +86,7 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
       )}
 
       <h3 style={{ marginBottom: '16px' }}>Digital Closet</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '16px', marginBottom: '32px' }}>
         {garments.map(g => (
           <div key={g.id} className="glass-panel" style={{ padding: '16px', textAlign: 'center' }}>
             <div style={{ width: '100px', height: '100px', margin: '0 auto 8px auto', backgroundColor: '#1e293b', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>

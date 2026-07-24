@@ -23,7 +23,7 @@ export default function InventoryClient({ initialInventory }: { initialInventory
   }
 
   return (
-    <div className="grid grid-cols-2" style={{ gridTemplateColumns: '1fr 2fr' }}>
+    <div className="grid grid-sidebar">
       <div className="glass-panel" style={{ alignSelf: 'start' }}>
         <h2>Add Item</h2>
         <form ref={formRef} action={handleAdd}>

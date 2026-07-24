@@ -33,7 +33,7 @@ export default function PlannerClient({ initialPlan, recipes }: { initialPlan: M
   const sortedDates = Object.keys(groupedPlan).sort()
 
   return (
-    <div className="grid grid-cols-2" style={{ gridTemplateColumns: '1fr 2fr' }}>
+    <div className="grid grid-sidebar">
       <div className="glass-panel" style={{ alignSelf: 'start' }}>
         <h2>Schedule a Meal</h2>
         {recipes.length === 0 ? (

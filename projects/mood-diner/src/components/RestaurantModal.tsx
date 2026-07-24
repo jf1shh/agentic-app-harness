@@ -220,7 +220,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
               </div>
 
               {/* Location & Operating Details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <MapPin size={16} color="#f59e0b" /> Address & Distance Radius
@@ -354,7 +354,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
                 })}
               </div>
 
-              <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
                 <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', padding: '14px' }}>
                   <div style={{ fontWeight: 700, color: '#34d399', fontSize: '0.9rem' }}>💡 Best for Quiet & Intimate Conversation</div>
                   <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginTop: '4px' }}>
@@ -394,7 +394,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
               ) : (
                 <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Date</label>
                       <input
@@ -424,7 +424,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Party Size</label>
                       <select

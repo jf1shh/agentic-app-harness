@@ -153,7 +153,7 @@ export const AddRealRestaurantModal: React.FC<AddRealRestaurantModalProps> = ({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', color: '#94a3b8', marginBottom: '4px' }}>Cuisine</label>
               <input
@@ -182,7 +182,7 @@ export const AddRealRestaurantModal: React.FC<AddRealRestaurantModalProps> = ({
 
           <div>
             <label style={{ display: 'block', fontSize: '0.82rem', color: '#94a3b8', marginBottom: '4px' }}>Real Street Address & Website URL</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '10px' }}>
               <input
                 type="text"
                 placeholder="Address (e.g. 654 Yount St)"
@@ -208,7 +208,7 @@ export const AddRealRestaurantModal: React.FC<AddRealRestaurantModalProps> = ({
               Multi-Source Review Ratings Input
             </span>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '12px', marginTop: '10px' }}>
               <div>
                 <label style={{ fontSize: '0.75rem', color: '#60a5fa' }}>Google Stars & Reviews</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
