@@ -14,6 +14,18 @@ test.describe('Smart Recipe App', () => {
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 
+  test('Given a stocked pantry, When the dashboard loads, Then it recommends a cookable recipe', async ({ page }) => {
+    // Given the default pantry is stocked for pesto (basil, garlic, olive oil, parmesan, pine nuts)
+    // When the dashboard loads
+    await page.goto('/');
+
+    // Then the recommendations panel surfaces the best-matching recipe with its stats
+    const panel = page.locator('.glass-panel', { hasText: 'Cook with what you have' });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText('Classic Pesto Pasta')).toBeVisible();
+    await expect(panel.getByText(/ingredients on hand/)).toBeVisible();
+  });
+
   test('Given the inventory page, When a user adds an item, Then it appears in the list', async ({ page }) => {
     // Given the inventory page is open
     await page.goto('/inventory');
