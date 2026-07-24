@@ -14,7 +14,7 @@ import {
 } from './security/encryption';
 import { detectAndRedactPII, togglePIIMask } from './security/piiRedactor';
 import { chunkDocument, generateSimpleEmbedding } from './rag/chunker';
-import { cosineSimilarity, searchHybrid } from './rag/vectorEngine';
+import { cosineSimilarity, searchHybrid, calculateBM25Score } from './rag/vectorEngine';
 import { processRAGQuery } from './rag/queryProcessor';
 import { exportAuditToJSON, exportAuditToMarkdown } from './export/auditExporter';
 import { SAMPLE_DOCUMENTS } from './datasets/authenticSampleDocs';
@@ -216,6 +216,44 @@ describe('LexiVault Hardened Engine Unit Test Suite', () => {
 
       expect(cosineSimilarity(vecA, vecB)).toBeCloseTo(1.0);
       expect(cosineSimilarity(vecA, vecC)).toBeCloseTo(0.0);
+    });
+
+    it('scores BM25 identically to a naive term-frequency reference', () => {
+      // Reference implementation: re-scan the token array for every query term.
+      // The optimized calculateBM25Score must match this bit-for-bit so the
+      // performance rewrite provably preserves ranking precision.
+      const naiveBM25 = (
+        queryTokens: string[],
+        chunkTokens: string[],
+        avgDocLen: number,
+        k1 = 1.5,
+        b = 0.75
+      ): number => {
+        if (queryTokens.length === 0 || chunkTokens.length === 0) return 0;
+        let score = 0;
+        const docLen = chunkTokens.length;
+        for (const qToken of queryTokens) {
+          const termFreq = chunkTokens.filter((t) => t === qToken).length;
+          if (termFreq > 0) {
+            const numerator = termFreq * (k1 + 1);
+            const denominator = termFreq + k1 * (1 - b + (b * docLen) / (avgDocLen || 1));
+            score += numerator / denominator;
+          }
+        }
+        return Math.min(1.0, score / (queryTokens.length * 2));
+      };
+
+      const cases: Array<{ q: string[]; d: string[]; avg: number }> = [
+        { q: ['debt', 'ratio'], d: ['debt', 'ratio', 'covenant', 'debt'], avg: 4 },
+        { q: ['leverage'], d: ['leverage', 'leverage', 'leverage'], avg: 3 },
+        { q: ['missing'], d: ['debt', 'ratio'], avg: 2 },
+        { q: ['a', 'b', 'c'], d: ['a', 'a', 'b', 'd', 'e', 'f'], avg: 5.5 },
+        { q: [], d: ['x'], avg: 1 },
+      ];
+
+      for (const { q, d, avg } of cases) {
+        expect(calculateBM25Score(q, d, avg)).toBe(naiveBM25(q, d, avg));
+      }
     });
 
     it('enforces security privilege filtering during hybrid retrieval', () => {
