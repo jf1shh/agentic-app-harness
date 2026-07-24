@@ -47,6 +47,11 @@ jobs:
           npx playwright install --with-deps chromium
           Pop-Location
 
+      - name: Harness Sense Layer (informational drift & guardrail scan)
+        shell: powershell
+        run: |
+          node .\scripts\harness-status.mjs
+
       - name: Run Spec & Schema Coverage Audit
         shell: powershell
         run: |

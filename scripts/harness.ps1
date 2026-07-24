@@ -23,6 +23,8 @@ function Show-Help {
   Write-Host "  test all          - Run harness security, lint, tsc, Vitest & Playwright tests across ALL apps" -ForegroundColor Gray
   Write-Host "  test <appName>    - Run harness tests for a specific application" -ForegroundColor Gray
   Write-Host "  validate          - Run static spec & schema coverage validator" -ForegroundColor Gray
+  Write-Host "  status            - Sense layer: scan all apps, write harness-status.json + report" -ForegroundColor Gray
+  Write-Host "  tasks             - Propose layer: generate agent work orders under tasks/ from findings" -ForegroundColor Gray
   Write-Host "  clean             - Clean build caches and test reports across all projects" -ForegroundColor Gray
   Write-Host "  scaffold <name>   - Scaffold a new app specification and project boilerplate" -ForegroundColor Gray
   Write-Host "  mobile <appName>  - Build & sync Capacitor native Android assets for an app" -ForegroundColor Gray
@@ -43,6 +45,20 @@ switch ($Command.ToLower()) {
   "validate" {
     Write-Host "Running Harness Spec & Schema Coverage Validator..." -ForegroundColor Cyan
     & "$PSScriptRoot\validate-specs.ps1"
+  }
+
+  "status" {
+    Write-Host "Running Harness Sense Layer (deterministic status scan)..." -ForegroundColor Cyan
+    $statusArgs = @("$PSScriptRoot\harness-status.mjs")
+    if ($Target -eq "-Strict" -or $Target -eq "strict") { $statusArgs += "--strict" }
+    & node @statusArgs
+  }
+
+  "tasks" {
+    Write-Host "Running Harness Propose Layer (agent work-order generation)..." -ForegroundColor Cyan
+    $taskArgs = @("$PSScriptRoot\emit-tasks.mjs")
+    if ($Target -eq "-Prune" -or $Target -eq "prune") { $taskArgs += "--prune" }
+    & node @taskArgs
   }
 
   "test" {
