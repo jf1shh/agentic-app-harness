@@ -263,3 +263,10 @@ input:focus, select:focus, textarea:focus {
     align-items: flex-start;
   }
 }
+
+@media (max-width: 640px) {
+  .main-wrapper { padding: 1rem; }
+  .view-card { padding: 1.25rem; }
+  .nav-tabs { flex-wrap: wrap; }
+  .header-nav { padding: 1rem; }
+}

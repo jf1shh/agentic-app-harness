@@ -26,6 +26,20 @@ const CASES = {
     bad: ['salt: saltBytes.buffer,', 'const s = saltRaw.buffer;'],
     good: ['salt: new Uint8Array(saltBytes),', 'salt: saltBytes,'],
   },
+  'responsive-grid': {
+    bad: [
+      "gridTemplateColumns: '1fr 1fr'",
+      "gridTemplateColumns: '1fr 2fr'",
+      "gridTemplateColumns: '1fr 1fr 1fr'",
+      'grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));',
+    ],
+    good: [
+      "gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))'",
+      'grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));',
+      "gridTemplateColumns: '1fr'",
+      'grid-template-columns: 1fr 1fr; /* handled by @media below */',
+    ],
+  },
 };
 
 let failures = 0;

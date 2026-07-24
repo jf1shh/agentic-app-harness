@@ -135,7 +135,7 @@ export default function Home() {
             <label htmlFor="dest" className="label">Destination</label>
             <input id="dest" className="input-field" value={destination} onChange={e => setDestination(e.target.value)} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
               <label htmlFor="start" className="label">Start Date</label>
               <input id="start" type="date" className="input-field" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -170,7 +170,7 @@ export default function Home() {
             </div>
 
             {closetSource === 'archetype' ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '16px' }}>
                 <div>
                   <label htmlFor="archetype" className="label">Fashion Archetype</label>
                   <select id="archetype" className="input-field" value={archetype} onChange={e => setArchetype(e.target.value)}>
@@ -216,7 +216,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
               <label htmlFor="suitcase" className="label">Suitcase</label>
               <select id="suitcase" className="input-field" value={selectedSuitcase} onChange={e => setSelectedSuitcase(e.target.value)}>
@@ -245,7 +245,7 @@ export default function Home() {
         <>
           <div className="glass-panel" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>Knapsack Engine: Luggage Physics</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
               <div style={{ padding: '16px', border: `2px solid ${physics.fitsInSuitcase ? 'var(--primary)' : 'red'}`, borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>Volume & Weight</h3>
                 <p><strong>Weight:</strong> {physics.totalWeightKg.toFixed(2)}kg / {physics.weightLimitKg}kg Limit</p>

@@ -89,7 +89,7 @@ export default function PackingChecklist({ garments, tripDays }: Props) {
       </div>
 
       {/* Wardrobe Items */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '24px' }}>
         <div>
           <h3 style={{ marginBottom: '12px', color: 'var(--primary)' }}>Garments to Pack</h3>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
