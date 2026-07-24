@@ -14,8 +14,15 @@
 //
 // Usage:
 //   node scripts/harness-status.mjs            # report + write status file
-//   node scripts/harness-status.mjs --strict   # exit 1 if any finding exists
-//   node scripts/harness-status.mjs --quiet     # write status file, minimal stdout
+//   node scripts/harness-status.mjs --strict   # exit 1 if ANY finding exists
+//   node scripts/harness-status.mjs --gate     # VERIFY gate: exit 1 only on
+//                                              #   blocking findings (guardrail
+//                                              #   regressions + missing spec)
+//   node scripts/harness-status.mjs --quiet    # write status file, minimal stdout
+//
+// This module is also importable (e.g. by harness-status.test.mjs): the run
+// block only executes when invoked directly, and GUARDRAILS / senseApp /
+// collectStatus / isBlocking are exported.
 
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative, extname, dirname } from 'node:path';
@@ -25,10 +32,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
 const projectsDir = join(repoRoot, 'projects');
 const specsDir = join(repoRoot, 'specs');
-
-const args = new Set(process.argv.slice(2));
-const strict = args.has('--strict');
-const quiet = args.has('--quiet');
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.vite', 'coverage', 'android', 'playwright-report', 'test-results']);
 
@@ -206,55 +209,102 @@ function senseApp(app) {
 }
 
 // ---------------------------------------------------------------------------
-// Run
+// Blocking policy — the VERIFY gate. A finding blocks a merge only if it is a
+// regression we have already paid for: a guardrail violation, or a missing
+// spec (the hard SDD mandate). Spec drift and manual-review findings are
+// legitimate open work and only inform — blocking them would paint every PR
+// red until every spec is 100% implemented.
 // ---------------------------------------------------------------------------
-const apps = existsSync(projectsDir)
-  ? readdirSync(projectsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
-  : [];
-
-let findings = [];
-for (const app of apps) findings = findings.concat(senseApp(app));
-
-const severityRank = { high: 0, medium: 1, low: 2 };
-findings.sort((a, b) => (severityRank[a.severity] - severityRank[b.severity]) || a.app.localeCompare(b.app));
-
-const byType = {}, bySeverity = {};
-for (const f of findings) {
-  byType[f.type] = (byType[f.type] || 0) + 1;
-  bySeverity[f.severity] = (bySeverity[f.severity] || 0) + 1;
+export function isBlocking(f) {
+  if (f.type === 'guardrail') return true;
+  if (f.type === 'missing-artifact' && f.severity === 'high') return true; // missing spec
+  return false;
 }
 
-const status = {
-  generatedAt: new Date().toISOString(),
-  repo: 'jf1shh/agentic-app-harness',
-  appsScanned: apps,
-  summary: { total: findings.length, byType, bySeverity },
-  findings,
-};
+// Collect findings across all apps into a status object (no I/O).
+export function collectStatus() {
+  const apps = existsSync(projectsDir)
+    ? readdirSync(projectsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
+    : [];
 
-const outPath = join(repoRoot, 'harness-status.json');
-writeFileSync(outPath, JSON.stringify(status, null, 2) + '\n');
+  let findings = [];
+  for (const app of apps) findings = findings.concat(senseApp(app));
 
-if (!quiet) {
-  const C = { cyan: '\x1b[36m', yellow: '\x1b[33m', red: '\x1b[31m', green: '\x1b[32m', gray: '\x1b[90m', reset: '\x1b[0m' };
-  const sevColor = { high: C.red, medium: C.yellow, low: C.gray };
-  console.log(`${C.cyan}=========================================${C.reset}`);
-  console.log(`${C.cyan} Harness Status — Deterministic Senses${C.reset}`);
-  console.log(`${C.cyan}=========================================${C.reset}`);
-  console.log(`Apps scanned: ${apps.length} | Findings: ${findings.length}`);
-  if (findings.length === 0) {
-    console.log(`${C.green}\nNo findings. All sensed gates are clean.${C.reset}`);
-  } else {
-    let currentApp = null;
-    for (const f of findings) {
-      if (f.app !== currentApp) { currentApp = f.app; console.log(`\n${C.yellow}[${f.app}]${C.reset}`); }
-      const sc = sevColor[f.severity] || '';
-      console.log(`  ${sc}[${f.severity.toUpperCase()}]${C.reset} (${f.type}) ${f.title}`);
-      if (f.evidence?.length) console.log(`${C.gray}      e.g. ${f.evidence[0].file}:${f.evidence[0].line}${C.reset}`);
-    }
-    console.log(`\n${C.cyan}Summary:${C.reset} ` + Object.entries(bySeverity).map(([k, v]) => `${v} ${k}`).join(' | '));
+  const severityRank = { high: 0, medium: 1, low: 2 };
+  findings.sort((a, b) =>
+    (Number(isBlocking(b)) - Number(isBlocking(a))) ||
+    (severityRank[a.severity] - severityRank[b.severity]) ||
+    a.app.localeCompare(b.app));
+
+  for (const f of findings) f.blocking = isBlocking(f);
+
+  const byType = {}, bySeverity = {};
+  for (const f of findings) {
+    byType[f.type] = (byType[f.type] || 0) + 1;
+    bySeverity[f.severity] = (bySeverity[f.severity] || 0) + 1;
   }
-  console.log(`\n${C.gray}Wrote ${rel(outPath)} — run 'node scripts/emit-tasks.mjs' to generate agent work orders.${C.reset}`);
+  const blocking = findings.filter((f) => f.blocking).length;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    repo: 'jf1shh/agentic-app-harness',
+    appsScanned: apps,
+    summary: { total: findings.length, blocking, byType, bySeverity },
+    findings,
+  };
 }
 
-if (strict && findings.length > 0) process.exit(1);
+// ---------------------------------------------------------------------------
+// Run (only when invoked directly, so the module stays importable for tests)
+// ---------------------------------------------------------------------------
+function main() {
+  const args = new Set(process.argv.slice(2));
+  const strict = args.has('--strict');
+  const gate = args.has('--gate');
+  const quiet = args.has('--quiet');
+
+  const status = collectStatus();
+  const { findings } = status;
+  const outPath = join(repoRoot, 'harness-status.json');
+  writeFileSync(outPath, JSON.stringify(status, null, 2) + '\n');
+
+  if (!quiet) {
+    const C = { cyan: '\x1b[36m', yellow: '\x1b[33m', red: '\x1b[31m', green: '\x1b[32m', gray: '\x1b[90m', reset: '\x1b[0m' };
+    const sevColor = { high: C.red, medium: C.yellow, low: C.gray };
+    console.log(`${C.cyan}=========================================${C.reset}`);
+    console.log(`${C.cyan} Harness Status${gate ? ' — VERIFY Gate' : ' — Deterministic Senses'}${C.reset}`);
+    console.log(`${C.cyan}=========================================${C.reset}`);
+    console.log(`Apps scanned: ${status.appsScanned.length} | Findings: ${findings.length} | Blocking: ${status.summary.blocking}`);
+    if (findings.length === 0) {
+      console.log(`${C.green}\nNo findings. All sensed gates are clean.${C.reset}`);
+    } else {
+      let currentApp = null;
+      for (const f of findings) {
+        if (f.app !== currentApp) { currentApp = f.app; console.log(`\n${C.yellow}[${f.app}]${C.reset}`); }
+        const sc = sevColor[f.severity] || '';
+        const flag = f.blocking ? `${C.red}⛔ BLOCKS MERGE${C.reset} ` : '';
+        console.log(`  ${flag}${sc}[${f.severity.toUpperCase()}]${C.reset} (${f.type}) ${f.title}`);
+        if (f.evidence?.length) console.log(`${C.gray}      e.g. ${f.evidence[0].file}:${f.evidence[0].line}${C.reset}`);
+      }
+      console.log(`\n${C.cyan}Summary:${C.reset} ` + Object.entries(status.summary.bySeverity).map(([k, v]) => `${v} ${k}`).join(' | ') + ` | ${status.summary.blocking} blocking`);
+    }
+    if (gate) {
+      if (status.summary.blocking > 0) {
+        console.log(`\n${C.red}VERIFY gate FAILED: ${status.summary.blocking} blocking finding(s) must be resolved before merge.${C.reset}`);
+      } else {
+        console.log(`\n${C.green}VERIFY gate PASSED: no blocking findings.${C.reset}`);
+        if (findings.length) console.log(`${C.gray}(${findings.length} informational finding(s) above do not block.)${C.reset}`);
+      }
+    } else {
+      console.log(`\n${C.gray}Wrote ${rel(outPath)} — run 'node scripts/emit-tasks.mjs' to generate agent work orders.${C.reset}`);
+    }
+  }
+
+  if (gate && status.summary.blocking > 0) process.exit(1);
+  if (strict && findings.length > 0) process.exit(1);
+}
+
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (invokedDirectly) main();
+
+export { GUARDRAILS, senseApp };

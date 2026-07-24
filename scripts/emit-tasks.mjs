@@ -73,8 +73,9 @@ ${evidenceBlock(f)}
 1. Read \`.agents/AGENTS.md\` and, if present, the app's spec before changing code.
 2. Make the change in \`projects/${f.app}\` (or the spec, if the spec is wrong — flag that in the PR).
 3. The acceptance gate above must pass:
+   - \`guardrails\` / missing spec → \`node scripts/harness-status.mjs --gate\` exits 0 (this
+     finding is **blocking**; the offending pattern must be gone from the cited files).
    - \`validate-specs*\` → \`node scripts/harness-status.mjs --strict\` no longer reports \`${f.id}\`.
-   - \`guardrails\` → the offending pattern is gone from the cited files.
    - \`manual-review\` → resolve or explicitly defer each item, updating the spec checkbox accordingly.
 4. Re-run \`node scripts/emit-tasks.mjs --prune\` to retire this work order.
 5. Open a PR — never self-merge; a human reviews.

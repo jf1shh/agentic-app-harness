@@ -4,12 +4,30 @@ This directory is the **propose** half of the harness's agentic loop. It is
 populated automatically; you generally don't hand-write files here.
 
 ```
-SENSE      node scripts/harness-status.mjs   → harness-status.json
-PROPOSE    node scripts/emit-tasks.mjs        → tasks/<finding-id>.md   (you are here)
+SENSE      node scripts/harness-status.mjs        → harness-status.json
+PROPOSE    node scripts/emit-tasks.mjs             → tasks/<finding-id>.md   (you are here)
 ACT        any AI agent claims a task, does the work, opens a PR
-VERIFY     CI re-runs the sensors; the task's acceptance gate must go green
+VERIFY     node scripts/harness-status.mjs --gate  → CI fails on blocking findings
 LEARN      a novel fix becomes a new guardrail in harness-status.mjs
 ```
+
+## What blocks a merge (the Verify gate)
+
+`--gate` (run in CI by `sdd-sentinel.yml`) fails the build **only on blocking
+findings** — the regressions we've already paid for:
+
+| Finding type | Blocks merge? | Rationale |
+|---|---|---|
+| `guardrail` | **yes** | A documented anti-pattern was reintroduced. |
+| `missing-artifact` (missing spec) | **yes** | Hard SDD mandate. |
+| `drift` (unchecked spec features) | no — informs | Legitimate open work; tracked as a task. |
+| `contract` / `test-coverage` | no here* | Already enforced by `validate-specs.ps1 -Strict`. |
+| `manual-review` | no — informs | Needs human judgement. |
+
+\* The guardrails are also self-tested: `scripts/harness-status.test.mjs`
+proves every guardrail fires on a known-bad line and stays silent on a
+known-good one, so the gate itself can't silently rot. Use
+`.\scripts\harness.ps1 verify` to run the self-test + gate locally.
 
 The point of this layer is that **the harness writes the agent's task for it**.
 Nothing here calls an LLM or needs an API key — the AI is a pluggable actuator,
