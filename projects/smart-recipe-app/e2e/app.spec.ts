@@ -19,11 +19,14 @@ test.describe('Smart Recipe App', () => {
     // When the dashboard loads
     await page.goto('/');
 
-    // Then the recommendations panel surfaces the best-matching recipe with its stats
+    // Then the recommendations panel surfaces the best-matching recipe with its stats.
+    // Scope to the top pick's row: the panel lists several recommendations, so a
+    // panel-wide text locator would match multiple stat lines under strict mode.
     const panel = page.locator('.glass-panel', { hasText: 'Cook with what you have' });
     await expect(panel).toBeVisible();
-    await expect(panel.getByText('Classic Pesto Pasta')).toBeVisible();
-    await expect(panel.getByText(/ingredients on hand/)).toBeVisible();
+    const topPick = panel.locator('li', { hasText: 'Classic Pesto Pasta' });
+    await expect(topPick).toBeVisible();
+    await expect(topPick.getByText(/ingredients on hand/)).toBeVisible();
   });
 
   test('Given the inventory page, When a user adds an item, Then it appears in the list', async ({ page }) => {
