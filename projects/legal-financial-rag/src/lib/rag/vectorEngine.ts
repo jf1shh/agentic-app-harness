@@ -34,12 +34,23 @@ export function calculateBM25Score(
   let score = 0;
   const docLen = chunkTokens.length;
 
+  // Count term frequencies in a single O(docLen) pass instead of re-scanning the
+  // whole token array (and allocating a filtered array) for every query token.
+  // This turns per-chunk scoring from O(queryLen * docLen) into O(docLen + queryLen)
+  // — meaningful on the search hot path, which runs this for every eligible chunk.
+  const termFreqs = new Map<string, number>();
+  for (const token of chunkTokens) {
+    termFreqs.set(token, (termFreqs.get(token) ?? 0) + 1);
+  }
+
+  const lenNorm = k1 * (1 - b + (b * docLen) / (avgDocLen || 1));
+
   for (const qToken of queryTokens) {
-    const termFreq = chunkTokens.filter((t) => t === qToken).length;
+    const termFreq = termFreqs.get(qToken) ?? 0;
     if (termFreq > 0) {
       // Simplified TF component for BM25
       const numerator = termFreq * (k1 + 1);
-      const denominator = termFreq + k1 * (1 - b + (b * docLen) / (avgDocLen || 1));
+      const denominator = termFreq + lenNorm;
       score += numerator / denominator;
     }
   }
