@@ -25,7 +25,8 @@ function Show-Help {
   Write-Host "  validate          - Run static spec & schema coverage validator" -ForegroundColor Gray
   Write-Host "  status            - Sense layer: scan all apps, write harness-status.json + report" -ForegroundColor Gray
   Write-Host "  tasks             - Propose layer: generate agent work orders under tasks/ from findings" -ForegroundColor Gray
-  Write-Host "  verify            - Verify gate: self-test guardrails, then fail on blocking findings" -ForegroundColor Gray
+  Write-Host "  verify            - Verify gate: guardrail self-test + lesson traceability + blocking findings" -ForegroundColor Gray
+  Write-Host "  learn             - Learn gate: enforce Lesson <-> Guardrail traceability in AGENTS.md" -ForegroundColor Gray
   Write-Host "  clean             - Clean build caches and test reports across all projects" -ForegroundColor Gray
   Write-Host "  scaffold <name>   - Scaffold a new app specification and project boilerplate" -ForegroundColor Gray
   Write-Host "  mobile <appName>  - Build & sync Capacitor native Android assets for an app" -ForegroundColor Gray
@@ -63,10 +64,18 @@ switch ($Command.ToLower()) {
   }
 
   "verify" {
-    Write-Host "Running Harness Verify Gate (guardrail self-test + blocking findings)..." -ForegroundColor Cyan
+    Write-Host "Running Harness Verify Gate (guardrail self-test + lesson traceability + blocking findings)..." -ForegroundColor Cyan
     & node "$PSScriptRoot\harness-status.test.mjs"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & node "$PSScriptRoot\harness-learn.mjs"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & node "$PSScriptRoot\harness-status.mjs" --gate
+    exit $LASTEXITCODE
+  }
+
+  "learn" {
+    Write-Host "Running Harness Learn Gate (Lesson <-> Guardrail traceability)..." -ForegroundColor Cyan
+    & node "$PSScriptRoot\harness-learn.mjs"
     exit $LASTEXITCODE
   }
 

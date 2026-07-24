@@ -8,8 +8,14 @@ SENSE      node scripts/harness-status.mjs        → harness-status.json
 PROPOSE    node scripts/emit-tasks.mjs             → tasks/<finding-id>.md   (you are here)
 ACT        any AI agent claims a task, does the work, opens a PR
 VERIFY     node scripts/harness-status.mjs --gate  → CI fails on blocking findings
-LEARN      a novel fix becomes a new guardrail in harness-status.mjs
+LEARN      node scripts/harness-learn.mjs          → CI fails unless new guardrails
+                                                     trace to a documented lesson
 ```
+
+The LEARN gate enforces a closed loop — **Lesson ⇄ Guardrail ⇄ Self-test** — so a
+guardrail can't exist without a documented lesson, and a lesson can't claim
+enforcement without a working, tested guardrail. See the "adding a learned
+lesson" protocol in [`.agents/AGENTS.md`](../.agents/AGENTS.md).
 
 ## What blocks a merge (the Verify gate)
 

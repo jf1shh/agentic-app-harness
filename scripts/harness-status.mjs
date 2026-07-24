@@ -39,12 +39,16 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.vi
 // Guardrails: anti-patterns distilled from AGENTS.md "Learned Lessons". Each
 // one is a regression we have paid for once; encoding it here means the harness
 // catches it deterministically instead of hoping the next agent read the prose.
-// A guardrail that never fires anywhere is a candidate for retirement.
+//
+// LEARN invariant (enforced by harness-learn.mjs): every guardrail must carry a
+// `lesson` back-reference, and its `id` must be tagged `[guardrail: <id>]` on the
+// motivating bullet in .agents/AGENTS.md. No orphan rules, no undocumented rules.
 // ---------------------------------------------------------------------------
 const GUARDRAILS = [
   {
     id: 'viewport-no-zoom',
     label: 'Accessible viewport (no user-scalable=no / maximum-scale)',
+    lesson: 'Mobile PWA Viewport Accessibility',
     exts: ['.html'],
     test: (line) => /user-scalable\s*=\s*no/i.test(line) || /maximum-scale\s*=\s*(1(\.0)?)\b/i.test(line),
     severity: 'high',
@@ -54,6 +58,7 @@ const GUARDRAILS = [
   {
     id: 'explicit-any',
     label: 'No explicit `any` in application source',
+    lesson: 'Strict TypeScript in Harness',
     exts: ['.ts', '.tsx'],
     excludePath: (p) => /\.(test|spec)\.tsx?$/.test(p) || /[\\/]e2e[\\/]/.test(p),
     test: (line) => /\bas any\b/.test(line) || /:\s*any(\[\])?(\s|;|,|\)|>|=|$)/.test(line),
@@ -64,6 +69,7 @@ const GUARDRAILS = [
   {
     id: 'root-service-worker',
     label: 'Subpath-safe service worker registration (no absolute /sw.js)',
+    lesson: 'PWA Service Worker Subpath Scoping',
     exts: ['.html', '.ts', '.tsx', '.js'],
     test: (line) => /register\(\s*['"`]\/[^'"`]*sw\.js/i.test(line),
     severity: 'high',
@@ -73,6 +79,7 @@ const GUARDRAILS = [
   {
     id: 'pbkdf2-salt-buffer',
     label: 'WebCrypto PBKDF2 salt normalization (no salt*.buffer)',
+    lesson: 'Node WebCrypto TypedArray Buffer Normalization',
     exts: ['.ts', '.tsx', '.js'],
     test: (line) => /salt[A-Za-z0-9_]*\.buffer\b/.test(line),
     severity: 'high',
