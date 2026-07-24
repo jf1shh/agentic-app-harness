@@ -208,8 +208,9 @@ p {
 .grid-cols-3 { grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); }
 .grid-cols-4 { grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); }
 
-/* Sidebar layout: form column + content column on desktop, stacked on mobile.
-   Replaces inline `gridTemplateColumns: '1fr 2fr'` so it actually collapses. */
+/* Sidebar layout: form column + content column on desktop, stacked on mobile
+   (collapses via the max-width: 768px rule below). Replaces the old inline
+   fixed two-column sidebar style so it actually collapses on phones. */
 .grid-sidebar { grid-template-columns: 1fr 2fr; }
 
 /* Utility */

@@ -86,6 +86,26 @@ const GUARDRAILS = [
     gate: 'guardrails',
     why: 'Passing saltBytes.buffer to deriveKey throws in Node 20 WebCrypto. Pass new Uint8Array(saltBytes) as BufferSource.',
   },
+  {
+    id: 'responsive-grid',
+    label: 'Responsive grids (no fixed multi-column inline grids / oversized minmax)',
+    lesson: 'Responsive Grid Layouts',
+    exts: ['.ts', '.tsx', '.css'],
+    test: (line) => {
+      // (a) Inline fixed multi-track grid: media queries cannot override inline
+      // styles, so `gridTemplateColumns: '1fr 1fr'` (or '1fr 2fr', '200px 1fr', …)
+      // never collapses on phones. A responsive value uses repeat/auto-fit/minmax.
+      const m = line.match(/gridTemplateColumns:\s*['"`]([^'"`]+)['"`]/);
+      if (m && /\S\s+\S/.test(m[1]) && !/repeat|auto-fit|auto-fill|minmax|min\(/.test(m[1])) return true;
+      // (b) Fixed grid track basis >= 300px overflows narrow viewports. Wrap it as
+      // minmax(min(<basis>px, 100%), 1fr) so the track never exceeds the container.
+      if (/minmax\(\s*([3-9]\d\d|\d{4,})px/.test(line)) return true;
+      return false;
+    },
+    severity: 'medium',
+    gate: 'guardrails',
+    why: 'Fixed multi-track inline grids do not collapse and minmax() mins >= 300px overflow phones. Use repeat(auto-fit, minmax(min(BASIS, 100%), 1fr)) or a media query.',
+  },
 ];
 
 // ---------------------------------------------------------------------------
