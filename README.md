@@ -2,7 +2,7 @@
 
 A **spec-driven development (SDD) harness** for building and maintaining production-grade web & mobile apps with AI coding assistants — where the quality bar (runtime schemas, unit + E2E tests, accessibility, spec coverage) is **enforced in CI, not just documented**.
 
-> **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents working under strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. It is not itself a runtime AI/LLM system; the thing on display is the engineering process and tooling.
+> **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents working under strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. The harness also **closes its own improvement loop** (see the **Agentic Loop** section below): it senses drift and regressions and generates agent work orders **deterministically, with no embedded LLM or API key** — the AI agent is a pluggable actuator, not a hardcoded dependency.
 
 It hosts five real, deployed applications and holds every one of them to the same enforced standard.
 
@@ -27,7 +27,8 @@ It hosts five real, deployed applications and holds every one of them to the sam
   - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3001).
   - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3009).
 - `specs/`: Markdown specifications for every application. These are the **single source of truth**.
-- `scripts/`: Master harness CLI, verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`).
+- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs` — zero-dependency Node, cross-platform).
+- `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).
 - `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo.
 
 ---
@@ -40,4 +41,29 @@ It hosts five real, deployed applications and holds every one of them to the sam
 4. **Mandatory Testing & Verification**: Each app must pass `.\scripts\test-app.ps1 -AppName <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility.
 5. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
 6. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict` on pull requests — which **fails the build** if any app is missing a spec, Zod schema, or BDD specs. Compliance is a gate, not a claim.
-7. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated.
+7. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see below).
+
+---
+
+## 🔁 The Agentic Loop (Sense → Propose → Verify → Learn)
+
+The harness closes its own improvement loop — **with no embedded LLM and no API key.** The AI coding agent is a pluggable actuator (Claude Code, Cursor, Copilot, Aider, …); the repo stays provider-neutral. The loop core is zero-dependency Node ESM, so it runs identically on the Windows CI and any dev machine without PowerShell.
+
+```
+SENSE      node scripts/harness-status.mjs        → harness-status.json
+PROPOSE    node scripts/emit-tasks.mjs            → tasks/<finding-id>.md
+ACT        any AI agent claims a task, opens a PR
+VERIFY     node scripts/harness-status.mjs --gate → CI fails on blocking findings
+LEARN      node scripts/harness-learn.mjs         → CI fails unless new guardrails
+                                                    trace to a documented lesson
+```
+
+| Stage | Command (or `.\scripts\harness.ps1 …`) | What it does |
+|---|---|---|
+| **Sense** | `harness.ps1 status` | Deterministically scans every app for missing artifacts, contract/BDD gaps, spec drift (unchecked spec features), and anti-pattern guardrails distilled from `AGENTS.md`'s learned lessons — with file:line evidence — and writes `harness-status.json`. |
+| **Propose** | `harness.ps1 tasks` | Turns each finding into a self-contained, bring-your-own-agent work order under `tasks/`. Idempotent; `--prune` retires resolved orders. See [`tasks/README.md`](tasks/README.md) for the contract. |
+| **Act** | *(any agent)* | An agent claims an open task, does the work, and opens a PR. Agents **never self-merge** — a human reviews. |
+| **Verify** | `harness.ps1 verify` | A **blocking** CI gate: fails on guardrail regressions and missing specs, while drift/manual-review only inform. The guardrails are themselves self-tested (`harness-status.test.mjs`), so the gate can't silently rot. |
+| **Learn** | `harness.ps1 learn` | Enforces a closed **Lesson ⇄ Guardrail ⇄ Self-test** loop: a guardrail can't exist without a documented lesson, and a lesson can't claim enforcement without a working, tested guardrail — so the harness provably gets **stricter over time**. |
+
+All four stages run in CI via [`.github/workflows/sdd-sentinel.yml`](.github/workflows/sdd-sentinel.yml) on every pull request. The loop is self-documented for agents in [`.agents/AGENTS.md`](.agents/AGENTS.md) §8, including the protocol for adding a new learned lesson.
