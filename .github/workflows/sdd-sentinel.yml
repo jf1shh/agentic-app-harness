@@ -47,6 +47,21 @@ jobs:
           npx playwright install --with-deps chromium
           Pop-Location
 
+      - name: Harness Guardrail Self-Test (verify the verifier)
+        shell: powershell
+        run: |
+          node .\scripts\harness-status.test.mjs
+
+      - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
+        shell: powershell
+        run: |
+          node .\scripts\harness-learn.mjs
+
+      - name: Harness Verify Gate (blocks on guardrail regressions & missing specs)
+        shell: powershell
+        run: |
+          node .\scripts\harness-status.mjs --gate
+
       - name: Run Spec & Schema Coverage Audit
         shell: powershell
         run: |

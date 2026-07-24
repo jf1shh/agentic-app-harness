@@ -1,42 +1,53 @@
 # Smart Recipe App - Agent Handoff
 
 ## Project Status
-The Smart Recipe App MVP has been successfully completed. 
-The application tracks fridge/pantry inventory, parses online recipes (via TheMealDB) into local `.md` files, and provides a meal prep planner. All data is stored locally in the `data/` folder for privacy.
+Feature-complete against `specs/smart-recipe-app.md`. The app tracks fridge/pantry
+inventory, recommends recipes from what's on hand, searches TheMealDB and saves
+results as local markdown, and plans meals by day. All user data persists in the
+browser via `localStorage` (validated against Zod schemas on read) so the app
+ships as a static export with no backend.
 
-## Completed Tasks
-- [x] Write App Specification (`specs/smart-recipe-app.md`)
-- [x] Scaffold Next.js project (`projects/smart-recipe-app`)
-- [x] Initialize Next.js (App Router, Vanilla CSS)
-- [x] Configure Vitest, Playwright, Accessibility testing
-- [x] Implement Data Layer (Local File System API routes)
-  - [x] `inventory.json` read/write API
-  - [x] `meal-plan.json` read/write API
-  - [x] `.md` recipe parsing and catalog reading API
-- [x] Implement UI Components & Pages (Premium Design)
-  - [x] Setup Design System (Colors, Typography, micro-animations)
-  - [x] Dashboard Page
-  - [x] Inventory Management Page
-  - [x] Recipe Catalog & Search Page (integrating public API)
-  - [x] Meal Prep Planner Page
-- [x] End-to-End Testing & Verification
-  - [x] Run unit tests
-  - [x] Run Playwright tests
-  - [x] Run `test-app.ps1`
+## Completed Features
+- [x] App specification (`specs/smart-recipe-app.md`) — reconciled to the real
+      architecture.
+- [x] Next.js (App Router, Vanilla CSS), static export (`output: 'export'`).
+- [x] Vitest, Playwright, `@axe-core/playwright` configured.
+- [x] Persistence via `localStorage` (`src/lib/data.ts`), Zod-validated
+      (`src/lib/schemas.ts`).
+- [x] Dashboard with live "Cook with what you have" recommendations.
+- [x] Inventory management (add / remove).
+- [x] Recipe catalog + TheMealDB search → markdown.
+- [x] Meal prep planner (date + meal type, grouped per day).
+- [x] **Recipe recommendation engine** (`src/lib/recommend.ts`) — pure,
+      dependency-free; parses ingredients/time from recipe markdown, scores by
+      pantry coverage, rates difficulty, ranks and omits no-match recipes. Covered
+      by `src/lib/recommend.test.ts` and an E2E scenario.
 
 ## Architecture & Tech Stack
-- **Framework**: Next.js 16 (App Router)
-- **Styling**: Vanilla CSS (`src/app/globals.css`) with glassmorphism and modern aesthetics.
-- **Testing**: Vitest for unit tests, Playwright for E2E tests, `@axe-core/playwright` for accessibility. 
-- **Testing Script**: The app is verified using `..\..\scripts\test-app.ps1 -AppName smart-recipe-app`. All checks pass (no a11y violations, clean types, zero lint errors).
+- **Framework:** Next.js (App Router), static export.
+- **Persistence:** `localStorage` only — **no API routes / filesystem backend**.
+  This was a deliberate refactor for static-export compatibility (see the
+  "Next.js Static Export Server Action Scoping" lesson in `.agents/AGENTS.md`).
+- **Data shapes:** inventory + meal plan as JSON objects; recipes as markdown strings.
+- **Testing:** verified via `.\scripts\test-app.ps1 -AppName smart-recipe-app`
+  (security, lint, type-check, Vitest, Playwright + a11y).
 
-## Next Steps / Future Work for Agents
-1. **Database Integration**: Currently everything is local JSON/Markdown. If cloud sync is desired, Supabase could be integrated.
-2. **Advanced Recipe Matching**: The current matching is purely string-based on `.md` contents against inventory item names. A semantic search or better parser can be introduced.
-3. **Complex Meal APIs**: The current integration is with TheMealDB. Integrating Spoonacular would offer better filter queries.
-4. **Authentication**: If multi-user support is needed.
+## Known Gaps / Next Steps
+1. **Inventory editing:** currently add/remove only; no in-place edit (the spec
+   was scoped to add/remove to match reality). Add an update action + UI if edit
+   is desired.
+2. **Seed data category mismatch:** the add-item form uses `fridge`/`pantry`
+   categories, but the seeded inventory in `src/lib/data.ts` uses free-form
+   categories (`Herbs`, `Produce`, ...). Harmonize if category filtering is added.
+3. **Richer recommendation matching:** matching is token-based on ingredient
+   names; a semantic/fuzzy matcher (or synonym list) would improve recall.
+4. **Recipe search provider:** TheMealDB is used for its no-key API; Spoonacular
+   would offer richer filtering but needs a user-supplied key.
 
 ## Agent Instructions
-- Follow the `specs/smart-recipe-app.md` for any domain knowledge.
-- To run tests, use `npm run test` (which triggers Vitest) and `npm run test:e2e` for Playwright, or use the master harness script `.\scripts\test-app.ps1 -AppName smart-recipe-app` from the repo root.
-- Port `3000` is currently used by the legacy Travel Packing App, so Next.js may fall back to `3001` or another port. Testing config is set to use `3005` in `playwright.config.ts`.
+- Treat `specs/smart-recipe-app.md` as the source of truth; if code and spec
+  disagree, reconcile and flag it (per `.agents/AGENTS.md` rule 1).
+- Run the harness before claiming done: `.\scripts\test-app.ps1 -AppName smart-recipe-app`.
+- The pure logic in `src/lib/recommend.ts` can be exercised without a full install
+  via Node type-stripping; the Vitest/Playwright suites run in CI.
+- `playwright.config.ts` pins a dedicated port to avoid monorepo collisions.
