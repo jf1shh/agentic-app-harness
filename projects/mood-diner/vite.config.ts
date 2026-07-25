@@ -4,7 +4,14 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: process.env.NODE_ENV === 'production' ? '/agentic-app-harness/mood-diner/' : '/',
+  // Relative, not the Pages subpath: this bundle ships to two origins. GitHub
+  // Pages serves it from /agentic-app-harness/mood-diner/, while Capacitor
+  // serves it from https://localhost/ inside the Android WebView. A hardcoded
+  // '/agentic-app-harness/mood-diner/' base 404s every asset in the WebView and
+  // boots to a blank screen. './' resolves correctly under both. Safe here
+  // because the app has no client-side router — it is only ever served at a
+  // directory root. See [guardrail: capacitor-absolute-base].
+  base: process.env.NODE_ENV === 'production' ? './' : '/',
   test: {
     globals: true,
     environment: 'jsdom',
