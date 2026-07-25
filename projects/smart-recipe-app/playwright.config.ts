@@ -41,8 +41,9 @@ export default defineConfig({
     // --prefix serves the build on 5186 under the exact Pages subpath, so the
     // test exercises the deploy path rather than the root the dev server uses.
     {
-      command: 'npx next build && node ../../scripts/serve-dist.mjs --dist out --port 5185 --prefix /agentic-app-harness/smart-recipe-app',
+      command: 'npx next build && node ../../scripts/serve-dist.mjs --dist .next-prod --port 5185 --prefix /agentic-app-harness/smart-recipe-app',
       url: 'http://localhost:5185/__ready',
+      env: { NEXT_BUILD_DIR: '.next-prod' },
       reuseExistingServer: false,
       timeout: 240 * 1000,
     },

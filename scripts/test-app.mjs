@@ -43,7 +43,7 @@ if (!existsSync(appPath)) {
 }
 
 // --- cleanup (mirrors clean-app.ps1) ---------------------------------------
-const CLEAN_TARGETS = ['.next', 'dist', 'build', '.vite', 'playwright-report', 'test-results', 'coverage', 'tsconfig.tsbuildinfo'];
+const CLEAN_TARGETS = ['.next', '.next-prod', 'dist', 'build', '.vite', 'playwright-report', 'test-results', 'coverage', 'tsconfig.tsbuildinfo'];
 function clean(label) {
   console.log(`\n${C.cyan}[clean] ${label}${C.reset}`);
   for (const t of CLEAN_TARGETS) {
