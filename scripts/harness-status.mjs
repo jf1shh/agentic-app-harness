@@ -172,7 +172,8 @@ function hasNativeContainer(projPath) {
 
 // policyRoots is injectable so the self-test can drive it from a fixture rather
 // than depending on the real repo root's contents.
-export function senseMobileRelease(app, projPath, workflowsDir, policyRoots = [projPath, repoRoot]) {
+export function senseMobileRelease(app, projPath, workflowsDir,
+  policyRoots = [projPath, join(projPath, 'public'), repoRoot]) {
   const findings = [];
   if (!hasNativeContainer(projPath)) return findings;
 

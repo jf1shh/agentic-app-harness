@@ -163,6 +163,20 @@ try {
     console.error(`✗ mobile-readiness: false-positive on a release-ready fixture: ${goodIds.join(', ')}`); failures++;
   }
 
+  // (b2) A policy published under public/ counts — that is where it has to live
+  // to get a public URL, which is what Play actually requires.
+  const pubRoot = join(tmp, 'public-policy');
+  mkdirSync(pubRoot, { recursive: true });
+  const pubWf = buildFixture(pubRoot, {
+    signed: true, versionCode: 12, appName: 'Mood Diner', icon: 'custom',
+    manifestIcons: 'present', privacy: false, ci: true });
+  writeFileSync(join(pubRoot, 'public', 'privacy.html'), '<h1>Privacy Policy</h1>');
+  const pubIds = senseMobileRelease('pub-app', pubRoot, pubWf, [pubRoot, join(pubRoot, 'public')])
+    .map((f) => f.id);
+  if (pubIds.length) {
+    console.error(`✗ mobile-readiness: did not accept a policy under public/: ${pubIds.join(', ')}`); failures++;
+  }
+
   // (c) A web-only app has no native container and must be entirely out of scope.
   const webRoot = join(tmp, 'web');
   mkdirSync(join(webRoot, 'src'), { recursive: true });

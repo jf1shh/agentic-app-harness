@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Privacy Policy — MoodDiner</title>
+    <meta name="description" content="Privacy policy for the MoodDiner restaurant recommendation app." />
+    <style>
+      :root { color-scheme: light dark; --bg: #ffffff; --fg: #1f2933; --muted: #52606d; --line: #d9e2ec; --accent: #0b5f4a; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #0f172a; --fg: #e6edf5; --muted: #a6b3c2; --line: #27364b; --accent: #6ee7b7; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 1.5rem; background: var(--bg); color: var(--fg);
+             font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      main { max-width: 44rem; margin: 0 auto; }
+      h1 { font-size: 1.75rem; line-height: 1.25; margin: 0 0 .25rem; }
+      h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+      .updated { color: var(--muted); margin: 0 0 1.5rem; font-size: .9rem; }
+      .summary { border-left: 3px solid var(--accent); padding: .75rem 1rem; background: rgba(127,127,127,.08); border-radius: 0 6px 6px 0; }
+      table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: .95rem; }
+      th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { font-weight: 600; }
+      .scroll { overflow-x: auto; }
+      code { background: rgba(127,127,127,.15); padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+      a { color: var(--accent); }
+      footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+      .todo { background: #fff3cd; color: #533f03; padding: .75rem 1rem; border-radius: 6px; border: 1px solid #e0c56e; }
+      @media (prefers-color-scheme: dark) { .todo { background: #3d3413; color: #ffe9a8; border-color: #6b5a1f; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>MoodDiner Privacy Policy</h1>
+      <p class="updated">Last updated: 25 July 2026</p>
+
+      <p class="todo">
+        <strong>Before publishing:</strong> replace <code>[DEVELOPER NAME]</code> and
+        <code>[CONTACT EMAIL]</code> below, and confirm the “Last updated” date. This
+        document describes the app’s behaviour as implemented; if the app changes, this
+        must be updated to match, and the Play Data safety form must agree with it.
+      </p>
+
+      <div class="summary">
+        <p style="margin:0">
+          <strong>In short:</strong> MoodDiner has no accounts, no analytics, no advertising,
+          and no server of its own. Everything you enter — your saved reservations and any
+          restaurants you add — stays on your device. We never receive it.
+        </p>
+      </div>
+
+      <h2>Who this policy is for</h2>
+      <p>
+        This policy covers the MoodDiner mobile and web application, published by
+        <strong>[DEVELOPER NAME]</strong> (“we”, “us”). It explains what the app does with
+        information on your device.
+      </p>
+
+      <h2>Information we collect</h2>
+      <p>
+        <strong>We do not collect any personal information.</strong> The app has no user
+        accounts, no sign-in, no analytics or crash-reporting SDK, and no advertising SDK.
+        It does not request your location, contacts, camera, microphone, or files. It sends
+        no personal data to us or to any third party, because it has no backend service.
+      </p>
+
+      <h2>Information stored on your device</h2>
+      <p>
+        The app saves the following in your browser’s or the app’s local storage. It stays
+        on your device, is not transmitted anywhere, and is not readable by us.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr><th>Stored item</th><th>What it contains</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>mood_diner_reservations</code></td>
+              <td>
+                Reservations you create in the app: the restaurant, date, time, party size,
+                occasion, seating preference, status, and any free-text “special requests”
+                you type. Note that the special-requests box is free text — if you enter
+                something sensitive there, such as an allergy or dietary restriction, it is
+                stored on your device along with the rest of the reservation.
+              </td>
+            </tr>
+            <tr>
+              <td><code>mood_diner_custom_restaurants</code></td>
+              <td>Details of any restaurant you add yourself, such as its name, address, and website.</td>
+            </tr>
+            <tr>
+              <td>Plan and usage counters</td>
+              <td>
+                Your selected plan tier and a daily recommendation-credit count, used only to
+                run the app’s free-tier limits locally. No payment details are collected or
+                stored; the app does not process payments.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Reservations made in MoodDiner are recorded locally for your own reference. The app
+        does not contact restaurants and does not make real bookings on your behalf.
+      </p>
+
+      <h2>Third-party connections</h2>
+      <p>The app has no analytics and no ad networks. Two things do reach the network:</p>
+      <ul>
+        <li>
+          <strong>Restaurant images</strong> are loaded from Unsplash
+          (<code>images.unsplash.com</code>). As with loading any image on the internet, that
+          request tells Unsplash your IP address, your device’s user-agent, and which image
+          was requested. It carries none of your reservations or other stored data. See the
+          <a href="https://unsplash.com/privacy" rel="noopener noreferrer">Unsplash privacy policy</a>.
+        </li>
+        <li>
+          <strong>Restaurant websites</strong> open only when you choose to tap a link. Once
+          you leave the app, the privacy policy of that website applies.
+        </li>
+      </ul>
+
+      <h2>Permissions</h2>
+      <p>
+        On Android the app requests only <code>INTERNET</code>, which is required to load the
+        restaurant images described above. It requests no location, storage, contacts, or
+        other sensitive permission.
+      </p>
+
+      <h2>Children</h2>
+      <p>
+        MoodDiner is not directed at children and does not knowingly collect information from
+        anyone. Because the app collects no personal data at all, it holds no children’s data.
+      </p>
+
+      <h2>Keeping and deleting your data</h2>
+      <p>
+        Your data stays on your device until you remove it. Because we never receive it, there
+        is nothing for us to delete and no data-deletion request to make. To erase everything
+        the app has stored:
+      </p>
+      <ul>
+        <li><strong>Android:</strong> Settings → Apps → MoodDiner → Storage → Clear data, or uninstall the app.</li>
+        <li><strong>Web:</strong> clear site data for the page in your browser’s settings.</li>
+      </ul>
+
+      <h2>Security</h2>
+      <p>
+        Because the app stores data only on your device and transmits none of it, the main
+        protection is your device’s own security — its lock screen and app sandboxing. Data
+        stored locally is not encrypted separately by the app, so anyone with access to an
+        unlocked device could open the app and read the reservations saved in it.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If the app’s data handling changes, this policy will be updated and the date at the
+        top revised. Material changes will be reflected in the app’s store listing.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this policy: <strong>[CONTACT EMAIL]</strong>.
+      </p>
+
+      <footer>
+        MoodDiner — built and maintained under the
+        <a href="https://github.com/jf1shh/agentic-app-harness" rel="noopener noreferrer">Agentic App Harness</a>.
+      </footer>
+    </main>
+  </body>
+</html>

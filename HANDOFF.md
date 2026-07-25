@@ -88,8 +88,13 @@ They are excluded from `isBlocking`, so they inform without failing the gate:
 - `public/manifest.json` references `/icon-192.png` and `/icon-512.png`; only
   `icon-512.jpg` exists, so both icon entries 404.
 - `index.html` has a dead `href="/vite.svg"` favicon (leftover Vite scaffold).
-- No privacy policy (mandatory for any listing) and nothing backing a Data safety
-  declaration — the app does make outbound weather API calls.
+- ~~No privacy policy~~ **DRAFTED** — `public/privacy.html`, so it ships with the
+  build and gets a public URL on Pages for the listing. Written from a code audit,
+  which corrected an earlier wrong assumption: the app makes **no** weather API
+  call and has **no** `fetch()` anywhere; weather is hardcoded presets. The only
+  real third-party request is the Unsplash image CDN. Data safety mapping is in
+  `projects/mood-diner/README.md`. **Still needs `[DEVELOPER NAME]` and
+  `[CONTACT EMAIL]` filled in, and a human/legal review, before publishing.**
 - No store listing metadata or screenshots wired up (`public/playstore-banner.jpg`
   exists but is unreferenced).
 - CI builds no Android artifact: `ci.yml` is a web-only matrix, and
