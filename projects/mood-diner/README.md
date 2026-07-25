@@ -74,6 +74,28 @@ npx cap sync android
 cd android && ./gradlew bundleRelease   # AAB at app/build/outputs/bundle/release/
 ```
 
+## App icons and splash
+
+All Android launcher icons, the PWA `icon-192.png` / `icon-512.png`, and the
+splash screens are derived from a single source of truth: `public/icon-512.jpg`
+(1024×1024). To regenerate after changing that artwork, note that it is an icon
+*mockup* — the mark sits on a light background with a drop shadow — so crop to
+roughly `x 221, y 222, 582×582`, which is **inside** the rounded corners. Cropping
+to the rounded-square bounds instead pulls light pixels into the corners.
+
+Two details that are easy to get wrong:
+
+- The adaptive-icon background `#2B3A50` is averaged from three **corner** patches
+  of the artwork. A whole-image average yields a muddy grey, because the bright
+  glyph dominates it.
+- The adaptive foreground is **full-bleed**, not inset to the 72dp safe zone. The
+  artwork's own background is a navy gradient, so an inset version leaves a
+  visible square seam against any flat background colour. Full-bleed lets the
+  launcher mask crop into the artwork's own padding instead.
+
+Splash screens use `#0f172a`, matching the app's `theme-color` and the manifest
+`background_color`, so the launch screen and first paint are the same colour.
+
 ## Privacy policy and Play Data safety
 
 The policy lives at `public/privacy.html`, so it ships with the build and gets a

@@ -54,12 +54,26 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
   guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
 - Consider making the Verify gate `--strict` (drift-blocking) once all specs are
   reconciled, and adding guardrails for any new recurring regression.
-- Pick up the Play Store gaps in §6 — none of them are covered by any gate today.
+- Play Store: §6 findings are all cleared. What remains is human work — fill the
+  privacy-policy placeholders, get it reviewed, produce store listing screenshots,
+  and confirm the first real `gradlew bundleRelease` in CI actually succeeds.
 
-## 6. Play Store Readiness (mood-diner) — NOT release-ready
-`mood-diner` is the only app with a native container (`android/`, Capacitor). It is
-a stock `npx cap add android` scaffold. One blocker is now fixed and guarded; the
-rest are open and **invisible to every current gate**.
+## 6. Play Store Readiness (mood-diner) — every sensed finding cleared
+`mood-diner` is the only app with a native container (`android/`, Capacitor). It
+started as a stock `npx cap add android` scaffold. The `senseMobileRelease` sensor
+now reports **0 findings** and `tasks/` is empty.
+
+**Not the same as "shipped."** Two things still need a human:
+1. `public/privacy.html` contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]`
+   placeholders and has had no legal review.
+2. Nothing here has been built with a real Android SDK — there is none in the dev
+   container. The signing and version logic was verified by parse-check and by
+   evaluating the real Gradle blocks against stubs, and the CI workflow added
+   below is the first thing that will actually run `gradlew bundleRelease`. Treat
+   its first run as the real proof.
+
+Store listing metadata and screenshots are also still absent — the sensor never
+covered those (`public/playstore-banner.jpg` exists but is unreferenced).
 
 **Fixed + guarded:** the production bundle hardcoded `base:
 '/agentic-app-harness/mood-diner/'`. Capacitor serves from `https://localhost/` in
@@ -68,11 +82,10 @@ build was correct on Pages, so web CI, Playwright and the live deploy all stayed
 green. Now `base: './'`, enforced by `[guardrail: capacitor-absolute-base]`.
 Verified by serving `dist/` at both origins: old base → `404`, new base → `200`.
 
-**Still open — now sensed and tracked, but non-blocking by design.** The
-`senseMobileRelease` sensor in `harness-status.mjs` reports all seven items below
-as `mobile-readiness` findings and emits a work order for each under `tasks/`.
-They are excluded from `isBlocking`, so they inform without failing the gate:
-- ~~No release signing~~ **DONE** — `android/app/build.gradle` now resolves
+**All seven sensed findings, and what closed each.** The `senseMobileRelease`
+sensor reports these as non-blocking `mobile-readiness` findings; all are now
+resolved and their work orders pruned:
+- **Release signing** — `android/app/build.gradle` now resolves
   credentials from `ANDROID_KEYSTORE_*` env vars, then a git-ignored
   `android/keystore.properties`. All four values required; missing/empty leaves
   the build unsigned with a warning rather than failing; a configured-but-absent
@@ -82,23 +95,37 @@ They are excluded from `isBlocking`, so they inform without failing the gate:
   the dev container, so this was verified by Groovy parse-check plus evaluating
   the real resolution block against stubs across 7 cases — **not** by running an
   actual `gradlew bundleRelease`. That still needs a machine with the SDK.
-- Stock Capacitor launcher icon and splash in `android/app/src/main/res/`.
-- `versionCode 1` / `versionName "1.0"` hardcoded, no bump mechanism.
-- `app_name` is the raw slug `mood-diner` (`res/values/strings.xml`).
-- `public/manifest.json` references `/icon-192.png` and `/icon-512.png`; only
-  `icon-512.jpg` exists, so both icon entries 404.
-- `index.html` has a dead `href="/vite.svg"` favicon (leftover Vite scaffold).
-- ~~No privacy policy~~ **DRAFTED** — `public/privacy.html`, so it ships with the
+- **Launcher icons** — all densities regenerated from the app's own artwork
+  (`public/icon-512.jpg`, a 1024×1024 fork/knife/sun/snowflake mark). Cropped
+  *inside* the mockup's rounded corners so no light background bleeds in; legacy
+  square, circular `_round`, and full-bleed adaptive foreground. The adaptive
+  background `#2B3A50` is averaged from three corner patches — a whole-image mean
+  gives a muddy grey because the bright glyph drags it. The adaptive foreground is
+  full-bleed rather than inset to the 72dp safe zone: the artwork's own background
+  is a gradient, so an inset would leave a visible square seam against any flat
+  colour. Splash screens (11 files, not a sensed finding) were also stock Capacitor
+  and are regenerated on `#0f172a`, matching the app's theme-color so launch does
+  not flash.
+- **versionCode** — now `ANDROID_VERSION_CODE` (the CI run number), falling back
+  to 1 locally. `versionName` likewise via `ANDROID_VERSION_NAME`.
+- **app_name** — `MoodDiner`, not the raw slug.
+- **manifest icons** — `icon-192.png`/`icon-512.png` generated. Paths also changed
+  from root-absolute to relative (`./icon-192.png`, `start_url`/`scope` `./`),
+  which was the same origin-pinning bug as the base path: `/icon-192.png` resolves
+  to the domain root and 404s under the Pages subpath.
+- **Android CI** — `.github/workflows/android-release.yml` builds the AAB on every
+  mood-diner change and uploads it. Runs without secrets (unsigned, still verifies
+  the native build); signs when `ANDROID_KEYSTORE_*` secrets exist. Note the
+  keystore gate uses `env.KEYSTORE_BASE64`, not `secrets.*` — the `secrets` context
+  is not available in a step `if:` and would silently never match.
+- `index.html` had a dead `href="/vite.svg"` favicon; now `icon-512.jpg`.
+- **Privacy policy** — `public/privacy.html`, so it ships with the
   build and gets a public URL on Pages for the listing. Written from a code audit,
   which corrected an earlier wrong assumption: the app makes **no** weather API
   call and has **no** `fetch()` anywhere; weather is hardcoded presets. The only
   real third-party request is the Unsplash image CDN. Data safety mapping is in
   `projects/mood-diner/README.md`. **Still needs `[DEVELOPER NAME]` and
   `[CONTACT EMAIL]` filled in, and a human/legal review, before publishing.**
-- No store listing metadata or screenshots wired up (`public/playstore-banner.jpg`
-  exists but is unreferenced).
-- CI builds no Android artifact: `ci.yml` is a web-only matrix, and
-  `scripts/build-mobile.ps1` is a local script that stops at `npx cap sync`.
 
 **Gate blind spot — CLOSED.** E2E previously ran only against the dev server
 (base `/`), so no test ever loaded the shipped artifact; that is structurally why

@@ -46,6 +46,12 @@ def releaseKeyPassword = signingValue("ANDROID_KEY_PASSWORD", "keyPassword")
 def hasReleaseSigning = releaseStoreFile != null && releaseStorePassword != null &&
         releaseKeyAlias != null && releaseKeyPassword != null
 
+// versionCode must strictly increase on every Play upload, so it cannot stay a
+// literal in this file. CI supplies it (the workflow run number); local builds
+// fall back to 1, which is fine because they are never uploaded.
+def resolvedVersionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "1") as int
+def resolvedVersionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.0.0"
+
 if (hasReleaseSigning && !file(releaseStoreFile).exists()) {
     throw new GradleException(
         "Release signing is configured but the keystore was not found at '${releaseStoreFile}'. " +
@@ -59,8 +65,8 @@ android {
         applicationId "com.harness.mooddiner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode resolvedVersionCode
+        versionName resolvedVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

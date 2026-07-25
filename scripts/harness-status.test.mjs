@@ -91,14 +91,19 @@ for (const id of Object.keys(CASES)) {
 // ---------------------------------------------------------------------------
 
 // The real Capacitor default hdpi launcher icon, byte for byte — this is what
-// the unbranded-icon check hashes against. Any edit here must keep it matching
-// the CAPACITOR_DEFAULT_ICON_SHA256 entry in harness-status.mjs.
+// the unbranded-icon check hashes against, so the fixture must keep matching a
+// CAPACITOR_DEFAULT_ICON_SHA256 entry in harness-status.mjs.
+//
+// A committed fixture, NOT a live app icon. This originally pointed at
+// projects/mood-diner's icon, which broke the moment that app was branded — the
+// fixture stopped being a default and the check silently looked broken. A test
+// for "is this the stock scaffold asset?" must own a copy of the stock asset.
+//
 // fileURLToPath, not URL.pathname — the latter yields '/C:/...' on Windows and
 // the harness CI runs on windows-latest.
 const DEFAULT_ICON_SRC = join(
   dirname(fileURLToPath(import.meta.url)),
-  '..', 'projects', 'mood-diner', 'android', 'app', 'src', 'main', 'res',
-  'mipmap-hdpi', 'ic_launcher.png');
+  'fixtures', 'capacitor-default-ic_launcher-hdpi.png');
 
 function buildFixture(root, { signed, versionCode, appName, icon, manifestIcons, privacy, ci }) {
   const res = join(root, 'android', 'app', 'src', 'main', 'res');
