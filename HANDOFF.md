@@ -68,7 +68,10 @@ build was correct on Pages, so web CI, Playwright and the live deploy all stayed
 green. Now `base: './'`, enforced by `[guardrail: capacitor-absolute-base]`.
 Verified by serving `dist/` at both origins: old base → `404`, new base → `200`.
 
-**Still open (no gate covers these):**
+**Still open — now sensed and tracked, but non-blocking by design.** The
+`senseMobileRelease` sensor in `harness-status.mjs` reports all seven items below
+as `mobile-readiness` findings and emits a work order for each under `tasks/`.
+They are excluded from `isBlocking`, so they inform without failing the gate:
 - No release signing — `android/app/build.gradle` has a `release` block with no
   `signingConfigs`. No keystore handling, no `bundleRelease`/AAB path.
 - Stock Capacitor launcher icon and splash in `android/app/src/main/res/`.
@@ -84,10 +87,12 @@ Verified by serving `dist/` at both origins: old base → `404`, new base → `2
 - CI builds no Android artifact: `ci.yml` is a web-only matrix, and
   `scripts/build-mobile.ps1` is a local script that stops at `npx cap sync`.
 
-**Known gate blind spot:** `playwright.config.ts` runs E2E against the *dev* server
-(`npx vite --port 5178`, base `/`), so no test ever loads the production bundle.
-That is structurally why the base-path bug survived. The remaining items above are
-mechanically detectable but are *absence* checks, which do not fit the line-level
-`test(line)` contract that `harness-status.test.mjs` enforces for guardrails —
-encoding them needs a new app-level sensor in `senseApp`, plus a decision on
-whether mobile-readiness findings should block merges or only inform.
+**Known gate blind spot (still open):** `playwright.config.ts` runs E2E against the
+*dev* server (`npx vite --port 5178`, base `/`), so no test ever loads the
+production bundle. That is structurally why the base-path bug survived — and it is
+not fixed. Adding one smoke test that serves the built `dist/` at a non-root path
+would close it.
+
+**Verify the sensor:** `node scripts/harness-status.test.mjs` covers it against
+fixture trees — it asserts every check fires on an unprepared app, none fire on a
+release-ready one, nothing fires on a web-only app, and no finding is blocking.

@@ -5,7 +5,11 @@
 // so the thing that gates merges is itself gated. Zero dependencies; run with:
 //   node scripts/harness-status.test.mjs
 
-import { GUARDRAILS } from './harness-status.mjs';
+import { GUARDRAILS, senseMobileRelease, isBlocking } from './harness-status.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // For each guardrail id: a line that MUST trip it, and one that MUST NOT.
 const CASES = {
@@ -80,8 +84,105 @@ for (const id of Object.keys(CASES)) {
   if (!seen.has(id)) { console.error(`✗ orphan test case '${id}' — no matching guardrail`); failures++; }
 }
 
+// ---------------------------------------------------------------------------
+// Mobile release readiness sensor. Not a guardrail (these are absence checks,
+// not line patterns) and non-blocking by design — but still self-tested, so it
+// cannot silently stop reporting. Driven against real fixture trees on disk.
+// ---------------------------------------------------------------------------
+
+// The real Capacitor default hdpi launcher icon, byte for byte — this is what
+// the unbranded-icon check hashes against. Any edit here must keep it matching
+// the CAPACITOR_DEFAULT_ICON_SHA256 entry in harness-status.mjs.
+// fileURLToPath, not URL.pathname — the latter yields '/C:/...' on Windows and
+// the harness CI runs on windows-latest.
+const DEFAULT_ICON_SRC = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..', 'projects', 'mood-diner', 'android', 'app', 'src', 'main', 'res',
+  'mipmap-hdpi', 'ic_launcher.png');
+
+function buildFixture(root, { signed, versionCode, appName, icon, manifestIcons, privacy, ci }) {
+  const res = join(root, 'android', 'app', 'src', 'main', 'res');
+  mkdirSync(join(res, 'values'), { recursive: true });
+  mkdirSync(join(res, 'mipmap-hdpi'), { recursive: true });
+  mkdirSync(join(root, 'public'), { recursive: true });
+
+  writeFileSync(join(root, 'android', 'app', 'build.gradle'), [
+    'android {',
+    `    defaultConfig { versionCode ${versionCode} versionName "1.0" }`,
+    signed ? '    signingConfigs { release { storeFile file(System.getenv("KEYSTORE")) } }' : '',
+    '    buildTypes { release { } }',
+    '}',
+  ].join('\n'));
+
+  writeFileSync(join(res, 'values', 'strings.xml'),
+    `<resources><string name="app_name">${appName}</string></resources>`);
+
+  // 'default' copies the genuine Capacitor scaffold icon; 'custom' is distinct bytes.
+  writeFileSync(join(res, 'mipmap-hdpi', 'ic_launcher.png'),
+    icon === 'default' ? readFileSync(DEFAULT_ICON_SRC) : Buffer.from('custom-branded-icon'));
+
+  writeFileSync(join(root, 'public', 'manifest.json'),
+    JSON.stringify({ icons: [{ src: '/icon-512.png' }] }));
+  if (manifestIcons === 'present') writeFileSync(join(root, 'public', 'icon-512.png'), Buffer.from('x'));
+
+  if (privacy) writeFileSync(join(root, 'PRIVACY.md'), '# Privacy Policy');
+
+  const wf = join(root, 'wf');
+  mkdirSync(wf, { recursive: true });
+  writeFileSync(join(wf, 'ci.yml'), ci ? 'run: ./gradlew bundleRelease' : 'run: npm test');
+  return wf;
+}
+
+const tmp = mkdtempSync(join(tmpdir(), 'harness-mobile-'));
+try {
+  // (a) Worst case: every check should fire.
+  const badRoot = join(tmp, 'bad');
+  mkdirSync(badRoot, { recursive: true });
+  const badWf = buildFixture(badRoot, {
+    signed: false, versionCode: 1, appName: 'bad-app', icon: 'default',
+    manifestIcons: 'missing', privacy: false, ci: false });
+  const badIds = senseMobileRelease('bad-app', badRoot, badWf, [badRoot])
+    .map((f) => f.id.replace('bad-app-mobile-', '')).sort();
+  const expected = ['default-launcher-icon', 'default-version-code', 'manifest-icons-missing',
+    'no-android-ci', 'no-privacy-policy', 'no-signing-config', 'slug-app-name'].sort();
+  for (const id of expected) {
+    if (!badIds.includes(id)) { console.error(`✗ mobile-readiness: MISSED '${id}' on the known-bad fixture`); failures++; }
+  }
+  if (badIds.length !== expected.length) {
+    console.error(`✗ mobile-readiness: unexpected findings on known-bad fixture: ${badIds.join(', ')}`); failures++;
+  }
+
+  // (b) Fully prepared release: nothing should fire.
+  const goodRoot = join(tmp, 'good');
+  mkdirSync(goodRoot, { recursive: true });
+  const goodWf = buildFixture(goodRoot, {
+    signed: true, versionCode: 12, appName: 'Mood Diner', icon: 'custom',
+    manifestIcons: 'present', privacy: true, ci: true });
+  const goodIds = senseMobileRelease('good-app', goodRoot, goodWf, [goodRoot]).map((f) => f.id);
+  if (goodIds.length) {
+    console.error(`✗ mobile-readiness: false-positive on a release-ready fixture: ${goodIds.join(', ')}`); failures++;
+  }
+
+  // (c) A web-only app has no native container and must be entirely out of scope.
+  const webRoot = join(tmp, 'web');
+  mkdirSync(join(webRoot, 'src'), { recursive: true });
+  if (senseMobileRelease('web-app', webRoot, goodWf, [webRoot]).length) {
+    console.error('✗ mobile-readiness: fired on a web-only app with no native container'); failures++;
+  }
+
+  // (d) Every finding must be non-blocking — this sensor informs, never gates.
+  const blocking = senseMobileRelease('bad-app', badRoot, badWf, [badRoot]).filter(isBlocking);
+  if (blocking.length) {
+    console.error(`✗ mobile-readiness: ${blocking.length} finding(s) block the gate; this sensor must only inform`); failures++;
+  }
+
+  if (!failures) console.log('✓ mobile-readiness sensor (fires on unprepared, silent on release-ready, scoped to native apps, non-blocking)');
+} finally {
+  rmSync(tmp, { recursive: true, force: true });
+}
+
 if (failures) {
-  console.error(`\n${failures} guardrail self-test failure(s).`);
+  console.error(`\n${failures} self-test failure(s).`);
   process.exit(1);
 }
-console.log(`\nAll ${GUARDRAILS.length} guardrails verified.`);
+console.log(`\nAll ${GUARDRAILS.length} guardrails + the mobile-readiness sensor verified.`);

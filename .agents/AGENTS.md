@@ -64,6 +64,21 @@ The harness closes its own improvement loop without any embedded LLM or API key 
 - **Verify** (`node scripts/harness-status.mjs --gate` / `.\scripts\harness.ps1 verify`): a blocking CI gate that fails on guardrail regressions and missing specs, while drift/manual-review findings only inform. The guardrails are themselves self-tested (`scripts/harness-status.test.mjs`), so the gate can't silently rot. Re-run `emit-tasks.mjs --prune` to retire resolved work orders.
 - **Learn** (`node scripts/harness-learn.mjs` / `.\scripts\harness.ps1 learn`): a blocking gate that enforces a closed traceability loop — every guardrail must carry a `lesson` back-reference and be tagged `[guardrail: <id>]` on its motivating AGENTS.md bullet, and every such tag must resolve to a real, self-tested guardrail. This makes "the harness gets stricter over time" a verifiable invariant, not a good intention.
 
+### Blocking guardrails vs. informational sensors
+Not every mechanical check belongs in `GUARDRAILS`. That array is for **line-level
+regressions**: its `test(line)` contract is what `harness-status.test.mjs` self-tests,
+and every hit **blocks merge**. Some real defects are *absence* checks (a missing
+signing config, an unbranded launcher icon, a missing privacy policy) that no regex
+over a line can express, and that describe incomplete work rather than a regression.
+
+Those belong in a **sensor** in `senseApp` with a non-blocking `type` — see
+`senseMobileRelease` (Play Store release readiness), which is scoped to apps with a
+native container and is excluded from `isBlocking` on purpose, so an in-progress
+release informs without painting unrelated PRs red. Sensors are still self-tested
+against fixture trees, so they cannot silently stop reporting, and they still become
+work orders via `emit-tasks.mjs`. Promote a sensor check to a guardrail only once it
+is line-detectable *and* the repo has decided it must never regress.
+
 ### Protocol: adding a learned lesson
 When you discover a reusable lesson, decide whether it is **mechanically detectable**:
 1. **Mechanical** (a pattern a regex can catch): (a) add a guardrail object to `GUARDRAILS` in `scripts/harness-status.mjs` with a `lesson` field; (b) add a known-bad + known-good case to `scripts/harness-status.test.mjs`; (c) add the lesson bullet to section 6 below and tag it `` `[guardrail: <id>]` ``. Run `.\scripts\harness.ps1 verify` — self-test, learn, and gate must all pass.
