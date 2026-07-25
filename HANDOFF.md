@@ -42,16 +42,18 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
   **not merged**) — Play Store readiness for mood-diner (§6), plus two pieces of
   harness automation: the `senseProductionBundleTest` sensor and the Node port of
   the per-app suite.
-- **Open, non-blocking:** 4 apps (`portfolio-hub`, `travel-packing-app`,
-  `smart-recipe-app`, `legal-financial-rag`) have no production-bundle E2E — their
-  Playwright configs only ever start a dev server, so nothing tests the artifact
-  they deploy to Pages. Work orders are in `tasks/`. Adoption is a config line:
-  add a `webServer` that builds, then
-  `node ../../scripts/serve-dist.mjs --dist <dir> --port <n> --prefix <deploy path>`,
-  plus a spec modelled on `projects/mood-diner/e2e/production-bundle.spec.ts`.
-  **Prove each one by mutation** — break the base path and confirm the new test
-  actually fails — because a smoke test that passes on a broken build is worse
-  than none.
+- **Production-bundle coverage: all 5 apps, `tasks/` empty.** Every app now has a
+  `production-bundle.spec.ts` that loads its built output at the real deploy
+  subpath and fails on any response >= 400. Each was **proved by mutation** —
+  breaking `base`/`basePath` makes the new test fail, restoring it makes it pass.
+  Single-origin apps deliberately do NOT assert "no root-absolute asset URLs";
+  an absolute subpath base is correct for them. Only mood-diner tests two origins,
+  because only it also ships inside a Capacitor WebView.
+- **Known environment limit:** `travel-packing-app`'s pre-existing
+  `travel-app.spec.ts` "Analyze" test calls `geocoding-api.open-meteo.com` and
+  fails wherever that host is unreachable (it is blocked in the agent sandbox).
+  Nothing to do with the production-bundle work; it needs live network or a
+  stubbed route.
 - **Smart Recipe App:** the loop flagged real spec drift; acting on it added a
   genuine recipe-recommendation engine (`src/lib/recommend.ts`) and reconciled the
   spec to the app's true static-export + `localStorage` architecture. Sense now

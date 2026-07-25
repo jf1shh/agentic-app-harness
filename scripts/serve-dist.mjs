@@ -84,23 +84,35 @@ function serve(port, mount) {
     if (path.endsWith('/')) path += 'index.html';
 
     // Contain traversal: resolve inside dist/ or refuse.
-    const filePath = join(distDir, normalize(path).replace(/^([/\\])+/, ''));
-    if (!filePath.startsWith(distDir)) {
+    const base = join(distDir, normalize(path).replace(/^([/\\])+/, ''));
+    if (!base.startsWith(distDir)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       return res.end('forbidden');
     }
 
-    try {
-      const body = await readFile(filePath);
-      res.writeHead(200, { 'Content-Type': TYPES[extname(filePath)] || 'application/octet-stream' });
-      res.end(body);
-    } catch {
-      // A real 404 with no SPA index.html fallback, deliberately: a fallback
-      // would mask the exact failure this exists to catch, since a misrouted
-      // asset URL would silently return HTML and the test would pass.
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('not found');
+    // Mirror how a static host resolves "pretty" URLs. GitHub Pages serves
+    // /recipes from recipes.html (or recipes/index.html), and a Next.js static
+    // export prefetches exactly those extensionless paths. A server that only
+    // tried the literal path would report 404s the real host never produces —
+    // and a smoke test that cries wolf gets muted, which is worse than none.
+    const candidates = extname(base)
+      ? [base]
+      : [base, `${base}.html`, join(base, 'index.html')];
+
+    for (const filePath of candidates) {
+      try {
+        const body = await readFile(filePath);
+        res.writeHead(200, { 'Content-Type': TYPES[extname(filePath)] || 'application/octet-stream' });
+        return res.end(body);
+      } catch { /* try the next candidate */ }
     }
+
+    // A real 404, with no SPA fallback to the root index.html. The candidates
+    // above resolve the REQUESTED path only; a blanket fallback would mask the
+    // exact failure this exists to catch, since a misrouted asset URL would
+    // silently return HTML and the test would pass on a broken build.
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('not found');
   });
 }
 

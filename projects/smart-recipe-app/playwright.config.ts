@@ -25,9 +25,26 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], ...chromiumOverride },
     },
   ],
-  webServer: {
-    command: 'npm run dev -- -p 3005',
-    url: 'http://localhost:3005',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    // Dev server — used by the feature/a11y specs.
+    {
+      command: 'npm run dev -- -p 3005',
+      url: 'http://localhost:3005',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+    // Production bundle — used by production-bundle.spec.ts, the only spec that
+    // loads the artifact actually deployed. Built directly (npx next build) rather
+    // than via `npm run build`, whose clean step would delete playwright-report/
+    // and test-results/ out from under the run.
+    //
+    // --prefix serves the build on 5186 under the exact Pages subpath, so the
+    // test exercises the deploy path rather than the root the dev server uses.
+    {
+      command: 'npx next build && node ../../scripts/serve-dist.mjs --dist out --port 5185 --prefix /agentic-app-harness/smart-recipe-app',
+      url: 'http://localhost:5185/__ready',
+      reuseExistingServer: false,
+      timeout: 240 * 1000,
+    },
+  ],
 });
