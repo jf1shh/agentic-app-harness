@@ -53,9 +53,13 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+# Uncommented deliberately: the upload key must never enter git history. Anyone
+# who obtains it can publish updates impersonating this app, and rotating it
+# requires Google's intervention. Credentials live in keystore.properties or the
+# CI environment — see the signing block in app/build.gradle.
+*.jks
+*.keystore
+keystore.properties
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

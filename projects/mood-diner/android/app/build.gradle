@@ -1,5 +1,63 @@
 apply plugin: 'com.android.application'
 
+// ---------------------------------------------------------------------------
+// Release signing credentials.
+//
+// Play only accepts an App Bundle signed with an upload key. Credentials are
+// resolved from the environment first (CI secrets), then from a local,
+// git-ignored keystore.properties. Neither the keystore nor its passwords are
+// ever committed — see the keystore rules in android/.gitignore.
+//
+// keystore.properties (next to this android/ directory, never committed):
+//     storeFile=/absolute/path/to/upload-keystore.jks
+//     storePassword=...
+//     keyAlias=upload
+//     keyPassword=...
+//
+// Or in CI: ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD,
+//           ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+//
+// When no credentials are present the release build stays UNSIGNED rather than
+// failing, so `assembleRelease` still works for local smoke checks and for CI
+// without secrets. Such an artifact cannot be uploaded to Play — the build
+// prints a warning saying so, so an unsigned output is never mistaken for a
+// releasable one.
+// ---------------------------------------------------------------------------
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
+def signingValue = { String envName, String propertyName ->
+    def fromEnv = System.getenv(envName)
+    if (fromEnv != null && !fromEnv.trim().isEmpty()) return fromEnv.trim()
+    def fromFile = keystoreProperties.getProperty(propertyName)
+    return (fromFile != null && !fromFile.trim().isEmpty()) ? fromFile.trim() : null
+}
+
+def releaseStoreFile = signingValue("ANDROID_KEYSTORE_FILE", "storeFile")
+def releaseStorePassword = signingValue("ANDROID_KEYSTORE_PASSWORD", "storePassword")
+def releaseKeyAlias = signingValue("ANDROID_KEY_ALIAS", "keyAlias")
+def releaseKeyPassword = signingValue("ANDROID_KEY_PASSWORD", "keyPassword")
+
+// All four are required: a partial set would fail deep inside the signing task
+// with a far less obvious error than this.
+def hasReleaseSigning = releaseStoreFile != null && releaseStorePassword != null &&
+        releaseKeyAlias != null && releaseKeyPassword != null
+
+// versionCode must strictly increase on every Play upload, so it cannot stay a
+// literal in this file. CI supplies it (the workflow run number); local builds
+// fall back to 1, which is fine because they are never uploaded.
+def resolvedVersionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "1") as int
+def resolvedVersionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.0.0"
+
+if (hasReleaseSigning && !file(releaseStoreFile).exists()) {
+    throw new GradleException(
+        "Release signing is configured but the keystore was not found at '${releaseStoreFile}'. " +
+        "Fix the path in keystore.properties or ANDROID_KEYSTORE_FILE.")
+}
+
 android {
     namespace = "com.harness.mooddiner"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +65,8 @@ android {
         applicationId "com.harness.mooddiner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode resolvedVersionCode
+        versionName resolvedVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +74,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn("[mood-diner] No release signing credentials found — the release build " +
+                        "will be UNSIGNED and cannot be uploaded to Play. Provide keystore.properties " +
+                        "or the ANDROID_KEYSTORE_* environment variables to sign it.")
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

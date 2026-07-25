@@ -27,6 +27,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, relative, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -43,6 +44,13 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.vi
 // LEARN invariant (enforced by harness-learn.mjs): every guardrail must carry a
 // `lesson` back-reference, and its `id` must be tagged `[guardrail: <id>]` on the
 // motivating bullet in .agents/AGENTS.md. No orphan rules, no undocumented rules.
+//
+// Optional `appliesTo(projPath)` narrows a guardrail to the apps it is true for.
+// Some anti-patterns are only anti-patterns in a specific deployment target (e.g.
+// a hardcoded Pages subpath is correct for a web-only app and fatal for one with
+// a native container), so scoping keeps the rule sharp instead of forcing a
+// false-positive on every other app. The line-level `test` contract is unchanged,
+// so the self-test in harness-status.test.mjs still covers every guardrail.
 // ---------------------------------------------------------------------------
 const GUARDRAILS = [
   {
@@ -106,7 +114,212 @@ const GUARDRAILS = [
     gate: 'guardrails',
     why: 'Fixed multi-track inline grids do not collapse and minmax() mins >= 300px overflow phones. Use repeat(auto-fit, minmax(min(BASIS, 100%), 1fr)) or a media query.',
   },
+  {
+    id: 'capacitor-absolute-base',
+    label: 'WebView-safe bundler base (no hardcoded deploy subpath in a Capacitor app)',
+    lesson: 'Capacitor Absolute Base Path',
+    // Only apps that actually ship a native container are in scope: for a
+    // web-only app a Pages subpath base is the correct configuration.
+    appliesTo: (projPath) => existsSync(join(projPath, 'capacitor.config.ts'))
+      || existsSync(join(projPath, 'capacitor.config.json'))
+      || existsSync(join(projPath, 'android')),
+    exts: ['.ts', '.js', '.mjs'],
+    // Scope to the bundler config — a subpath string anywhere else (a route, a
+    // fetch URL, an asset href) is not this bug.
+    excludePath: (p) => !/[\\/](vite|next)\.config\.(ts|js|mjs)$/.test(p),
+    // Fires on a root-absolute, multi-segment base literal ('/foo…'), including
+    // inside a ternary. Stays silent on the WebView-safe values './' and '/'.
+    test: (line) => /\b(base|basePath):\s*.*['"`]\/[A-Za-z0-9._-]+/.test(line),
+    severity: 'high',
+    gate: 'guardrails',
+    why: "Capacitor serves the bundle from https://localhost/ in the Android WebView, so a hardcoded '/<repo>/<app>/' base makes every asset URL 404 and the app boots to a white screen. Use a relative base ('./'), which resolves under both the Pages subpath and the WebView origin.",
+  },
 ];
+
+// ---------------------------------------------------------------------------
+// Mobile release readiness — an INFORMATIONAL sensor for apps that ship a
+// native container. These are *absence* checks (no signing config, an unbranded
+// launcher icon, a missing privacy policy), which cannot be expressed as the
+// line-level `test(line)` predicate that GUARDRAILS and their self-test require
+// — hence a separate sensor rather than a guardrail.
+//
+// Deliberately NON-BLOCKING: findings carry type 'mobile-readiness', which
+// isBlocking() does not gate on, so an in-progress store submission informs
+// without painting every PR red. If one of these ever becomes line-detectable
+// and must never regress, promote it to a real guardrail under the §8 protocol.
+//
+// Everything here is scoped to apps with a native container, so the four
+// web-only apps are untouched.
+// ---------------------------------------------------------------------------
+
+// sha256 of the launcher icons emitted by `npx cap add android` (Capacitor 8).
+// An app still shipping these has never been branded. Fail-open by design: a
+// different Capacitor default simply won't match, so a real custom icon can
+// never be false-flagged.
+const CAPACITOR_DEFAULT_ICON_SHA256 = new Set([
+  '72b71c3581ca3b5a23b1c168d69b9d855b3f184fa079902a01f088eb4f0607d5', // mipmap-hdpi/ic_launcher.png
+  '27ed3603010ebc278f64f8645741ab132ff517abb5308eb9df6c8e42a48956b2', // mipmap-mdpi/ic_launcher.png
+  'd35dbfff175b83c13ef59cf924abfc810f7b6a158595d7417c5498ea8c7c7ed1', // mipmap-xhdpi/ic_launcher.png
+  'ed346eb1e3f0280f15709393705899b3ff55c20b88f4e0308006b3c33cf5fe14', // mipmap-xxhdpi/ic_launcher.png
+  '87cb2f2ffe992652bb4fa768c73719a37b5852ab17fbf8e170e888f7a42b0761', // mipmap-xxxhdpi/ic_launcher.png
+]);
+
+function hasNativeContainer(projPath) {
+  return existsSync(join(projPath, 'android'))
+    || existsSync(join(projPath, 'capacitor.config.ts'))
+    || existsSync(join(projPath, 'capacitor.config.json'));
+}
+
+// policyRoots is injectable so the self-test can drive it from a fixture rather
+// than depending on the real repo root's contents.
+export function senseMobileRelease(app, projPath, workflowsDir,
+  policyRoots = [projPath, join(projPath, 'public'), repoRoot]) {
+  const findings = [];
+  if (!hasNativeContainer(projPath)) return findings;
+
+  const add = (id, severity, title, detail) => findings.push({
+    id: `${app}-mobile-${id}`, type: 'mobile-readiness', severity,
+    gate: 'manual-review', title, detail,
+  });
+
+  const androidDir = join(projPath, 'android');
+
+  // 1. Release signing — Play will not accept an unsigned artifact.
+  const gradle = readSafe(join(androidDir, 'app', 'build.gradle'));
+  if (gradle && !/signingConfigs?\s*\{/.test(gradle)) {
+    add('no-signing-config', 'high',
+      `No release signing config in ${app} android/app/build.gradle`,
+      'Play requires an App Bundle signed with an upload key. Add a signingConfigs block (reading the keystore path/passwords from env or local.properties — never commit them) and reference it from buildTypes.release.');
+  }
+
+  // 2. Version bump — every upload after the first needs a higher versionCode.
+  if (/versionCode\s+1\b/.test(gradle)) {
+    add('default-version-code', 'medium',
+      `${app} still declares versionCode 1`,
+      'versionCode is hardcoded to 1, so a second upload would be rejected. Drive it from CI (build number) or bump it deliberately per release.');
+  }
+
+  // 3. Branding — a stock Capacitor icon is an obvious placeholder.
+  const resDir = join(androidDir, 'app', 'src', 'main', 'res');
+  const defaultIcons = [];
+  let mipmapDirs = [];
+  try {
+    mipmapDirs = readdirSync(resDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && e.name.startsWith('mipmap'))
+      .map((e) => join(resDir, e.name));
+  } catch { /* no res/ yet (config without a generated platform) */ }
+  for (const d of mipmapDirs) {
+    const icon = join(d, 'ic_launcher.png');
+    if (!existsSync(icon)) continue;
+    try {
+      if (CAPACITOR_DEFAULT_ICON_SHA256.has(createHash('sha256').update(readFileSync(icon)).digest('hex'))) {
+        defaultIcons.push(rel(icon));
+      }
+    } catch { /* unreadable icon is not a finding */ }
+  }
+  if (defaultIcons.length) {
+    add('default-launcher-icon', 'high',
+      `${app} ships the stock Capacitor launcher icon (${defaultIcons.length} density${defaultIcons.length > 1 ? ' variants' : ''})`,
+      `Placeholder branding in a store listing. Replace the launcher icons with the app's own artwork:\n${defaultIcons.map((f) => `  - ${f}`).join('\n')}`);
+  }
+
+  // 4. Display name — the raw directory slug is not a store-facing name.
+  const strings = readSafe(join(androidDir, 'app', 'src', 'main', 'res', 'values', 'strings.xml'));
+  const label = strings.match(/<string name="app_name">([^<]*)<\/string>/)?.[1];
+  if (label && (label === app || /[-_]/.test(label))) {
+    add('slug-app-name', 'medium',
+      `${app} app_name is the raw slug '${label}'`,
+      `The launcher label and store listing show '${label}'. Set a human display name in android/app/src/main/res/values/strings.xml.`);
+  }
+
+  // 5. Web manifest icons that do not resolve on disk.
+  const publicDir = join(projPath, 'public');
+  const manifestRaw = readSafe(join(publicDir, 'manifest.json'));
+  if (manifestRaw) {
+    try {
+      const missing = (JSON.parse(manifestRaw).icons || [])
+        .map((i) => i.src)
+        .filter((src) => src && !/^https?:/i.test(src))
+        .filter((src) => !existsSync(join(publicDir, src.replace(/^\.?\//, ''))));
+      if (missing.length) {
+        add('manifest-icons-missing', 'high',
+          `${app} manifest.json references ${missing.length} icon(s) that do not exist`,
+          `These 404 at runtime, breaking PWA installability and the store icon pipeline: ${missing.join(', ')}`);
+      }
+    } catch { /* malformed manifest is out of scope for this sensor */ }
+  }
+
+  // 6. Privacy policy — mandatory for every Play listing.
+  const hasPolicy = policyRoots.some((base) => {
+    try { return readdirSync(base).some((f) => /privacy/i.test(f)); } catch { return false; }
+  });
+  if (!hasPolicy) {
+    add('no-privacy-policy', 'high',
+      `No privacy policy found for ${app}`,
+      'Play requires a privacy policy URL for every listing, and a Data safety declaration consistent with it. Add one and link it from the app and the listing.');
+  }
+
+  // 7. CI produces no installable artifact, so nothing verifies the native build.
+  const wf = workflowsDir && existsSync(workflowsDir)
+    ? readdirSync(workflowsDir).map((f) => readSafe(join(workflowsDir, f))).join('\n')
+    : '';
+  if (!/gradlew|bundleRelease|assembleRelease|cap\s+sync/.test(wf)) {
+    add('no-android-ci', 'medium',
+      `No CI job builds the ${app} Android artifact`,
+      'The workflows only build and test the web bundle, so a broken native build reaches a release unnoticed. Add a job that runs the Capacitor sync and a Gradle release build, and uploads the AAB.');
+  }
+
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
+// Production-bundle test coverage — an INFORMATIONAL sensor.
+//
+// A Playwright suite pointed only at the dev server proves nothing about the
+// artifact that ships: the dev server rewrites away the deploy-specific
+// configuration (`base`/`basePath`, asset URLs, hashed chunk names) that breaks
+// real deployments. This is the absence check for the lesson "Test the Artifact
+// You Ship, at Every Origin It Ships To" — a test that does not exist cannot be
+// caught by a line-level guardrail, so it lives here.
+//
+// Non-blocking, like senseMobileRelease: this describes missing coverage rather
+// than a regression, and blocking it would fail every PR on apps that have not
+// adopted it yet. See scripts/serve-dist.mjs for the shared server that makes
+// adoption a config line rather than new code.
+// ---------------------------------------------------------------------------
+const PLAYWRIGHT_CONFIGS = ['playwright.config.ts', 'playwright.config.js', 'playwright.config.mjs'];
+
+// A webServer that compiles the app or serves a built directory. Matching the
+// config (rather than the specs) is what distinguishes "loads the built output"
+// from "asserts about production" — only the server decides what is served.
+const BUILDS_PRODUCTION = /\b(vite|next|rollup|webpack)\s+build\b|npm\s+run\s+build\b|serve-dist|\bserve\b[^\n]*\b(dist|out|build)\b|http-server/;
+
+export function senseProductionBundleTest(app, projPath) {
+  const findings = [];
+  const cfgPath = PLAYWRIGHT_CONFIGS.map((f) => join(projPath, f)).find((p) => existsSync(p));
+  // No Playwright config at all is a different (already sensed) problem.
+  if (!cfgPath) return findings;
+
+  const cfg = readSafe(cfgPath);
+  if (!cfg || BUILDS_PRODUCTION.test(cfg)) return findings;
+
+  findings.push({
+    id: `${app}-no-production-bundle-test`,
+    type: 'test-coverage',
+    severity: 'high',
+    gate: 'manual-review',
+    title: `E2E for ${app} never loads the production build`,
+    detail: 'Every webServer in this config runs a dev server, so no test exercises the built '
+      + 'output — the deploy-specific config (base/basePath, asset URLs, chunk names) is never '
+      + 'checked. Add a webServer that builds the app and serves it with '
+      + '`node ../../scripts/serve-dist.mjs --dist <dir> --port <n> [--prefix <deploy path>]`, '
+      + 'and a spec that loads it and fails on any response >= 400. Prove it works by mutation: '
+      + 'break the base path and confirm the new test actually fails. '
+      + 'See projects/mood-diner/e2e/production-bundle.spec.ts.',
+    evidence: [{ file: rel(cfgPath), line: 1, snippet: 'webServer runs a dev server only' }],
+  });
+  return findings;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -214,6 +427,7 @@ function senseApp(app) {
 
   // 6. Guardrail scans.
   for (const g of GUARDRAILS) {
+    if (g.appliesTo && !g.appliesTo(projPath)) continue;
     const files = walk(projPath, g.exts).filter((f) => !(g.excludePath && g.excludePath(f)));
     const evidence = [];
     for (const f of files) {
@@ -232,6 +446,12 @@ function senseApp(app) {
     }
   }
 
+  // 7. Mobile release readiness (informational; native-container apps only).
+  for (const f of senseMobileRelease(app, projPath, join(repoRoot, '.github', 'workflows'))) add(f);
+
+  // 8. Production-bundle E2E coverage (informational; any app with Playwright).
+  for (const f of senseProductionBundleTest(app, projPath)) add(f);
+
   return findings;
 }
 
@@ -242,6 +462,9 @@ function senseApp(app) {
 // legitimate open work and only inform — blocking them would paint every PR
 // red until every spec is 100% implemented.
 // ---------------------------------------------------------------------------
+// 'mobile-readiness' is intentionally absent below: store-submission gaps are
+// real work, but a partially-prepared release must not block unrelated PRs.
+// They surface in the report and become work orders; they never fail the gate.
 export function isBlocking(f) {
   if (f.type === 'guardrail') return true;
   if (f.type === 'missing-artifact' && f.severity === 'high') return true; // missing spec

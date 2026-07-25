@@ -29,7 +29,7 @@
 
 5. **Testing is mandatory.** Unit tests (Vitest) for all core logic; Playwright E2E for critical flows;
    `@axe-core/playwright` accessibility. All test scenarios use BDD `Given → When → Then`. A feature is
-   not complete until `./scripts/test-app.ps1 -AppName <AppName>` passes (security, lint, type-check,
+   not complete until `node scripts/test-app.mjs <AppName>` passes (security, lint, type-check,
    Vitest, Playwright + a11y).
 
 6. **Never self-merge.** An agent may open a PR but a human reviews and merges. See the Sense → Propose →
@@ -45,8 +45,9 @@
 ```
 node scripts/harness-status.mjs --gate   # blocking gate: guardrails + missing specs
 node scripts/harness-learn.mjs           # lesson ⇄ guardrail ⇄ self-test traceability
-./scripts/test-app.ps1 -AppName <AppName> # full per-app suite
+node scripts/test-app.mjs <AppName>      # full per-app suite (security, lint, tsc, Vitest, Playwright)
 ```
 
-The loop core (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`) is zero-dependency Node ESM
-and runs cross-platform — you do not need PowerShell for the gates.
+The loop core (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`) **and the full per-app suite**
+(`test-app.mjs`) are zero-dependency Node ESM and run cross-platform — you do not need PowerShell for any
+gate. The `.ps1` scripts remain as thin wrappers so existing CI and muscle memory keep working.
