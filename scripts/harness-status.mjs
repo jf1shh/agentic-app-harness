@@ -43,6 +43,13 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.vi
 // LEARN invariant (enforced by harness-learn.mjs): every guardrail must carry a
 // `lesson` back-reference, and its `id` must be tagged `[guardrail: <id>]` on the
 // motivating bullet in .agents/AGENTS.md. No orphan rules, no undocumented rules.
+//
+// Optional `appliesTo(projPath)` narrows a guardrail to the apps it is true for.
+// Some anti-patterns are only anti-patterns in a specific deployment target (e.g.
+// a hardcoded Pages subpath is correct for a web-only app and fatal for one with
+// a native container), so scoping keeps the rule sharp instead of forcing a
+// false-positive on every other app. The line-level `test` contract is unchanged,
+// so the self-test in harness-status.test.mjs still covers every guardrail.
 // ---------------------------------------------------------------------------
 const GUARDRAILS = [
   {
@@ -105,6 +112,26 @@ const GUARDRAILS = [
     severity: 'medium',
     gate: 'guardrails',
     why: 'Fixed multi-track inline grids do not collapse and minmax() mins >= 300px overflow phones. Use repeat(auto-fit, minmax(min(BASIS, 100%), 1fr)) or a media query.',
+  },
+  {
+    id: 'capacitor-absolute-base',
+    label: 'WebView-safe bundler base (no hardcoded deploy subpath in a Capacitor app)',
+    lesson: 'Capacitor Absolute Base Path',
+    // Only apps that actually ship a native container are in scope: for a
+    // web-only app a Pages subpath base is the correct configuration.
+    appliesTo: (projPath) => existsSync(join(projPath, 'capacitor.config.ts'))
+      || existsSync(join(projPath, 'capacitor.config.json'))
+      || existsSync(join(projPath, 'android')),
+    exts: ['.ts', '.js', '.mjs'],
+    // Scope to the bundler config — a subpath string anywhere else (a route, a
+    // fetch URL, an asset href) is not this bug.
+    excludePath: (p) => !/[\\/](vite|next)\.config\.(ts|js|mjs)$/.test(p),
+    // Fires on a root-absolute, multi-segment base literal ('/foo…'), including
+    // inside a ternary. Stays silent on the WebView-safe values './' and '/'.
+    test: (line) => /\b(base|basePath):\s*.*['"`]\/[A-Za-z0-9._-]+/.test(line),
+    severity: 'high',
+    gate: 'guardrails',
+    why: "Capacitor serves the bundle from https://localhost/ in the Android WebView, so a hardcoded '/<repo>/<app>/' base makes every asset URL 404 and the app boots to a white screen. Use a relative base ('./'), which resolves under both the Pages subpath and the WebView origin.",
   },
 ];
 
@@ -214,6 +241,7 @@ function senseApp(app) {
 
   // 6. Guardrail scans.
   for (const g of GUARDRAILS) {
+    if (g.appliesTo && !g.appliesTo(projPath)) continue;
     const files = walk(projPath, g.exts).filter((f) => !(g.excludePath && g.excludePath(f)));
     const evidence = [];
     for (const f of files) {

@@ -40,6 +40,19 @@ const CASES = {
       'grid-template-columns: 1fr 1fr; /* handled by @media below */',
     ],
   },
+  'capacitor-absolute-base': {
+    bad: [
+      "base: '/agentic-app-harness/mood-diner/',",
+      "base: process.env.NODE_ENV === 'production' ? '/agentic-app-harness/mood-diner/' : '/',",
+      'basePath: "/agentic-app-harness/travel-packing-app",',
+    ],
+    good: [
+      "base: './',",
+      "base: '/',",
+      "base: process.env.NODE_ENV === 'production' ? './' : '/',",
+      "const dbUrl = database: '/not/a/base';",
+    ],
+  },
 };
 
 let failures = 0;
