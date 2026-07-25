@@ -72,8 +72,16 @@ Verified by serving `dist/` at both origins: old base → `404`, new base → `2
 `senseMobileRelease` sensor in `harness-status.mjs` reports all seven items below
 as `mobile-readiness` findings and emits a work order for each under `tasks/`.
 They are excluded from `isBlocking`, so they inform without failing the gate:
-- No release signing — `android/app/build.gradle` has a `release` block with no
-  `signingConfigs`. No keystore handling, no `bundleRelease`/AAB path.
+- ~~No release signing~~ **DONE** — `android/app/build.gradle` now resolves
+  credentials from `ANDROID_KEYSTORE_*` env vars, then a git-ignored
+  `android/keystore.properties`. All four values required; missing/empty leaves
+  the build unsigned with a warning rather than failing; a configured-but-absent
+  keystore fails fast. `*.jks`, `*.keystore` and `keystore.properties` are now
+  git-ignored (they were **not** before — the template lines were commented out).
+  Setup is documented in `projects/mood-diner/README.md`. Note: no Android SDK in
+  the dev container, so this was verified by Groovy parse-check plus evaluating
+  the real resolution block against stubs across 7 cases — **not** by running an
+  actual `gradlew bundleRelease`. That still needs a machine with the SDK.
 - Stock Capacitor launcher icon and splash in `android/app/src/main/res/`.
 - `versionCode 1` / `versionName "1.0"` hardcoded, no bump mechanism.
 - `app_name` is the raw slug `mood-diner` (`res/values/strings.xml`).
