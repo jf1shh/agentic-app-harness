@@ -87,11 +87,15 @@ They are excluded from `isBlocking`, so they inform without failing the gate:
 - CI builds no Android artifact: `ci.yml` is a web-only matrix, and
   `scripts/build-mobile.ps1` is a local script that stops at `npx cap sync`.
 
-**Known gate blind spot (still open):** `playwright.config.ts` runs E2E against the
-*dev* server (`npx vite --port 5178`, base `/`), so no test ever loads the
-production bundle. That is structurally why the base-path bug survived — and it is
-not fixed. Adding one smoke test that serves the built `dist/` at a non-root path
-would close it.
+**Gate blind spot — CLOSED.** E2E previously ran only against the dev server
+(base `/`), so no test ever loaded the shipped artifact; that is structurally why
+the base-path bug survived. `e2e/production-bundle.spec.ts` now loads the real
+`dist/` bundle and fails on any request that 404s. `e2e/serve-dist.mjs` serves it
+on **two separate ports** — root (`:5179`, the Capacitor WebView origin) and the
+Pages subpath (`:5180`) — because a single port answering both would resolve a
+subpath-pinned asset URL at the root mount and pass on a broken app. Verified by
+mutation: restoring the absolute base fails the WebView boot test and the
+asset-URL test, while the Pages test correctly still passes.
 
 **Verify the sensor:** `node scripts/harness-status.test.mjs` covers it against
 fixture trees — it asserts every check fires on an unprepared app, none fire on a
