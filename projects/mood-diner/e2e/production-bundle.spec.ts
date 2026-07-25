@@ -9,12 +9,12 @@ import { test, expect, type Page } from '@playwright/test';
  * in the Android WebView pass E2E, a11y and the live Pages deploy.
  *
  * These specs load the real dist/ bundle at both origins it ships to, served by
- * e2e/serve-dist.mjs, and fail on any request that 404s.
+ * scripts/serve-dist.mjs, and fail on any request that 404s.
  */
 
-// Two distinct origins on purpose — see the header of e2e/serve-dist.mjs. The
-// WebView origin must not know the Pages subpath exists, or a bundle pinned to
-// that subpath would still resolve here and the test would pass on a broken app.
+// Two distinct origins on purpose — see the header of scripts/serve-dist.mjs.
+// The WebView origin must not know the Pages subpath exists, or a bundle pinned
+// to that subpath would still resolve here and the test would pass on a broken app.
 const WEBVIEW_URL = 'http://localhost:5179/';                              // Capacitor: https://localhost/
 const PAGES_URL = 'http://localhost:5180/agentic-app-harness/mood-diner/'; // GitHub Pages subpath
 

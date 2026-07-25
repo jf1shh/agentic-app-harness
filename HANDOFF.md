@@ -27,13 +27,31 @@ machine without `pwsh`.
 | **Verify** | `node scripts/harness-status.mjs --gate` | Blocking CI gate: fails on guardrail regressions + missing specs (drift only informs). Guardrails are self-tested (`harness-status.test.mjs`). |
 | **Learn** | `node scripts/harness-learn.mjs` | Enforces a closed `Lesson ⇄ Guardrail ⇄ Self-test` loop so new guardrails must trace to a documented lesson. |
 
+The **full per-app suite is now Node too**: `node scripts/test-app.mjs <AppName>`
+(security audit, lint, tsc, Vitest, Playwright + a11y). `test-app.ps1` is a thin
+wrapper around it, so CI and existing docs are unchanged. This matters for agents:
+the authoritative gate previously could not run without `pwsh`, so work done in a
+Linux container could only be verified by pushing and waiting for Windows CI.
+
 `.\scripts\harness.ps1` exposes `status`, `tasks`, `verify`, and `learn`
 commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 `.agents/AGENTS.md` §8 and `tasks/README.md` for the bring-your-own-agent contract.
 
 ## 3. Current State / Open Work
-- **Active branch:** `claude/play-store-production-readiness-weh4sp` — adds the
-  `capacitor-absolute-base` guardrail and fixes the bug it caught (see §6 below).
+- **Active branch:** `claude/play-store-production-readiness-weh4sp` (PR #32, open,
+  **not merged**) — Play Store readiness for mood-diner (§6), plus two pieces of
+  harness automation: the `senseProductionBundleTest` sensor and the Node port of
+  the per-app suite.
+- **Open, non-blocking:** 4 apps (`portfolio-hub`, `travel-packing-app`,
+  `smart-recipe-app`, `legal-financial-rag`) have no production-bundle E2E — their
+  Playwright configs only ever start a dev server, so nothing tests the artifact
+  they deploy to Pages. Work orders are in `tasks/`. Adoption is a config line:
+  add a `webServer` that builds, then
+  `node ../../scripts/serve-dist.mjs --dist <dir> --port <n> --prefix <deploy path>`,
+  plus a spec modelled on `projects/mood-diner/e2e/production-bundle.spec.ts`.
+  **Prove each one by mutation** — break the base path and confirm the new test
+  actually fails — because a smoke test that passes on a broken build is worse
+  than none.
 - **Smart Recipe App:** the loop flagged real spec drift; acting on it added a
   genuine recipe-recommendation engine (`src/lib/recommend.ts`) and reconciled the
   spec to the app's true static-export + `localStorage` architecture. Sense now
@@ -45,7 +63,7 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 
 ## 4. How to Verify
 - Whole-repo sense + gates: `.\scripts\harness.ps1 status`, then `verify` and `learn`.
-- A single app: `.\scripts\test-app.ps1 -AppName <AppName>` (security, lint,
+- A single app: `node scripts/test-app.mjs <AppName>` (security, lint,
   type-check, Vitest, Playwright + a11y).
 - Spec/schema coverage: `.\scripts\validate-specs.ps1 -Strict`.
 

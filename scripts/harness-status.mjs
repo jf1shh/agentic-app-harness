@@ -273,6 +273,55 @@ export function senseMobileRelease(app, projPath, workflowsDir,
 }
 
 // ---------------------------------------------------------------------------
+// Production-bundle test coverage — an INFORMATIONAL sensor.
+//
+// A Playwright suite pointed only at the dev server proves nothing about the
+// artifact that ships: the dev server rewrites away the deploy-specific
+// configuration (`base`/`basePath`, asset URLs, hashed chunk names) that breaks
+// real deployments. This is the absence check for the lesson "Test the Artifact
+// You Ship, at Every Origin It Ships To" — a test that does not exist cannot be
+// caught by a line-level guardrail, so it lives here.
+//
+// Non-blocking, like senseMobileRelease: this describes missing coverage rather
+// than a regression, and blocking it would fail every PR on apps that have not
+// adopted it yet. See scripts/serve-dist.mjs for the shared server that makes
+// adoption a config line rather than new code.
+// ---------------------------------------------------------------------------
+const PLAYWRIGHT_CONFIGS = ['playwright.config.ts', 'playwright.config.js', 'playwright.config.mjs'];
+
+// A webServer that compiles the app or serves a built directory. Matching the
+// config (rather than the specs) is what distinguishes "loads the built output"
+// from "asserts about production" — only the server decides what is served.
+const BUILDS_PRODUCTION = /\b(vite|next|rollup|webpack)\s+build\b|npm\s+run\s+build\b|serve-dist|\bserve\b[^\n]*\b(dist|out|build)\b|http-server/;
+
+export function senseProductionBundleTest(app, projPath) {
+  const findings = [];
+  const cfgPath = PLAYWRIGHT_CONFIGS.map((f) => join(projPath, f)).find((p) => existsSync(p));
+  // No Playwright config at all is a different (already sensed) problem.
+  if (!cfgPath) return findings;
+
+  const cfg = readSafe(cfgPath);
+  if (!cfg || BUILDS_PRODUCTION.test(cfg)) return findings;
+
+  findings.push({
+    id: `${app}-no-production-bundle-test`,
+    type: 'test-coverage',
+    severity: 'high',
+    gate: 'manual-review',
+    title: `E2E for ${app} never loads the production build`,
+    detail: 'Every webServer in this config runs a dev server, so no test exercises the built '
+      + 'output — the deploy-specific config (base/basePath, asset URLs, chunk names) is never '
+      + 'checked. Add a webServer that builds the app and serves it with '
+      + '`node ../../scripts/serve-dist.mjs --dist <dir> --port <n> [--prefix <deploy path>]`, '
+      + 'and a spec that loads it and fails on any response >= 400. Prove it works by mutation: '
+      + 'break the base path and confirm the new test actually fails. '
+      + 'See projects/mood-diner/e2e/production-bundle.spec.ts.',
+    evidence: [{ file: rel(cfgPath), line: 1, snippet: 'webServer runs a dev server only' }],
+  });
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function walk(root, exts) {
@@ -399,6 +448,9 @@ function senseApp(app) {
 
   // 7. Mobile release readiness (informational; native-container apps only).
   for (const f of senseMobileRelease(app, projPath, join(repoRoot, '.github', 'workflows'))) add(f);
+
+  // 8. Production-bundle E2E coverage (informational; any app with Playwright).
+  for (const f of senseProductionBundleTest(app, projPath)) add(f);
 
   return findings;
 }
