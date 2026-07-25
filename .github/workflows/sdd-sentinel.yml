@@ -24,58 +24,39 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: |
-            projects/mood-diner/package-lock.json
-            projects/portfolio-hub/package-lock.json
-            projects/travel-packing-app/package-lock.json
-            projects/smart-recipe-app/package-lock.json
+          cache-dependency-path: projects/legal-financial-rag/package-lock.json
 
-      - name: Install Monorepo Dependencies
-        shell: powershell
+      # The harness gates (self-test, learn, verify) and validate-specs are static
+      # analyzers — no install needed. Only the RAG retrieval-precision gate needs
+      # deps (promptfoo + zod), so install just that one app. The full per-app test
+      # suite runs in parallel in the Harness Testing Suite workflow (ci.yml) — this
+      # job deliberately does not duplicate it.
+      - name: Install RAG eval dependencies
+        shell: pwsh
         run: |
-          Get-ChildItem -Path projects -Directory | ForEach-Object {
-            Write-Host "Installing dependencies for $($_.Name)..."
-            Push-Location $_.FullName
-            npm install --include=dev
-            Pop-Location
-          }
-
-      - name: Install Playwright Browsers
-        shell: powershell
-        run: |
-          Push-Location projects/mood-diner
-          npx playwright install --with-deps chromium
+          Push-Location projects/legal-financial-rag
+          npm install --include=dev
           Pop-Location
 
       - name: Harness Guardrail Self-Test (verify the verifier)
-        shell: powershell
-        run: |
-          node .\scripts\harness-status.test.mjs
+        shell: pwsh
+        run: node .\scripts\harness-status.test.mjs
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
-        shell: powershell
-        run: |
-          node .\scripts\harness-learn.mjs
+        shell: pwsh
+        run: node .\scripts\harness-learn.mjs
 
       - name: Harness Verify Gate (blocks on guardrail regressions & missing specs)
-        shell: powershell
-        run: |
-          node .\scripts\harness-status.mjs --gate
+        shell: pwsh
+        run: node .\scripts\harness-status.mjs --gate
 
       - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
-        shell: powershell
-        run: |
-          node .\scripts\rag-eval-gate.mjs
+        shell: pwsh
+        run: node .\scripts\rag-eval-gate.mjs
 
       - name: Run Spec & Schema Coverage Audit
-        shell: powershell
-        run: |
-          .\scripts\validate-specs.ps1 -Strict
-
-      - name: Run Master Harness Test Suite Across All Apps
-        shell: powershell
-        run: |
-          .\scripts\harness.ps1 test all
+        shell: pwsh
+        run: .\scripts\validate-specs.ps1 -Strict
 
       - name: Post SDD Sentinel PR Review Comment
         if: success() && github.event_name == 'pull_request'
@@ -84,11 +65,12 @@ jobs:
           script: |
             const body = `### 🤖 SDD Sentinel — Spec & Quality Gate Report
 
-            ✅ **All required harness gates passed on this PR.**
-            - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap, so this is enforced, not aspirational.
-            - **Master harness suite** (\`harness.ps1 test all\`): lint, type-check, Vitest unit tests, and Playwright E2E + \`@axe-core\` accessibility checks passed for all apps.
+            ✅ **All required spec & quality gates passed on this PR.**
+            - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
+            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), and the blocking \`verify\` gate all passed.
+            - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 
-            *This comment posts only when the required gates above succeed. See the workflow run logs for the exact per-app check output.*
+            *The full per-app suite (lint, type-check, Vitest, Playwright + \`@axe-core\`) runs in parallel in the Harness Testing Suite workflow.*
 
             *Automated SDD Sentinel comment for PR #${context.issue.number}.*`;
 

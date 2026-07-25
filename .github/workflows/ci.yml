@@ -9,7 +9,14 @@ on:
 jobs:
   test-apps:
     runs-on: windows-latest
-    
+    strategy:
+      # One leg per app, in parallel. fail-fast:false so one app's failure
+      # doesn't cancel the others — you see every app's result in one run.
+      fail-fast: false
+      matrix:
+        app: [mood-diner, portfolio-hub, travel-packing-app, smart-recipe-app, legal-financial-rag]
+
+    name: test (${{ matrix.app }})
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -18,33 +25,12 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: projects/${{ matrix.app }}/package-lock.json
 
-      - name: Install Monorepo Dependencies
+      # test-app.ps1 is self-contained: it installs the app's deps and Playwright
+      # browsers on demand, then runs security audit, lint, type-check, Vitest, and
+      # Playwright E2E + axe a11y. No separate global install step needed.
+      - name: Run Harness Suite for ${{ matrix.app }}
         shell: pwsh
-        run: |
-          Get-ChildItem -Path ./projects -Directory | ForEach-Object {
-            Write-Host "Installing dependencies for $($_.Name)..."
-            Push-Location $_.FullName
-            npm install --include=dev
-            Pop-Location
-          }
-
-      - name: Install Playwright Browsers
-        shell: pwsh
-        run: |
-          Push-Location ./projects/mood-diner
-          npx playwright install --with-deps chromium
-          Pop-Location
-
-      - name: Run Test Suite across all Apps
-        shell: pwsh
-        run: |
-          $projects = Get-ChildItem -Path ./projects -Directory
-          foreach ($project in $projects) {
-            Write-Host "Running tests for $($project.Name)"
-            ./scripts/test-app.ps1 -AppName $project.Name
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "Tests failed for $($project.Name)" -ForegroundColor Red
-              exit 1
-            }
-          }
+        run: ./scripts/test-app.ps1 -AppName ${{ matrix.app }}
