@@ -1,0 +1,22 @@
+---
+description: Spec-driven development rules for the Agentic App Harness monorepo — binding on every change.
+alwaysApply: true
+---
+
+# Agentic App Harness — Cursor rules
+
+This repo's rules are the same for every agent. The portable entry point is [`AGENTS.md`](../../AGENTS.md);
+the full authoritative rulebook is [`.agents/AGENTS.md`](../../.agents/AGENTS.md). Read them before editing.
+
+Binding essentials (the linked files govern):
+
+1. **Spec is the single source of truth.** Read the matching spec in `specs/` before writing code; it
+   dictates architecture, data models, and acceptance criteria. Flag conflicts — never silently diverge.
+2. **Contract-first (Zod).** Data models are runtime `zod` schemas with `z.infer<typeof Schema>` types;
+   validate untrusted input (storage, imports) at the boundary.
+3. **No vibe coding.** If a requirement is ambiguous or underspecified, stop and ask before implementing.
+4. **Monorepo scoping.** Apps live under `projects/<app-name>`; scope every command and edit accordingly.
+5. **Testing is mandatory.** Vitest units + Playwright E2E + `@axe-core/playwright` a11y, all written in
+   BDD `Given → When → Then` form. A change is complete only when `./scripts/test-app.ps1 -AppName <AppName>`
+   passes. The same gates run in CI, so non-compliant changes fail the build.
+6. **Never self-merge.** Open a PR; a human reviews and merges.

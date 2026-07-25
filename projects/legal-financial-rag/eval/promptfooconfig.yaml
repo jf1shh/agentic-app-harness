@@ -1,0 +1,18 @@
+# LexiVault retrieval-precision eval — deterministic, LLM-free.
+#
+# The provider runs the app's real hybrid search engine over the sample corpus;
+# each golden case asserts the expected document is retrieved within topK, scored
+# by reciprocal rank (mean score across cases = MRR). Run via the harness gate:
+#   node scripts/rag-eval-gate.mjs
+# or directly:  npm run eval   (from projects/legal-financial-rag)
+description: LexiVault hybrid retrieval-precision (no LLM, no network)
+
+providers:
+  - file://retrievalProvider.ts
+
+# The query is passed straight through to the retrieval provider as the "prompt".
+prompts:
+  - '{{query}}'
+
+# Golden cases are generated from goldenset.json (single source of truth).
+tests: file://loadCases.js

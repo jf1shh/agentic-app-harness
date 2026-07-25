@@ -16,17 +16,38 @@ export interface ChunkOptions {
   maxChunkSize?: number;
 }
 
+export const EMBEDDING_DIM = 128;
+
+// Stable 32-bit string hash (FNV-1a) for the hashing-trick feature map. Deterministic
+// and dependency-free, so embeddings are identical across the browser and CI.
+function hashFeature(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+// Lightweight semantic embedding via feature hashing over (1) whole tokens and
+// (2) character 3-grams. The 3-grams give the vector channel signal for
+// morphological / partial overlap (e.g. "indemnification" ~ "indemnity") that
+// pure keyword BM25 cannot see, while the higher 128-dim space (vs. the old
+// 32-dim char-code sum) sharply cuts hash collisions. L2-normalized, so cosine
+// similarity reduces to a dot product on the search hot path.
 export function generateSimpleEmbedding(text: string): number[] {
-  const vector = new Array(32).fill(0);
-  const normalized = text.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+  const vector = new Array(EMBEDDING_DIM).fill(0);
+  const normalized = text.toLowerCase().replace(/[^a-z0-9 ]/g, ' ');
   const words = normalized.split(/\s+/).filter(Boolean);
 
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-    for (let j = 0; j < word.length; j++) {
-      const charCode = word.charCodeAt(j);
-      const index = (charCode + j) % 32;
-      vector[index] += 1;
+  for (const word of words) {
+    // (1) whole-token feature — exact term match signal
+    vector[hashFeature(`w:${word}`) % EMBEDDING_DIM] += 1;
+
+    // (2) char 3-gram features — morphology / partial-term signal
+    const padded = `#${word}#`;
+    for (let i = 0; i + 3 <= padded.length; i++) {
+      vector[hashFeature(`g:${padded.slice(i, i + 3)}`) % EMBEDDING_DIM] += 1;
     }
   }
 
