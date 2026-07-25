@@ -62,6 +62,11 @@ jobs:
         run: |
           node .\scripts\harness-status.mjs --gate
 
+      - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
+        shell: powershell
+        run: |
+          node .\scripts\rag-eval-gate.mjs
+
       - name: Run Spec & Schema Coverage Audit
         shell: powershell
         run: |

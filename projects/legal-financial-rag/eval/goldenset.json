@@ -1,0 +1,66 @@
+{
+  "description": "Golden retrieval labels for LexiVault's hybrid search engine. Each case pairs a realistic counsel query with the document (and section) that MUST be retrieved for the answer to be grounded. Labels are derived from src/lib/datasets/authenticSampleDocs.ts — keep them in sync when the corpus changes.",
+  "topK": 3,
+  "cases": [
+    {
+      "query": "What is the maximum Consolidated Total Leverage Ratio the borrower may permit?",
+      "expectedDocId": "doc-tesla-credit-2024",
+      "expectedSection": "Section 4.02"
+    },
+    {
+      "query": "What minimum liquidity threshold triggers an immediate event of default?",
+      "expectedDocId": "doc-tesla-credit-2024",
+      "expectedSection": "Section 6.08"
+    },
+    {
+      "query": "How is the Consolidated Fixed Charge Coverage Ratio defined?",
+      "expectedDocId": "doc-tesla-credit-2024",
+      "expectedSection": "Section 1.01"
+    },
+    {
+      "query": "What aggregate litigation reserves and contingency accruals were recorded?",
+      "expectedDocId": "doc-apple-10k-2024",
+      "expectedSection": "Note 14"
+    },
+    {
+      "query": "European Commission App Store antitrust investigation and regulatory risk",
+      "expectedDocId": "doc-apple-10k-2024",
+      "expectedSection": "Item 1A"
+    },
+    {
+      "query": "manufacturing purchase obligations and unconditional purchase commitments",
+      "expectedDocId": "doc-apple-10k-2024",
+      "expectedSection": "Note 14"
+    },
+    {
+      "query": "earn-out payment based on Gross Payment Volume GPV targets",
+      "expectedDocId": "doc-stripe-ma-2024",
+      "expectedSection": "Article II"
+    },
+    {
+      "query": "indemnification cap and escrow amount limiting recourse for representation breaches",
+      "expectedDocId": "doc-stripe-ma-2024",
+      "expectedSection": "Section 8.04"
+    },
+    {
+      "query": "golden parachute tax exposure under IRC Section 280G",
+      "expectedDocId": "doc-stripe-ma-2024",
+      "expectedSection": "Section 8.04"
+    },
+    {
+      "query": "Series B liquidation preference multiple and original issue price per share",
+      "expectedDocId": "doc-biotech-seriesb-2024",
+      "expectedSection": "Liquidation Preference"
+    },
+    {
+      "query": "broad-based weighted average anti-dilution protection on a down round",
+      "expectedDocId": "doc-biotech-seriesb-2024",
+      "expectedSection": "Anti-Dilution"
+    },
+    {
+      "query": "drag-along rights threshold to compel founders in a change of control sale",
+      "expectedDocId": "doc-biotech-seriesb-2024",
+      "expectedSection": "Anti-Dilution"
+    }
+  ]
+}
