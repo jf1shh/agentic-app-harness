@@ -43,9 +43,17 @@ function header(title) {
   console.log(`${C.cyan}=========================================${C.reset}`);
 }
 
-function resolvePromptfooBin() {
-  const bin = process.platform === 'win32' ? 'promptfoo.cmd' : 'promptfoo';
-  return join(APP_DIR, 'node_modules', '.bin', bin);
+// Resolve promptfoo's JS entrypoint and run it with `node` directly, rather than
+// the platform `.bin` shim: since Node's CVE-2024-27980 fix, spawnSync cannot
+// launch a Windows `.cmd`/`.bat` without shell:true (it errors EINVAL), which
+// silently broke this gate on the windows-latest CI runner. Invoking the JS with
+// process.execPath is uniform across Windows/macOS/Linux.
+function resolvePromptfooEntry() {
+  const pkgPath = join(APP_DIR, 'node_modules', 'promptfoo', 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  const rel = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.promptfoo;
+  if (!rel) throw new Error('promptfoo package.json has no bin entry');
+  return join(APP_DIR, 'node_modules', 'promptfoo', rel);
 }
 
 // promptfoo's output JSON shape has shifted across versions; find the per-case
@@ -62,13 +70,21 @@ function extractResults(data) {
 function main() {
   header('Harness Gate — RAG Retrieval Precision');
 
-  const bin = resolvePromptfooBin();
+  let entry;
+  try {
+    entry = resolvePromptfooEntry();
+  } catch {
+    console.error(`${C.red}promptfoo is not installed in ${APP_DIR}.${C.reset}`);
+    console.error(`${C.gray}Run 'npm install' in projects/legal-financial-rag first.${C.reset}`);
+    process.exit(2);
+  }
+
   const outDir = mkdtempSync(join(tmpdir(), 'rag-eval-'));
   const outFile = join(outDir, 'results.json');
 
   const run = spawnSync(
-    bin,
-    ['eval', '-c', CONFIG, '--output', outFile, '--no-cache'],
+    process.execPath,
+    [entry, 'eval', '-c', CONFIG, '--output', outFile, '--no-cache'],
     {
       cwd: APP_DIR,
       encoding: 'utf8',
@@ -81,17 +97,14 @@ function main() {
     },
   );
 
-  if (run.error && run.error.code === 'ENOENT') {
-    console.error(`${C.red}promptfoo binary not found at ${bin}.${C.reset}`);
-    console.error(`${C.gray}Run 'npm install' in projects/legal-financial-rag first.${C.reset}`);
-    process.exit(2);
-  }
-
   let data;
   try {
     data = JSON.parse(readFileSync(outFile, 'utf8'));
   } catch (e) {
     console.error(`${C.red}Could not read promptfoo output (${e.message}).${C.reset}`);
+    if (run.error) console.error(`${C.gray}spawn error: ${run.error.message}${C.reset}`);
+    console.error(`${C.gray}promptfoo exit code: ${run.status}${C.reset}`);
+    if (run.stdout) console.error(run.stdout.slice(-2000));
     if (run.stderr) console.error(run.stderr.slice(-2000));
     process.exit(2);
   } finally {

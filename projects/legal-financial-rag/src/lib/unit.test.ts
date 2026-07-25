@@ -13,8 +13,8 @@ import {
   deriveKeyFromPassphrase,
 } from './security/encryption';
 import { detectAndRedactPII, togglePIIMask } from './security/piiRedactor';
-import { chunkDocument, generateSimpleEmbedding } from './rag/chunker';
-import { cosineSimilarity, searchHybrid, calculateBM25Score } from './rag/vectorEngine';
+import { chunkDocument, generateSimpleEmbedding, EMBEDDING_DIM } from './rag/chunker';
+import { cosineSimilarity, dotProduct, searchHybrid, calculateBM25Score } from './rag/vectorEngine';
 import { processRAGQuery } from './rag/queryProcessor';
 import { exportAuditToJSON, exportAuditToMarkdown } from './export/auditExporter';
 import { SAMPLE_DOCUMENTS } from './datasets/authenticSampleDocs';
@@ -199,12 +199,29 @@ describe('LexiVault Hardened Engine Unit Test Suite', () => {
       expect(chunks[0].tokens.length).toBeGreaterThan(0);
     });
 
-    it('generates normalized 32-dimensional embedding vectors', () => {
+    it('generates normalized 128-dimensional embedding vectors', () => {
       const text = 'Debt covenants leverage ratio liquidity threshold';
       const embedding = generateSimpleEmbedding(text);
-      expect(embedding.length).toBe(32);
+      expect(embedding.length).toBe(EMBEDDING_DIM);
+      expect(EMBEDDING_DIM).toBe(128);
       const magnitude = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
       expect(magnitude).toBeCloseTo(1.0, 4);
+    });
+
+    it('gives morphological variants vector-channel overlap via char 3-grams', () => {
+      // "indemnification" and "indemnity" share several 3-grams, so their
+      // embeddings should be far more similar than an unrelated legal term —
+      // signal that pure keyword BM25 would miss.
+      const related = cosineSimilarity(
+        generateSimpleEmbedding('indemnification'),
+        generateSimpleEmbedding('indemnity'),
+      );
+      const unrelated = cosineSimilarity(
+        generateSimpleEmbedding('indemnification'),
+        generateSimpleEmbedding('liquidation'),
+      );
+      expect(related).toBeGreaterThan(unrelated);
+      expect(related).toBeGreaterThan(0.2);
     });
   });
 
@@ -254,6 +271,20 @@ describe('LexiVault Hardened Engine Unit Test Suite', () => {
       for (const { q, d, avg } of cases) {
         expect(calculateBM25Score(q, d, avg)).toBe(naiveBM25(q, d, avg));
       }
+    });
+
+    it('dot product equals cosine similarity for normalized embeddings', () => {
+      // searchHybrid uses dotProduct instead of cosineSimilarity on the hot path;
+      // this is only valid because generateSimpleEmbedding returns unit vectors.
+      // Lock that invariant so the optimization can't silently drift.
+      const a = generateSimpleEmbedding('consolidated total leverage ratio covenant');
+      const b = generateSimpleEmbedding('minimum liquidity threshold event of default');
+      expect(dotProduct(a, b)).toBeCloseTo(cosineSimilarity(a, b), 10);
+      expect(dotProduct(a, a)).toBeCloseTo(1.0, 6);
+    });
+
+    it('returns 0 from dotProduct on dimension mismatch', () => {
+      expect(dotProduct([1, 2, 3], [1, 2])).toBe(0);
     });
 
     it('enforces security privilege filtering during hybrid retrieval', () => {

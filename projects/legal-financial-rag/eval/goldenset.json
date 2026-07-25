@@ -61,6 +61,47 @@
       "query": "drag-along rights threshold to compel founders in a change of control sale",
       "expectedDocId": "doc-biotech-seriesb-2024",
       "expectedSection": "Anti-Dilution"
+    },
+
+    {
+      "query": "how much debt the borrower may carry relative to earnings before breaching its covenants",
+      "expectedDocId": "doc-tesla-credit-2024",
+      "expectedSection": "Section 4.02"
+    },
+    {
+      "query": "cash cushion the company must always hold on hand to avoid a default",
+      "expectedDocId": "doc-tesla-credit-2024",
+      "expectedSection": "Section 6.08"
+    },
+    {
+      "query": "shareholder tax penalties from parachute compensation arrangements",
+      "expectedDocId": "doc-stripe-ma-2024",
+      "expectedSection": "Section 8.04"
+    },
+    {
+      "query": "limit on how much the buyer can recover for breached warranties and representations",
+      "expectedDocId": "doc-stripe-ma-2024",
+      "expectedSection": "Section 8.04"
+    },
+    {
+      "query": "protecting early investors from dilution in a lower priced financing round",
+      "expectedDocId": "doc-biotech-seriesb-2024",
+      "expectedSection": "Anti-Dilution"
+    },
+    {
+      "query": "the payout priority to preferred holders if the startup is liquidated",
+      "expectedDocId": "doc-biotech-seriesb-2024",
+      "expectedSection": "Liquidation Preference"
+    },
+    {
+      "query": "reserves the company booked for pending lawsuits and regulatory actions",
+      "expectedDocId": "doc-apple-10k-2024",
+      "expectedSection": "Note 14"
+    },
+    {
+      "query": "european antitrust scrutiny of the app store business",
+      "expectedDocId": "doc-apple-10k-2024",
+      "expectedSection": "Item 1A"
     }
   ]
 }

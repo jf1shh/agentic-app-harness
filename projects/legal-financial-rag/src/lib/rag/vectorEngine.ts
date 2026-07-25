@@ -22,6 +22,22 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+/**
+ * Plain dot product. Used on the search hot path where both operands are
+ * embeddings from `generateSimpleEmbedding`, which are already L2-normalized —
+ * so the dot product equals the cosine similarity exactly, but skips the two
+ * norm accumulations and two Math.sqrt calls per chunk that cosineSimilarity
+ * would recompute. `cosineSimilarity` remains the general (unnormalized-safe) API.
+ */
+export function dotProduct(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) return 0;
+  let sum = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    sum += vecA[i] * vecB[i];
+  }
+  return sum;
+}
+
 export function calculateBM25Score(
   queryTokens: string[],
   chunkTokens: string[],
@@ -93,7 +109,10 @@ export function searchHybrid(options: SearchOptions): RAGCitation[] {
   const citations: RAGCitation[] = [];
 
   for (const chunk of eligibleChunks) {
-    const vectorScore = cosineSimilarity(queryEmbedding, chunk.embedding);
+    // Embeddings from generateSimpleEmbedding are L2-normalized, so the dot
+    // product equals cosine similarity while skipping two norm passes + two
+    // sqrt calls per chunk on this hot loop.
+    const vectorScore = dotProduct(queryEmbedding, chunk.embedding);
     const bm25Score = calculateBM25Score(queryTokens, chunk.tokens, avgDocLen);
 
     const hybridScore = (1 - hybridWeight) * vectorScore + hybridWeight * bm25Score;
