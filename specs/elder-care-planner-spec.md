@@ -1,8 +1,9 @@
 # Project Specification: Elder Care Cost Planner
 
 > **Status:** DRAFT — awaiting human approval before implementation (per `.agents/AGENTS.md` §1–2).
-> **Revision 2** — scope rewritten from user research (§2). Region: US-only. Cost data: cited
-> medians + per-facility override.
+> **Revision 3** — scope from user research (§2); binding non-goals (§1.1); sensitivity,
+> questions-to-ask, and neutral-voice summary added. Region: US-only. Cost data: cited medians +
+> per-facility override.
 
 ## 1. Product Overview
 
@@ -22,6 +23,29 @@ discharge. Secondary: older adults planning their own care.
 **Explicitly not:** medical, legal, tax, or financial advice. This is an estimator. Every output
 carries its assumptions, and the app names the points where a professional is required
 (Medicaid planning, elder law, tax filing).
+
+### 1.1 Non-goals (binding)
+These are product commitments, not deferred features. Reversing any of them requires revising
+this spec, because each one is load-bearing for the app's usefulness — not merely a preference.
+
+- **No referral revenue, ever.** No facility directory, no "get matched with communities," no
+  lead capture, no affiliate or referral fees. Nearly every senior-care cost calculator on the
+  web is lead generation, and families know it. The moment this app has a financial interest in
+  which option a family picks, its cost comparisons stop being believable — including the honest
+  ones.
+- **No account, no email field, no analytics, no user data over the network.** See §1.2.
+- **No point estimates where a range is the honest answer.** See §5.3.
+- **No eligibility determinations** for Medicaid, VA, or tax positions. The app informs and
+  refers out (§6.8, §6.9).
+
+### 1.2 Trust is a functional requirement, not a privacy nicety
+Input quality is the binding constraint on every number this app produces. A family that does not
+trust the tool enters approximate or fake figures, and a runway computed from fake figures is
+*worse* than no runway — it carries the authority of arithmetic without the substance. Local-only
+storage is therefore what makes the product work at all, and it must be **demonstrable rather
+than asserted**: no account, no email field, no network request carrying user data, and a
+plain-language "your data never leaves this device" disclosure that tells a skeptical user how to
+verify the claim themselves (offline use, DevTools network tab).
 
 ---
 
@@ -61,7 +85,7 @@ hrs/wk but moves substantially with state rates, and most published comparisons 
 of staying home (utilities, groceries, maintenance, transport, home modifications). The app
 computes the crossover from *the user's own* numbers, both sides fully loaded.
 
-### 2.4 Money is the #1 source of sibling conflict → **Split + Ledger** (§6.4)
+### 2.4 Money is the #1 source of sibling conflict → **Split + Ledger** (§6.6)
 76% of family caregivers report not receiving consistent help from family, and 78% report
 out-of-pocket expenses averaging **$7,242/year**. Guidance is consistent: the fight is rarely
 about whether Mom needs help, it is about who pays. Two capabilities follow:
@@ -72,14 +96,14 @@ about whether Mom needs help, it is about who pays. Two capabilities follow:
   can contribute time, coordination, or a specific task, and the lead caregiver's time *is* their
   contribution.
 
-### 2.5 Caregiving costs the caregiver → **Opportunity Cost + Contributor Affordability** (§6.5)
+### 2.5 Caregiving costs the caregiver → **Opportunity Cost + Contributor Affordability** (§6.7)
 Family caregivers spend more than a quarter of their annual income on caregiving, and roughly
 40% cut back or leave their jobs. About 60% of people supporting parents take on debt — 13% take
 on **$25,000 or more**. So the projection cannot stop at the parent's assets: it must show when
 *contributors* start funding care from debt, and what a caregiver's reduced work costs over a
 lifetime.
 
-### 2.6 Delay forfeits benefits → **Benefit Reality Check with timing** (§6.6)
+### 2.6 Delay forfeits benefits → **Benefit Reality Check with timing** (§6.8)
 Rushed decisions cause liquidation of assets and **delayed or missed access to Medicaid, VA, and
 LTC insurance benefits**. The failure is usually about *timing* — Medicaid's 5-year lookback,
 LTC elimination periods, VA application lead times. The screener therefore surfaces deadlines and
@@ -120,7 +144,13 @@ combination plus **local-only, no-account privacy**.
       qualitative Social Security flag for reduced work years.
 - [ ] **Tax Estimate** — unreimbursed medical expenses above 7.5% of AGI, with a
       multiple-support flag when siblings split support.
-- [ ] **Family Meeting Summary** — one printable page: recommendation, numbers, assumptions, split.
+- [ ] **"Questions to ask before you sign"** — a scenario-specific checklist that turns the §2.1
+      hidden-fee findings into leverage at the moment of negotiation, plus a parallel list for an
+      elder law attorney consultation.
+- [ ] **"What would change this answer"** — sensitivity ranking that re-runs the projection with
+      each input perturbed and orders them by impact on runway.
+- [ ] **Family Meeting Summary** — one printable page in a neutral third-party voice:
+      recommendation, numbers, assumptions, split.
 - [ ] **Local-only persistence + export/import** — `localStorage`, no account, no network calls
       for user data; JSON export/import Zod-validated at the boundary.
 - [ ] **Accessibility-first UI** — WCAG 2.1 AA, large-type mode, plain language, full keyboard use.
@@ -157,9 +187,11 @@ src/
     data/costOfCare.ts      # cited national + state cost dataset
     data/feeStructures.ts   # cited typical tier/community-fee/escalator ranges
     data/benefits.ts        # cited benefit thresholds + timing rules
+    data/questionsToAsk.ts  # scenario-keyed negotiation + attorney checklists
     engine/cost.ts          # scenario -> all-in monthly cost breakdown
     engine/breakeven.ts     # in-home vs residential crossover hours
     engine/runway.ts        # cost + income + assets -> depletion projection
+    engine/sensitivity.ts   # which input moves the runway most
     engine/split.ts         # shortfall -> per-contributor contributions
     engine/ledger.ts        # actual contributions -> reconciliation vs pledged
     engine/opportunity.ts   # caregiver work reduction -> lifetime cost
@@ -187,7 +219,36 @@ Driven by §2.2. The landing route **is** the calculator, not a marketing page:
 The result panel always shows its confidence basis: *"Based on the state median. Add your
 facility's actual quote to sharpen this."*
 
-### 5.2 Visual system
+### 5.2 Ship the decision, not the spreadsheet
+A projection is not an answer. Every results view leads with a plain-language recommendation, the
+reasoning behind it, and what to do next — with the table underneath for anyone who wants it.
+
+> **Calculator (not sufficient):** "Assisted living: $6,840/mo. Runway: 74 months."
+>
+> **Required:** "A facility is about $900/month cheaper than your current 45 hrs/week of home
+> care. Your mother's savings cover it for roughly 6–8 years. The number that moves that range
+> most is care-level escalation, not investment returns — so get the tier schedule in writing
+> before you sign."
+
+### 5.3 Ranges, not false precision
+"$847,392 over 6.2 years" is a lie told to two decimal places, and when reality diverges the user
+stops believing the parts that *were* sound. Care escalation is genuinely unpredictable, so:
+
+- Runway is presented as a **band** (e.g. "roughly 6–8 years") with the point estimate available
+  underneath, never as a bare single number.
+- Every headline figure names the assumption driving its uncertainty, sourced from §6.4.
+- Being visibly honest about what is uncertain is what earns belief in what is not.
+
+### 5.4 Neutral third-party voice
+Money is the leading source of sibling conflict (§2.4). When the **app** says "an equal split is
+$1,180 each," it is not the sister saying it — and that reframing does real social work at the
+family meeting. The Family Meeting Summary is therefore written in a neutral, non-accusatory,
+third-party register: no second person, no "you should," no implied judgment about who is
+contributing enough. All assumptions are printed on the page so siblings argue with the **inputs**
+rather than with each other. This is an editorial constraint, and it is reviewable — copy that
+addresses or characterises a family member fails review.
+
+### 5.5 Visual system
 - **Color Palette:** Calm, non-clinical, high contrast. Primary `#1e5f4f` (deep teal),
   Secondary `#9a3412` (amber-800) for warnings, Background `#f8faf9`, Text `#111827`.
   All pairs verified ≥ 4.5:1 — per the a11y lesson in `.agents/AGENTS.md` §6, bright 500/600
@@ -278,7 +339,53 @@ elimination period delaying benefit start; LTC benefit period expiring mid-proje
 community fee in month 1; negative investment return; home equity excluded unless `liquid: true`;
 contributor burden flag firing at the right month.
 
-### 6.4 Split + Ledger (`engine/split.ts`, `engine/ledger.ts`)
+### 6.4 Sensitivity — "what would change this answer" (`engine/sensitivity.ts`)
+Re-runs §6.3 with one input perturbed at a time, holding the rest fixed, and ranks inputs by the
+resulting change in `depletionMonth`:
+
+```
+for each lever in [careEscalatorRate, careLevelTier, hoursPerWeek, assetReturnRate,
+                   incomeColaRate, oneTimeCosts, ancillaryTotal]:
+  low  = runway(plan with lever at its low-plausible bound)
+  high = runway(plan with lever at its high-plausible bound)
+  impactMonths = |low.depletionMonth - high.depletionMonth|
+rank descending by impactMonths
+```
+
+Output: an ordered list of `{ lever, impactMonths, direction, plainLanguageLabel }`, plus the
+runway **band** consumed by §5.3. Perturbation bounds come from the cited ranges in §2.1 (e.g.
+escalator 3–5%), never from invented volatility.
+
+The intent is pedagogical as much as analytical: showing that a care-level bump outweighs a market
+downturn teaches something durable that survives the user closing the tab.
+
+**Must be unit-tested:** ranking is stable and deterministic; a lever with no effect on a given
+plan ranks last rather than being omitted; a plan with no depletion (income covers cost) yields a
+defined result rather than `NaN`; bounds are read from the cited data, not hardcoded at call sites.
+
+### 6.5 Questions to ask before you sign (`data/questionsToAsk.ts`)
+Static, scenario-keyed checklists — no computation, minimal build cost, and plausibly the most
+directly useful screen in the app. §2.1 established that families are blindsided by fee structures
+they did not know to ask about; modeling those costs helps, but arming the user at the moment of
+negotiation helps more.
+
+Keyed by `careType`, and for residential care including at minimum:
+- What triggers a care-level reassessment, and who decides?
+- May I see the full care-level tier schedule in writing?
+- What were your actual rate increases in each of the last three years?
+- Is the community fee refundable if we leave within 30 / 60 / 90 days?
+- Which services are included in the base rate, and which are billed separately?
+- Is there a coordination or monitoring fee if we bring in an outside aide or therapist?
+- What happens if my parent's needs exceed what this community can provide?
+
+A parallel `attorney` list covers the referred-out territory (§6.8): Medicaid lookback exposure,
+spousal impoverishment protections, powers of attorney, existing asset transfers. Framing this as
+*what to ask a professional* is deliberately more helpful — and far safer — than a wrong
+eligibility answer.
+
+Each list is printable and included in the Family Meeting Summary.
+
+### 6.6 Split + Ledger (`engine/split.ts`, `engine/ledger.ts`)
 Split methods:
 - `equal` — shortfall ÷ contributors.
 - `income_proportional` — share = shortfall × (their income ÷ total income). Falls back to equal
@@ -294,9 +401,9 @@ is **displayed, never silently netted** against a cash share — how to weigh ti
 a family decision, not the app's.
 
 The ledger reconciles **pledged vs. actually paid** per contributor per month, producing a
-running balance and a per-category total that feeds §6.7.
+running balance and a per-category total that feeds §6.9.
 
-### 6.5 Caregiver opportunity cost (`engine/opportunity.ts`)
+### 6.7 Caregiver opportunity cost (`engine/opportunity.ts`)
 ```
 lostGrossWages = salary * (hoursReduced / 40) * years
 lostNetWages   = lostGrossWages * (1 - marginalTaxRate)
@@ -307,7 +414,7 @@ affect the 35-year Social Security earnings average, linking to SSA's own calcul
 must not fabricate a benefit-reduction number: that calculation needs a full earnings history the
 app does not have.
 
-### 6.6 Benefit Reality Check (`data/benefits.ts`)
+### 6.8 Benefit Reality Check (`data/benefits.ts`)
 Rule-based, informational, and explicitly **not** an eligibility determination. Each card leads
 with its timing trap (§2.6):
 - **Medicare** — covers up to 100 days of skilled nursing after a qualifying hospital stay, with
@@ -326,7 +433,7 @@ with its timing trap (§2.6):
 
 Every card cites its source and the date its figures were checked.
 
-### 6.7 Tax estimate (`engine/tax.ts`)
+### 6.9 Tax estimate (`engine/tax.ts`)
 Unreimbursed medical expenses above 7.5% of AGI may be deductible when itemizing, and qualifying
 long-term care costs can count when care follows a plan of care for a chronically ill person. The
 engine estimates the deductible amount from ledger categories and flags the multiple-support
@@ -392,7 +499,7 @@ export const AncillaryExpenseSchema = z.object({
   ]),
   amountCents: z.number().int().min(0),
   cadence: z.enum(['monthly', 'annual', 'one_time']),
-  taxDeductibleCandidate: z.boolean().default(false),  // feeds §6.7
+  taxDeductibleCandidate: z.boolean().default(false),  // feeds §6.9
 });
 
 export const CareScenarioSchema = z.object({
@@ -520,14 +627,26 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
 
 - **Unit Tests (Vitest):** 100% coverage of `src/lib/engine/**` and `schemas.ts`. Every scenario
   in BDD form: `describe('Given ...')` → `it('When ... Then ...')`. All edge cases listed in
-  §6.1–§6.4 are required cases, not suggestions.
+  §6.1–§6.6 are required cases, not suggestions.
+- **Externally-verified golden fixtures (required).** The runway (§6.3) and break-even (§6.2)
+  engines are tested against fixtures **hand-computed by a human and checked into the repo with
+  their working shown**, not against output captured from the implementation. Self-consistent math
+  that is wrong is precisely how a tool like this causes financial harm, and a snapshot test of
+  our own output cannot detect it. A golden fixture whose expected values were generated by the
+  code under test fails review.
 - **E2E (Playwright), BDD-named `*.spec.ts`:**
   - Triage completes in 5 fields and renders a runway (§2.2).
   - Adding fees moves "all-in" above "advertised" and the delta is displayed (§2.1).
   - Break-even reports a crossover and flips recommendation as hours cross it (§2.3).
   - A shortfall splits three ways and the parts sum exactly to the shortfall (§2.4).
+  - The sensitivity panel names a top driver and the runway renders as a band (§5.3, §6.4).
+  - The scenario-specific "questions to ask" list renders and prints (§6.5).
   - Export then re-import a plan and get byte-identical numbers.
   - The Medicare "does not cover custodial care" copy is visible on the results screen (§2.6).
+- **Non-goal enforcement (§1.1):** an automated test asserts the built bundle contains no
+  analytics or telemetry endpoints, and that no form field collects an email address or account
+  credential. A Playwright run with all outbound requests blocked must still complete the full
+  triage → results → summary flow, proving the local-only claim rather than asserting it.
 - **A11y:** `@axe-core/playwright` on every route, zero violations, including in large-type mode
   and at 200% browser zoom.
 - **Production bundle smoke test:** an E2E spec that loads the **built** export via
@@ -561,11 +680,27 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
    5-year lookback.
 8. **Debt guard:** when required contributions exceed a contributor's stated capacity, the plan
    flags the month borrowing would begin.
-9. `node scripts/test-app.mjs elder-care-planner` passes: security, lint, type-check, Vitest,
-   Playwright + axe.
-10. `node scripts/harness-status.mjs --gate` reports no new guardrail violations.
-11. The Family Meeting Summary prints to one readable page with all assumptions listed.
-12. The app is fully operable by keyboard and at 200% zoom, with zero axe violations.
+9. **Sensitivity:** every recommendation names its top driver, and the ranking is deterministic
+   and defined even for plans that never deplete.
+10. **Negotiation leverage:** each residential scenario produces its "questions to ask before you
+    sign" checklist, and it prints with the summary.
+11. `node scripts/test-app.mjs elder-care-planner` passes: security, lint, type-check, Vitest,
+    Playwright + axe.
+12. `node scripts/harness-status.mjs --gate` reports no new guardrail violations.
+13. The Family Meeting Summary prints to one readable page with all assumptions listed.
+14. The app is fully operable by keyboard and at 200% zoom, with zero axe violations.
+
+### 9.1 Behavioural gates (judgement, not automation)
+Passing the test suite does not establish that the app helps anyone. These four are assessed by a
+human before V1 ships, and a failure blocks release as surely as a red test:
+
+1. **The 60-second test.** Someone who has never seen the app reaches a usable answer in under a
+   minute, on a phone, without assistance.
+2. **The no-false-precision test.** No screen presents a point estimate where a range is the
+   honest answer (§5.3).
+3. **The top-driver test.** Every recommendation names what would most change it (§6.4).
+4. **The sibling test.** A user would be willing to send the Family Meeting Summary to their
+   brother unedited — meaning the neutral-voice constraint in §5.4 actually held.
 
 ---
 
@@ -584,6 +719,6 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
 4. **Medicaid modeling.** Deliberately deferred. Spend-down rules are state-specific and getting
    them subtly wrong causes real financial harm. V1 informs, surfaces the lookback clock, and
    refers out to an elder law attorney.
-5. **Ledger scope creep.** The contribution ledger (§6.4) edges toward being an expense-tracking
+5. **Ledger scope creep.** The contribution ledger (§6.6) edges toward being an expense-tracking
    app. V1 keeps it deliberately minimal — amount, date, category, who paid — with receipts and
    recurring entries deferred. Confirm that boundary.
