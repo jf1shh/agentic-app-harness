@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoPlanner } from './support';
 
 /**
  * Two decisions families actually face: home or a facility, and who pays.
@@ -8,7 +9,7 @@ test.describe('BDD Spec: The home-versus-facility crossover', () => {
     page,
   }) => {
     // Given a modest amount of paid help at home
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('Paid help at home, hours per week').fill('20');
     await expect(page.getByTestId('cheaper-option')).toContainText('Care at home');
 
@@ -23,7 +24,7 @@ test.describe('BDD Spec: The home-versus-facility crossover', () => {
     page,
   }) => {
     // Given 40 hours a week of paid help and no housing costs counted
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('Paid help at home, hours per week').fill('40');
     const before = await page.getByTestId('in-home-monthly').textContent();
 
@@ -39,7 +40,7 @@ test.describe('BDD Spec: The home-versus-facility crossover', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the break-even summary is read
     // Then it names a concrete number of hours
@@ -52,7 +53,7 @@ test.describe('BDD Spec: Splitting the cost between family members', () => {
     page,
   }) => {
     // Given three contributors
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('How many family members will share the cost?').fill('3');
 
     // When the shares are read
@@ -71,7 +72,7 @@ test.describe('BDD Spec: Splitting the cost between family members', () => {
     page,
   }) => {
     // Given two contributors
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When one provides 20 unpaid hours a week
     await page.getByLabel('Unpaid care hours per week').first().fill('20');
@@ -86,7 +87,7 @@ test.describe('BDD Spec: Splitting the cost between family members', () => {
     page,
   }) => {
     // Given an income-proportional split
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('How should the cost be divided?').selectOption('income_proportional');
 
     // When incomes are supplied

@@ -114,6 +114,21 @@ As an AI agent operating within this repository, you must strictly adhere to the
   a multi-field form whose submit depends on all of them is where it surfaces. Not tagged as a
   guardrail: "is this the first interaction after a navigation, in a hydrating app" is a
   cross-statement property that a per-line regex cannot see.
+- **A Debounced Autosave Loses the Last Thing Typed**: Debouncing writes is right — a burst of
+  typing should be one write, not thirty — but a debounce alone silently drops whatever is still
+  pending when the page goes away, which is precisely the moment a user expects their work to be
+  kept. In `projects/elder-care-planner` a 300ms debounce meant an edit followed by a reload was
+  never written, and the symptom was indistinguishable from persistence being broken outright.
+  Pair every debounced write with a synchronous flush on `pagehide` **and** on
+  `visibilitychange`→`hidden`; the first covers navigation and closing a tab, the second covers a
+  phone being backgrounded, where `pagehide` is not dependable. Hold the pending value in a ref so
+  the listener is registered once rather than re-subscribed on every keystroke. Two consequences
+  worth knowing. (1) *Prove it by reloading in an E2E test*, not by asserting the store was called
+  — the bug lives entirely in the gap between "we scheduled a write" and "the write happened".
+  (2) *A correct flush will fight a test that seeds corrupt storage and reloads*, because the flush
+  overwrites the corruption on the way out; seed such fixtures with `addInitScript` before the
+  first navigation instead. Not tagged as a guardrail: whether a given `setTimeout` write has a
+  matching lifecycle flush is a whole-component property, not a line a regex can see.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning

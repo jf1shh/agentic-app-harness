@@ -6,60 +6,19 @@
  */
 import {
   DEFAULT_ASSUMPTIONS,
+  type AddOnToggle,
   type CareScenario,
   type Contributor,
-  type LedgerEntry,
   type Plan,
-  type SplitMethod,
+  type PlannerState,
   type CareType,
 } from './schemas';
 
-export interface AddOnToggle {
-  readonly id: string;
-  readonly label: string;
-  readonly monthlyCents: number;
-  readonly enabled: boolean;
-}
-
-export interface PlannerState {
-  // ---- Triage: the five fields that produce an answer in under a minute ----
-  stateCode: string;
-  careType: CareType;
-  monthlyIncomeCents: number;
-  liquidAssetsCents: number;
-  contributorCount: number;
-
-  // ---- Refinement: every field below is optional ----
-  careRecipientLabel: string;
-  hoursPerWeek: number;
-  costOverrideCents: number | null;
-  careLevelTierCents: number;
-  communityFeeCents: number;
-  annualEscalatorRate: number;
-  addOns: readonly AddOnToggle[];
-  ancillaryMonthlyCents: number;
-  projectionYears: number;
-  assetReturnRate: number;
-  incomeColaRate: number;
-
-  // ---- Break-even comparison ----
-  compareHoursPerWeek: number;
-  housingCarryMonthlyCents: number;
-
-  // ---- Sharing ----
-  contributors: readonly Contributor[];
-  splitMethod: SplitMethod;
-
-  // ---- Contribution ledger: what was actually paid, by whom ----
-  ledger: readonly LedgerEntry[];
-  /**
-   * Months of care paid for so far. Supplied rather than derived from the
-   * clock, because every engine in this app is a pure function of its inputs —
-   * an ambient `Date.now()` would make the reconciliation untestable and would
-   * quietly change a family's numbers between one visit and the next.
-   */
-  monthsElapsed: number;
-}
+// The form's shape is a Zod schema in schemas.ts, so what the app holds in
+// React and what it validates on read out of the browser cannot drift apart
+// (.agents/AGENTS.md §1). Re-exported here because this is where callers
+// already look for it.
+export type { AddOnToggle, PlannerState };
 
 export const US_STATES: readonly { code: string; name: string }[] = [
   { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
@@ -116,7 +75,7 @@ export const INITIAL_STATE: PlannerState = {
   careLevelTierCents: 0,
   communityFeeCents: 0,
   annualEscalatorRate: 0.04,
-  addOns: DEFAULT_ADD_ONS,
+  addOns: [...DEFAULT_ADD_ONS],
   ancillaryMonthlyCents: 0,
   projectionYears: 10,
   assetReturnRate: 0.04,

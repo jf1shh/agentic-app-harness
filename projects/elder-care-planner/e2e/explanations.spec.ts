@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { gotoPlanner } from './support';
 
 /**
  * Calculation transparency (spec §6.10).
@@ -36,7 +37,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given a plan with fees that push the real cost above the advertised one
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('Care-level surcharge, monthly').fill('1500');
     await page.getByLabel(/Medication management/).check();
 
@@ -55,7 +56,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given a plan carrying a surcharge, two add-ons and everyday costs
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('Care-level surcharge, monthly').fill('1500');
     await page.getByLabel(/Medication management/).check();
     await page.getByLabel(/Incontinence care and supplies/).check();
@@ -74,7 +75,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given the default plan, where income does not cover the cost
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the gap derivation is opened
     await page.getByTestId('why-monthly-gap').click();
@@ -91,7 +92,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given an open explanation
-    await page.goto('/');
+    await gotoPlanner(page);
     const trigger = page.getByTestId('why-runway');
     await trigger.click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -108,7 +109,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given an open explanation panel
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByTestId('why-runway').click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -125,7 +126,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the crossover explanation is opened
     await page.getByTestId('why-break-even').click();
@@ -143,7 +144,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given the planner as loaded, with nothing opened
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the methodology section is inspected
     const methodology = page.getByRole('region', {
@@ -170,7 +171,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     page,
   }) => {
     // Given memory care, a care type the survey does not price separately
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('What kind of care?').selectOption('memory_care');
 
     // When the base-rate derivation is opened

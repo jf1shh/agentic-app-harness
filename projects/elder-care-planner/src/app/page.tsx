@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   INITIAL_STATE,
   US_STATES,
@@ -11,6 +11,12 @@ import {
 } from '@/lib/plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '@/lib/engine/plan';
 import { summariseLedger } from '@/lib/engine/ledger';
+import {
+  browserStorage,
+  clearPlannerState,
+  loadPlannerState,
+  savePlannerState,
+} from '@/lib/storage';
 import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS } from '@/lib/data/costOfCare';
 import type { CareType, Contributor, LedgerEntry, SplitMethod } from '@/lib/schemas';
@@ -52,6 +58,12 @@ const EMPTY_EXPLANATIONS: ExplanationSet = {
 export default function Home() {
   const [state, setState] = useState<PlannerState>(INITIAL_STATE);
   const [largeText, setLargeText] = useState(false);
+  // Nothing is read from storage during render: the server renders this page to
+  // static HTML, and reaching for localStorage there would either crash or
+  // produce markup that disagrees with the first client render.
+  const [restored, setRestored] = useState(false);
+  const [restoreFailed, setRestoreFailed] = useState(false);
+  const [confirmingErase, setConfirmingErase] = useState(false);
 
   const update = useCallback((patch: Partial<PlannerState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -60,6 +72,81 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.dataset.textsize = largeText ? 'large' : 'normal';
   }, [largeText]);
+
+  // Restore once, on mount.
+  //
+  // This is the cascading render `set-state-in-effect` warns about, and it is
+  // unavoidable rather than careless: the page is a static export, so the stored
+  // plan cannot be read while rendering without producing server markup that
+  // disagrees with the first client render. One extra render on mount is the
+  // price of persistence that survives hydration.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const storage = browserStorage();
+    if (storage) {
+      const result = loadPlannerState(storage);
+      if (result.status === 'restored') setState(result.state);
+      if (result.status === 'invalid') setRestoreFailed(true);
+    }
+    setRestored(true);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Save on change, debounced so a burst of typing is one write. Guarded on
+  // `restored` — without it the first save would fire with the defaults and
+  // overwrite the family's stored plan before the load had run.
+  useEffect(() => {
+    if (!restored) return;
+    const storage = browserStorage();
+    if (!storage) return;
+    const timer = setTimeout(() => savePlannerState(storage, state), 300);
+    return () => clearTimeout(timer);
+  }, [state, restored]);
+
+  // Flush immediately when the page goes away.
+  //
+  // The debounce above means the last few hundred milliseconds of typing are
+  // still pending when someone closes the tab, switches app, or hits reload —
+  // and that edit would be lost with no indication it had been. `pagehide`
+  // covers navigation and closing; `visibilitychange` covers a phone being
+  // backgrounded, where `pagehide` is not dependable.
+  const latest = useRef(state);
+  const canSave = useRef(false);
+  useEffect(() => {
+    latest.current = state;
+    canSave.current = restored;
+  }, [state, restored]);
+
+  useEffect(() => {
+    const flush = () => {
+      if (!canSave.current) return;
+      const storage = browserStorage();
+      if (storage) savePlannerState(storage, latest.current);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  // A marker for tests: proof that the restore has finished, so an E2E fill
+  // cannot land in the window before it and be overwritten.
+  useEffect(() => {
+    if (restored) document.documentElement.dataset.planready = 'true';
+  }, [restored]);
+
+  const eraseEverything = () => {
+    const storage = browserStorage();
+    if (storage) clearPlannerState(storage);
+    setState(INITIAL_STATE);
+    setRestoreFailed(false);
+    setConfirmingErase(false);
+  };
 
   const plan = useMemo(() => buildPlan(state), [state]);
   const planResult = useMemo(() => computePlan(plan), [plan]);
@@ -275,15 +362,58 @@ export default function Home() {
           </button>
         </div>
 
-        <p className="privacy-note no-print">
-          <strong>Nothing typed here leaves this device.</strong> There is no account, no email
-          field and no analytics, and this page makes no network requests with any of these
-          figures — it can be checked by turning off the network, or by watching the network tab
-          in browser developer tools. That is deliberate: a planner nobody trusts gets fed
-          approximate numbers, and approximate numbers make every figure it produces worthless.
-          Even so, please use first names or labels rather than full legal names, and do not enter
-          account numbers.
-        </p>
+        {restoreFailed ? (
+          <p className="callout no-print" data-testid="restore-failed">
+            A saved plan was found on this device but could not be read — it may have been written
+            by a newer version of this page, or edited by hand. Rather than load part of it and
+            present the result as though it were complete, this page has started from its defaults.
+          </p>
+        ) : null}
+
+        <div className="privacy-note no-print">
+          <p>
+            <strong>Nothing typed here leaves this device.</strong> There is no account, no email
+            field and no analytics, and this page makes no network requests with any of these
+            figures — it can be checked by turning off the network, or by watching the network tab
+            in browser developer tools. That is deliberate: a planner nobody trusts gets fed
+            approximate numbers, and approximate numbers make every figure it produces worthless.
+            Even so, please use first names or labels rather than full legal names, and do not enter
+            account numbers.
+          </p>
+          <p>
+            <strong>These figures are saved in this browser</strong> so the plan is still here on
+            the next visit. That is the same device and the same browser only — nothing is
+            synced, and nothing is uploaded. On a shared or borrowed computer, erase it before
+            handing it back.
+          </p>
+          {confirmingErase ? (
+            <p>
+              <strong>Erase the plan, the ledger and every figure entered, on this device?</strong>{' '}
+              This cannot be undone.{' '}
+              <button type="button" onClick={eraseEverything} data-testid="confirm-erase">
+                Yes, erase it
+              </button>{' '}
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setConfirmingErase(false)}
+              >
+                Keep it
+              </button>
+            </p>
+          ) : (
+            <p>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setConfirmingErase(true)}
+                data-testid="erase"
+              >
+                Forget everything on this device
+              </button>
+            </p>
+          )}
+        </div>
       </main>
 
       <footer className="site page">

@@ -64,6 +64,8 @@ chart is inline SVG paired with an equivalent data table.
 ```
 src/lib/
   schemas.ts              contract-first Zod models; types inferred via z.infer
+                          — PlanSchema is the domain contract, PlannerStateSchema
+                            is what the browser stores (see "Persistence")
   data/costOfCare.ts      cited cost figures, each carrying its confidence level
   data/feeStructures.ts   typical fee ranges for checking a contract against
   data/benefits.ts        benefit cards, each led by its timing trap
@@ -83,7 +85,7 @@ src/lib/
     types.ts       the shape of a derivation, plus its balance invariant
     build.ts       one builder per headline figure
   recommendation.ts       decision copy, in an enforced neutral voice
-  storage.ts              localStorage boundary, Zod-validated
+  storage.ts              localStorage boundary, Zod-validated on read
 ```
 
 Engines are pure so the arithmetic is fully testable and the UI cannot introduce arithmetic of its
@@ -117,7 +119,7 @@ npm test                                       # Vitest only
 npx playwright test                            # E2E only
 ```
 
-- **171 unit tests**, BDD-formatted, covering every engine, the schema boundary and every
+- **179 unit tests**, BDD-formatted, covering every engine, the storage boundary and every
   derivation.
 - **Golden fixtures are hand-computed by a human**, with the arithmetic written out in the test
   comments. Values captured from the implementation would only prove the code agrees with itself —
@@ -128,15 +130,36 @@ npx playwright test                            # E2E only
   the cent and still display a table that visibly does not add up, and that is the failure that
   costs a family's trust. Verified by mutation: dropping the add-on rows, or removing the explicit
   clamp step where income exceeds cost, each fails the suite.
-- **45 E2E specs** including axe accessibility on the default view, the large-text view, with a
+- **51 E2E specs** including axe accessibility on the default view, the large-text view, with a
   derivation panel open and with the ledger in use; a 200% zoom overflow check; and a
   production-bundle smoke test that loads the built output at the real Pages subpath and fails on
   any response ≥ 400.
+- **Persistence is proved by reloading**, not by asserting the store was called — the bug that
+  matters lives in the gap between scheduling a write and the write happening.
 - **E2E specs wait for hydration before their first interaction.** A `fill()` that lands before
   React attaches its listeners is silently reverted, and the failure surfaces later as a submit
   button that never enables. See the lesson in `.agents/AGENTS.md` §6.
 - **The privacy claim is proved, not asserted**: one spec blocks every outbound request and runs the
   full triage → refinement → split → summary flow to completion.
+
+## Persistence
+
+Everything typed is kept in `localStorage` so the plan is still there on the next visit, and the
+privacy note says so plainly — an app that quietly holds a parent's finances on a shared computer
+has broken the trust its numbers depend on. A confirmed **"Forget everything on this device"**
+control clears every key the app owns.
+
+Three decisions worth knowing before changing this:
+
+- **The stored artifact is the form state, not a `Plan`.** `buildPlan()` is a one-way projection
+  and drops `monthsElapsed`, `compareHoursPerWeek` and — for residential care — the housing carry
+  cost. Losing `monthsElapsed` would silently rewrite every figure in the ledger reconciliation on
+  reload. Both shapes are Zod schemas; `Plan` stays the domain contract the engines consume.
+- **Writes are debounced and flushed on `pagehide`/`visibilitychange`.** A debounce alone loses the
+  last edit before a reload or a backgrounded phone. See `.agents/AGENTS.md` §6.
+- **A payload that fails the contract is reported, not discarded quietly.** "No saved plan" and
+  "saved plan that could not be read" are different outcomes, and the second one puts a notice on
+  screen rather than letting a family discover their figures reverted on their own.
 
 ## Accessibility
 
@@ -149,8 +172,9 @@ their place on a long page.
 
 ## Status
 
-V1 complete. The ledger is now on screen; the caregiver opportunity-cost and tax-estimate engines
-are still engine-only, and each needs its own derivation when it gains a UI — an app where some
-numbers can be checked and the ones beside them cannot is worse than one that never offered. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate
+V1 complete. The ledger is on screen and the plan persists between visits. The caregiver
+opportunity-cost and tax-estimate engines are still engine-only, and each needs its own derivation
+when it gains a UI — an app where some numbers can be checked and the ones beside them cannot is
+worse than one that never offered. JSON export/import is built in `storage.ts` but has no UI. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate
 — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a
 care-hours scheduler, and reverse-mortgage modelling.

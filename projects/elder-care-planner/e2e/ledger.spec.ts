@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { cents, gotoPlanner } from './support';
 
 /**
  * The contribution ledger (spec §6.6).
@@ -12,20 +13,6 @@ import AxeBuilder from '@axe-core/playwright';
  * balance that is right in cents but displays inconsistently is the failure
  * that restarts the argument.
  */
-
-/**
- * Wait for React to attach its event listeners.
- *
- * A `fill()` that lands before hydration sets the DOM value, fires an input
- * event into a page with no listener yet, and is then reverted by the first
- * client render — silently, and looking exactly like a broken control. The page
- * sets `data-textsize` from a client effect, so its presence is proof that
- * effects have run and the form is genuinely interactive.
- */
-async function ready(page: Page) {
-  await page.goto('/');
-  await page.waitForFunction(() => document.documentElement.dataset.textsize !== undefined);
-}
 
 async function logPayment(
   page: Page,
@@ -43,17 +30,12 @@ async function logPayment(
   await page.getByTestId('add-ledger-entry').click();
 }
 
-/** Parse a rendered "$1,234.56" cell back into cents. */
-function cents(text: string): number {
-  return Math.round(Number(text.replace(/[^0-9.]/g, '')) * 100);
-}
-
 test.describe('BDD Spec: The ledger records what was actually paid', () => {
   test('Given a family sharing the cost, When a payment is logged, Then it appears with a running total', async ({
     page,
   }) => {
     // Given the planner with two family members sharing
-    await ready(page);
+    await gotoPlanner(page);
 
     // When a payment is logged
     await logPayment(page, { date: '2026-03-04', dollars: '1200', category: 'Medication' });
@@ -67,7 +49,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given three months of care and an equal split
-    await ready(page);
+    await gotoPlanner(page);
     await page.getByLabel('Months of care paid for so far').fill('3');
 
     // When two people log what they have paid
@@ -89,7 +71,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given four months elapsed
-    await ready(page);
+    await gotoPlanner(page);
     await page.getByLabel('Months of care paid for so far').fill('4');
     await logPayment(page, { date: '2026-01-04', dollars: '500' });
 
@@ -107,7 +89,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given two logged payments
-    await ready(page);
+    await gotoPlanner(page);
     await logPayment(page, { date: '2026-01-04', dollars: '1000' });
     await logPayment(page, { date: '2026-02-04', dollars: '250' });
     await expect(page.getByTestId('ledger-total')).toHaveText('$1,250.00');
@@ -124,7 +106,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given a medication payment, which pre-ticks the medical-expense box
-    await ready(page);
+    await gotoPlanner(page);
     await logPayment(page, { date: '2026-01-04', dollars: '800', category: 'Medication' });
 
     // When the category totals are read
@@ -140,7 +122,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given payments from two people
-    await ready(page);
+    await gotoPlanner(page);
     await page.getByLabel('Months of care paid for so far').fill('2');
     await logPayment(page, { who: 'Family member 1', date: '2026-01-04', dollars: '1200' });
     await logPayment(page, { who: 'Family member 2', date: '2026-02-19', dollars: '300' });
@@ -162,7 +144,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given a ledger with an entry in it
-    await ready(page);
+    await gotoPlanner(page);
     await logPayment(page, { date: '2026-01-04', dollars: '640', note: 'Pharmacy' });
 
     // When axe audits the page
@@ -178,7 +160,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
     page,
   }) => {
     // Given only an amount
-    await ready(page);
+    await gotoPlanner(page);
     await page.getByLabel('How much?').fill('400');
 
     // Then the entry cannot be logged without a date
