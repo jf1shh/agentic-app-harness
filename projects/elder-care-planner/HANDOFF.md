@@ -1,7 +1,8 @@
 # Agent Handoff — Elder Care Cost Planner
 
-**State:** V1 complete and green. `node scripts/test-app.mjs elder-care-planner` passes all checks
-(security advisory-only, lint, type-check, 179 Vitest, 51 Playwright + axe).
+**State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b).
+`node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only, lint,
+type-check, 206 Vitest, 58 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 5,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
@@ -12,8 +13,27 @@ not from intuition.
 ## What was built
 
 Triage-first single-page planner. Five fields produce an all-in cost, a funding runway, a sensitivity
-ranking and a per-sibling share; everything else is optional refinement. Eight pure engines under
+ranking and a per-sibling share; everything else is optional refinement. Nine pure engines under
 `src/lib/engine/`, a Zod contract in `src/lib/schemas.ts`, and cited datasets under `src/lib/data/`.
+
+**Independent Living comparison (spec §6.5b, added in revision 8).** Up to three buy-in contracts
+compared on one asset-depletion chart. `engine/buyin.ts` is pure math (refund at tenure,
+affordability, per-option projection); `components/ILComparisonPanel.tsx` holds the editable option
+cards and `components/ILOverlayChart.tsx` draws the overlay.
+
+Three things here are load-bearing and easy to undo by accident:
+
+1. **The refund band is not decoration.** The refund is never netted into the depletion line
+   (it cannot be spent while the stay continues), so the option with the *best* refund terms draws
+   the *lowest* line. The shaded band above each line is the refund at that month, and it must not
+   become optional, collapsed-by-default, or toggle-hidden — without it the chart misrepresents
+   the exact comparison it exists for. An E2E spec fails if the band disappears.
+2. **`independent_living` is deliberately out of `SELECTABLE_CARE_TYPES`.** IL is priced from a
+   contract, not a survey median, and this panel is the only place a contract can be entered.
+   Adding it to the triage picker produces a $0-a-month scenario a family cannot correct.
+3. **`RunwayResult.yearlyBreakdown` is now the monthly series sampled, not a second
+   accumulation.** Both read one `assetsEndCents` per month. Re-splitting them would let the chart
+   and the table disagree about the same instant; `runway.test.ts` asserts they cannot.
 
 **Local persistence (spec §4.1, added in revision 7).** Everything typed is saved to
 `localStorage` and restored on the next visit, with a disclosed privacy note and a confirmed

@@ -145,6 +145,20 @@ As an AI agent operating within this repository, you must strictly adhere to the
   looked like a platform dependency for as long as it took to check whether the host was reachable.
   Not tagged as a guardrail: distinguishing a deliberate live-integration spec from an accidental
   one needs judgement, and the fetch is often several call frames from the test file.
+- **A Flat Line Has No Bounding Box, and Playwright Calls It Hidden**: An SVG `<path>` that is
+  legitimately horizontal — a series that is all zeros, a balance that never moves — has zero
+  height, so `expect(locator).toBeVisible()` fails on it even though the element is in the DOM,
+  correctly rendered, and visible to a human as a hairline on the axis. The failure reads as
+  "the chart did not draw the line," which sends you looking for a rendering bug that is not
+  there; in `projects/elder-care-planner` the real cause was fixture data (a $400,000 entry fee
+  against $150,000 of savings) that flattened every curve onto zero. Two rules. (1) *Assert
+  presence and attributes, not visibility*, for any series that can legitimately be flat —
+  `toHaveCount(1)` plus the `stroke-dasharray` / `stroke-opacity` that encode its state proves
+  more about the requirement than a bounding box does. (2) *Check the fixture makes the curve
+  interesting before blaming the component*: a chart test whose data flatlines is not exercising
+  the comparison it claims to, and it will pass or fail for reasons unrelated to the feature.
+  Not tagged as a guardrail: whether a given series can legitimately be flat is a property of the
+  data the test builds, several call frames from the assertion, and no regex over a line can see it.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning

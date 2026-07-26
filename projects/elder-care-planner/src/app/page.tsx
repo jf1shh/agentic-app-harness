@@ -7,6 +7,9 @@ import {
   buildPlan,
   breakEvenScenarios,
   makeContributors,
+  ilScenarios,
+  makeILOption,
+  MAX_IL_OPTIONS,
   type PlannerState,
 } from '@/lib/plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '@/lib/engine/plan';
@@ -19,7 +22,9 @@ import {
 } from '@/lib/storage';
 import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS, SELECTABLE_CARE_TYPES } from '@/lib/data/costOfCare';
-import type { CareType, Contributor, LedgerEntry, SplitMethod } from '@/lib/schemas';
+import { ILComparisonPanel } from '@/components/ILComparisonPanel';
+import { projectILVariants } from '@/lib/engine/buyin';
+import type { CareType, Contributor, ILOption, LedgerEntry, SplitMethod } from '@/lib/schemas';
 import type { ExplanationSet } from '@/lib/explain/types';
 import { CurrencyInput, NumberInput, SelectInput } from '@/components/Inputs';
 import { ResultsPanel } from '@/components/ResultsPanel';
@@ -155,6 +160,14 @@ export default function Home() {
     return breakEvenBetween(inHome, residential);
   }, [state]);
 
+  // Every option is projected against the SAME plan — the shared income, assets
+  // and assumptions above — which is what makes the three contracts comparable
+  // at all (spec §6.5b.4).
+  const ilProjections = useMemo(
+    () => projectILVariants(plan, ilScenarios(state)),
+    [plan, state],
+  );
+
   // Reconciled against the shares the split panel is displaying, so "expected by
   // now" always matches the number the family agreed on rather than a second
   // opinion about it.
@@ -216,6 +229,21 @@ export default function Home() {
   // call to make.
   const onRemoveLedgerEntry = (id: string) => {
     update({ ledger: state.ledger.filter((e) => e.id !== id) });
+  };
+
+  const onILOptionChange = (id: string, patch: Partial<ILOption>) => {
+    update({
+      ilOptions: state.ilOptions.map((o) => (o.id === id ? { ...o, ...patch } : o)),
+    });
+  };
+
+  const onILOptionAdd = () => {
+    if (state.ilOptions.length >= MAX_IL_OPTIONS) return;
+    update({ ilOptions: [...state.ilOptions, makeILOption(state.ilOptions.length)] });
+  };
+
+  const onILOptionRemove = (id: string) => {
+    update({ ilOptions: state.ilOptions.filter((o) => o.id !== id) });
   };
 
   const onContributorChange = (index: number, next: Contributor) => {
@@ -339,6 +367,15 @@ export default function Home() {
             onRemoveEntry={onRemoveLedgerEntry}
           />
         </div>
+
+        <ILComparisonPanel
+          options={state.ilOptions}
+          projections={ilProjections}
+          liquidAssetsCents={state.liquidAssetsCents}
+          onChange={onILOptionChange}
+          onAdd={onILOptionAdd}
+          onRemove={onILOptionRemove}
+        />
 
         <MethodologyPanel />
 

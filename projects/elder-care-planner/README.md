@@ -13,7 +13,7 @@ What care really costs, how long the money lasts, and how a family can share it.
 ### Triage-first information architecture
 Landing route **is** the calculator, not a marketing page. Five fields (state, care type, monthly income, savings available, number of contributors) → instant all-in cost, runway, and per-sibling shortfall. Everything below is optional refinement.
 
-### Eight pure-function engines (`src/lib/engine/**`)
+### Nine pure-function engines (`src/lib/engine/**`)
 | Module | What it computes |
 |---|---|
 | `cost.ts` | All-in monthly cost: base rate + care-level tier + add-on fees + annual escalator; advertised vs. realistic side by side |
@@ -24,8 +24,27 @@ Landing route **is** the calculator, not a marketing page. Five fields (state, c
 | `ledger.ts` | Pledged-vs-paid reconciliation; per-category totals feeding the tax estimate |
 | `opportunity.ts` | Caregiver lost wages, lost employer match, qualitative Social Security flag |
 | `tax.ts` | Medical-expense deduction estimate above 7.5% AGI |
+| `buyin.ts` | Independent living buy-in contracts: refund at a given tenure, entry-fee affordability, and the per-option overlay projection |
 
 Engines are pure — no React, no storage, no ambient `Date.now()` — so 100% Vitest coverage of the math is achievable.
+
+### Independent living comparison (`components/ILComparisonPanel.tsx`)
+Independent living contracts come in three shapes — a large entry fee that is partly refundable on
+a schedule shrinking with tenure, a smaller non-refundable entry fee, or no entry fee and a higher
+monthly rate — and which is cheapest depends entirely on how long the stay lasts. Up to three are
+drawn against each other on one asset-depletion chart over the whole projection, sharing the plan's
+income, assets and assumptions so the comparison is genuine.
+
+The chart draws **two** series per option, because one would mislead. The solid line is savings
+still available to spend. The shaded band above it is what would be refunded on leaving that month
+— so the band collapses as the refund ladder steps down. Without it the option with the *best*
+refund terms draws the *lowest* line, since the refund is never netted into the depletion curve
+(it cannot be spent while the stay continues). An option whose entry fee exceeds liquid assets is
+drawn faded with its shortfall named to the cent rather than hidden, because that figure is only
+actionable next to the comparison.
+
+Month resolution is not cosmetic: annual sampling puts five points on a five-year line, which
+cannot show where two options cross and can imply a crossing that never happened.
 
 ### Calculation transparency (`src/lib/explain/**`)
 Every headline figure carries a question-mark control that opens a derivation panel: the formula, each input with its source, the arithmetic line by line, the assumptions applied, and the caveats. `explain/build.ts` reads **engine output**, never recomputes — a parallel implementation would drift, and a confidently wrong derivation is worse than none.
@@ -111,4 +130,9 @@ For the latest counts, run `node scripts/test-app.mjs elder-care-planner` from t
 
 ## Status
 
-V1 complete. The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
+V1 complete, plus the independent living comparison (spec §6.5b). The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
+
+`independent_living` is deliberately absent from the triage care-type picker: it is priced from a
+community contract rather than a survey median, and the comparison panel is the only place such a
+contract can be entered. Offering it in triage would produce a $0-a-month scenario with no way to
+correct it.

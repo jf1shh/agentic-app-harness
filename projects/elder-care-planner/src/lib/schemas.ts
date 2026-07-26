@@ -275,6 +275,29 @@ export type AddOnToggle = z.infer<typeof AddOnToggleSchema>;
  * anything read back from the browser is validated against this one before it
  * reaches React (.agents/AGENTS.md §1).
  */
+/**
+ * One Independent Living option as the comparison panel holds it (spec §6.5b.4).
+ *
+ * This is form state, not the contract model: `BuyInContractSchema` is what the
+ * engine consumes, and `ilScenarios()` maps one to the other. Keeping them
+ * separate means the panel can hold a half-typed refund ladder without the
+ * engine ever seeing an invalid contract.
+ */
+export const ILOptionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1).max(80),
+  entryCents: z.number().int().min(0),
+  amortized: z.boolean(),
+  refundSchedule: z.array(
+    z.object({
+      tenureMonths: z.number().int().min(0).max(360),
+      refundPercent: z.number().min(0).max(100),
+    }),
+  ),
+  monthlyServiceCentsRate: z.number().int().min(0),
+});
+export type ILOption = z.infer<typeof ILOptionSchema>;
+
 export const PlannerStateSchema = z.object({
   // Triage
   stateCode: z.string().length(2),
@@ -307,6 +330,11 @@ export const PlannerStateSchema = z.object({
   // Contribution ledger
   ledger: z.array(LedgerEntrySchema),
   monthsElapsed: z.number().int().min(0).max(360),
+
+  // Independent living comparison (§6.5b.4). Defaulted so a plan stored before
+  // this panel existed still parses against the v1 storage key — no migration,
+  // no silent data loss for a family returning to an older saved plan.
+  ilOptions: z.array(ILOptionSchema).default([]),
 });
 export type PlannerState = z.infer<typeof PlannerStateSchema>;
 
