@@ -44,6 +44,7 @@ export type ExplanationId =
   | 'runway'
   | 'break-even'
   | 'split'
+  | 'ledger'
   | 'sensitivity';
 
 export interface Explanation {

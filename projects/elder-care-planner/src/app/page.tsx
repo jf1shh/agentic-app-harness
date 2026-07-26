@@ -10,9 +10,10 @@ import {
   type PlannerState,
 } from '@/lib/plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '@/lib/engine/plan';
+import { summariseLedger } from '@/lib/engine/ledger';
 import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS } from '@/lib/data/costOfCare';
-import type { CareType, Contributor, SplitMethod } from '@/lib/schemas';
+import type { CareType, Contributor, LedgerEntry, SplitMethod } from '@/lib/schemas';
 import type { ExplanationSet } from '@/lib/explain/types';
 import { CurrencyInput, NumberInput, SelectInput } from '@/components/Inputs';
 import { ResultsPanel } from '@/components/ResultsPanel';
@@ -22,6 +23,7 @@ import { SplitPanel } from '@/components/SplitPanel';
 import { BenefitsPanel } from '@/components/BenefitsPanel';
 import { QuestionsPanel } from '@/components/QuestionsPanel';
 import { SummaryPanel } from '@/components/SummaryPanel';
+import { LedgerPanel } from '@/components/LedgerPanel';
 import { ExplainProvider } from '@/components/ExplainProvider';
 import { ExplainDrawer } from '@/components/ExplainDrawer';
 import { MethodologyPanel } from '@/components/MethodologyPanel';
@@ -43,6 +45,7 @@ const EMPTY_EXPLANATIONS: ExplanationSet = {
   runway: null,
   'break-even': null,
   split: null,
+  ledger: null,
   sensitivity: null,
 };
 
@@ -65,6 +68,22 @@ export default function Home() {
     return breakEvenBetween(inHome, residential);
   }, [state]);
 
+  // Reconciled against the shares the split panel is displaying, so "expected by
+  // now" always matches the number the family agreed on rather than a second
+  // opinion about it.
+  const ledgerSummary = useMemo(() => {
+    const shares: Record<string, number> = {};
+    for (const share of planResult.split?.shares ?? []) {
+      shares[share.contributorId] = share.monthlyCents;
+    }
+    return summariseLedger({
+      entries: state.ledger,
+      contributors: state.contributors,
+      monthlySharesCents: shares,
+      monthsElapsed: state.monthsElapsed,
+    });
+  }, [planResult.split, state.ledger, state.contributors, state.monthsElapsed]);
+
   // Derivations are built from engine output, never recomputed here — a second
   // implementation of the same arithmetic would drift silently (spec §6.10).
   const explanations = useMemo(
@@ -78,9 +97,20 @@ export default function Home() {
             breakEvenHoursPerWeek: state.compareHoursPerWeek,
             split: planResult.split,
             contributors: state.contributors,
+            ledger: ledgerSummary,
+            monthsElapsed: state.monthsElapsed,
           })
         : EMPTY_EXPLANATIONS,
-    [plan, planResult, breakEven, state.stateCode, state.compareHoursPerWeek, state.contributors],
+    [
+      plan,
+      planResult,
+      breakEven,
+      state.stateCode,
+      state.compareHoursPerWeek,
+      state.contributors,
+      state.monthsElapsed,
+      ledgerSummary,
+    ],
   );
 
   const isResidential = RESIDENTIAL.includes(state.careType);
@@ -88,6 +118,17 @@ export default function Home() {
 
   const onContributorCountChange = (count: number) => {
     update({ contributorCount: count, contributors: makeContributors(count, state.contributors) });
+  };
+
+  const onAddLedgerEntry = (entry: LedgerEntry) => {
+    update({ ledger: [...state.ledger, entry] });
+  };
+
+  // Entries are kept when someone is removed from the list of contributors —
+  // the payment was still made, and deleting a record of it is not the app's
+  // call to make.
+  const onRemoveLedgerEntry = (id: string) => {
+    update({ ledger: state.ledger.filter((e) => e.id !== id) });
   };
 
   const onContributorChange = (index: number, next: Contributor) => {
@@ -199,6 +240,18 @@ export default function Home() {
             onContributorChange={onContributorChange}
           />
         ) : null}
+
+        <div className="no-print">
+          <LedgerPanel
+            summary={ledgerSummary}
+            entries={state.ledger}
+            contributors={state.contributors}
+            monthsElapsed={state.monthsElapsed}
+            onMonthsElapsedChange={(months) => update({ monthsElapsed: months })}
+            onAddEntry={onAddLedgerEntry}
+            onRemoveEntry={onRemoveLedgerEntry}
+          />
+        </div>
 
         <MethodologyPanel />
 

@@ -16,6 +16,8 @@ import {
   type PlannerState,
 } from '../plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '../engine/plan';
+import { summariseLedger } from '../engine/ledger';
+import type { LedgerEntry } from '../schemas';
 import { formatCentsPrecise } from '../format';
 
 /**
@@ -34,11 +36,25 @@ import { formatCentsPrecise } from '../format';
 function explanationsFor(state: PlannerState): {
   set: ReturnType<typeof buildExplanations>;
   planResult: ReturnType<typeof computePlan>;
+  ledger: ReturnType<typeof summariseLedger>;
 } {
   const plan = buildPlan(state);
   const planResult = computePlan(plan);
   const { inHome, residential } = breakEvenScenarios(state);
   const breakEven = breakEvenBetween(inHome, residential);
+
+  // Reconciled against the shares the split engine produced, exactly as the page
+  // does it — the derivation must never see a different number from the UI.
+  const shares: Record<string, number> = {};
+  for (const share of planResult.split?.shares ?? []) {
+    shares[share.contributorId] = share.monthlyCents;
+  }
+  const ledger = summariseLedger({
+    entries: state.ledger,
+    contributors: state.contributors,
+    monthlySharesCents: shares,
+    monthsElapsed: state.monthsElapsed,
+  });
 
   const inputs: ExplanationInputs = {
     plan,
@@ -48,9 +64,24 @@ function explanationsFor(state: PlannerState): {
     breakEvenHoursPerWeek: state.compareHoursPerWeek,
     split: planResult.split,
     contributors: state.contributors,
+    ledger,
+    monthsElapsed: state.monthsElapsed,
   };
 
-  return { set: buildExplanations(inputs), planResult };
+  return { set: buildExplanations(inputs), planResult, ledger };
+}
+
+/** A logged payment, with only the fields a test cares about spelled out. */
+function entry(overrides: Partial<LedgerEntry> = {}): LedgerEntry {
+  return {
+    id: 'e1',
+    contributorId: 'c1',
+    date: '2026-03-01',
+    amountCents: 100_000,
+    category: 'medication',
+    taxDeductibleCandidate: false,
+    ...overrides,
+  };
 }
 
 /** A spread of plans chosen for their edge cases, not for their prettiness. */
@@ -126,6 +157,46 @@ const CASES: readonly { name: string; state: PlannerState }[] = [
   {
     name: 'an adult day care plan',
     state: { ...INITIAL_STATE, careType: 'adult_day_care' },
+  },
+  {
+    name: 'a plan with three months of payments logged',
+    state: {
+      ...INITIAL_STATE,
+      monthsElapsed: 3,
+      ledger: [
+        {
+          id: 'l1', contributorId: 'c1', date: '2026-01-04', amountCents: 120_000,
+          category: 'medication', taxDeductibleCandidate: true,
+        },
+        {
+          id: 'l2', contributorId: 'c1', date: '2026-02-04', amountCents: 95_500,
+          category: 'transport', taxDeductibleCandidate: false,
+        },
+        {
+          id: 'l3', contributorId: 'c2', date: '2026-02-19', amountCents: 240_000,
+          category: 'respite', note: 'Two weekends', taxDeductibleCandidate: true,
+        },
+      ],
+    },
+  },
+  {
+    name: 'a ledger holding a payment by someone no longer listed',
+    state: {
+      ...INITIAL_STATE,
+      monthsElapsed: 2,
+      contributorCount: 1,
+      contributors: makeContributors(1),
+      ledger: [
+        {
+          id: 'l1', contributorId: 'c1', date: '2026-01-04', amountCents: 80_000,
+          category: 'supplies', taxDeductibleCandidate: true,
+        },
+        {
+          id: 'l2', contributorId: 'c2', date: '2026-01-11', amountCents: 55_000,
+          category: 'transport', taxDeductibleCandidate: false,
+        },
+      ],
+    },
   },
 ];
 
@@ -354,6 +425,123 @@ describe('Given a published figure the app is not fully confident in', () => {
   });
 });
 
+describe('Given a family logging what each of them has actually paid', () => {
+  const state: PlannerState = {
+    ...INITIAL_STATE,
+    monthsElapsed: 3,
+    ledger: [
+      entry({ id: 'l1', contributorId: 'c1', amountCents: 120_000, taxDeductibleCandidate: true }),
+      entry({ id: 'l2', contributorId: 'c1', amountCents: 95_500, category: 'transport' }),
+      entry({ id: 'l3', contributorId: 'c2', amountCents: 240_000, category: 'respite' }),
+    ],
+  };
+
+  it('When the ledger derivation is read, Then its total is the engine’s total and the parts are the per-person totals', () => {
+    // Given three logged payments across two family members
+    const { set, ledger } = explanationsFor(state);
+    const explanation = set.ledger!;
+
+    // When the derivation is read
+    const parts = explanation.steps.filter((s) => s.kind === 'add');
+
+    // Then it restates the engine rather than re-adding the entries itself
+    expect(resultStep(explanation)?.valueCents).toBe(ledger.totalPaidCents);
+    expect(ledger.totalPaidCents).toBe(455_500);
+    expect(parts).toHaveLength(2);
+    expect(parts.map((p) => p.valueCents)).toEqual([215_500, 240_000]);
+    expect(isBalanced(explanation)).toBe(true);
+  });
+
+  it('When the reconciliation is read, Then each person’s expected amount shows the multiplication behind it', () => {
+    // Given a share of $1,850 a month over three months
+    const { set, ledger } = explanationsFor(state);
+    const notes = set.ledger!.steps.filter((s) => s.kind === 'note').map((s) => s.label);
+
+    // When the per-person lines are read
+    const first = ledger.reconciliation[0];
+
+    // Then the working is written out, not just the answer
+    const line = notes.find((n) => n.startsWith(first.name));
+    expect(line).toContain(formatCentsPrecise(first.pledgedMonthlyCents));
+    expect(line).toContain('× 3 months');
+    expect(line).toContain(formatCentsPrecise(first.expectedToDateCents));
+    expect(line).toMatch(/ahead of the plan|behind the plan|level with the plan/);
+  });
+
+  it('When a payment is logged, Then the derivation moves with the engine rather than staying put', () => {
+    // Given the ledger as it stands
+    const before = explanationsFor(state);
+
+    // When another $500 payment is logged
+    const after = explanationsFor({
+      ...state,
+      ledger: [...state.ledger, entry({ id: 'l4', contributorId: 'c2', amountCents: 50_000 })],
+    });
+
+    // Then the derivation's total rises by exactly that payment
+    const beforeTotal = resultStep(before.set.ledger!)!.valueCents!;
+    const afterTotal = resultStep(after.set.ledger!)!.valueCents!;
+    expect(afterTotal - beforeTotal).toBe(50_000);
+    expect(afterTotal).toBe(after.ledger.totalPaidCents);
+  });
+
+  it('When entries are ticked as medical expenses, Then the total is stated as a candidate rather than a determination', () => {
+    // Given one entry ticked
+    const { set, ledger } = explanationsFor(state);
+
+    // When the note about medical expenses is read
+    const note = set
+      .ledger!.steps.filter((s) => s.kind === 'note')
+      .map((s) => s.label)
+      .find((l) => l.includes('medical expenses'));
+
+    // Then it reports the tick, and refuses to call it deductible
+    expect(ledger.deductibleCandidateCents).toBe(120_000);
+    expect(note).toContain(formatCentsPrecise(120_000));
+    expect(note).toContain('not a determination');
+  });
+});
+
+describe('Given payments logged against someone who is no longer sharing the cost', () => {
+  it('When the ledger is derived, Then their payments are kept in the total and named rather than dropped', () => {
+    // Given two people who paid, and only one still listed
+    const { set, ledger } = explanationsFor({
+      ...INITIAL_STATE,
+      monthsElapsed: 2,
+      contributorCount: 1,
+      contributors: makeContributors(1),
+      ledger: [
+        entry({ id: 'l1', contributorId: 'c1', amountCents: 80_000 }),
+        entry({ id: 'l2', contributorId: 'c2', amountCents: 55_000, category: 'transport' }),
+      ],
+    });
+    const explanation = set.ledger!;
+
+    // When the derivation is read
+    const orphanStep = explanation.steps.find((s) => s.label.includes('no longer listed'));
+
+    // Then the money is still in the total, and the arithmetic still balances
+    expect(ledger.totalPaidCents).toBe(135_000);
+    expect(orphanStep?.valueCents).toBe(55_000);
+    expect(isBalanced(explanation)).toBe(true);
+    expect(resultStep(explanation)?.valueCents).toBe(135_000);
+  });
+});
+
+describe('Given a plan where nothing has been logged yet', () => {
+  it('When the ledger derivation is built, Then it reports an empty ledger rather than inventing one', () => {
+    // Given no entries
+    const { set, ledger } = explanationsFor(INITIAL_STATE);
+    const explanation = set.ledger!;
+
+    // Then the totals are zero and the derivation still balances
+    expect(ledger.entryCount).toBe(0);
+    expect(resultStep(explanation)?.valueCents).toBe(0);
+    expect(isBalanced(explanation)).toBe(true);
+    expect(explanation.steps.filter((s) => s.kind === 'add')).toHaveLength(2);
+  });
+});
+
 describe('Given every headline figure on the results screen', () => {
   it('When the explanation set is built, Then one exists for each of them', () => {
     // Given the default plan
@@ -368,6 +556,7 @@ describe('Given every headline figure on the results screen', () => {
       'runway',
       'break-even',
       'split',
+      'ledger',
       'sensitivity',
     ];
     for (const id of required) {

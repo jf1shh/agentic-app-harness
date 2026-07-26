@@ -12,12 +12,13 @@
  * numbers because a sibling sent them, and the method has to read as the tool's
  * rather than as one side of an argument.
  */
-import type { Plan, CareScenario, Contributor, SplitMethod } from '../schemas';
+import type { Plan, CareScenario, Contributor, ExpenseCategory, SplitMethod } from '../schemas';
 import type { CostBreakdown } from '../engine/cost';
 import type { RunwayInput, RunwayResult } from '../engine/runway';
 import type { SensitivityResult } from '../engine/sensitivity';
 import type { BreakEvenResult } from '../engine/breakeven';
 import type { SplitResult } from '../engine/split';
+import type { LedgerSummary } from '../engine/ledger';
 import type { ScenarioResult } from '../engine/plan';
 import { buildRunwayInput } from '../engine/plan';
 import { incomeAtMonth } from '../engine/runway';
@@ -30,6 +31,7 @@ import {
   resolveCost,
 } from '../data/costOfCare';
 import { ANNUAL_ESCALATOR_BAND, FEE_RANGE_SOURCE, TYPICAL_FEE_RANGES } from '../data/feeStructures';
+import { EXPENSE_CATEGORY_LABELS } from '../data/expenseCategories';
 import { formatCents, formatCentsPrecise, formatMonths, formatPercent, formatRunwayBand } from '../format';
 import type { Explanation, ExplainStep, ExplanationSet } from './types';
 
@@ -750,7 +752,121 @@ function explainSplit(
 }
 
 /* ------------------------------------------------------------------ */
-/* 8. The sensitivity ranking                                          */
+/* 8. The contribution ledger                                          */
+/* ------------------------------------------------------------------ */
+
+function explainLedger(summary: LedgerSummary, monthsElapsed: number): Explanation {
+  const steps: ExplainStep[] = [
+    {
+      kind: 'reference',
+      label: 'Months of care paid for so far',
+      valueText: monthsElapsed === 1 ? '1 month' : `${monthsElapsed} months`,
+    },
+    {
+      kind: 'reference',
+      label: 'Entries logged',
+      valueText: summary.entryCount === 1 ? '1 entry' : `${summary.entryCount} entries`,
+    },
+  ];
+
+  for (const row of summary.reconciliation) {
+    steps.push({
+      kind: 'add',
+      label: `Paid by ${row.name}`,
+      workingOut: 'Every entry logged against this person, added up',
+      valueCents: row.paidTotalCents,
+    });
+  }
+
+  // Reducing the number of people sharing the cost leaves entries attached to
+  // someone no longer listed. Those payments were still made, so they are shown
+  // rather than quietly dropped — and without this row the total would not add
+  // up, which is worse than the awkwardness of naming the situation.
+  const attributed = summary.reconciliation.reduce((sum, r) => sum + r.paidTotalCents, 0);
+  const unattributed = summary.totalPaidCents - attributed;
+  if (unattributed !== 0) {
+    steps.push({
+      kind: 'add',
+      label: 'Paid by someone no longer listed as sharing the cost',
+      workingOut: 'Entries kept rather than deleted when the list of people changed',
+      valueCents: unattributed,
+    });
+  }
+
+  steps.push({
+    kind: 'result',
+    label: 'Total logged as paid',
+    valueCents: summary.totalPaidCents,
+  });
+
+  // The reconciliation is a second calculation on top of that total, so it is
+  // written out per person rather than folded into the column above.
+  for (const row of summary.reconciliation) {
+    const state =
+      row.balanceCents === 0
+        ? 'exactly level with the plan'
+        : row.balanceCents > 0
+          ? `${formatCentsPrecise(row.balanceCents)} ahead of the plan`
+          : `${formatCentsPrecise(Math.abs(row.balanceCents))} behind the plan`;
+    steps.push({
+      kind: 'note',
+      label: `${row.name}: a share of ${formatCentsPrecise(
+        row.pledgedMonthlyCents,
+      )} a month × ${monthsElapsed} ${monthsElapsed === 1 ? 'month' : 'months'} = ${formatCentsPrecise(
+        row.expectedToDateCents,
+      )} expected. ${formatCentsPrecise(row.paidTotalCents)} has been logged, which is ${state}.`,
+    });
+  }
+
+  const categoryLines = Object.entries(summary.byCategory)
+    .filter(([, cents]) => cents > 0)
+    .map(
+      ([category, cents]) =>
+        `${EXPENSE_CATEGORY_LABELS[category as ExpenseCategory] ?? category} ${formatCentsPrecise(cents)}`,
+    );
+  if (categoryLines.length > 0) {
+    steps.push({
+      kind: 'note',
+      label: `By category: ${categoryLines.join('; ')}.`,
+    });
+  }
+
+  if (summary.deductibleCandidateCents > 0) {
+    steps.push({
+      kind: 'note',
+      label: `${formatCentsPrecise(
+        summary.deductibleCandidateCents,
+      )} of that is marked as possibly counting toward unreimbursed medical expenses. That is a total of what was ticked, not a determination that any of it is deductible.`,
+    });
+  }
+
+  return {
+    id: 'ledger',
+    title: 'How the contribution ledger reconciles',
+    question: 'How is what each family member has actually paid reconciled?',
+    plainLanguage:
+      'A split that stays theoretical settles nothing. This adds up what has actually been paid, by whom, and sets it against what the agreed share would have come to over the same period. The gap between the two is the thing a family is usually arguing about without having written it down.',
+    formula:
+      'total paid = every entry added up; expected of a person = their monthly share × months elapsed; balance = what they paid − what was expected',
+    steps,
+    assumptions: [
+      'The number of months is entered by the family rather than taken from today’s date, so the same plan reopened later shows the same figures until someone changes it.',
+      'Each person’s expected amount uses their share as it stands now, applied evenly across every month elapsed. A share that changed partway through is not modelled.',
+      'Only what has been entered is counted. An unlogged payment is invisible here, which is the ledger’s main weakness and the reason to log as it happens.',
+    ],
+    sources: [
+      'Every figure in this table was entered by the family. Nothing here comes from a published dataset.',
+    ],
+    caveats: [
+      'Unpaid care hours and task ownership are not in these totals. They are contributions, and they are shown beside the cash shares in the sharing section — but converting someone’s time into a cash credit is a family decision, not one this app makes.',
+      'A balance is not a verdict. Someone behind on cash may be the person doing the driving, the calls and the paperwork.',
+      'The medical-expense total is a starting point for a conversation with a tax professional. Whether any of it is deductible depends on income, on itemising, and on whether care follows a plan of care — none of which this app models.',
+    ],
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* 9. The sensitivity ranking                                          */
 /* ------------------------------------------------------------------ */
 
 function explainSensitivity(sensitivity: SensitivityResult): Explanation {
@@ -825,6 +941,9 @@ export interface ExplanationInputs {
   readonly breakEvenHoursPerWeek: number;
   readonly split: SplitResult | null;
   readonly contributors: readonly Contributor[];
+  /** Reconciled ledger, or null when nothing has been logged yet. */
+  readonly ledger: LedgerSummary | null;
+  readonly monthsElapsed: number;
 }
 
 /** Every derivation the results screen can currently show. */
@@ -843,6 +962,7 @@ export function buildExplanations(inputs: ExplanationInputs): ExplanationSet {
       ? explainBreakEven(breakEven, inputs.breakEvenHourlyRateCents, inputs.breakEvenHoursPerWeek)
       : null,
     split: split ? explainSplit(split, contributors, runway.monthlyShortfallCents) : null,
+    ledger: inputs.ledger ? explainLedger(inputs.ledger, inputs.monthsElapsed) : null,
     sensitivity: explainSensitivity(sensitivity),
   };
 }
@@ -857,4 +977,5 @@ export const EXPLANATION_ORDER = [
   'sensitivity',
   'break-even',
   'split',
+  'ledger',
 ] as const;

@@ -2,6 +2,7 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 6** — the contribution ledger (§6.6) is built and on screen, with its own derivation.
 > **Revision 5** — adds §6.10 Calculation transparency ("show the working"): every displayed
 > figure is traceable to a derivation the reader can check by hand.
 > **Revision 4** — scope from user research (§2); binding non-goals (§1.1); sensitivity,
@@ -411,6 +412,20 @@ a family decision, not the app's.
 The ledger reconciles **pledged vs. actually paid** per contributor per month, producing a
 running balance and a per-category total that feeds §6.9.
 
+**Ledger UI.** Entry is deliberately minimal per §10.5 — who paid, when, how much, what for, an
+optional note, and a tick for "may count toward medical expenses". No receipts, no recurring
+entries. Two rules the surface must hold to:
+
+- **Months elapsed is an input, not the clock.** The reconciliation multiplies each share by the
+  months of care paid for so far, and that figure is entered by the family. Reading it from
+  `Date.now()` would make the engine impure (§4), make the reconciliation untestable, and quietly
+  change a family's numbers between one visit and the next.
+- **Entries outlive the contributor list.** Reducing the number of people sharing the cost must
+  not delete their logged payments — the money was still spent, and deleting the record of it is
+  not the app's decision. Orphaned entries stay in the total, are labelled as belonging to
+  someone no longer listed, and appear as their own line in the derivation so the total still
+  visibly adds up.
+
 ### 6.7 Caregiver opportunity cost (`engine/opportunity.ts`)
 ```
 lostGrossWages = salary * (hoursReduced / 40) * years
@@ -488,7 +503,12 @@ interface Explanation {
 ```
 
 Explanations required in V1, one per displayed headline figure: `base-rate`, `all-in`,
-`first-month`, `monthly-gap`, `runway`, `break-even`, `split`, `sensitivity`.
+`first-month`, `monthly-gap`, `runway`, `break-even`, `split`, `ledger`, `sensitivity`.
+
+**A figure on screen without a derivation is a defect.** When a further engine gains a UI
+(caregiver opportunity cost, the tax estimate), it gains an `ExplanationId` in the same change —
+an app where some numbers can be checked and the ones beside them cannot is worse than one that
+never offered the panels.
 
 **Arithmetic integrity rule.** Within one explanation, the signed sum of every `add`/`subtract`
 step must equal the `result` step exactly, in cents — and the rendered strings must show it,
@@ -716,6 +736,8 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
   - The Medicare "does not cover custodial care" copy is visible on the results screen (§2.6).
   - Each headline figure's "?" control opens its derivation, the derivation's parts sum to its
     stated total as *rendered*, `Escape` closes the panel and focus returns to the control (§6.10).
+  - A payment is logged, appears in the ledger with a running total, moves the reconciliation, and
+    can be removed again; "expected by now" equals the displayed share × the displayed months (§6.6).
 - **Non-goal enforcement (§1.1):** an automated test asserts the built bundle contains no
   analytics or telemetry endpoints, and that no form field collects an email address or account
   credential. A Playwright run with all outbound requests blocked must still complete the full
