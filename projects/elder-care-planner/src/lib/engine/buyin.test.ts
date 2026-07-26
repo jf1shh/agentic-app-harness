@@ -361,3 +361,111 @@ describe('Given three IL scenarios in a Plan (overlay-chart projection)', () => 
   });
 });
 
+describe('Given the overlay chart needs a curve rather than five points', () => {
+  const plan: Plan = {
+    schemaVersion: 1,
+    careRecipientLabel: 'Mom',
+    scenarios: [],
+    activeScenarioId: undefined,
+    income: [],
+    assets: [
+      {
+        id: 'cash', label: 'Cash', kind: 'cash', balanceCents: 100_000_000,
+        annualReturnRate: 0.04, liquid: true,
+      },
+    ],
+    contributors: [],
+    ledger: [],
+    caregiverImpacts: [],
+    assumptions: {
+      careInflationRate: 0.04, generalInflationRate: 0.03,
+      projectionYears: 5, splitMethod: 'equal',
+    },
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
+  const ilScenario = (
+    id: string,
+    contract: BuyInContract | undefined,
+    costOverrideCents?: number,
+  ): CareScenario => ({
+    id,
+    label: `Option ${id.toUpperCase()}`,
+    careType: 'independent_living',
+    stateCode: 'US',
+    ...(costOverrideCents === undefined ? {} : { costOverrideCents }),
+    fees: {
+      communityFeeCents: 0,
+      careLevelTierCents: 0,
+      annualEscalatorRate: 0.04,
+      addOns: [],
+      ...(contract ? { buyInContract: contract } : {}),
+    },
+    ancillary: [],
+  });
+
+  it('Then each option carries one depletion point per month, matching its yearly points at the boundaries', () => {
+    // 5 projection years x 12 = 60 monthly points against 5 yearly ones.
+    const projections = projectILVariants(plan, [
+      ilScenario('a', { ...CONTRACT_A, monthlyServiceCentsRate: 350_000 }),
+    ]);
+    const [a] = projections;
+    expect(a.assetsEndByMonthCents).toHaveLength(60);
+    expect(a.assetsEndByYearCents).toHaveLength(5);
+    for (let year = 1; year <= 5; year += 1) {
+      expect(
+        a.assetsEndByMonthCents[year * 12 - 1],
+        `year ${year} point disagrees with month ${year * 12}`,
+      ).toBe(a.assetsEndByYearCents[year - 1]);
+    }
+  });
+
+  it('Then the refund what-if is available at the same resolution as the curve it annotates', () => {
+    const [a] = projectILVariants(plan, [
+      ilScenario('a', { ...CONTRACT_A, monthlyServiceCentsRate: 350_000 }),
+    ]);
+    expect(a.refundAtExitByMonthCents).toHaveLength(60);
+    // Hand-computed against the 12/36/60-month ladder on a $400k entry:
+    //   month 11 -> below the first bracket -> 0
+    //   month 12 -> 80% -> 32,000,000
+    //   month 36 -> 60% -> 24,000,000
+    //   month 60 -> 30% -> 12,000,000
+    expect(a.refundAtExitByMonthCents[10]).toBe(0);
+    expect(a.refundAtExitByMonthCents[11]).toBe(32_000_000);
+    expect(a.refundAtExitByMonthCents[35]).toBe(24_000_000);
+    expect(a.refundAtExitByMonthCents[59]).toBe(12_000_000);
+  });
+
+  it('Then a rental-only option with no contract at all is still projected', () => {
+    // Spec §6.5b Option C. A family comparing against "just rent it" enters no
+    // buy-in; dropping that option would remove the baseline the other two are
+    // being measured against.
+    const [c] = projectILVariants(plan, [ilScenario('c', undefined, 600_000)]);
+    expect(c).toBeDefined();
+    expect(c.scenarioId).toBe('c');
+    expect(c.buyInEntryCents).toBe(0);
+    expect(c.allInMonthlyCents).toBe(600_000);
+    expect(c.isAffordable).toBe(true);
+    expect(c.refundAtExitByMonthCents.every((r) => r === 0)).toBe(true);
+    expect(c.assetsEndByMonthCents).toHaveLength(60);
+  });
+
+  it('Then all three contract shapes project side by side against one shared plan', () => {
+    const projections = projectILVariants(plan, [
+      ilScenario('a', { ...CONTRACT_A, monthlyServiceCentsRate: 350_000 }),
+      ilScenario('b', {
+        entryCents: 20_000_000, amortized: true, refundSchedule: [],
+        monthlyServiceCentsRate: 450_000,
+      }),
+      ilScenario('c', undefined, 600_000),
+    ]);
+    expect(projections.map((p) => p.scenarioId)).toEqual(['a', 'b', 'c']);
+    expect(projections.map((p) => p.buyInEntryCents)).toEqual([40_000_000, 20_000_000, 0]);
+    // Option A pays the largest entry, so it starts the curve lowest; Option C
+    // pays nothing upfront and starts highest. That ordering is the whole point
+    // of the overlay.
+    const firstPoints = projections.map((p) => p.assetsEndByMonthCents[0]);
+    expect(firstPoints[0]).toBeLessThan(firstPoints[1]);
+    expect(firstPoints[1]).toBeLessThan(firstPoints[2]);
+  });
+});

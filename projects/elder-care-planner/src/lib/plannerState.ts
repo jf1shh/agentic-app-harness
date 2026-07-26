@@ -12,13 +12,33 @@ import {
   type Plan,
   type PlannerState,
   type CareType,
+  type ILOption,
 } from './schemas';
 
 // The form's shape is a Zod schema in schemas.ts, so what the app holds in
 // React and what it validates on read out of the browser cannot drift apart
 // (.agents/AGENTS.md §1). Re-exported here because this is where callers
 // already look for it.
-export type { AddOnToggle, PlannerState };
+export type { AddOnToggle, PlannerState, ILOption };
+
+/** How many IL options the comparison panel will hold (spec §6.5b.4). */
+export const MAX_IL_OPTIONS = 3;
+
+/**
+ * A blank option. Deliberately all zeros: §7 forbids inventing figures, and a
+ * seeded $400,000 entry fee would be exactly that — a number a family might
+ * leave in place and then compare against.
+ */
+export function makeILOption(index: number): ILOption {
+  return {
+    id: `il${index + 1}`,
+    label: `Option ${String.fromCharCode(65 + index)}`,
+    entryCents: 0,
+    amortized: false,
+    refundSchedule: [],
+    monthlyServiceCentsRate: 0,
+  };
+}
 
 export const US_STATES: readonly { code: string; name: string }[] = [
   { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
@@ -89,6 +109,8 @@ export const INITIAL_STATE: PlannerState = {
 
   ledger: [],
   monthsElapsed: 1,
+
+  ilOptions: [],
 };
 
 function isResidential(careType: CareType): boolean {
@@ -199,6 +221,41 @@ export function buildPlan(state: PlannerState): Plan {
     },
     updatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * The IL options as engine scenarios (spec §6.5b.4).
+ *
+ * Every option becomes an `independent_living` scenario carrying a
+ * `buyInContract`, so `projectILVariants` prices all of them from the contract
+ * and none from a survey median — independent living is not a surveyed
+ * category. Options are mapped in order and keep their `id`, because the
+ * projection is aligned by `scenarioId` rather than by index.
+ */
+export function ilScenarios(state: PlannerState): CareScenario[] {
+  return state.ilOptions.map((option) => ({
+    id: option.id,
+    label: option.label,
+    careType: 'independent_living' as const,
+    stateCode: state.stateCode,
+    fees: {
+      communityFeeCents: 0,
+      careLevelTierCents: 0,
+      annualEscalatorRate: state.annualEscalatorRate,
+      addOns: [],
+      buyInContract: {
+        entryCents: option.entryCents,
+        amortized: option.amortized,
+        // Sorted on the way into the engine so a ladder typed out of order
+        // still reads correctly in the chart's band.
+        refundSchedule: [...option.refundSchedule].sort(
+          (a, b) => a.tenureMonths - b.tenureMonths,
+        ),
+        monthlyServiceCentsRate: option.monthlyServiceCentsRate,
+      },
+    },
+    ancillary: [],
+  }));
 }
 
 /** Both sides of the home-vs-facility comparison, built from the same state. */

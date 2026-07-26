@@ -40,6 +40,21 @@ export interface RunwayInput {
   readonly contributorCapacityCents?: number;
 }
 
+/**
+ * One month of the simulation. The yearly rows are this series sampled at
+ * year boundaries — not a second accumulation — so a chart drawn from
+ * `monthlyBreakdown` and a table drawn from `yearlyBreakdown` can never
+ * disagree about the same instant (§6 lesson "Explain the Arithmetic Without
+ * Re-implementing It").
+ */
+export interface RunwayMonth {
+  readonly month: number;
+  readonly careCostCents: number;
+  readonly incomeCents: number;
+  readonly shortfallCents: number;
+  readonly assetsEndCents: number;
+}
+
 export interface RunwayYear {
   readonly year: number;
   readonly careCostCents: number;
@@ -56,6 +71,8 @@ export interface RunwayResult {
   /** Month the required contribution exceeds what contributors said they can afford. */
   readonly borrowingStartMonth: number | null;
   readonly yearlyBreakdown: readonly RunwayYear[];
+  /** Every month of the projection, for depletion curves. */
+  readonly monthlyBreakdown: readonly RunwayMonth[];
   /** Month-one gap between cost and income, excluding one-time fees. */
   readonly monthlyShortfallCents: number;
   /** Month one including the community fee and other one-time costs. */
@@ -114,6 +131,7 @@ export function computeRunway(input: RunwayInput): RunwayResult {
   let firstMonthTotalCents = 0;
 
   const yearly: RunwayYear[] = [];
+  const monthly: RunwayMonth[] = [];
   let yearCare = 0;
   let yearIncome = 0;
   let yearShortfall = 0;
@@ -167,6 +185,17 @@ export function computeRunway(input: RunwayInput): RunwayResult {
       }
     }
 
+    // Read the pots once and reuse it for both series, so the year-boundary
+    // month and its yearly row are the same number by construction.
+    const assetsEndCents = Math.round(pots.reduce((sum, p) => sum + p.balance, 0));
+    monthly.push({
+      month,
+      careCostCents: Math.round(monthCost),
+      incomeCents: Math.round(monthIncome),
+      shortfallCents: Math.round(shortfall),
+      assetsEndCents,
+    });
+
     totalOutOfPocket += shortfall;
     yearCare += careCost + ancillary + oneTime;
     yearIncome += monthIncome;
@@ -178,7 +207,7 @@ export function computeRunway(input: RunwayInput): RunwayResult {
         careCostCents: Math.round(yearCare),
         incomeCents: Math.round(yearIncome),
         shortfallCents: Math.round(yearShortfall),
-        assetsEndCents: Math.round(pots.reduce((sum, p) => sum + p.balance, 0)),
+        assetsEndCents,
       });
       yearCare = 0;
       yearIncome = 0;
@@ -191,6 +220,7 @@ export function computeRunway(input: RunwayInput): RunwayResult {
     contributorBurdenStartMonth,
     borrowingStartMonth,
     yearlyBreakdown: yearly,
+    monthlyBreakdown: monthly,
     monthlyShortfallCents,
     firstMonthTotalCents,
     totalOutOfPocketCents: Math.round(totalOutOfPocket),

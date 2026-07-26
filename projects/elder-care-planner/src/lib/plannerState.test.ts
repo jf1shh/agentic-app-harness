@@ -11,7 +11,10 @@ import {
   primaryScenario,
   breakEvenScenarios,
   makeContributors,
+  ilScenarios,
+  makeILOption,
   US_STATES,
+  type PlannerState,
 } from './plannerState';
 import { PlanSchema } from './schemas';
 
@@ -101,5 +104,89 @@ describe('Given a quoted price is entered', () => {
   it('When the quote is cleared, Then no override is set', () => {
     const scenario = primaryScenario({ ...INITIAL_STATE, costOverrideCents: null });
     expect(scenario.costOverrideCents).toBeUndefined();
+  });
+});
+
+describe('Given independent living options entered in the comparison panel', () => {
+  it('When mapped to scenarios, Then each becomes an independent_living scenario carrying its contract', () => {
+    // Given two options over the shared plan state
+    const state: PlannerState = {
+      ...INITIAL_STATE,
+      stateCode: 'TX',
+      annualEscalatorRate: 0.04,
+      ilOptions: [
+        {
+          id: 'il1',
+          label: 'Option A',
+          entryCents: 40_000_000,
+          amortized: false,
+          refundSchedule: [{ tenureMonths: 12, refundPercent: 80 }],
+          monthlyServiceCentsRate: 350_000,
+        },
+        {
+          id: 'il2',
+          label: 'Option B',
+          entryCents: 20_000_000,
+          amortized: true,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 450_000,
+        },
+      ],
+    };
+
+    // When the scenarios are built
+    const scenarios = ilScenarios(state);
+
+    // Then the contract, not a survey median, is what prices them
+    expect(scenarios).toHaveLength(2);
+    expect(scenarios[0].careType).toBe('independent_living');
+    expect(scenarios[0].id).toBe('il1');
+    expect(scenarios[0].fees?.buyInContract?.entryCents).toBe(40_000_000);
+    expect(scenarios[0].fees?.buyInContract?.monthlyServiceCentsRate).toBe(350_000);
+    expect(scenarios[1].fees?.buyInContract?.amortized).toBe(true);
+    // The plan's escalator and state carry through rather than being re-keyed.
+    expect(scenarios[0].stateCode).toBe('TX');
+    expect(scenarios[0].fees?.annualEscalatorRate).toBe(0.04);
+  });
+
+  it('When a refund ladder is typed out of order, Then it reaches the engine sorted', () => {
+    // Given rows entered 60m, 12m, 36m — the order a form invites
+    const state: PlannerState = {
+      ...INITIAL_STATE,
+      ilOptions: [
+        {
+          id: 'il1',
+          label: 'Option A',
+          entryCents: 40_000_000,
+          amortized: false,
+          refundSchedule: [
+            { tenureMonths: 60, refundPercent: 30 },
+            { tenureMonths: 12, refundPercent: 80 },
+            { tenureMonths: 36, refundPercent: 60 },
+          ],
+          monthlyServiceCentsRate: 350_000,
+        },
+      ],
+    };
+
+    // Then the contract carries them ascending by tenure
+    const schedule = ilScenarios(state)[0].fees?.buyInContract?.refundSchedule ?? [];
+    expect(schedule.map((r) => r.tenureMonths)).toEqual([12, 36, 60]);
+  });
+
+  it('When no options are entered, Then no scenarios are produced', () => {
+    expect(ilScenarios({ ...INITIAL_STATE, ilOptions: [] })).toEqual([]);
+  });
+
+  it('When a blank option is created, Then every figure starts at zero rather than at an invented default', () => {
+    // §7 forbids inventing figures. A seeded entry fee is one a family might
+    // leave in place and then compare against.
+    const option = makeILOption(0);
+    expect(option.entryCents).toBe(0);
+    expect(option.monthlyServiceCentsRate).toBe(0);
+    expect(option.refundSchedule).toEqual([]);
+    expect(option.amortized).toBe(false);
+    expect(option.label).toBe('Option A');
+    expect(makeILOption(2).label).toBe('Option C');
   });
 });

@@ -2,6 +2,8 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 8** — Independent Living comparison (§6.5b) is built: three contract shapes on one
+> asset-depletion chart, with the refund drawn as a band that collapses as the schedule steps down.
 > **Revision 7** — local persistence wired up (§4.1): the form state is the stored artifact, with
 > a disclosed save, an erase control, and an explicit notice when a payload cannot be read.
 > **Revision 6** — the contribution ledger (§6.6) is built and on screen, with its own derivation.
@@ -171,7 +173,7 @@ combination plus **local-only, no-account privacy**.
 - [ ] Care-hours scheduler across family members.
 - [ ] Reverse mortgage / home-sale proceeds modeling.
 - [ ] Receipt photo capture attached to ledger entries.
-- [ ] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
+- [x] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
 
 ---
 
@@ -458,7 +460,9 @@ Hand-computed fixture: contract `{entryCents: 40_000_000, refundSchedule: [{12m,
 
 #### 6.5b.2 `buyInAffordability(liquidAssetsCents, contract)`
 
-`affordable := liquidAssetsCents >= contract.entryCents`. `shortfallCents := max(0, entryCents − liquidAssetsCents)`. Both `affordable === false` and an explicit `shortfallCents` are surfaced to the UI; the family is hard-blocked from selecting the option until they reduce the entry, raise liquid assets, or remove the option. There is no "soft" path — if the family cannot pay the entry on day one, the runway already shows the family what month their other liquid runs out; choosing an IL option they can't even afford misframes the decision.
+`affordable := liquidAssetsCents >= contract.entryCents`. `shortfallCents := max(0, entryCents − liquidAssetsCents)`. Both `affordable === false` and an explicit `shortfallCents` are surfaced to the UI.
+
+**Amended by §6.5b.4 (approved).** This section originally hard-blocked an unaffordable option outright. It is now shown on the comparison chart, de-emphasised, with its shortfall named to the cent — the figure is only actionable next to the comparison, and a family that can see an option is $150,000 short *and* that it overtakes the alternative in month 38 can weigh whether freeing that money is worth doing. The protection the hard block was reaching for is kept by refusing to make such an option the plan's active scenario.
 
 #### 6.5b.3 `projectILVariants(plan, scenarios[]) → projections[]`
 
@@ -470,12 +474,142 @@ Returns one row per IL scenario, designed for the overlay chart in the dedicated
   buyInEntryCents,
   allInMonthlyCents,
   isAffordable,           // reusing buyInAffordability
-  refundAtExitByYearCents: number[],   // hypothetical — exit at end of each projection year
-  assetsEndByYearCents:   number[],   // existing runway output, untouched
+  refundAtExitByYearCents:  number[],  // hypothetical — exit at end of each projection year
+  refundAtExitByMonthCents: number[],  // the same what-if, one point per month
+  assetsEndByYearCents:     number[],  // existing runway output, untouched
+  assetsEndByMonthCents:    number[],  // the depletion curve, one point per month
 }
 ```
 
-The chart shows one line per option (`assetsEndByYearCents`) on a shared x-axis (years 1..`projectionYears`). Refund-at-exit is **not** added to the runway's `totalOutOfPocketCents` — a refund is hypothetical until exit actually happens. The refund row in the derivation is a separate, optional panel and is clearly labelled as a what-if.
+The chart shows one line per option (`assetsEndByMonthCents`) on a shared x-axis of months `1..projectionYears × 12`. **Month resolution is required, not cosmetic**: the question the overlay exists to answer is *where two options cross*, and annual sampling puts at most five points on a five-year line — a crossing inside a year is invisible, and the polyline can imply a crossing that never happened. `assetsEndByYearCents` is retained for tables and stays exactly the monthly series sampled at year boundaries (`RunwayResult.yearlyBreakdown[y-1].assetsEndCents === monthlyBreakdown[y*12-1].assetsEndCents`, asserted in `runway.test.ts`), so a chart and a table on the same screen can never disagree about the same instant.
+
+Refund-at-exit is **not** added to the runway's `totalOutOfPocketCents`, and is **not** netted into the depletion line — a refund is hypothetical until exit actually happens. This has a consequence the chart must handle explicitly: Option A's line drops by its full `entryCents` at move-in and never recovers, so on the depletion curve alone the option with the *best* refund terms looks the *worst*. `refundAtExitByMonthCents` is therefore plotted as its own clearly-labelled series or annotation at the same resolution as the curve it annotates, never silently omitted. A chart showing only the depletion lines would misrepresent precisely the comparison it was built for.
+
+**Every `independent_living` scenario is projected, including one with no `buyInContract` at all.** Option C (rental only) is commonly entered as a quoted monthly rent with no buy-in, and requiring a contract object would silently drop the baseline the other two options are measured against. Such an option reports `buyInEntryCents: 0`, an all-zero refund series, and `isAffordable: true` — the absence of a barrier, not a claim about the family's finances. Scenarios whose `careType` is not `independent_living` are skipped; rows carry `scenarioId` and callers must align on that rather than on index.
+
+#### 6.5b.4 The Independent Living comparison (UI) — **APPROVED AND IMPLEMENTED**
+
+> Status: approved, including the §6.5b.2 amendment below, and built —
+> `src/components/ILComparisonPanel.tsx` and `src/components/ILOverlayChart.tsx`, covered by
+> `e2e/independent-living.spec.ts`.
+>
+> Two deviations from the approved draft, both narrowing rather than extending it:
+> **(1)** it is a card in the single-page flow, not a literal tab — this app has no tab bar, and
+> inventing one for a single panel would sit oddly beside every other section.
+> **(2)** each option takes one monthly figure (the contract's `monthlyServiceCentsRate`) rather
+> than offering a choice between that and a quoted rent via `costOverrideCents`. The engine
+> supports both paths, but two ways to type the same number is a worse form; a rental-only option
+> is entered as an entry fee of zero.
+>
+> `independent_living` stays out of the triage care-type picker (`SELECTABLE_CARE_TYPES`)
+> permanently. IL scenarios are owned by this panel, which is the only place a contract can be
+> entered; offering IL in the triage picker would produce a $0-a-month scenario with no way to
+> correct it.
+
+**What the tab is for.** A family choosing an IL community is not comparing prices, they are
+comparing *shapes of commitment*: a large refundable entry with a low monthly, a smaller
+non-refundable entry with a mid monthly, or no entry at all with a high monthly. Those three
+shapes cross over each other somewhere in the projection, and where they cross is the decision.
+Every design rule below follows from making that crossing visible and honest.
+
+##### Layout
+
+A single tab holding, in vertical order on narrow screens and two columns from `768px`:
+
+1. **Up to three option cards.** Each is one `independent_living` `CareScenario`, editable in
+   place. Fields: label; entry fee (`entryCents`, 0 for rental-only); a refund ladder of
+   `{tenureMonths, refundPercent}` rows, add/remove, empty for Options B and C; an
+   `amortized` toggle; and the monthly figure — either `monthlyServiceCentsRate` from the
+   contract or a quoted rent entered as `costOverrideCents`, never both at once.
+2. **The overlay chart** (below).
+3. **The comparison table**, which is also the chart's accessible equivalent (below).
+4. **A derivation panel** per §6.10, reading engine output only.
+
+Income, assets and assumptions are **not** editable here — they come from the plan and are shared
+across all three options, which is what makes the comparison meaningful. The tab states that
+plainly rather than leaving it to be inferred.
+
+##### The chart: two series per option
+
+Each option is drawn as **two** things, answering two different questions:
+
+| Series | Source | Question it answers |
+|---|---|---|
+| **Solid line** — liquid assets remaining | `assetsEndByMonthCents` | "When does the money run out?" |
+| **Shaded band above the line** — assets plus refund if the family left that month | line + `refundAtExitByMonthCents` | "What is this worth if it does not work out?" |
+
+The band is the refund, so it **collapses onto the line as the ladder steps down** — an 80/60/30/0
+schedule renders as four visible cliffs, which is the decay made legible without reading a table.
+
+This treatment exists to solve a specific integrity problem stated in §6.5b.3: because the refund
+is never netted into the depletion line, Option A's solid line drops by its full entry fee at
+move-in and never recovers, so **on the lines alone the option with the best refund terms looks
+the worst**. Drawing only the solid lines would misrepresent the exact comparison the chart was
+built for. The band must not be optional, collapsed by default, or behind a toggle.
+
+X-axis is months `1..projectionYears × 12` (§6.5b.3 — annual sampling cannot show a crossing
+inside a year, and can imply one that never happened). Y-axis is cents, formatted per §5.3.
+
+##### Unaffordable options — **amendment to §6.5b.2, APPROVED**
+
+§6.5b.2 originally required an option whose `entryCents` exceeds liquid assets to be
+**hard-blocked**, with no soft path. That rule is narrowed for the chart, as follows:
+
+> An unaffordable option is **shown on the same axes, visually de-emphasised** (dashed line, no
+> band, reduced contrast but still ≥ 4.5:1 for any text), and labelled with its shortfall to the
+> cent — "$150,000 short of the entry fee." It cannot be made the plan's active scenario.
+
+Rationale: the shortfall figure is only actionable next to the comparison. A family seeing that
+Option A is $150,000 short *and* that it overtakes Option C in month 38 can weigh whether freeing
+that $150,000 is worth doing — which is precisely the question §6.5b.2's hard block removes from
+view. The protection §6.5b.2 wanted (a family cannot silently plan around an option they cannot
+pay for) is preserved by refusing to make it active.
+
+One consequence worth recording, found in testing: an entry fee far above the plan's savings wipes
+the assets in month one, so the option's curve is flat on zero for the whole projection. That is
+correct output — the line is a hairline on the axis — but it means the de-emphasis attributes,
+not the rendered geometry, are what the E2E spec asserts.
+
+##### Accessibility (binding, enforced by `@axe-core/playwright`)
+
+- The chart carries a **text equivalent**: the comparison table lists, per option per projection
+  year, assets remaining and refund-at-exit, read from `assetsEndByYearCents` and
+  `refundAtExitByYearCents`. Those are the monthly series sampled at year boundaries
+  (§6.5b.3), so the table cannot disagree with the curve.
+- **Colour is never the sole encoder.** Options are distinguished by line style (solid / dashed /
+  dotted) and a direct label at the line's end, not by hue alone.
+- The chart is not a focus trap and exposes no interactive-only data: everything the hover reveals
+  is also in the table.
+- Palette per §5.5; every text pair ≥ 4.5:1.
+
+##### Voice (§5.4)
+
+No second person anywhere in this tab — including the shortfall label and any empty state. "This
+option's entry fee is $150,000 above the plan's liquid assets," never "you cannot afford this."
+The tab may be read by a sibling who did not build the plan.
+
+##### Acceptance criteria (BDD, per `.agents/AGENTS.md` §5)
+
+- *Given* three IL options sharing one plan, *When* the tab is opened, *Then* three solid lines and
+  three bands are drawn on one shared month axis.
+- *Given* an option with a decreasing refund ladder, *When* its band is inspected at a bracket
+  boundary, *Then* the band's height equals `refundAtExitByMonthCents` at that month and steps down
+  at the bracket.
+- *Given* any option, *When* the comparison table is read against the chart, *Then* each year's
+  table figure equals the curve's value at that year's final month.
+- *Given* an option whose entry fee exceeds liquid assets, *When* the tab is rendered, *Then* it is
+  drawn de-emphasised with its shortfall named to the cent, and cannot be made the active scenario.
+- *Given* the tab is on screen, *When* it is audited, *Then* `@axe-core/playwright` reports no
+  violations.
+- *Given* the summary will be shared, *When* the tab's copy is read, *Then* it never addresses the
+  reader in the second person.
+
+##### Out of scope for this section
+
+Default contract presets for real communities (families enter their own terms from a brochure);
+Medicaid treatment of entry fees (§6.8 handles it once an option is chosen); and any resale or
+re-occupancy contingency in the refund — a schedule that pays out only when the unit is re-let is
+a contract term this model deliberately does not represent, and the tab says so in its caveats.
 
 **Total-and-parts invariant (this section explicitly defers to §6 "Format a Total and Its Parts at the Same Precision"):** the chart's per-option net cost at month `m` for option `i` is `(sum of monthlyRecurring[m,i]) + buyInEntryCents[i] − cumulativeRefundLiabilityByMonth(m, i)`, formatted at identical precision and summing exactly in the derivation panel. Mismatch is asserted in the unit tests by parsing the rendered strings (not the engine output) per the existing test discipline.
 
