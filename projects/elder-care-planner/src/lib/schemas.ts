@@ -218,6 +218,67 @@ export const PlanSchema = z.object({
 });
 export type Plan = z.infer<typeof PlanSchema>;
 
+/** One of the optional billed-separately services, with its toggle state. */
+export const AddOnToggleSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1).max(80),
+  monthlyCents: z.number().int().min(0),
+  enabled: z.boolean(),
+});
+export type AddOnToggle = z.infer<typeof AddOnToggleSchema>;
+
+/**
+ * What the family typed, exactly as the form holds it — and the thing this app
+ * persists between visits.
+ *
+ * It would be tidier to store a `Plan` and rebuild the form from it, and that
+ * was the first design. It loses data: `buildPlan()` is a one-way projection,
+ * and three real inputs do not survive the round trip — `monthsElapsed` and
+ * `compareHoursPerWeek` have no home in `Plan` at all, and `housingCarry` is
+ * only written when the care type is hourly. Losing `monthsElapsed` silently
+ * would rewrite every figure in the ledger reconciliation on reload, which is
+ * a worse failure than not persisting at all: the family would not be told.
+ *
+ * So `Plan` stays the domain contract that the engines consume and that
+ * export/import will speak, and this is the storage contract. Both are Zod, and
+ * anything read back from the browser is validated against this one before it
+ * reaches React (.agents/AGENTS.md §1).
+ */
+export const PlannerStateSchema = z.object({
+  // Triage
+  stateCode: z.string().length(2),
+  careType: CareTypeSchema,
+  monthlyIncomeCents: z.number().int().min(0),
+  liquidAssetsCents: z.number().int().min(0),
+  contributorCount: z.number().int().min(0).max(10),
+
+  // Refinement
+  careRecipientLabel: z.string().min(1).max(80),
+  hoursPerWeek: z.number().min(0).max(168),
+  costOverrideCents: z.number().int().min(0).nullable(),
+  careLevelTierCents: z.number().int().min(0),
+  communityFeeCents: z.number().int().min(0),
+  annualEscalatorRate: z.number().min(0).max(0.2),
+  addOns: z.array(AddOnToggleSchema),
+  ancillaryMonthlyCents: z.number().int().min(0),
+  projectionYears: z.number().int().min(1).max(30),
+  assetReturnRate: z.number().min(-0.5).max(0.5),
+  incomeColaRate: z.number().min(0).max(0.2),
+
+  // Break-even comparison
+  compareHoursPerWeek: z.number().min(0).max(168),
+  housingCarryMonthlyCents: z.number().int().min(0),
+
+  // Sharing
+  contributors: z.array(ContributorSchema),
+  splitMethod: SplitMethodSchema,
+
+  // Contribution ledger
+  ledger: z.array(LedgerEntrySchema),
+  monthsElapsed: z.number().int().min(0).max(360),
+});
+export type PlannerState = z.infer<typeof PlannerStateSchema>;
+
 export const DEFAULT_ASSUMPTIONS: Assumptions = {
   careInflationRate: 0.045,
   generalInflationRate: 0.03,

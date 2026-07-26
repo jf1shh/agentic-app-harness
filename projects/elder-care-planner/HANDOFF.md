@@ -1,10 +1,10 @@
 # Agent Handoff — Elder Care Cost Planner
 
 **State:** V1 complete and green. `node scripts/test-app.mjs elder-care-planner` passes all checks
-(security advisory-only, lint, type-check, 171 Vitest, 45 Playwright + axe).
+(security advisory-only, lint, type-check, 179 Vitest, 51 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 5,
-marked V1 IMPLEMENTED (revision 6 added the ledger UI). Read §2 (research) before changing scope; the feature set is derived from it,
+marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
 not from intuition.
 
 ---
@@ -14,6 +14,14 @@ not from intuition.
 Triage-first single-page planner. Five fields produce an all-in cost, a funding runway, a sensitivity
 ranking and a per-sibling share; everything else is optional refinement. Eight pure engines under
 `src/lib/engine/`, a Zod contract in `src/lib/schemas.ts`, and cited datasets under `src/lib/data/`.
+
+**Local persistence (spec §4.1, added in revision 7).** Everything typed is saved to
+`localStorage` and restored on the next visit, with a disclosed privacy note and a confirmed
+"forget everything on this device" control. The stored artifact is `PlannerStateSchema`, **not**
+`PlanSchema` — `buildPlan()` drops `monthsElapsed`, `compareHoursPerWeek` and the residential
+housing carry, and losing `monthsElapsed` would silently rewrite the ledger reconciliation.
+Writes are debounced and flushed on `pagehide`/`visibilitychange`. An unreadable payload puts a
+notice on screen instead of resetting silently.
 
 **Contribution ledger UI (spec §6.6, added in revision 6).** `LedgerPanel` logs who paid, when,
 how much and what for, reconciles each person against their agreed share over the months entered,
@@ -62,17 +70,28 @@ Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpat
    estimate to work from. Each needs an `Explanation` builder in the same change that gives it a
    UI — spec §6.10 makes that binding, and `ExplanationId` in `explain/types.ts` is where it goes.
 
-5. **The ledger is not persisted, and neither is anything else.** `storage.ts` is implemented and
-   unit-tested but not wired into the page — state lives in React and is lost on reload. That was
-   survivable when every field could be retyped in a minute; a ledger of thirty logged payments
-   makes it the most valuable thing left undone. `PlanSchema` already validates `ledger` on read,
-   so wiring `loadPlan`/`savePlan` into `page.tsx` is the whole job.
+5. **JSON export/import has no UI.** `exportPlanJson` and `parsePlanJson` are implemented and
+   unit-tested, and spec §3 lists export/import as a V1 feature. Persistence now covers "the plan
+   is still here tomorrow"; export still covers "send it to my brother" and "keep a backup before
+   the browser clears its storage", which local-only storage cannot. This is the natural next
+   piece, and `Plan` is already the right shape for it.
 
 6. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
    drift — that finding is expected, not a defect): Medicaid eligibility modelling, encrypted shared
    family link, care-hours scheduler, reverse-mortgage modelling, receipt capture.
 
 ## Things to not undo
+
+- **The stored artifact is the form state, not a `Plan`** — see the persistence note above. Moving
+  storage onto `PlanSchema` would look tidier and would silently drop three real inputs.
+
+- **The `pagehide`/`visibilitychange` flush beside the debounced save.** Removing it does not fail
+  any assertion about the store being called; it fails only when a real reload follows a real
+  edit, which is why the E2E specs reload rather than inspecting `localStorage`.
+
+- **E2E specs go through `gotoPlanner()` in `e2e/support.ts`**, which waits for `data-planready`.
+  That marker proves both hydration and the restore have finished. A `fill()` before either is
+  silently swallowed or overwritten, and the failure surfaces somewhere else entirely.
 
 - **`src/lib/explain/` restates engine output; it never recomputes it.** Every cents figure in a
   derivation is read from a `CostBreakdown`, `RunwayResult`, `BreakEvenResult` or `SplitResult`. A

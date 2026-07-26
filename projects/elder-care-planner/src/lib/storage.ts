@@ -10,9 +10,18 @@
  * what makes families willing to type real numbers, and real numbers are what
  * make every downstream figure worth anything.
  */
-import { PlanSchema, type Plan } from './schemas';
+import { PlanSchema, PlannerStateSchema, type Plan, type PlannerState } from './schemas';
 
 export const STORAGE_KEY = 'elder-care-planner:plan:v1';
+
+/**
+ * Where the form is kept between visits.
+ *
+ * The version lives in the key rather than inside the payload: a future v2
+ * simply reads a different key, so an old payload is ignored instead of being
+ * half-migrated into a shape the app then has to defend against everywhere.
+ */
+export const PLANNER_STATE_KEY = 'elder-care-planner:state:v1';
 
 /** Minimal shape we need, so the parser can be tested without a DOM. */
 export interface StorageLike {
@@ -47,6 +56,54 @@ export function savePlan(storage: StorageLike, plan: Plan): void {
 }
 
 export function clearPlan(storage: StorageLike): void {
+  storage.removeItem(STORAGE_KEY);
+}
+
+/* ---- The form state, which is what actually persists between visits ---- */
+
+/** Validate an unknown payload as planner state. Null when it does not conform. */
+export function parsePlannerState(raw: unknown): PlannerState | null {
+  const result = PlannerStateSchema.safeParse(raw);
+  return result.success ? result.data : null;
+}
+
+export function parsePlannerStateJson(json: string): PlannerState | null {
+  try {
+    return parsePlannerState(JSON.parse(json));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Three outcomes, deliberately distinguished.
+ *
+ * `absent` is a first visit; `invalid` is a payload that failed the contract —
+ * a half-written write, a hand-edited key, or data from a future version. The
+ * app must not silently start over in the second case: a family that typed
+ * thirty ledger entries deserves to be told they are gone rather than left to
+ * notice on their own.
+ */
+export type RestoreResult =
+  | { status: 'absent' }
+  | { status: 'restored'; state: PlannerState }
+  | { status: 'invalid' };
+
+export function loadPlannerState(storage: StorageLike): RestoreResult {
+  const raw = storage.getItem(PLANNER_STATE_KEY);
+  if (raw === null) return { status: 'absent' };
+  const state = parsePlannerStateJson(raw);
+  return state === null ? { status: 'invalid' } : { status: 'restored', state };
+}
+
+export function savePlannerState(storage: StorageLike, state: PlannerState): void {
+  storage.setItem(PLANNER_STATE_KEY, JSON.stringify(state));
+}
+
+export function clearPlannerState(storage: StorageLike): void {
+  storage.removeItem(PLANNER_STATE_KEY);
+  // The plan key is cleared alongside it: "forget everything on this device"
+  // has to mean everything, or the promise is false.
   storage.removeItem(STORAGE_KEY);
 }
 

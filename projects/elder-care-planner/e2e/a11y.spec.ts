@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { gotoPlanner } from './support';
 
 /**
  * Accessibility is not a checkbox for this audience. The users are frequently
@@ -12,7 +13,7 @@ test.describe('BDD Spec: The planner is usable by everyone', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When axe audits the page against WCAG 2 A and AA
     const results = await new AxeBuilder({ page })
@@ -27,7 +28,7 @@ test.describe('BDD Spec: The planner is usable by everyone', () => {
     page,
   }) => {
     // Given a reader who needs bigger type
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByRole('button', { name: 'Larger text' }).click();
 
     // When axe audits the page again
@@ -44,7 +45,7 @@ test.describe('BDD Spec: The planner is usable by everyone', () => {
   }) => {
     // Given a small screen with text scaled up
     await page.setViewportSize({ width: 360, height: 720 });
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByRole('button', { name: 'Larger text' }).click();
 
     // When the document width is measured
@@ -60,7 +61,7 @@ test.describe('BDD Spec: The planner is usable by everyone', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the user tabs into the page
     await page.keyboard.press('Tab');

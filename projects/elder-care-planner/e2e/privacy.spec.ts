@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoPlanner } from './support';
 
 /**
  * Non-goal enforcement (spec §1.1/§8).
@@ -25,7 +26,7 @@ test.describe('BDD Spec: The local-only claim is provable, not just stated', () 
     });
 
     // When a family works through triage, refinement and the split
-    await page.goto('/');
+    await gotoPlanner(page);
     await page.getByLabel('Their monthly income').fill('2500');
     await page.getByLabel('Savings available for care').fill('150000');
     await page.getByLabel('How many family members will share the cost?').fill('3');
@@ -66,7 +67,7 @@ test.describe('BDD Spec: The local-only claim is provable, not just stated', () 
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the privacy note is read
     const note = page.locator('.privacy-note');

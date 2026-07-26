@@ -2,6 +2,8 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 7** — local persistence wired up (§4.1): the form state is the stored artifact, with
+> a disclosed save, an erase control, and an explicit notice when a payload cannot be read.
 > **Revision 6** — the contribution ledger (§6.6) is built and on screen, with its own derivation.
 > **Revision 5** — adds §6.10 Calculation transparency ("show the working"): every displayed
 > figure is traceable to a derivation the reader can check by hand.
@@ -178,7 +180,8 @@ combination plus **local-only, no-account privacy**.
   `smart-recipe-app`.
 - **Styling:** Vanilla CSS, consistent with sibling apps. No Tailwind.
 - **Backend/API:** None. All computation is client-side and synchronous.
-- **Database:** `localStorage`, single namespaced key, Zod-validated on read.
+- **Database:** `localStorage`, namespaced keys, Zod-validated on read. See §4.1 for what is
+  stored and why it is not a `Plan`.
 - **Deployment:** GitHub Pages at `/agentic-app-harness/elder-care-planner` via
   `deploy-pages.yml`; `basePath` applied only when `isProd`.
 - **Container:** Web only — **no Capacitor**, so the `capacitor-absolute-base` guardrail does not
@@ -186,6 +189,38 @@ combination plus **local-only, no-account privacy**.
 - **Dependencies:** `next`, `react`, `react-dom`, `zod` only. No charting library — the runway
   chart is hand-rolled inline SVG, keeping the bundle small and every chart paired with an
   equivalent data table for a11y.
+
+### 4.1 What persists, and why it is the form state rather than a Plan
+
+**Two Zod contracts, deliberately.** `PlanSchema` is the domain model the engines consume and the
+format export/import speaks. `PlannerStateSchema` is what the browser stores.
+
+Storing a `Plan` was the first design and it loses data. `buildPlan()` is a one-way projection:
+`monthsElapsed` and `compareHoursPerWeek` have no home in `Plan` at all, and `housingCarry` is
+only written when the care type is hourly. Losing `monthsElapsed` silently would rewrite every
+figure in the ledger reconciliation on reload — a worse outcome than not persisting, because the
+family is not told. So the storage contract is the form state, and it is validated on read like
+any other untrusted input (`.agents/AGENTS.md` §1).
+
+Rules this surface must hold to:
+
+- **Nothing is read from storage during render.** The page is a static export; reading
+  `localStorage` while rendering produces server markup that disagrees with the first client
+  render. Restore happens in a mount effect, and the app exposes `data-planready` once it has
+  finished so tests can wait for it rather than racing it.
+- **Writes are debounced, and flushed on `pagehide`/`visibilitychange`.** Debouncing alone loses
+  the last few hundred milliseconds of typing when someone closes the tab or backgrounds a phone,
+  with no indication it happened.
+- **A payload that fails the contract is reported, not silently discarded.** `absent` (a first
+  visit) and `invalid` (corrupt, hand-edited, or written by a future version) are distinguished,
+  and the second one puts a notice on screen. A family that typed thirty ledger entries is told
+  they are gone rather than left to notice their figures quietly reverted.
+- **Storing the data is disclosed, and erasable in one action.** §1.2 makes trust a functional
+  requirement, and an app that quietly keeps a parent's finances on a shared computer has broken
+  it. The privacy note states what is kept and where, and a confirmed "forget everything on this
+  device" control clears every key the app owns.
+- **The version lives in the key** (`elder-care-planner:state:v1`), so a future schema reads a
+  different key and an old payload is ignored rather than half-migrated.
 
 ### Module layout
 ```
@@ -733,6 +768,8 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
   - The sensitivity panel names a top driver and the runway renders as a band (§5.3, §6.4).
   - The scenario-specific "questions to ask" list renders and prints (§6.5).
   - Export then re-import a plan and get byte-identical numbers.
+  - Figures and a logged ledger entry survive a reload; erasing removes them and they stay gone;
+    a corrupt stored payload produces a visible notice rather than a silent reset (§4.1).
   - The Medicare "does not cover custodial care" copy is visible on the results screen (§2.6).
   - Each headline figure's "?" control opens its derivation, the derivation's parts sum to its
     stated total as *rendered*, `Escape` closes the panel and focus returns to the control (§6.10).

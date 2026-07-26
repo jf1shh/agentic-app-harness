@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoPlanner } from './support';
 
 /**
  * The research finding behind this spec: 69% of families secure care within 60
@@ -11,7 +12,7 @@ test.describe('BDD Spec: Triage produces an answer immediately', () => {
     page,
   }) => {
     // Given the planner is opened
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When nothing has been entered beyond the defaults
     // Then a cost, a runway and a gap are all already visible
@@ -24,7 +25,7 @@ test.describe('BDD Spec: Triage produces an answer immediately', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the page is inspected for data collection
     // Then there is no email field, no password field and no sign-up
@@ -39,7 +40,7 @@ test.describe('BDD Spec: Triage produces an answer immediately', () => {
     page,
   }) => {
     // Given the planner with default assumptions
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When income comfortably exceeds the cost of care
     await page.getByLabel('Their monthly income').fill('30000');
@@ -52,7 +53,7 @@ test.describe('BDD Spec: Triage produces an answer immediately', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
     const before = await page.getByTestId('runway-line').textContent();
 
     // When there are no savings to draw on

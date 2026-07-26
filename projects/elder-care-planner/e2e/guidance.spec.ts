@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoPlanner } from './support';
 
 /**
  * The two pieces of guidance with the highest value per byte in the whole app:
@@ -10,7 +11,7 @@ test.describe('BDD Spec: The Medicare correction is unavoidable', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the benefits section is read without expanding anything
     // Then the most expensive misconception in the domain is corrected in plain sight
@@ -24,7 +25,7 @@ test.describe('BDD Spec: The Medicare correction is unavoidable', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the Medicaid card is expanded
     const medicaid = page.getByTestId('benefit-medicaid');
@@ -41,7 +42,7 @@ test.describe('BDD Spec: Questions to ask before signing', () => {
     page,
   }) => {
     // Given assisted living is selected
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the questions section is read
     const residential = page.getByTestId('questions-residential');
@@ -56,7 +57,7 @@ test.describe('BDD Spec: Questions to ask before signing', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the care type is switched to an hourly one
     await page.getByLabel('What kind of care?').selectOption('in_home_health_aide');
@@ -70,7 +71,7 @@ test.describe('BDD Spec: Questions to ask before signing', () => {
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the attorney list is read
     // Then the referred-out territory is turned into concrete questions
@@ -84,7 +85,7 @@ test.describe('BDD Spec: The summary is written for a family conversation', () =
     page,
   }) => {
     // Given the planner
-    await page.goto('/');
+    await gotoPlanner(page);
 
     // When the summary section is read
     const summary = page.getByRole('region', { name: 'Summary for a family conversation' });
@@ -99,7 +100,7 @@ test.describe('BDD Spec: The summary is written for a family conversation', () =
     page,
   }) => {
     // Given the summary section
-    await page.goto('/');
+    await gotoPlanner(page);
     const text =
       (await page.getByRole('region', { name: 'Summary for a family conversation' }).textContent()) ??
       '';
