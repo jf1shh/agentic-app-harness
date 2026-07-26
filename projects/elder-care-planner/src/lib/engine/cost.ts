@@ -34,6 +34,16 @@ export interface CostBreakdown {
   readonly allInMonthlyCents: number;
   /** Community fee plus any one-time ancillary costs. */
   readonly oneTimeCents: number;
+  /**
+   * §6.5b — the upfront entry fee of an Independent Living buy-in contract.
+   * Always 0 unless `scenario.fees.buyInContract` is set and the care type is
+   * `independent_living`. Surfaced as its own `part` so the derivation panel
+   * (`Format a Total and Its Parts at the Same Precision`) can show it
+   * alongside communityFeeCents and ancillaryOneTimeCents without lumping
+   * them. `oneTimeCents === communityFeeCents + ancillaryOneTimeCents +
+   * buyInEntryCents` is asserted by the invariant tests.
+   */
+  readonly buyInEntryCents: number;
   /** Month one, including the one-time costs. */
   readonly firstMonthCents: number;
   /** How far above the advertised rate the real monthly cost sits, in percent. */
@@ -101,7 +111,11 @@ export function oneTimeCents(scenario: CareScenario): number {
   const ancillaryOneTime = scenario.ancillary
     .filter((item) => item.cadence === 'one_time')
     .reduce((sum, item) => sum + item.amountCents, 0);
-  return ancillaryOneTime + (scenario.fees?.communityFeeCents ?? 0);
+  return (
+    ancillaryOneTime +
+    (scenario.fees?.communityFeeCents ?? 0) +
+    (scenario.fees?.buyInContract?.entryCents ?? 0)
+  );
 }
 
 export function computeCost(scenario: CareScenario): CostBreakdown {
@@ -109,11 +123,29 @@ export function computeCost(scenario: CareScenario): CostBreakdown {
   const tier = scenario.fees?.careLevelTierCents ?? 0;
   const addOns = (scenario.fees?.addOns ?? []).reduce((sum, a) => sum + a.monthlyCents, 0);
   const ancillary = ancillaryMonthlyCents(scenario);
-  const oneTime = oneTimeCents(scenario);
 
-  const allIn = base.cents + tier + addOns + ancillary;
+  // §6.5b — Independent Living with a buy-in contract uses the contract's
+  // `monthlyServiceCentsRate` as the effective base monthly when no override
+  // is set. This avoids hand-keying a base rate and makes the contract the
+  // single source of truth for that option's recurring figure.
+  const monthlyService =
+    scenario.costOverrideCents === undefined &&
+    scenario.careType === 'independent_living' &&
+    scenario.fees?.buyInContract
+      ? scenario.fees.buyInContract.monthlyServiceCentsRate
+      : base.cents;
+
+  const allIn = monthlyService + tier + addOns + ancillary;
   const deltaPercent =
     base.cents > 0 ? ((allIn - base.cents) / base.cents) * 100 : 0;
+
+  // §6.5b — the one-time AGGREGATE is owned by `oneTimeCents()`. We surface
+  // the buy-in entry fee here as its own PART so the derivation panel can
+  // show it without lumping it into communityFeeCents or ancillaryOneTime.
+  // The two never drift: `oneTimeCents === communityFeeCents + ancillaryOneTime
+  // + buyInEntryCents` is asserted by the invariant test in cost.test.ts.
+  const buyInEntryCents = scenario.fees?.buyInContract?.entryCents ?? 0;
+  const oneTime = oneTimeCents(scenario);
 
   return {
     advertisedBaseCents: base.cents,
@@ -122,6 +154,7 @@ export function computeCost(scenario: CareScenario): CostBreakdown {
     ancillaryMonthlyCents: ancillary,
     allInMonthlyCents: allIn,
     oneTimeCents: oneTime,
+    buyInEntryCents,
     firstMonthCents: allIn + oneTime,
     deltaPercent,
     isNationalFallback: base.isNationalFallback,

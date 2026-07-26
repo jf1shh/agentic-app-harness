@@ -171,6 +171,7 @@ combination plus **local-only, no-account privacy**.
 - [ ] Care-hours scheduler across family members.
 - [ ] Reverse mortgage / home-sale proceeds modeling.
 - [ ] Receipt photo capture attached to ledger entries.
+- [ ] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
 
 ---
 
@@ -429,6 +430,55 @@ eligibility answer.
 
 Each list is printable and included in the Family Meeting Summary.
 
+### 6.5b Buy-in & refund engine (`engine/buyin.ts`)
+
+An Independent Living (IL) community contract can take three shapes a family commonly compares side-by-side:
+
+| Option | Entry fee (`entryCents`) | Refund schedule | Monthly service rate |
+|---|---|---|---|
+| **A** — entry with refund schedule | community-set, e.g. $400 000 | `[{12m,80%}, {36m,60%}, {60m,30%}, {84m,0%}]` (decreasing) | typically lowest |
+| **B** — entry, no refund | smaller, e.g. $200 000 | `amortized: true`, refundSchedule empty | typically mid |
+| **C** — rental only | 0 | no refund | typically highest |
+
+The engine treats all three identically: buy-in enters the existing runway through `RunwayInput.oneTimeCents` (so assets are drawn down in month one, the same path the existing one-time `communityFeeCents` already takes). Putting the entry fee on a separate accounting path would **double-count** the month-one draw; that is explicitly rejected. Refund value is *not* routed through `IncomeSource` — refund is a one-time asset inflow at exit, not an income stream, and routing it through income would mis-apply COLA and LTC elimination rules.
+
+#### 6.5b.1 `resolveRefundAtTenure(contract, tenureMonths) → number`
+
+```ts
+if (contract.amortized) return 0;
+if (contract.refundSchedule.length === 0) return 0;
+// refundSchedule must be applied as the LARGEST-tenure entry whose tenureMonths
+// is ≤ the family's current tenure. Same-precision discipline: cents.
+return Math.floor(contract.entryCents * maxApplicableRefundPercent / 100);
+```
+
+Tie-breaker rule (deterministic): the schedule is sorted ascending by `tenureMonths`. The applicable row is the last entry where `tenureMonths ≥ entry.tenureMonths`; below the first row, refund is 0; at or beyond the last row, refund is the last row's `refundPercent`.
+
+Hand-computed fixture: contract `{entryCents: 40_000_000, refundSchedule: [{12m,80},{36m,60},{60m,30},{84m,0}]}` at tenure `37 months` → 60% of 40 000 000 cents = 24 000 000 cents = $240 000.
+
+#### 6.5b.2 `buyInAffordability(liquidAssetsCents, contract)`
+
+`affordable := liquidAssetsCents >= contract.entryCents`. `shortfallCents := max(0, entryCents − liquidAssetsCents)`. Both `affordable === false` and an explicit `shortfallCents` are surfaced to the UI; the family is hard-blocked from selecting the option until they reduce the entry, raise liquid assets, or remove the option. There is no "soft" path — if the family cannot pay the entry on day one, the runway already shows the family what month their other liquid runs out; choosing an IL option they can't even afford misframes the decision.
+
+#### 6.5b.3 `projectILVariants(plan, scenarios[]) → projections[]`
+
+Returns one row per IL scenario, designed for the overlay chart in the dedicated IL tab:
+
+```ts
+{
+  scenarioId, label,
+  buyInEntryCents,
+  allInMonthlyCents,
+  isAffordable,           // reusing buyInAffordability
+  refundAtExitByYearCents: number[],   // hypothetical — exit at end of each projection year
+  assetsEndByYearCents:   number[],   // existing runway output, untouched
+}
+```
+
+The chart shows one line per option (`assetsEndByYearCents`) on a shared x-axis (years 1..`projectionYears`). Refund-at-exit is **not** added to the runway's `totalOutOfPocketCents` — a refund is hypothetical until exit actually happens. The refund row in the derivation is a separate, optional panel and is clearly labelled as a what-if.
+
+**Total-and-parts invariant (this section explicitly defers to §6 "Format a Total and Its Parts at the Same Precision"):** the chart's per-option net cost at month `m` for option `i` is `(sum of monthlyRecurring[m,i]) + buyInEntryCents[i] − cumulativeRefundLiabilityByMonth(m, i)`, formatted at identical precision and summing exactly in the derivation panel. Mismatch is asserted in the unit tests by parsing the rendered strings (not the engine output) per the existing test discipline.
+
 ### 6.6 Split + Ledger (`engine/split.ts`, `engine/ledger.ts`)
 Split methods:
 - `equal` — shortfall ÷ contributors.
@@ -572,6 +622,35 @@ not as an argument.
 
 All models are runtime Zod schemas with types inferred via `z.infer<>` (`.agents/AGENTS.md` §1).
 Money is stored as **integer cents** to avoid float drift; rates are decimals (`0.04` = 4%).
+
+### 7.1 Buy-in contract (`BuyInContractSchema`)
+
+A community can publish an **entry fee with a refund schedule** — Independent Living and Continuing Care Retirement Community (CCRC) contracts publish these in this exact shape. The schema is **optional** on `FacilityFeesSchema`: a scenario with no `buyInContract` behaves exactly as it does today, so adding this field is strictly backwards-compatible — every existing stored plan keeps parsing against `v1` (`elder-care-planner:state:v1`) without a migration.
+
+```ts
+export const BuyInContractSchema = z.object({
+  // Upfront entry fee, paid in month 1 (community fee and ancillary one-times too).
+  entryCents: z.number().int().min(0).default(0),
+  // true => no refund; the entry is amortized into the monthly rate.
+  amortized: z.boolean().default(false),
+  // Schedule must be sorted ascending by tenureMonths. Below the first bracket,
+  // refund is 0. Refund is stored as percent so a community that amends its
+  // entry fee doesn't silently invalidate the schedule.
+  refundSchedule: z.array(z.object({
+    tenureMonths: z.number().int().min(0),
+    refundPercent: z.number().min(0).max(100),
+  })).default([]),
+  // Base monthly service rate for this community contract. Fed into the
+  // existing all-in engine as another recurring line item; monthlyServiceCentsRate
+  // exists so IL scenarios don't have to rely solely on `costOverrideCents`.
+  monthlyServiceCentsRate: z.number().int().min(0).default(0),
+});
+export type BuyInContract = z.infer<typeof BuyInContractSchema>;
+```
+
+`CareTypeSchema` gains one member: `'independent_living'`. `RESIDENTIAL_CARE_TYPES` includes it so the existing break-even math (`engine/breakeven.ts`) and the §3 scenario-comparison feature pick it up automatically. Existing scenarios with `careType ∈ {assisted_living, memory_care, nursing_home_semi, nursing_home_private, family_provided, in_home_homemaker, in_home_health_aide, adult_day_care}` keep parsing against the v1 storage key without modification.
+
+### 7.2 Existing Zod contract source
 
 ```typescript
 import { z } from 'zod';
