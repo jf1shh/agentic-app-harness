@@ -15,6 +15,7 @@ export const CareTypeSchema = z.enum([
   'in_home_homemaker', // non-medical help: cooking, cleaning, errands
   'in_home_health_aide', // hands-on personal care
   'adult_day_care',
+  'independent_living', // §6.5b — Independent Living community (entry fee + refund schedule)
   'assisted_living',
   'memory_care',
   'nursing_home_semi',
@@ -25,6 +26,7 @@ export type CareType = z.infer<typeof CareTypeSchema>;
 
 export const RESIDENTIAL_CARE_TYPES: readonly CareType[] = [
   'assisted_living',
+  'independent_living',
   'memory_care',
   'nursing_home_semi',
   'nursing_home_private',
@@ -46,6 +48,30 @@ export const ExpenseCategorySchema = z.enum([
   'other',
 ]);
 export type ExpenseCategory = z.infer<typeof ExpenseCategorySchema>;
+
+/**
+ * Buy-in contract — Independent Living / Continuing Care Retirement Community
+ * entry fees and refund schedules (spec §6.5b / §7.1). Optional; presence is
+ * what flips `independent_living` scenarios into the IL comparison flow.
+ *
+ * Contracts publish `entryCents` and a refund schedule that decreases with
+ * tenure. Money is stored as integer cents; refund is stored as percent so a
+ * community that amends its entry fee doesn't silently invalidate the schedule.
+ */
+export const BuyInContractSchema = z.object({
+  entryCents: z.number().int().min(0).default(0),
+  amortized: z.boolean().default(false),
+  refundSchedule: z
+    .array(
+      z.object({
+        tenureMonths: z.number().int().min(0),
+        refundPercent: z.number().min(0).max(100),
+      }),
+    )
+    .default([]),
+  monthlyServiceCentsRate: z.number().int().min(0).default(0),
+});
+export type BuyInContract = z.infer<typeof BuyInContractSchema>;
 
 /**
  * The fee structure that makes the advertised rate differ from the real one.
@@ -74,6 +100,11 @@ export const FacilityFeesSchema = z.object({
   careLevelIncreaseCents: z.number().int().min(0).optional(),
   annualEscalatorRate: z.number().min(0).max(0.2).default(0.04), // researched 3–5% band
   addOns: z.array(FacilityAddOnSchema).default([]),
+  // §6.5b — opt-in: when present AND `careType === 'independent_living'`,
+  // surfaces the IL community's buy-in contract. Its `entryCents` is folded
+  // into `oneTimeCents`'s aggregate; `monthlyServiceCentsRate` becomes the
+  // base when no `costOverrideCents` is set.
+  buyInContract: BuyInContractSchema.optional(),
 });
 export type FacilityFees = z.infer<typeof FacilityFeesSchema>;
 

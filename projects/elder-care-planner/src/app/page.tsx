@@ -18,7 +18,7 @@ import {
   savePlannerState,
 } from '@/lib/storage';
 import { buildExplanations } from '@/lib/explain/build';
-import { CARE_TYPE_LABELS } from '@/lib/data/costOfCare';
+import { CARE_TYPE_LABELS, SELECTABLE_CARE_TYPES } from '@/lib/data/costOfCare';
 import type { CareType, Contributor, LedgerEntry, SplitMethod } from '@/lib/schemas';
 import type { ExplanationSet } from '@/lib/explain/types';
 import { CurrencyInput, NumberInput, SelectInput } from '@/components/Inputs';
@@ -264,7 +264,7 @@ export default function Home() {
             <SelectInput
               label="What kind of care?"
               value={state.careType}
-              options={(Object.keys(CARE_TYPE_LABELS) as CareType[]).map((c) => ({
+              options={SELECTABLE_CARE_TYPES.map((c) => ({
                 value: c,
                 label: CARE_TYPE_LABELS[c],
               }))}

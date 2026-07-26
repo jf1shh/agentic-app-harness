@@ -22,7 +22,7 @@ import type { LedgerSummary } from '../engine/ledger';
 import type { ScenarioResult } from '../engine/plan';
 import { buildRunwayInput } from '../engine/plan';
 import { incomeAtMonth } from '../engine/runway';
-import { ADULT_DAY_FULL_TIME_DAYS_PER_MONTH } from '../engine/cost';
+import { ADULT_DAY_FULL_TIME_DAYS_PER_MONTH, buyInContractFor } from '../engine/cost';
 import { PLANNING_BANDS } from '../engine/sensitivity';
 import {
   CARE_TYPE_LABELS,
@@ -151,6 +151,18 @@ function explainBaseRate(scenario: CareScenario, cost: CostBreakdown): Explanati
     });
     assumptions.push(
       `A full-time month is treated as ${ADULT_DAY_FULL_TIME_DAYS_PER_MONTH} attended days, and the pro-rating is straight-line. Providers often price part-time attendance at a higher day rate than this implies.`,
+    );
+  } else if (buyInContractFor(scenario)) {
+    plainLanguage =
+      'Independent living is housing rather than a surveyed category of care, so there is no published median to compare against. This figure is the monthly service fee the community itself sets out in its contract — a real number from a real document, not an average.';
+    formula = 'advertised base rate = the monthly service fee in the community’s contract';
+    steps.push({
+      kind: 'result',
+      label: 'Monthly service fee set out in the community’s contract',
+      valueCents: cost.advertisedBaseCents,
+    });
+    assumptions.push(
+      'The entry fee is not in this figure. It is charged once, at move-in, and appears in the first-month total instead.',
     );
   } else {
     plainLanguage =
@@ -298,6 +310,16 @@ function explainFirstMonth(scenario: CareScenario, cost: CostBreakdown): Explana
       valueCents: communityFee,
     });
   }
+  // §6.5b — the entry fee dwarfs every other line here, so it has to appear as
+  // its own part. `firstMonthCents` already includes it; omitting the step
+  // would state a total the parts never reach.
+  if (cost.buyInEntryCents > 0) {
+    steps.push({
+      kind: 'add',
+      label: 'Independent living entry fee, paid once on moving in',
+      valueCents: cost.buyInEntryCents,
+    });
+  }
   for (const item of scenario.ancillary) {
     if (item.cadence === 'one_time') {
       steps.push({ kind: 'add', label: `${item.label} (one-time)`, valueCents: item.amountCents });
@@ -314,7 +336,8 @@ function explainFirstMonth(scenario: CareScenario, cost: CostBreakdown): Explana
     question: 'How is the first month’s total worked out?',
     plainLanguage:
       'Move-in costs land once, at the start, and they are usually non-refundable even if the stay turns out to be short. Families who budget from the monthly figure alone meet this bill unprepared.',
-    formula: 'first month = all-in monthly cost + community fee + any other one-time costs',
+    formula:
+      'first month = all-in monthly cost + community fee + any entry fee + any other one-time costs',
     steps,
     assumptions: [
       'One-time costs are charged in month one and never again. Any deposit that is refundable should be entered as zero here and tracked separately.',
@@ -328,6 +351,7 @@ function explainFirstMonth(scenario: CareScenario, cost: CostBreakdown): Explana
       : [],
     caveats: [
       'Whether a community fee is refundable, and for how long, is a contract term worth getting in writing before signing.',
+      'An entry fee shown here is the amount paid on moving in. How much of it comes back, and after how long, depends on the contract\u2019s refund schedule \u2014 that is a separate figure and is not netted off this total.',
     ],
   };
 }

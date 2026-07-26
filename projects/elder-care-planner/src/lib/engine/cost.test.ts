@@ -121,3 +121,133 @@ describe('Given unpaid family care', () => {
     expect(computeCost(scenario({ careType: 'family_provided' })).allInMonthlyCents).toBe(0);
   });
 });
+
+describe('Given independent living is priced from a contract rather than a survey', () => {
+  it('Then the advertised base rate is the contract’s monthly service fee', () => {
+    // Hand-computed: the contract quotes $3,500/mo, and a $1,200/mo care tier
+    // is billed on top. All-in = 350_000 + 120_000 = 470_000 cents.
+    const il = scenario({
+      careType: 'independent_living',
+      fees: {
+        communityFeeCents: 0,
+        careLevelTierCents: 120_000,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents: 40_000_000,
+          amortized: false,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 350_000,
+        },
+      },
+    });
+    const result = computeCost(il);
+    expect(result.advertisedBaseCents).toBe(350_000);
+    expect(result.allInMonthlyCents).toBe(470_000);
+    // No survey figure is claimed for a category the survey does not cover.
+    expect(result.confidence).toBeNull();
+    expect(result.isNationalFallback).toBe(false);
+  });
+
+  it('Then a quoted price still overrides the contract rate', () => {
+    const il = scenario({
+      careType: 'independent_living',
+      costOverrideCents: 500_000,
+      fees: {
+        communityFeeCents: 0,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents: 0,
+          amortized: false,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 350_000,
+        },
+      },
+    });
+    expect(computeCost(il).advertisedBaseCents).toBe(500_000);
+    expect(computeCost(il).usedOverride).toBe(true);
+  });
+
+  it('Then a buy-in contract left on a non-IL scenario is ignored entirely', () => {
+    // Guards the one-time aggregate, the entry-fee part and the base rate
+    // against disagreeing about whether a stray contract counts.
+    const assisted = scenario({
+      careType: 'assisted_living',
+      fees: {
+        communityFeeCents: 400_000,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents: 40_000_000,
+          amortized: false,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 350_000,
+        },
+      },
+    });
+    const result = computeCost(assisted);
+    expect(result.buyInEntryCents).toBe(0);
+    expect(result.oneTimeCents).toBe(400_000);
+    expect(result.advertisedBaseCents).toBe(620_000); // the assisted-living median
+  });
+});
+
+describe('Given a scenario with all three one-time cost kinds (community fee + ancillary one-time + buy-in entry)', () => {
+  // §6 lesson "Format a Total and Its Parts at the Same Precision":
+  // the parts in CostBreakdown must be able to be presented alongside the
+  // aggregate without arithmetic errors rounding the parts or the total.
+  // Regression protection for the refactor in computeCost — if anyone
+  // re-inlines the one-time sum or changes the buy-in fold, this test
+  // breaks immediately.
+  const buyInContract = {
+    entryCents: 750_000, // $7,500 IL buy-in
+    amortized: false,
+    refundSchedule: [],
+    monthlyServiceCentsRate: 0,
+  };
+  const fullyLoaded = scenario({
+    careType: 'independent_living',
+    costOverrideCents: 0,
+    fees: {
+      communityFeeCents: 400_000, // $4,000 community fee
+      buyInContract,
+      annualEscalatorRate: 0.04,
+      addOns: [],
+      careLevelTierCents: 0,
+    },
+    ancillary: [
+      {
+        id: 'e1',
+        label: 'Grab bars',
+        category: 'home_modification',
+        amountCents: 90_000, // $900
+        cadence: 'one_time',
+        taxDeductibleCandidate: false,
+      },
+    ],
+  });
+
+  it('Then oneTimeCents === communityFeeCents + ancillaryOneTime + buyInEntryCents', () => {
+    // Hand-computed: 400_000 (community) + 90_000 (ancillary one-time)
+    //                + 750_000 (buy-in entry) = 1_240_000 cents.
+    const result = computeCost(fullyLoaded);
+    expect(result.oneTimeCents).toBe(1_240_000);
+    expect(result.buyInEntryCents).toBe(750_000);
+    expect(result.oneTimeCents).toBe(
+      400_000 + 90_000 + result.buyInEntryCents,
+    );
+  });
+
+  it('Then firstMonthCents is consistent with the same oneTimeCents aggregate', () => {
+    // firstMonthCents == allIn + oneTimeCents == 0 + 1_240_000 = 1_240_000.
+    // (override = 0 ⇒ allIn = 0; one-time aggregate unchanged.)
+    // Regression: if firstMonthCents ever stop reading oneTimeCents(),
+    // these two will diverge.
+    const result = computeCost(fullyLoaded);
+    expect(result.firstMonthCents).toBe(result.allInMonthlyCents + result.oneTimeCents);
+    expect(result.firstMonthCents).toBe(1_240_000);
+  });
+});
