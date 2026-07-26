@@ -8,7 +8,14 @@ on:
 
 jobs:
   test-apps:
-    runs-on: windows-latest
+    # Ubuntu, not Windows. The authoritative gate is `scripts/test-app.mjs` —
+    # zero-dependency Node ESM that the repo ported specifically so no gate needs
+    # PowerShell (.agents/AGENTS.md §5). Running it on Windows through the .ps1
+    # wrapper paid for a slower runner to exercise a shim. The two workflows that
+    # actually build and ship these apps — deploy-pages.yml and
+    # android-release.yml — have always run on ubuntu-latest, so Linux is already
+    # the platform the shipped artifacts are built on.
+    runs-on: ubuntu-latest
     strategy:
       # One leg per app, in parallel. fail-fast:false so one app's failure
       # doesn't cancel the others — you see every app's result in one run.
@@ -28,9 +35,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: projects/${{ matrix.app }}/package-lock.json
 
-      # test-app.ps1 is self-contained: it installs the app's deps and Playwright
+      # test-app.mjs is self-contained: it installs the app's deps and Playwright
       # browsers on demand, then runs security audit, lint, type-check, Vitest, and
       # Playwright E2E + axe a11y. No separate global install step needed.
+      #
+      # Invoked directly rather than through scripts/test-app.ps1. The wrapper
+      # still exists for local muscle memory, but CI should run the script the
+      # docs call authoritative, not a shim around it.
       - name: Run Harness Suite for ${{ matrix.app }}
-        shell: pwsh
-        run: ./scripts/test-app.ps1 -AppName ${{ matrix.app }}
+        run: node scripts/test-app.mjs ${{ matrix.app }}

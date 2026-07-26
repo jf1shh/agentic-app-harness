@@ -49,7 +49,7 @@ It hosts six real, deployed applications and holds every one of them to the same
 
 ## 🔁 The Agentic Loop (Sense → Propose → Verify → Learn)
 
-The harness closes its own improvement loop — **with no embedded LLM and no API key.** The AI coding agent is a pluggable actuator (Claude Code, Cursor, Copilot, Aider, …); the repo stays provider-neutral. The loop core is zero-dependency Node ESM, so it runs identically on the Windows CI and any dev machine without PowerShell.
+The harness closes its own improvement loop — **with no embedded LLM and no API key.** The AI coding agent is a pluggable actuator (Claude Code, Cursor, Copilot, Aider, …); the repo stays provider-neutral. The loop core is zero-dependency Node ESM, so it runs identically in CI and on any dev machine, with or without PowerShell — the `Harness Testing Suite` invokes `node scripts/test-app.mjs` directly on `ubuntu-latest`.
 
 ```
 SENSE      node scripts/harness-status.mjs        → harness-status.json
