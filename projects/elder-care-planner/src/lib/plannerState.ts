@@ -8,6 +8,7 @@ import {
   DEFAULT_ASSUMPTIONS,
   type CareScenario,
   type Contributor,
+  type LedgerEntry,
   type Plan,
   type SplitMethod,
   type CareType,
@@ -48,6 +49,16 @@ export interface PlannerState {
   // ---- Sharing ----
   contributors: readonly Contributor[];
   splitMethod: SplitMethod;
+
+  // ---- Contribution ledger: what was actually paid, by whom ----
+  ledger: readonly LedgerEntry[];
+  /**
+   * Months of care paid for so far. Supplied rather than derived from the
+   * clock, because every engine in this app is a pure function of its inputs —
+   * an ambient `Date.now()` would make the reconciliation untestable and would
+   * quietly change a family's numbers between one visit and the next.
+   */
+  monthsElapsed: number;
 }
 
 export const US_STATES: readonly { code: string; name: string }[] = [
@@ -116,6 +127,9 @@ export const INITIAL_STATE: PlannerState = {
 
   contributors: makeContributors(2),
   splitMethod: 'equal',
+
+  ledger: [],
+  monthsElapsed: 1,
 };
 
 function isResidential(careType: CareType): boolean {
@@ -217,7 +231,7 @@ export function buildPlan(state: PlannerState): Plan {
           ]
         : [],
     contributors: [...state.contributors],
-    ledger: [],
+    ledger: [...state.ledger],
     caregiverImpacts: [],
     assumptions: {
       ...DEFAULT_ASSUMPTIONS,

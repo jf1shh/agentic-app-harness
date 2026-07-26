@@ -152,8 +152,48 @@ select {
   border-radius: 8px;
 }
 
+input[type='date'] {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid #9aa8a4;
+  border-radius: 8px;
+}
+
 input[type='range'] {
   width: 100%;
+}
+
+/* The checkbox sits before its label, so the label cannot own the layout. */
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0.75rem 0;
+}
+
+.checkbox-field input[type='checkbox'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.25rem;
+  flex: none;
+}
+
+.checkbox-field label {
+  margin-bottom: 0;
+}
+
+button.small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 input:focus-visible,

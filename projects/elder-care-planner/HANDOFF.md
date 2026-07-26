@@ -1,10 +1,10 @@
 # Agent Handoff — Elder Care Cost Planner
 
 **State:** V1 complete and green. `node scripts/test-app.mjs elder-care-planner` passes all checks
-(security advisory-only, lint, type-check, 157 Vitest, 37 Playwright + axe).
+(security advisory-only, lint, type-check, 171 Vitest, 45 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 5,
-marked V1 IMPLEMENTED. Read §2 (research) before changing scope; the feature set is derived from it,
+marked V1 IMPLEMENTED (revision 6 added the ledger UI). Read §2 (research) before changing scope; the feature set is derived from it,
 not from intuition.
 
 ---
@@ -15,12 +15,19 @@ Triage-first single-page planner. Five fields produce an all-in cost, a funding 
 ranking and a per-sibling share; everything else is optional refinement. Eight pure engines under
 `src/lib/engine/`, a Zod contract in `src/lib/schemas.ts`, and cited datasets under `src/lib/data/`.
 
+**Contribution ledger UI (spec §6.6, added in revision 6).** `LedgerPanel` logs who paid, when,
+how much and what for, reconciles each person against their agreed share over the months entered,
+totals spend by category, and sums the entries ticked as possible medical expenses. Two decisions
+that look like bugs but are not: months elapsed is an *input*, never `Date.now()` (keeps the engine
+pure and stops a family's numbers drifting between visits), and entries logged against someone who
+is later removed from the contributor list are **kept**, labelled, and still counted in the total.
+
 **Calculation transparency (spec §6.10, added in revision 5).** Every headline figure carries a
 question-mark control that opens its derivation in a side panel — formula, inputs with sources,
 arithmetic line by line, assumptions applied, and what the figure cannot account for. The same
 derivations render in full in a permanent "How every number is worked out" section, excluded from
 print so the Family Meeting Summary stays one page. Eight derivations: `base-rate`, `all-in`,
-`first-month`, `monthly-gap`, `runway`, `break-even`, `split`, `sensitivity`.
+`first-month`, `monthly-gap`, `runway`, `break-even`, `split`, `ledger`, `sensitivity`.
 
 Registered in the CI matrix (`.github/workflows/ci.yml`), the Pages deploy
 (`.github/workflows/deploy-pages.yml`, step 6), and the portfolio hub
@@ -49,14 +56,17 @@ Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpat
    forbids interpolating figures. Transcribing and verifying real state data is the single highest-value
    improvement available, and `resolveCost()` already supports it with no other code changes.
 
-4. **The ledger, caregiver opportunity cost and tax engines have no derivations yet.** They have no
-   UI either (see below), so nothing is missing today — but when they are wired up, each needs an
-   `Explanation` builder alongside, or the app will have figures on screen that cannot be checked
-   while every neighbouring figure can. `ExplanationId` in `explain/types.ts` is where they go.
+4. **Caregiver opportunity cost and the tax estimate are still engine-only.** `engine/opportunity.ts`
+   and `engine/tax.ts` are fully implemented and unit-tested but have no UI. `PlanSchema` already
+   carries `caregiverImpacts`, and the ledger now supplies `deductibleCandidateCents` for the tax
+   estimate to work from. Each needs an `Explanation` builder in the same change that gives it a
+   UI — spec §6.10 makes that binding, and `ExplanationId` in `explain/types.ts` is where it goes.
 
-5. **Ledger and caregiver opportunity cost are engine-only.** `engine/ledger.ts`, `engine/opportunity.ts`
-   and `engine/tax.ts` are fully implemented and unit-tested but have no UI yet. `PlanSchema` already
-   carries `ledger` and `caregiverImpacts`. Wiring them up is additive.
+5. **The ledger is not persisted, and neither is anything else.** `storage.ts` is implemented and
+   unit-tested but not wired into the page — state lives in React and is lost on reload. That was
+   survivable when every field could be retyped in a minute; a ledger of thirty logged payments
+   makes it the most valuable thing left undone. `PlanSchema` already validates `ledger` on read,
+   so wiring `loadPlan`/`savePlan` into `page.tsx` is the whole job.
 
 6. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
    drift — that finding is expected, not a defect): Medicaid eligibility modelling, encrypted shared

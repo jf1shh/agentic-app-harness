@@ -97,6 +97,23 @@ As an AI agent operating within this repository, you must strictly adhere to the
   proven by mutation — dropping the add-on rows and disabling the clamp each fail the suite. Not
   tagged as a guardrail: no regex can tell whether a number was read from an engine result or
   recomputed from the same inputs, which is the whole distinction.
+- **A Playwright `fill()` Before Hydration Is Swallowed, and It Looks Like a Broken Control**: In a
+  server-rendered React app (Next.js, Remix), the markup is interactive-looking long before React
+  attaches its listeners. A `fill()` that lands in that window sets the DOM value, dispatches an
+  input event nobody is listening for, and is then reverted by the first client render — leaving no
+  error and no console warning. The symptom is maddeningly indirect: a *later* assertion fails,
+  usually on a submit button that never enables, and the obvious reading is that the app is broken.
+  Diagnosing it cost a full debug cycle on `projects/elder-care-planner`, where the first field
+  filled after `goto` was the one silently lost while every subsequent field worked. Two rules.
+  (1) *Wait for a signal that client effects have run* before the first interaction — this app sets
+  `document.documentElement.dataset.textsize` from a `useEffect`, so `waitForFunction` on it proves
+  hydration; any app-owned post-hydration marker will do, but `waitForLoadState('networkidle')` will
+  not, because hydration is not a network event. (2) *Assert the value stuck* immediately after
+  filling it (`expect(field).toHaveValue(x)`), so a swallowed fill fails at the line that caused it
+  rather than three actions later. Tests that fill a single field often pass by luck and hide this;
+  a multi-field form whose submit depends on all of them is where it surfaces. Not tagged as a
+  guardrail: "is this the first interaction after a navigation, in a hydrating app" is a
+  cross-statement property that a per-line regex cannot see.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning

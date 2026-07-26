@@ -34,6 +34,11 @@ Two features exist purely to make the output useful rather than merely correct:
   the moment of negotiation. Cheapest genuinely useful screen in the app.
 - **"What would change this answer"** — sensitivity ranking, so every recommendation names its top
   driver instead of pretending to certainty.
+- **A contribution ledger** — who actually paid what, when, and for what, reconciled against the
+  agreed share. Money is the leading source of sibling conflict, and a split settles that only in
+  theory; a written record settles it in practice, kept by the plan rather than by whichever
+  family member has been keeping score. Unpaid care hours are shown beside the cash rather than
+  netted off it — weighing someone's time against someone else's money is a family decision.
 - **"Show the working"** — a question mark beside every headline figure opens its derivation: the
   formula, each input with its source, the arithmetic line by line, the assumptions applied, and
   what the figure cannot account for. A family is being asked to make an irreversible financial
@@ -69,10 +74,11 @@ src/lib/
     runway.ts      month-by-month depletion simulation
     sensitivity.ts which assumption moves the runway most
     split.ts       largest-remainder split that always sums exactly
-    ledger.ts      pledged vs. actually paid
+    ledger.ts      pledged vs. actually paid, and per-category totals
     opportunity.ts caregiver lost wages and employer match
     tax.ts         medical expense deduction estimate
     plan.ts        orchestration
+  data/expenseCategories.ts  plain-language names for the ledger's categories
   explain/                engine output -> derivations a reader can check by hand
     types.ts       the shape of a derivation, plus its balance invariant
     build.ts       one builder per headline figure
@@ -111,7 +117,7 @@ npm test                                       # Vitest only
 npx playwright test                            # E2E only
 ```
 
-- **157 unit tests**, BDD-formatted, covering every engine, the schema boundary and every
+- **171 unit tests**, BDD-formatted, covering every engine, the schema boundary and every
   derivation.
 - **Golden fixtures are hand-computed by a human**, with the arithmetic written out in the test
   comments. Values captured from the implementation would only prove the code agrees with itself —
@@ -122,9 +128,13 @@ npx playwright test                            # E2E only
   the cent and still display a table that visibly does not add up, and that is the failure that
   costs a family's trust. Verified by mutation: dropping the add-on rows, or removing the explicit
   clamp step where income exceeds cost, each fails the suite.
-- **37 E2E specs** including axe accessibility on the default view, the large-text view and with a
-  derivation panel open, a 200% zoom overflow check, and a production-bundle smoke test that loads
-  the built output at the real Pages subpath and fails on any response ≥ 400.
+- **45 E2E specs** including axe accessibility on the default view, the large-text view, with a
+  derivation panel open and with the ledger in use; a 200% zoom overflow check; and a
+  production-bundle smoke test that loads the built output at the real Pages subpath and fails on
+  any response ≥ 400.
+- **E2E specs wait for hydration before their first interaction.** A `fill()` that lands before
+  React attaches its listeners is silently reverted, and the failure surfaces later as a submit
+  button that never enables. See the lesson in `.agents/AGENTS.md` §6.
 - **The privacy claim is proved, not asserted**: one spec blocks every outbound request and runs the
   full triage → refinement → split → summary flow to completion.
 
@@ -139,6 +149,8 @@ their place on a long page.
 
 ## Status
 
-V1 complete. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate
+V1 complete. The ledger is now on screen; the caregiver opportunity-cost and tax-estimate engines
+are still engine-only, and each needs its own derivation when it gains a UI — an app where some
+numbers can be checked and the ones beside them cannot is worse than one that never offered. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate
 — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a
 care-hours scheduler, and reverse-mortgage modelling.

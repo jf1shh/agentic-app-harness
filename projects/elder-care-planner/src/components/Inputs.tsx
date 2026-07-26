@@ -78,6 +78,87 @@ export function NumberInput({
   );
 }
 
+interface TextInputProps {
+  label: string;
+  hint?: string;
+  value: string;
+  maxLength?: number;
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+export function TextInput({
+  label,
+  hint,
+  value,
+  maxLength,
+  placeholder,
+  onChange,
+}: TextInputProps) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id}>
+        {label}
+        {hint ? <span className="hint">{hint}</span> : null}
+      </label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+interface DateInputProps {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function DateInput({ label, hint, value, onChange }: DateInputProps) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id}>
+        {label}
+        {hint ? <span className="hint">{hint}</span> : null}
+      </label>
+      <input id={id} type="date" value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+interface CheckboxInputProps {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+export function CheckboxInput({ label, hint, checked, onChange }: CheckboxInputProps) {
+  const id = useId();
+  return (
+    <div className="checkbox-field">
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <label htmlFor={id}>
+        {label}
+        {hint ? <span className="hint">{hint}</span> : null}
+      </label>
+    </div>
+  );
+}
+
 interface SelectInputProps {
   label: string;
   hint?: string;
