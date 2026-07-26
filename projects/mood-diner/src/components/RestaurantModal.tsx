@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Star, MapPin, Footprints, Car, CheckCircle2, Clock, Utensils, BarChart3, Calendar, ShieldCheck, AlertTriangle, MessageSquareQuote } from 'lucide-react';
 import { Restaurant, WeatherCondition, Reservation, MenuItem } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
@@ -29,18 +29,14 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
   const [bookingDate, setBookingDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [bookingTime, setBookingTime] = useState<string>('19:00');
   const [partySize, setPartySize] = useState<number>(2);
-  const [occasion, setOccasion] = useState<string>('Anniversary');
+  // Derived from the restaurant rather than synced in an effect: App.tsx mounts
+  // this modal with key={restaurantId + tab}, so a different restaurant or tab
+  // remounts the component and these initial values are recomputed. See the
+  // "Modal Component State Sync" lesson in .agents/AGENTS.md §6.
+  const [occasion, setOccasion] = useState<string>(restaurant?.occasions?.[0] ?? 'Anniversary');
   const [seatingPreference, setSeatingPreference] = useState<'Indoor' | 'Outdoor' | 'Window' | 'Booth'>('Outdoor');
   const [specialRequests, setSpecialRequests] = useState<string>('');
   const [bookingSuccess, setBookingSuccess] = useState<boolean>(false);
-
-  useEffect(() => {
-    setActiveTab(initialTab);
-    setBookingSuccess(false);
-    if (restaurant?.occasions?.[0]) {
-      setOccasion(restaurant.occasions[0]);
-    }
-  }, [initialTab, restaurant]);
 
   if (!restaurant) return null;
 
