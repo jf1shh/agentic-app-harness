@@ -1,45 +1,89 @@
-# LexiVault - Enterprise Hardened Local Financial RAG (`legal-financial-rag`)
+# LexiVault Financial RAG (`legal-financial-rag`)
 
-LexiVault is a 100% client-side, zero-telemetry financial RAG (Retrieval-Augmented Generation) and legal compliance engine tailored for lawyers, law firms, corporate counsel, and financial auditors.
+A 100% client-side, zero-telemetry financial RAG (Retrieval-Augmented Generation) and legal compliance engine for lawyers, law firms, corporate counsel, and financial auditors. Documents stay on the device; the work happens in WebCrypto and IndexedDB.
 
-- **Live GitHub Pages App**: [https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/](https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/)
-
----
-
-## 🛡️ Enterprise Defense-in-Depth Hardening Layers
-1. **Zero-Exfiltration Content Security Policy (CSP)**: Meta CSP enforcing `connect-src 'self' data: blob:` to block all outbound HTTP/WebSocket network calls and prevent data exfiltration by browser extensions.
-2. **PBKDF2 Key Derivation (100,000 Iterations)**: AES-256 GCM key derivation using PBKDF2 with SHA-256 and cryptographic salts from user Vault Passphrases.
-3. **Inactivity Auto-Lock Timer & In-Memory Zeroization**: Auto-locks after 5 minutes of idle inactivity, wiping byte buffers (`Uint8Array.fill(0)`) and state strings in memory.
-4. **ReDoS-Safe Input Sanitizer & Prompt Injection Shield**: Protects query inputs and ingested documents from script vectors, XSS, ReDoS payloads, and prompt override instructions.
-5. **Cryptographic Blockchain-Style Hash Chaining**: Every `AuditLogEntry` is chained to the previous entry's SHA-256 hash stamp. Modifying or deleting any past audit entry invalidates the entire chain.
-6. **Legal Classification Watermarks**: Overlay watermark (`CONFIDENTIAL & ATTORNEY-CLIENT PRIVILEGED`) across document previews and compliance report exports.
+> Spec: [`specs/legal-financial-rag-spec.md`](../../specs/legal-financial-rag-spec.md) — the single source of truth.
+>
+> Live: <https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/>
 
 ---
 
-## 🚀 Running Locally
-```bash
-# Navigate to application directory
-cd projects/legal-financial-rag
+## What the app actually does (`src/App.tsx`)
 
-# Install dependencies
-npm install
+Four tabs:
 
-# Run local development server (Port 3009)
-npm run dev -- --port 3009
+1. **Query** — `QueryWorkbench` runs hybrid BM25 + cosine vector similarity against the in-memory chunk corpus, prefixed by a privilege filter (`SecurityPrivilegeLevel[]`), then returns an `RAGResponse` with `RAGCitation[]`.
+2. **Documents** — `DocumentManager` lists `FinancialDocument[]`, accepts new uploads, and re-indexes them into `DocumentChunk[]`.
+3. **Redaction** — `PIIRedactionPanel` walks every `DocumentChunk` for `PIIRedactionTag`s of type `SSN | TAX_ID | BANK_ACCOUNT | MONETARY_THRESHOLD | EMAIL | ADDRESS`, with a confidence and `isMasked` toggle per tag.
+4. **Audit** — `AuditLogView` shows the chained `AuditLogEntry[]` ledger and the SHA-256 hash of the last `RAGResponse`.
 
-# Execute unit test suite
-npm run test
+Every externally-facing tab is wrapped in `<WatermarkOverlay>` rendering `CONFIDENTIAL & ATTORNEY-CLIENT PRIVILEGED - LEXIVAULT HARDENED`, and the document preview surface is also watermarked.
 
-# Execute E2E & accessibility tests
-npx playwright test
+### Pre-loaded authentic sample corpus
+`src/lib/datasets/authenticSampleDocs.ts` ships 4 real filings ready to query against `chunkDocument()`:
+
+| ID | Entity | Filing type |
+|---|---|---|
+| `doc-tesla-credit-2024` | Tesla Inc. | Credit & Guarantee Agreement (Oct 2024) |
+| `doc-apple-10k-2024` | Apple Inc. | Form 10-K (Note 14 / Risk Disclosures) |
+| `doc-stripe-ma-2024` | Stripe Inc. | M&A Asset Purchase Agreement |
+| `doc-biotech-seriesb-2024` | Aura BioTech Inc. | Series B Preferred Stock Term Sheet |
+
+On first render, every sample is chunked into legal-clause-aware segments (see `src/lib/rag/chunker.ts`), and a `GENESIS_BLOCK_…` `AuditLogEntry` is created so the chain starts from a known anchor.
+
+### Five defense-in-depth hardening layers
+
+These are the five lines of defense per the spec:
+
+1. **Zero-exfiltration CSP** (`<meta http-equiv="Content-Security-Policy">`) — `connect-src 'self' data: blob:` blocks all outbound HTTP/WebSocket calls, including extensions.
+2. **PBKDF2 key derivation** — 100,000 iterations, SHA-256, with a fresh `Uint8Array` salt (per the cross-platform `subtle.deriveKey` lesson in `.agents/AGENTS.md` §6). The derived AES-GCM 256-bit key never leaves memory.
+3. **Inactivity auto-lock + memory zeroization** — `src/lib/hooks/useAutoLock.ts` triggers `handleLockVault()` after 5 min of idle, which appends a `VAULT_LOCKED` audit entry, overwrites sensitive byte buffers in `lastResponse` via `wipeSensitiveState`, and re-renders the `<VaultLockModal>` until the user re-derives a key. `beforeunload` runs the same wipe.
+4. **ReDoS / prompt-injection shield** — `src/lib/security/sanitizer.ts` neutralizes script vectors, XSS, ReDoS payloads, and override prompts in both query text and ingested documents before they reach the chunker or the ranker.
+5. **Tamper-evident hash chaining** — `src/lib/security/hashChain.ts` signs each `AuditLogEntry` with `SHA-256({ previousHash, ...payload })`. Modifying any past entry breaks every later `hash`, so any `EXPORT_AUDIT` packet is verifiable before use.
+
+The visual confidentiality watermark overlay is a **separate UI feature**, not part of the hardening count.
+
+## Architecture
+
+```
+src/
+  App.tsx                              # tab router, vault lock state, watermark
+  components/
+    Header.tsx, QueryWorkbench.tsx, DocumentManager.tsx,
+    PIIRedactionPanel.tsx, AuditLogView.tsx,
+    VaultLockModal.tsx, WatermarkOverlay.tsx
+  lib/
+    datasets/authenticSampleDocs.ts    # the 4 pre-loaded filings
+    rag/chunker.ts, queryProcessor.ts, vectorEngine.ts
+    security/encryption.ts, hashChain.ts, memoryZeroizer.ts,
+            piiRedactor.ts, sanitizer.ts
+    hooks/useAutoLock.ts               # 5-minute auto-lock timer
+    export/auditExporter.ts            # PDF/JSON/Markdown export of the chain
+    schemas.ts                         # Zod contracts for every domain object
+    unit.test.ts                       # Vitest unit coverage
+public/shield.svg                      # brand mark
 ```
 
----
+## Tech stack
 
-## 🧪 Master Harness Verification
-Passed master harness verification suite: `.\scripts\test-app.ps1 -AppName legal-financial-rag`
-- **Security Audit**: 0 vulnerabilities (`npm audit`)
-- **Linting & Code Quality**: 0 errors/warnings (`eslint`)
-- **Type Checking**: 0 errors (`tsc --noEmit`)
-- **Unit Testing**: 19/19 tests passed (`vitest`)
-- **E2E & Accessibility**: 7/7 BDD tests passed (`@playwright/test` + `@axe-core/playwright` WCAG AA 0 violations)
+Vite + React 18 + TypeScript + Zod 3, vanilla CSS obsidian dark palette + glassmorphism. WebCrypto + IndexedDB. BM25 text ranker + cosine vector similarity are implemented in pure TS — **no model download, no telemetry, no third-party API.**
+
+## Development
+
+```bash
+cd projects/legal-financial-rag
+npm install
+npm run dev              # vite dev server (port 3009)
+npm run build            # clean + tsc + vite build → dist/
+npm run lint
+npm run test             # Vitest unit (encryption, PII redaction, chunking,
+                         # RAG retrieval, privilege filtering, hash chain, sanitizer)
+npm run test:e2e         # Playwright BDD + axe a11y
+npm run eval             # promptfoo eval against docs in eval/
+```
+
+## Verification
+
+```bash
+node scripts/test-app.mjs legal-financial-rag   # full harness gate
+```
