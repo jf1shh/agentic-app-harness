@@ -3,6 +3,7 @@
 import type { BreakEvenResult } from '@/lib/engine/breakeven';
 import { formatCents } from '@/lib/format';
 import { NumberInput, CurrencyInput } from './Inputs';
+import { WhyButton } from './WhyButton';
 
 interface Props {
   result: BreakEvenResult;
@@ -25,7 +26,9 @@ export function BreakEvenPanel({
 
   return (
     <section className="card" aria-labelledby="breakeven-heading">
-      <h2 id="breakeven-heading">Home or a facility?</h2>
+      <h2 id="breakeven-heading">
+        Home or a facility? <WhyButton id="break-even" />
+      </h2>
       <p data-testid="breakeven-summary">
         {result.residentialAlwaysCheaper
           ? 'Residential care is cheaper here even before any paid help at home is added, because the cost of running the home already exceeds the facility rate.'

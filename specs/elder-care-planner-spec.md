@@ -2,6 +2,8 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 5** — adds §6.10 Calculation transparency ("show the working"): every displayed
+> figure is traceable to a derivation the reader can check by hand.
 > **Revision 4** — scope from user research (§2); binding non-goals (§1.1); sensitivity,
 > questions-to-ask and neutral-voice summary built. Region: US-only. Cost data: cited national
 > medians + per-facility override; state-level figures deliberately not shipped (see §7).
@@ -150,6 +152,10 @@ combination plus **local-only, no-account privacy**.
       elder law attorney consultation.
 - [x] **"What would change this answer"** — sensitivity ranking that re-runs the projection with
       each input perturbed and orders them by impact on runway.
+- [x] **Show the working** — every headline figure carries a question-mark control that opens a
+      derivation panel: the formula, each input with its source, the arithmetic line by line, the
+      assumptions applied and the caveats. A permanent methodology section repeats all of them on
+      the page for anyone who wants to read the whole method at once (§6.10).
 - [x] **Family Meeting Summary** — one printable page in a neutral third-party voice:
       recommendation, numbers, assumptions, split.
 - [x] **Local-only persistence + export/import** — `localStorage`, no account, no network calls
@@ -197,6 +203,7 @@ src/
     engine/ledger.ts        # actual contributions -> reconciliation vs pledged
     engine/opportunity.ts   # caregiver work reduction -> lifetime cost
     engine/tax.ts           # medical-expense deduction estimate
+    explain/                # engine output -> checkable derivations (§6.10)
     storage.ts              # localStorage boundary, Zod-validated
   app/                      # routes
   components/               # presentational components
@@ -441,6 +448,69 @@ engine estimates the deductible amount from ledger categories and flags the mult
 situation when siblings split support. Labeled an estimate, with a clear "confirm with a tax
 professional."
 
+### 6.10 Calculation transparency — "show the working" (`explain/`)
+
+A family is being asked to make an irreversible financial decision on the strength of numbers
+this app produced. §5.3 already forbids false precision and §6.4 already names the top driver,
+but both stop short of the thing that actually earns trust: **letting the reader check the
+arithmetic**. An unexplained projection is indistinguishable from a guess with a nice font, and
+the families who most need this tool are the ones least able to take it on faith.
+
+Every figure the app displays must therefore be traceable to a derivation the reader can follow
+and reproduce with a calculator.
+
+**Contract.** `src/lib/explain/` is a pure module that turns engine *output* into a structured
+derivation. It must **never re-implement the arithmetic** — every value in an explanation is read
+from the engine result or the engine's own inputs. A parallel calculation would drift from the
+engine silently, which is worse than no explanation at all, and the unit tests assert
+correspondence in both directions.
+
+```typescript
+interface ExplainStep {
+  label: string;            // "Care-level surcharge"
+  workingOut?: string;      // "$35.00 × 40 hours × 52 weeks ÷ 12 months"
+  valueCents?: number;
+  valueText?: string;       // for hours, months, percentages
+  kind: 'reference' | 'input' | 'add' | 'subtract' | 'result' | 'note';
+}
+
+interface Explanation {
+  id: ExplanationId;
+  title: string;
+  question: string;         // the accessible name of the "?" control
+  plainLanguage: string;    // what this number means, in one paragraph, no jargon
+  formula: string;          // the general form, before any numbers
+  steps: ExplainStep[];     // the same formula with this family's numbers in it
+  assumptions: string[];    // every rate and default actually applied
+  sources: string[];        // provenance, survey year, retrieval date, confidence
+  caveats: string[];        // what this figure does not include or cannot know
+}
+```
+
+Explanations required in V1, one per displayed headline figure: `base-rate`, `all-in`,
+`first-month`, `monthly-gap`, `runway`, `break-even`, `split`, `sensitivity`.
+
+**Arithmetic integrity rule.** Within one explanation, the signed sum of every `add`/`subtract`
+step must equal the `result` step exactly, in cents — and the rendered strings must show it,
+which means derivation tables format parts and totals at identical precision (the
+total-and-parts lesson in `.agents/AGENTS.md` §6). A derivation whose displayed parts do not add
+to its displayed total is a defect of the same severity as a wrong number: it is the reader doing
+the check the panel invited them to do, and finding the app wrong. Where a floor applies (the
+funding gap cannot go below zero) the clamp is shown as an explicit step, never as a silent
+discrepancy.
+
+**Presentation.** A small question-mark control sits beside each headline figure; activating it
+opens a side panel containing that figure's explanation. The panel is a modal dialog with a
+proper accessible name, closes on `Escape`, traps and restores focus, and is fully operable by
+keyboard. Because a control that must be *discovered* is not transparency, the same explanations
+also render unconditionally in a permanent "How every number is worked out" section, so the whole
+method is readable in one pass and reachable by search-in-page. That section is excluded from
+print so the Family Meeting Summary stays one page (§5.4, AC 13).
+
+**Voice.** Explanations follow the §5.4 neutral register — no second person. The reader may be
+looking at these numbers *because* a sibling sent them, and the method has to read as the tool's,
+not as an argument.
+
 ---
 
 ## 7. Data Models
@@ -644,6 +714,8 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
   - The scenario-specific "questions to ask" list renders and prints (§6.5).
   - Export then re-import a plan and get byte-identical numbers.
   - The Medicare "does not cover custodial care" copy is visible on the results screen (§2.6).
+  - Each headline figure's "?" control opens its derivation, the derivation's parts sum to its
+    stated total as *rendered*, `Escape` closes the panel and focus returns to the control (§6.10).
 - **Non-goal enforcement (§1.1):** an automated test asserts the built bundle contains no
   analytics or telemetry endpoints, and that no form field collects an email address or account
   credential. A Playwright run with all outbound requests blocked must still complete the full
@@ -685,11 +757,15 @@ provenance block for the tier / community-fee / escalator ranges in §2.1, which
    and defined even for plans that never deplete.
 10. **Negotiation leverage:** each residential scenario produces its "questions to ask before you
     sign" checklist, and it prints with the summary.
-11. `node scripts/test-app.mjs elder-care-planner` passes: security, lint, type-check, Vitest,
+11. **Checkable arithmetic:** every headline figure has a derivation reachable from beside it,
+    stating its formula, its inputs with their sources, its assumptions and its caveats; the
+    displayed parts sum exactly to the displayed total; and no value in a derivation is computed
+    anywhere but the engine (§6.10).
+12. `node scripts/test-app.mjs elder-care-planner` passes: security, lint, type-check, Vitest,
     Playwright + axe.
-12. `node scripts/harness-status.mjs --gate` reports no new guardrail violations.
-13. The Family Meeting Summary prints to one readable page with all assumptions listed.
-14. The app is fully operable by keyboard and at 200% zoom, with zero axe violations.
+13. `node scripts/harness-status.mjs --gate` reports no new guardrail violations.
+14. The Family Meeting Summary prints to one readable page with all assumptions listed.
+15. The app is fully operable by keyboard and at 200% zoom, with zero axe violations.
 
 ### 9.1 Behavioural gates (judgement, not automation)
 Passing the test suite does not establish that the app helps anyone. These four are assessed by a

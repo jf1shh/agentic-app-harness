@@ -304,6 +304,124 @@ ul.checklist li {
   border-radius: var(--radius);
 }
 
+/* ---- Calculation transparency (spec §6.10) ---- */
+
+/* The question mark beside a figure. Sized as a real touch target: this app is
+   used one-handed on a phone. */
+.why {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  min-width: 1.7rem;
+  padding: 0;
+  vertical-align: middle;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary-dark); /* 9.6:1 on white */
+  background: var(--primary-tint);
+  border: 1px solid var(--primary);
+  border-radius: 50%;
+}
+
+.why:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+h2 .why,
+h3 .why {
+  margin-left: 0.35rem;
+}
+
+.drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+/* A full-bleed click target behind the panel. Kept out of the tab order so the
+   trap inside the panel stays the only reachable cycle. */
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(17, 24, 39, 0.45);
+  cursor: default;
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(34rem, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -6px 0 24px rgba(17, 24, 39, 0.18);
+}
+
+.drawer-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-head h2 {
+  margin: 0;
+}
+
+.drawer-body {
+  overflow-y: auto;
+  padding: 0 1.25rem 2rem;
+}
+
+.explanation h3 {
+  font-size: 1rem;
+}
+
+/* The general form, before this family's numbers go into it. */
+.formula {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  background: var(--primary-tint);
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  padding: 0.7rem 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+table.derivation th[scope='row'] {
+  font-weight: 400;
+}
+
+table.derivation th[scope='row'] .hint {
+  margin-top: 0;
+}
+
+table.derivation .step-result th[scope='row'],
+table.derivation .step-result td {
+  font-weight: 700;
+  border-top: 2px solid var(--text);
+}
+
+table.derivation .step-note td {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -34,6 +34,13 @@ Two features exist purely to make the output useful rather than merely correct:
   the moment of negotiation. Cheapest genuinely useful screen in the app.
 - **"What would change this answer"** — sensitivity ranking, so every recommendation names its top
   driver instead of pretending to certainty.
+- **"Show the working"** — a question mark beside every headline figure opens its derivation: the
+  formula, each input with its source, the arithmetic line by line, the assumptions applied, and
+  what the figure cannot account for. A family is being asked to make an irreversible financial
+  decision on the strength of these numbers, and an unexplained projection is indistinguishable
+  from a guess with a nice font. The same derivations are laid out in full in a permanent
+  "How every number is worked out" section, because a control that has to be discovered is not
+  transparency.
 
 ## Non-goals (binding — see spec §1.1)
 
@@ -66,12 +73,17 @@ src/lib/
     opportunity.ts caregiver lost wages and employer match
     tax.ts         medical expense deduction estimate
     plan.ts        orchestration
+  explain/                engine output -> derivations a reader can check by hand
+    types.ts       the shape of a derivation, plus its balance invariant
+    build.ts       one builder per headline figure
   recommendation.ts       decision copy, in an enforced neutral voice
   storage.ts              localStorage boundary, Zod-validated
 ```
 
 Engines are pure so the arithmetic is fully testable and the UI cannot introduce arithmetic of its
-own.
+own. `explain/` is bound by the same rule from the other side: it *restates* engine output and
+never recomputes it. A parallel implementation of the same formula would drift from the engine
+silently, and a confidently wrong derivation is worse than no derivation at all.
 
 ## Data provenance
 
@@ -99,14 +111,20 @@ npm test                                       # Vitest only
 npx playwright test                            # E2E only
 ```
 
-- **112 unit tests**, BDD-formatted, covering every engine and the schema boundary.
+- **157 unit tests**, BDD-formatted, covering every engine, the schema boundary and every
+  derivation.
 - **Golden fixtures are hand-computed by a human**, with the arithmetic written out in the test
   comments. Values captured from the implementation would only prove the code agrees with itself —
   which is exactly how a tool like this would quietly harm someone. Verified by mutation: shifting
   the depletion month by one fails six tests.
-- **29 E2E specs** including axe accessibility on the default and large-text views, a 200% zoom
-  overflow check, and a production-bundle smoke test that loads the built output at the real Pages
-  subpath and fails on any response ≥ 400.
+- **Derivations are checked as rendered, not as computed.** The parts shown in an explanation must
+  sum to the total shown, so the assertions parse the formatted strings — a figure can be right to
+  the cent and still display a table that visibly does not add up, and that is the failure that
+  costs a family's trust. Verified by mutation: dropping the add-on rows, or removing the explicit
+  clamp step where income exceeds cost, each fails the suite.
+- **37 E2E specs** including axe accessibility on the default view, the large-text view and with a
+  derivation panel open, a 200% zoom overflow check, and a production-bundle smoke test that loads
+  the built output at the real Pages subpath and fails on any response ≥ 400.
 - **The privacy claim is proved, not asserted**: one spec blocks every outbound request and runs the
   full triage → refinement → split → summary flow to completion.
 
@@ -115,7 +133,9 @@ npx playwright test                            # E2E only
 WCAG 2.1 AA, zero axe violations. 17px base type with a larger-text toggle, because the users are
 often older adults or their children reading a phone in a hospital corridor. All colour pairs
 verified at 4.5:1 or better. No animation on results — this is a stressful context; numbers should
-appear, not perform.
+appear, not perform. The derivation panel is a proper dialog: `Escape` closes it, `Tab` stays
+inside it, and focus returns to the question mark that opened it so a keyboard reader does not lose
+their place on a long page.
 
 ## Status
 

@@ -7,6 +7,7 @@ import { buildRecommendation } from '@/lib/recommendation';
 import { formatCents, formatMonths } from '@/lib/format';
 import { COST_DATA_SOURCE } from '@/lib/data/costOfCare';
 import { RunwayChart } from './RunwayChart';
+import { WhyButton } from './WhyButton';
 
 interface Props {
   result: ScenarioResult;
@@ -43,12 +44,17 @@ export function ResultsPanel({ result, breakEven, split, careRecipientLabel }: P
         </p>
       ))}
 
+      {/* Every figure carries the control that shows how it was reached
+          (spec §6.10). A number a family cannot check is a number they have to
+          take on faith, and this decision is too expensive for faith. */}
       <div className="grid-narrow">
         <div className="stat">
           <span className="value" data-testid="advertised">
             {formatCents(cost.advertisedBaseCents)}
           </span>
-          <span className="label">Advertised base rate, monthly</span>
+          <span className="label">
+            Advertised base rate, monthly <WhyButton id="base-rate" />
+          </span>
         </div>
         <div className="stat">
           <span className="value" data-testid="all-in">
@@ -56,24 +62,41 @@ export function ResultsPanel({ result, breakEven, split, careRecipientLabel }: P
           </span>
           <span className="label">
             Realistic all-in, monthly
-            {cost.deltaPercent > 0 ? ` — ${Math.round(cost.deltaPercent)}% higher` : ''}
+            {cost.deltaPercent > 0 ? ` — ${Math.round(cost.deltaPercent)}% higher` : ''}{' '}
+            <WhyButton id="all-in" />
           </span>
         </div>
         <div className="stat">
           <span className="value">{formatCents(runway.monthlyShortfallCents)}</span>
-          <span className="label">Monthly gap after income</span>
+          <span className="label">
+            Monthly gap after income <WhyButton id="monthly-gap" />
+          </span>
         </div>
         <div className="stat">
           <span className="value">{formatMonths(runway.depletionMonth)}</span>
           <span className="label">
             {runway.depletionMonth === null
               ? 'Savings are not projected to run out'
-              : 'Until savings run out (mid-range estimate)'}
+              : 'Until savings run out (mid-range estimate)'}{' '}
+            <WhyButton id="runway" />
           </span>
         </div>
       </div>
 
-      <h3>What would change this answer</h3>
+      {cost.oneTimeCents > 0 ? (
+        <div className="grid-narrow">
+          <div className="stat">
+            <span className="value">{formatCents(cost.firstMonthCents)}</span>
+            <span className="label">
+              Due in the first month, including one-time costs <WhyButton id="first-month" />
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      <h3>
+        What would change this answer <WhyButton id="sensitivity" />
+      </h3>
       <p className="hint">
         Each figure below is the difference in how long the money lasts between the low and high
         end of that assumption. Ranges marked as planning assumptions are not survey data.

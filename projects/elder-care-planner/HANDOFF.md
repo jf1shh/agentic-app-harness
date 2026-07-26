@@ -1,9 +1,9 @@
 # Agent Handoff — Elder Care Cost Planner
 
 **State:** V1 complete and green. `node scripts/test-app.mjs elder-care-planner` passes all checks
-(security advisory-only, lint, type-check, 112 Vitest, 29 Playwright + axe).
+(security advisory-only, lint, type-check, 157 Vitest, 37 Playwright + axe).
 
-**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 4,
+**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 5,
 marked V1 IMPLEMENTED. Read §2 (research) before changing scope; the feature set is derived from it,
 not from intuition.
 
@@ -14,6 +14,13 @@ not from intuition.
 Triage-first single-page planner. Five fields produce an all-in cost, a funding runway, a sensitivity
 ranking and a per-sibling share; everything else is optional refinement. Eight pure engines under
 `src/lib/engine/`, a Zod contract in `src/lib/schemas.ts`, and cited datasets under `src/lib/data/`.
+
+**Calculation transparency (spec §6.10, added in revision 5).** Every headline figure carries a
+question-mark control that opens its derivation in a side panel — formula, inputs with sources,
+arithmetic line by line, assumptions applied, and what the figure cannot account for. The same
+derivations render in full in a permanent "How every number is worked out" section, excluded from
+print so the Family Meeting Summary stays one page. Eight derivations: `base-rate`, `all-in`,
+`first-month`, `monthly-gap`, `runway`, `break-even`, `split`, `sensitivity`.
 
 Registered in the CI matrix (`.github/workflows/ci.yml`), the Pages deploy
 (`.github/workflows/deploy-pages.yml`, step 6), and the portfolio hub
@@ -42,15 +49,34 @@ Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpat
    forbids interpolating figures. Transcribing and verifying real state data is the single highest-value
    improvement available, and `resolveCost()` already supports it with no other code changes.
 
-4. **Ledger and caregiver opportunity cost are engine-only.** `engine/ledger.ts`, `engine/opportunity.ts`
+4. **The ledger, caregiver opportunity cost and tax engines have no derivations yet.** They have no
+   UI either (see below), so nothing is missing today — but when they are wired up, each needs an
+   `Explanation` builder alongside, or the app will have figures on screen that cannot be checked
+   while every neighbouring figure can. `ExplanationId` in `explain/types.ts` is where they go.
+
+5. **Ledger and caregiver opportunity cost are engine-only.** `engine/ledger.ts`, `engine/opportunity.ts`
    and `engine/tax.ts` are fully implemented and unit-tested but have no UI yet. `PlanSchema` already
    carries `ledger` and `caregiverImpacts`. Wiring them up is additive.
 
-5. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
+6. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
    drift — that finding is expected, not a defect): Medicaid eligibility modelling, encrypted shared
    family link, care-hours scheduler, reverse-mortgage modelling, receipt capture.
 
 ## Things to not undo
+
+- **`src/lib/explain/` restates engine output; it never recomputes it.** Every cents figure in a
+  derivation is read from a `CostBreakdown`, `RunwayResult`, `BreakEvenResult` or `SplitResult`. A
+  second implementation of the same formula would pass review and then drift the first time an
+  engine changed, and a confidently wrong derivation is worse than none — the app would be caught
+  out by the very transparency it offered. `build.test.ts` asserts correspondence in both
+  directions, including that adding a fee moves the derivation by exactly that fee.
+
+- **The parts of a derivation must sum to its total *as rendered*.** `isBalanced()` in
+  `explain/types.ts` is the invariant; the E2E spec parses the formatted strings off the page
+  rather than reading the engine, because a figure can be correct to the cent and still display a
+  table that visibly does not add up. Where a value is clamped — the funding gap cannot go below
+  zero — the clamp is an explicit step. Removing it makes the arithmetic fail to balance in exactly
+  the case where the reader is least expecting an error. Both properties are mutation-verified.
 
 - **The non-goals in spec §1.1 are binding**, not preferences. No facility directory, no lead capture,
   no referral revenue, no accounts, no analytics. `e2e/privacy.spec.ts` enforces the network and
