@@ -113,6 +113,14 @@ export const NATIONAL_MEDIANS: readonly CostOfCareEntry[] = [
     confidence: 'verified',
     note: '$10,798/month for a private room.',
   },
+  /**
+   * `independent_living` is deliberately absent. Independent living is housing,
+   * not a surveyed care category, so there is no published median to cite and
+   * §7 forbids inventing one. An IL scenario is priced from the community's own
+   * contract instead — `fees.buyInContract.monthlyServiceCentsRate` — which
+   * `baseMonthlyCents` reads as the advertised rate. `resolveCost` returning
+   * null for IL is therefore the correct answer, not a gap.
+   */
   {
     careType: 'family_provided',
     stateCode: 'US',
@@ -157,10 +165,32 @@ export function hourlyToMonthlyCents(hourlyCents: number, hoursPerWeek: number):
   return Math.round((hourlyCents * hoursPerWeek * 52) / 12);
 }
 
+/**
+ * The care types the triage picker offers.
+ *
+ * `independent_living` is deliberately withheld. It is priced from a buy-in
+ * contract (§6.5b) that only the Independent Living tab can capture, and
+ * `PlannerState` has no field for one — so offering it here today would put a
+ * $0-a-month option in front of a family with no way to correct it. It joins
+ * this list in the IL tab PR, along with the contract inputs that make it mean
+ * something.
+ */
+export const SELECTABLE_CARE_TYPES: readonly CareType[] = [
+  'in_home_homemaker',
+  'in_home_health_aide',
+  'adult_day_care',
+  'assisted_living',
+  'memory_care',
+  'nursing_home_semi',
+  'nursing_home_private',
+  'family_provided',
+];
+
 export const CARE_TYPE_LABELS: Record<CareType, string> = {
   in_home_homemaker: 'In-home help (cooking, cleaning, errands)',
   in_home_health_aide: 'In-home aide (personal care)',
   adult_day_care: 'Adult day care',
+  independent_living: 'Independent living (community with an entry fee)',
   assisted_living: 'Assisted living',
   memory_care: 'Memory care',
   nursing_home_semi: 'Nursing home (shared room)',

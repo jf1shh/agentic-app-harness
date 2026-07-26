@@ -122,6 +122,79 @@ describe('Given unpaid family care', () => {
   });
 });
 
+describe('Given independent living is priced from a contract rather than a survey', () => {
+  it('Then the advertised base rate is the contract’s monthly service fee', () => {
+    // Hand-computed: the contract quotes $3,500/mo, and a $1,200/mo care tier
+    // is billed on top. All-in = 350_000 + 120_000 = 470_000 cents.
+    const il = scenario({
+      careType: 'independent_living',
+      fees: {
+        communityFeeCents: 0,
+        careLevelTierCents: 120_000,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents: 40_000_000,
+          amortized: false,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 350_000,
+        },
+      },
+    });
+    const result = computeCost(il);
+    expect(result.advertisedBaseCents).toBe(350_000);
+    expect(result.allInMonthlyCents).toBe(470_000);
+    // No survey figure is claimed for a category the survey does not cover.
+    expect(result.confidence).toBeNull();
+    expect(result.isNationalFallback).toBe(false);
+  });
+
+  it('Then a quoted price still overrides the contract rate', () => {
+    const il = scenario({
+      careType: 'independent_living',
+      costOverrideCents: 500_000,
+      fees: {
+        communityFeeCents: 0,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents: 0,
+          amortized: false,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 350_000,
+        },
+      },
+    });
+    expect(computeCost(il).advertisedBaseCents).toBe(500_000);
+    expect(computeCost(il).usedOverride).toBe(true);
+  });
+
+  it('Then a buy-in contract left on a non-IL scenario is ignored entirely', () => {
+    // Guards the one-time aggregate, the entry-fee part and the base rate
+    // against disagreeing about whether a stray contract counts.
+    const assisted = scenario({
+      careType: 'assisted_living',
+      fees: {
+        communityFeeCents: 400_000,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents: 40_000_000,
+          amortized: false,
+          refundSchedule: [],
+          monthlyServiceCentsRate: 350_000,
+        },
+      },
+    });
+    const result = computeCost(assisted);
+    expect(result.buyInEntryCents).toBe(0);
+    expect(result.oneTimeCents).toBe(400_000);
+    expect(result.advertisedBaseCents).toBe(620_000); // the assisted-living median
+  });
+});
+
 describe('Given a scenario with all three one-time cost kinds (community fee + ancillary one-time + buy-in entry)', () => {
   // §6 lesson "Format a Total and Its Parts at the Same Precision":
   // the parts in CostBreakdown must be able to be presented alongside the

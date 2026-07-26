@@ -640,13 +640,19 @@ export const BuyInContractSchema = z.object({
     tenureMonths: z.number().int().min(0),
     refundPercent: z.number().min(0).max(100),
   })).default([]),
-  // Base monthly service rate for this community contract. Fed into the
-  // existing all-in engine as another recurring line item; monthlyServiceCentsRate
-  // exists so IL scenarios don't have to rely solely on `costOverrideCents`.
+  // Base monthly service rate for this community contract. `baseMonthlyCents`
+  // returns it as the scenario's `advertisedBaseCents`, so `allInMonthlyCents`
+  // stays a plain sum of the advertised rate plus tier, add-ons and ancillary —
+  // the same shape as every other care type, which is what lets the all-in
+  // derivation panel state a total its parts actually reach. It is NOT a
+  // separate recurring line item. A `costOverrideCents` quote still wins.
+  // It exists so IL scenarios don't have to rely solely on `costOverrideCents`.
   monthlyServiceCentsRate: z.number().int().min(0).default(0),
 });
 export type BuyInContract = z.infer<typeof BuyInContractSchema>;
 ```
+
+There is no `NATIONAL_MEDIANS` row for `independent_living`, and there must not be one: IL is housing, not a surveyed care category, and §7 forbids inventing a figure. `resolveCost` returning null for IL is the correct answer rather than a gap, because the community's own contract supplies the rate. Until the IL tab ships the contract inputs, `independent_living` is withheld from the triage care-type picker (`SELECTABLE_CARE_TYPES`) — an option that can only ever price at $0 is worse than no option.
 
 `CareTypeSchema` gains one member: `'independent_living'`. `RESIDENTIAL_CARE_TYPES` includes it so the existing break-even math (`engine/breakeven.ts`) and the §3 scenario-comparison feature pick it up automatically. Existing scenarios with `careType ∈ {assisted_living, memory_care, nursing_home_semi, nursing_home_private, family_provided, in_home_homemaker, in_home_health_aide, adult_day_care}` keep parsing against the v1 storage key without modification.
 

@@ -17,7 +17,7 @@ import {
 } from '../plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '../engine/plan';
 import { summariseLedger } from '../engine/ledger';
-import type { LedgerEntry } from '../schemas';
+import type { CareScenario, LedgerEntry, Plan } from '../schemas';
 import { formatCentsPrecise } from '../format';
 
 /**
@@ -311,6 +311,120 @@ describe('Given the derivations must never become a second implementation of the
       planResult.active!.runway.monthlyShortfallCents,
     );
     expect(resultStep(set.split!)?.valueCents).toBe(planResult.split!.totalCents);
+  });
+
+  /**
+   * §6.5b. The IL path reaches `computeCost` through `fees.buyInContract`,
+   * which no `PlannerState` case above can express, so the plan is built
+   * directly. Without this the balance sweep never sees a buy-in and both
+   * derivations can go unbalanced while the suite stays green — which is
+   * exactly what happened when the buy-in engine first landed.
+   */
+  function ilExplanations(monthlyServiceCentsRate: number, entryCents: number) {
+    const scenario: CareScenario = {
+      id: 'il',
+      label: 'Independent living, Option A',
+      careType: 'independent_living',
+      stateCode: 'US',
+      fees: {
+        communityFeeCents: 400_000,
+        careLevelTierCents: 120_000,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: {
+          entryCents,
+          amortized: false,
+          refundSchedule: [{ tenureMonths: 12, refundPercent: 80 }],
+          monthlyServiceCentsRate,
+        },
+      },
+      ancillary: [
+        {
+          id: 'a1', label: 'Grab bars', category: 'home_modification',
+          amountCents: 90_000, cadence: 'one_time', taxDeductibleCandidate: false,
+        },
+      ],
+    };
+    const plan: Plan = {
+      schemaVersion: 1,
+      careRecipientLabel: 'Mom',
+      scenarios: [scenario],
+      activeScenarioId: 'il',
+      income: [],
+      assets: [
+        {
+          id: 'cash', label: 'Cash', kind: 'cash', balanceCents: 100_000_000,
+          annualReturnRate: 0.04, liquid: true,
+        },
+      ],
+      contributors: [],
+      ledger: [],
+      caregiverImpacts: [],
+      assumptions: {
+        careInflationRate: 0.04, generalInflationRate: 0.03,
+        projectionYears: 5, splitMethod: 'equal',
+      },
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    const planResult = computePlan(plan);
+    const set = buildExplanations({
+      plan,
+      result: planResult.active!,
+      breakEven: null,
+      breakEvenHourlyRateCents: aideHourlyRateCents('US'),
+      breakEvenHoursPerWeek: 40,
+      split: planResult.split,
+      contributors: [],
+      ledger: null,
+      monthsElapsed: 0,
+    });
+    return { set, cost: planResult.active!.cost };
+  }
+
+  it('Given an independent-living plan with a buy-in, When the derivations are read, Then every one of them balances', () => {
+    // Given an IL scenario priced from a community contract
+    const { set } = ilExplanations(350_000, 40_000_000);
+
+    // When each derivation that states a sum is checked
+    for (const id of EXPLANATION_ORDER) {
+      const explanation = set[id];
+      if (!explanation || !hasArithmetic(explanation)) continue;
+
+      // Then the parts shown reach the total shown
+      expect(
+        additiveTotalCents(explanation),
+        `${id}: parts do not sum to the stated result`,
+      ).toBe(resultStep(explanation)?.valueCents);
+    }
+  });
+
+  it('Given an independent-living plan, When the first-month derivation is read, Then the entry fee is shown as its own part', () => {
+    // Given a $400,000 entry fee on top of a $4,000 community fee
+    const { set, cost } = ilExplanations(350_000, 40_000_000);
+
+    // When the first-month derivation is read
+    const firstMonth = set['first-month']!;
+
+    // Then the entry fee appears as a part, not folded silently into the total
+    const entryStep = firstMonth.steps.find((s) => s.label.includes('entry fee'));
+    expect(entryStep?.valueCents, 'entry fee is not shown as its own step').toBe(40_000_000);
+    expect(cost.buyInEntryCents).toBe(40_000_000);
+    // Hand-computed: 350_000 service + 120_000 tier = 470_000 all-in, plus
+    // 400_000 community + 90_000 ancillary one-time + 40_000_000 entry
+    // = 40_960_000 due in month one.
+    expect(resultStep(firstMonth)?.valueCents).toBe(40_960_000);
+  });
+
+  it('Given an independent-living plan, When the base rate is read, Then it is the contract rate and not a published median', () => {
+    // Given a community contract quoting $3,500 a month
+    const { set, cost } = ilExplanations(350_000, 40_000_000);
+
+    // Then the advertised base is the contract's rate, cited as a contract
+    expect(cost.advertisedBaseCents).toBe(350_000);
+    expect(resultStep(set['base-rate']!)?.valueCents).toBe(350_000);
+    expect(set['base-rate']!.formula).toContain('contract');
+    // And no survey median is claimed for a category the survey does not cover
+    expect(set['base-rate']!.plainLanguage).not.toContain('published median for this type');
   });
 
   it('When a fee is added, Then the derivation moves with the engine rather than staying put', () => {
