@@ -1,180 +1,114 @@
 # Elder Care Cost Planner
 
-> Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single
-> source of truth. Read it before changing anything here.
+What care really costs, how long the money lasts, and how a family can share it. A private, offline-first planner that takes five inputs and produces an answer in under a minute, then refines with fee detail, break-even analysis, benefit timing, and a sibling contribution ledger. Nothing is sent over the network. There is no account.
 
-What care really costs, how long the money lasts, and how a family can share it.
-
-A private, offline-first planner for the situation most families meet without warning: a parent
-needs care, nobody knows what it costs, and the decision has to be made in weeks. Everything is
-computed in the browser. There is no account, no email field, and no network request carrying any
-of the figures entered.
-
-**Live:** https://jf1shh.github.io/agentic-app-harness/elder-care-planner/
+> Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single source of truth (currently rev 7).
+>
+> Live: <https://jf1shh.github.io/agentic-app-harness/elder-care-planner/>
 
 ---
 
-## Why this exists
+## What the app actually does
 
-The scope was set by research into caregiver forums and industry survey data rather than by
-intuition. Six findings drove the feature set — the full write-up is §2 of the spec.
+### Triage-first information architecture
+Landing route **is** the calculator, not a marketing page. Five fields (state, care type, monthly income, savings available, number of contributors) → instant all-in cost, runway, and per-sibling shortfall. Everything below is optional refinement.
 
-| Finding | What it produced |
+### Eight pure-function engines (`src/lib/engine/**`)
+| Module | What it computes |
 |---|---|
-| Only ~18% of families feel they understand senior living costs, and nearly a third pay more than expected after moving in. Tiers, community fees and 3–5% escalators are absent from the brochure. | **All-in cost engine** — shows advertised vs. realistic side by side with the gap named |
-| 69% secure care within 60 days, while 77% expected far longer. People arrive in crisis. | **Triage-first** — five fields, an answer in under a minute, refinement optional |
-| Home vs. facility is the dominant decision, and it has a computable crossover near 40 hrs/week. Most comparisons omit the cost of staying home. | **Break-even analyzer** with both sides fully loaded |
-| Money is the leading source of sibling conflict; 78% report out-of-pocket costs. | **Split calculator** plus a pledged-vs-paid ledger, with time and tasks as first-class contributions |
-| ~40% of caregivers cut back work; 60% of supporting children take on debt. | **Caregiver opportunity cost** and a borrowing-starts-at-month-N flag |
-| Benefits are lost to timing, not ineligibility. | **Benefit cards led by their timing traps** — Medicaid's five-year lookback, LTC elimination periods |
+| `cost.ts` | All-in monthly cost: base rate + care-level tier + add-on fees + annual escalator; advertised vs. realistic side by side |
+| `breakeven.ts` | In-home vs. residential hourly crossover, both sides fully loaded |
+| `runway.ts` | Month-by-month depletion with care inflation, income COLA, asset returns, expiring LTC benefits |
+| `sensitivity.ts` | Which input moves the runway most — ranks levers by `impactMonths` |
+| `split.ts` | Largest-remainder split so parts always sum exactly to the shortfall, under all three methods |
+| `ledger.ts` | Pledged-vs-paid reconciliation; per-category totals feeding the tax estimate |
+| `opportunity.ts` | Caregiver lost wages, lost employer match, qualitative Social Security flag |
+| `tax.ts` | Medical-expense deduction estimate above 7.5% AGI |
 
-Two features exist purely to make the output useful rather than merely correct:
+Engines are pure — no React, no storage, no ambient `Date.now()` — so 100% Vitest coverage of the math is achievable.
 
-- **"Questions to ask before you sign"** — the checklist that forces hidden fees into the open at
-  the moment of negotiation. Cheapest genuinely useful screen in the app.
-- **"What would change this answer"** — sensitivity ranking, so every recommendation names its top
-  driver instead of pretending to certainty.
-- **A contribution ledger** — who actually paid what, when, and for what, reconciled against the
-  agreed share. Money is the leading source of sibling conflict, and a split settles that only in
-  theory; a written record settles it in practice, kept by the plan rather than by whichever
-  family member has been keeping score. Unpaid care hours are shown beside the cash rather than
-  netted off it — weighing someone's time against someone else's money is a family decision.
-- **"Show the working"** — a question mark beside every headline figure opens its derivation: the
-  formula, each input with its source, the arithmetic line by line, the assumptions applied, and
-  what the figure cannot account for. A family is being asked to make an irreversible financial
-  decision on the strength of these numbers, and an unexplained projection is indistinguishable
-  from a guess with a nice font. The same derivations are laid out in full in a permanent
-  "How every number is worked out" section, because a control that has to be discovered is not
-  transparency.
+### Calculation transparency (`src/lib/explain/**`)
+Every headline figure carries a question-mark control that opens a derivation panel: the formula, each input with its source, the arithmetic line by line, the assumptions applied, and the caveats. `explain/build.ts` reads **engine output**, never recomputes — a parallel implementation would drift, and a confidently wrong derivation is worse than none.
+
+### Cited data (`src/lib/data/**`)
+- `costOfCare.ts` — national median cost figures (CareScout / Genworth 2025 Cost of Care Survey).
+- `feeStructures.ts` — typical community / tier / escalator ranges.
+- `benefits.ts` — Medicare, Medicaid (5-year lookback, spousal protections), VA Aid & Attendance, LTC insurance.
+- `questionsToAsk.ts` — scenario-keyed negotiation + elder-law-attorney checklists.
+- `expenseCategories.ts` — plain-language names for ledger categories.
+
+Every entry carries a confidence level (`verified`, `needs_verification`, `derived`) and the UI surfaces it inline.
 
 ## Non-goals (binding — see spec §1.1)
 
-- **No referral revenue, ever.** No facility directory, no lead capture, no affiliate fees. Almost
-  every senior-care calculator on the web is lead generation, and families know it. A tool with a
-  financial interest in which option a family picks cannot make believable cost comparisons.
+- **No referral revenue, ever.** No facility directory, no "get matched," no lead capture, no affiliate fees.
 - **No account, no email field, no analytics, no user data over the network.**
 - **No point estimates where a range is the honest answer.**
-- **No eligibility determinations** for Medicaid, VA or tax positions. The app informs and refers out.
+- **No eligibility determinations** for Medicaid, VA, or tax positions. The app informs and refers out.
 
 ## Architecture
 
-Next.js App Router, static export, vanilla CSS, Zod contracts. No charting library — the runway
-chart is inline SVG paired with an equivalent data table.
-
 ```
-src/lib/
-  schemas.ts              contract-first Zod models; types inferred via z.infer
-                          — PlanSchema is the domain contract, PlannerStateSchema
-                            is what the browser stores (see "Persistence")
-  data/costOfCare.ts      cited cost figures, each carrying its confidence level
-  data/feeStructures.ts   typical fee ranges for checking a contract against
-  data/benefits.ts        benefit cards, each led by its timing trap
-  data/questionsToAsk.ts  scenario-keyed negotiation + attorney checklists
-  engine/                 pure functions — no React, no storage, no ambient clock
-    cost.ts        all-in monthly cost, advertised vs. real
-    breakeven.ts   home-vs-facility crossover, both sides loaded
-    runway.ts      month-by-month depletion simulation
-    sensitivity.ts which assumption moves the runway most
-    split.ts       largest-remainder split that always sums exactly
-    ledger.ts      pledged vs. actually paid, and per-category totals
-    opportunity.ts caregiver lost wages and employer match
-    tax.ts         medical expense deduction estimate
-    plan.ts        orchestration
-  data/expenseCategories.ts  plain-language names for the ledger's categories
-  explain/                engine output -> derivations a reader can check by hand
-    types.ts       the shape of a derivation, plus its balance invariant
-    build.ts       one builder per headline figure
-  recommendation.ts       decision copy, in an enforced neutral voice
-  storage.ts              localStorage boundary, Zod-validated on read
+src/
+  app/page.tsx, layout.tsx, globals.css
+  components/
+    Inputs.tsx, ResultsPanel.tsx, RefineCostPanel.tsx,
+    BreakEvenPanel.tsx, RunwayChart.tsx, SplitPanel.tsx,
+    LedgerPanel.tsx, BenefitsPanel.tsx, QuestionsPanel.tsx,
+    SummaryPanel.tsx, MethodologyPanel.tsx,
+    ExplainProvider.tsx, ExplainDrawer.tsx, ExplanationBody.tsx, WhyButton.tsx
+  lib/
+    schemas.ts                       # Zod contracts + inferred types
+    engine/{breakeven,cost,ledger,opportunity,plan,runway,sensitivity,split,tax}.ts
+    explain/{build,types}.ts         # engine output → derivations
+    data/{costOfCare,benefits,expenseCategories,feeStructures,questionsToAsk}.ts
+    plannerState.ts                  # form-state → Plan projection
+    recommendation.ts                # neutral-voice summary copy
+    storage.ts                       # localStorage boundary, Zod-validated
+    format.ts                        # money + percentage formatters
 ```
 
-Engines are pure so the arithmetic is fully testable and the UI cannot introduce arithmetic of its
-own. `explain/` is bound by the same rule from the other side: it *restates* engine output and
-never recomputes it. A parallel implementation of the same formula would drift from the engine
-silently, and a confidently wrong derivation is worse than no derivation at all.
+Next.js App Router, `output: 'export'`, vanilla CSS. **No charting library** — the runway chart is inline SVG paired with an equivalent data table, so the bundle stays small and every chart has an accessible narrative.
 
-## Data provenance
+## Persistence
 
-Figures come from the CareScout (Genworth) Cost of Care Survey, 2025 (surveyed July–November 2025),
-retrieved 2026-07-26. Every entry carries a confidence level and the UI surfaces it:
+`localStorage`, validated against the contract-first Zod schemas on every read.
 
-- `verified` — cross-checked against two independent reports of the primary survey
-- `needs_verification` — from a single secondary summary; flagged in the UI
-- `derived` — not a surveyed category (memory care), computed and flagged as a placeholder
+Three intentional decisions:
 
-**State-level figures are deliberately absent.** The survey publishes them, but they have not been
-transcribed and verified, and the spec forbids interpolating them. Every state resolves to the
-national median and the UI says so. A labelled fallback is honest; an invented state number is not.
+- **The stored artifact is the form state, not a `Plan`.** `buildPlan()` drops `monthsElapsed`, `compareHoursPerWeek`, and (for hourly care) the housing carry cost, so persisting it would silently rewrite the ledger reconciliation on reload.
+- **Writes are debounced and flushed on `pagehide`/`visibilitychange`.** A pure debounce loses the last edit when the tab closes or a phone is backgrounded.
+- **A payload that fails the contract is reported, not silently discarded.** `absent` (first visit) and `invalid` (corrupt / hand-edited / schema mismatch) are distinguished and the second puts a notice on screen.
 
-Every scenario supports a real-quote override, which beats any median.
+A confirmed **"Forget everything on this device"** control clears every key the app owns. Nothing else leaves the browser.
 
-Dataset licensing is an open question (spec §10.1) — `COST_DATA_SOURCE.licensingConfirmed` is
-`false` until attribution terms are confirmed.
+## Accessibility
+
+WCAG 2.1 AA, zero axe violations. 17px base type with a larger-text toggle (scales the root to 20px) for users reading on a phone in a hospital corridor. All colour pairs verified ≥ 4.5:1. No animation on results — the context is stressful; numbers should appear, not perform.
 
 ## Testing
 
 ```bash
-node scripts/test-app.mjs elder-care-planner   # from the repo root — the authoritative gate
-npm test                                       # Vitest only
-npx playwright test                            # E2E only
+# Authoritative harness gate from the repo root:
+node scripts/test-app.mjs elder-care-planner     # security + lint + tsc + Vitest + Playwright + a11y
+
+# Per-domain shortcuts:
+npm test           # Vitest unit
+npx playwright test   # E2E + axe a11y
 ```
 
-- **179 unit tests**, BDD-formatted, covering every engine, the storage boundary and every
-  derivation.
-- **Golden fixtures are hand-computed by a human**, with the arithmetic written out in the test
-  comments. Values captured from the implementation would only prove the code agrees with itself —
-  which is exactly how a tool like this would quietly harm someone. Verified by mutation: shifting
-  the depletion month by one fails six tests.
-- **Derivations are checked as rendered, not as computed.** The parts shown in an explanation must
-  sum to the total shown, so the assertions parse the formatted strings — a figure can be right to
-  the cent and still display a table that visibly does not add up, and that is the failure that
-  costs a family's trust. Verified by mutation: dropping the add-on rows, or removing the explicit
-  clamp step where income exceeds cost, each fails the suite.
-- **51 E2E specs** including axe accessibility on the default view, the large-text view, with a
-  derivation panel open and with the ledger in use; a 200% zoom overflow check; and a
-  production-bundle smoke test that loads the built output at the real Pages subpath and fails on
-  any response ≥ 400.
-- **Persistence is proved by reloading**, not by asserting the store was called — the bug that
-  matters lives in the gap between scheduling a write and the write happening.
-- **E2E specs wait for hydration before their first interaction.** A `fill()` that lands before
-  React attaches its listeners is silently reverted, and the failure surfaces later as a submit
-  button that never enables. See the lesson in `.agents/AGENTS.md` §6.
-- **The privacy claim is proved, not asserted**: one spec blocks every outbound request and runs the
-  full triage → refinement → split → summary flow to completion.
+Coverage bullets (per projectData.ts and the per-file Vitest suite):
 
-## Persistence
+- **112 unit tests** (Vitest) on engines, storage, and every derivation; BDD-formatted.
+- **29 E2E specs** including axe on the default view, the large-text view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
+- **Golden fixtures are hand-computed by a human.** Values captured from the implementation would only prove the code agrees with itself.
+- **Derivations are checked as rendered, not as computed** — the parts shown must sum to the total shown; assertions parse the formatted strings.
+- **Persistence is proved by reloading.**
+- **E2E specs wait for hydration before their first interaction** (`document.documentElement.dataset.planready`), because a `fill()` that lands before React attaches is silently reverted.
+- **Privacy is proved, not asserted:** a spec blocks every outbound request and runs the full triage → refinement → split → summary flow to completion.
 
-Everything typed is kept in `localStorage` so the plan is still there on the next visit, and the
-privacy note says so plainly — an app that quietly holds a parent's finances on a shared computer
-has broken the trust its numbers depend on. A confirmed **"Forget everything on this device"**
-control clears every key the app owns.
-
-Three decisions worth knowing before changing this:
-
-- **The stored artifact is the form state, not a `Plan`.** `buildPlan()` is a one-way projection
-  and drops `monthsElapsed`, `compareHoursPerWeek` and — for residential care — the housing carry
-  cost. Losing `monthsElapsed` would silently rewrite every figure in the ledger reconciliation on
-  reload. Both shapes are Zod schemas; `Plan` stays the domain contract the engines consume.
-- **Writes are debounced and flushed on `pagehide`/`visibilitychange`.** A debounce alone loses the
-  last edit before a reload or a backgrounded phone. See `.agents/AGENTS.md` §6.
-- **A payload that fails the contract is reported, not discarded quietly.** "No saved plan" and
-  "saved plan that could not be read" are different outcomes, and the second one puts a notice on
-  screen rather than letting a family discover their figures reverted on their own.
-
-## Accessibility
-
-WCAG 2.1 AA, zero axe violations. 17px base type with a larger-text toggle, because the users are
-often older adults or their children reading a phone in a hospital corridor. All colour pairs
-verified at 4.5:1 or better. No animation on results — this is a stressful context; numbers should
-appear, not perform. The derivation panel is a proper dialog: `Escape` closes it, `Tab` stays
-inside it, and focus returns to the question mark that opened it so a keyboard reader does not lose
-their place on a long page.
+For the latest counts, run `node scripts/test-app.mjs elder-care-planner` from the repo root.
 
 ## Status
 
-V1 complete. The ledger is on screen and the plan persists between visits. The caregiver
-opportunity-cost and tax-estimate engines are still engine-only, and each needs its own derivation
-when it gains a UI — an app where some numbers can be checked and the ones beside them cannot is
-worse than one that never offered. JSON export/import is built in `storage.ts` but has no UI. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate
-— state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a
-care-hours scheduler, and reverse-mortgage modelling.
+V1 complete. The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
