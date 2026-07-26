@@ -102,11 +102,24 @@ export interface ILVariantProjection {
    */
   readonly refundAtExitByYearCents: readonly number[];
   /**
+   * The same what-if at month resolution: what the family would get back on
+   * leaving in month `i + 1`. Charting the refund against the depletion curve
+   * needs both at the same resolution, or the annotation drifts from the line
+   * it annotates.
+   */
+  readonly refundAtExitByMonthCents: readonly number[];
+  /**
    * Pass-through of the existing runway's per-year assets-end cents, one
    * row per projection year. Used as the per-option line in the overlay
    * chart; the IL comparison panel reads these verbatim — no recomputation.
    */
   readonly assetsEndByYearCents: readonly number[];
+  /**
+   * The per-option depletion curve, one point per month. Five annual points
+   * cannot show where two options cross, which is the single thing the
+   * overlay chart exists to answer. Read verbatim from the runway engine.
+   */
+  readonly assetsEndByMonthCents: readonly number[];
 }
 
 /**
@@ -126,6 +139,11 @@ export interface ILVariantProjection {
  * would report `isAffordable: true` and an all-zero refund schedule — a
  * confident-looking answer to a question the option cannot be asked. Rows
  * carry `scenarioId`, so callers must align on that rather than on index.
+ *
+ * Every IL scenario is projected, including a rental-only option (spec §6.5b
+ * Option C) that carries no contract at all and is priced from a quoted rent.
+ * Requiring a contract object would have silently dropped exactly the option
+ * a family is most likely to enter first — the one with no buy-in.
  */
 export function projectILVariants(
   plan: Plan,
@@ -136,12 +154,17 @@ export function projectILVariants(
     .reduce((sum, a) => sum + a.balanceCents, 0);
 
   return scenarios.flatMap((scenario) => {
+    if (scenario.careType !== 'independent_living') return [];
     const contract = buyInContractFor(scenario);
-    if (!contract) return [];
 
     const cost = computeCost(scenario);
     const buyInEntryCents = cost.buyInEntryCents;
-    const isAffordable = buyInAffordability(liquidAssets, contract).affordable;
+    // No contract means no entry fee to fail to afford, so the option is
+    // always affordable — not a claim about the family, just the absence of
+    // a barrier.
+    const isAffordable = contract
+      ? buyInAffordability(liquidAssets, contract).affordable
+      : true;
 
     // Reuse the existing runway simulation, untouched. The buy-in is folded
     // into `oneTimeCents` already (see cost.ts) and the runway draws month 1's
@@ -150,11 +173,17 @@ export function projectILVariants(
     const runway = computeRunway(input);
 
     const refundAtExitByYearCents: number[] = runway.yearlyBreakdown.map((yr) =>
-      resolveRefundAtTenure(contract, yr.year * 12),
+      contract ? resolveRefundAtTenure(contract, yr.year * 12) : 0,
+    );
+    const refundAtExitByMonthCents: number[] = runway.monthlyBreakdown.map((m) =>
+      contract ? resolveRefundAtTenure(contract, m.month) : 0,
     );
 
     const assetsEndByYearCents: number[] = runway.yearlyBreakdown.map(
       (yr) => yr.assetsEndCents,
+    );
+    const assetsEndByMonthCents: number[] = runway.monthlyBreakdown.map(
+      (m) => m.assetsEndCents,
     );
 
     return [{
@@ -164,7 +193,9 @@ export function projectILVariants(
       allInMonthlyCents: cost.allInMonthlyCents,
       isAffordable,
       refundAtExitByYearCents,
+      refundAtExitByMonthCents,
       assetsEndByYearCents,
+      assetsEndByMonthCents,
     }];
   });
 }

@@ -228,3 +228,52 @@ describe('Given contributors who have stated what they can afford', () => {
     expect(result.contributorBurdenStartMonth).toBe(1);
   });
 });
+
+describe('Given a chart needs the depletion curve month by month', () => {
+  it('When the runway is computed, Then a row exists for every projected month', () => {
+    // 10 projection years x 12 = 120 months, numbered 1..120.
+    const result = computeRunway(baseInput());
+    expect(result.monthlyBreakdown).toHaveLength(120);
+    expect(result.monthlyBreakdown[0].month).toBe(1);
+    expect(result.monthlyBreakdown[119].month).toBe(120);
+    expect(result.projectionMonths).toBe(120);
+  });
+
+  it('When both series are read, Then the yearly rows equal the monthly rows at each year boundary', () => {
+    // This is the invariant that stops the two series drifting: the yearly
+    // figure must be the monthly figure sampled, never a second accumulation.
+    // A chart and a table on the same screen would otherwise disagree.
+    const result = computeRunway(
+      baseInput({
+        assets: [asset({ balanceCents: 100_000_000, annualReturnRate: 0.04 })],
+        annualEscalatorRate: 0.04,
+        generalInflationRate: 0.03,
+        ancillaryMonthlyCents: 40_000,
+      }),
+    );
+    for (const year of result.yearlyBreakdown) {
+      const boundary = result.monthlyBreakdown[year.year * 12 - 1];
+      expect(
+        boundary.assetsEndCents,
+        `year ${year.year} assets-end disagrees with month ${year.year * 12}`,
+      ).toBe(year.assetsEndCents);
+    }
+  });
+
+  it('When the monthly rows are read, Then month one carries the one-time costs and later months do not', () => {
+    // Hand-computed: month 1 = 500_000 care + 250_000 one-time = 750_000.
+    // Month 2 = 500_000, with no escalator or inflation applied.
+    const result = computeRunway(baseInput({ oneTimeCents: 250_000 }));
+    expect(result.monthlyBreakdown[0].careCostCents).toBe(750_000);
+    expect(result.monthlyBreakdown[1].careCostCents).toBe(500_000);
+  });
+
+  it('When savings run out, Then the curve reaches zero and stays there rather than going negative', () => {
+    // Gap = 200_000/mo against 1_200_000 of savings: zero from month 6 on.
+    const result = computeRunway(baseInput());
+    expect(result.monthlyBreakdown[5].assetsEndCents).toBe(0);
+    for (const month of result.monthlyBreakdown) {
+      expect(month.assetsEndCents).toBeGreaterThanOrEqual(0);
+    }
+  });
+});

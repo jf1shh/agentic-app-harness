@@ -470,12 +470,18 @@ Returns one row per IL scenario, designed for the overlay chart in the dedicated
   buyInEntryCents,
   allInMonthlyCents,
   isAffordable,           // reusing buyInAffordability
-  refundAtExitByYearCents: number[],   // hypothetical — exit at end of each projection year
-  assetsEndByYearCents:   number[],   // existing runway output, untouched
+  refundAtExitByYearCents:  number[],  // hypothetical — exit at end of each projection year
+  refundAtExitByMonthCents: number[],  // the same what-if, one point per month
+  assetsEndByYearCents:     number[],  // existing runway output, untouched
+  assetsEndByMonthCents:    number[],  // the depletion curve, one point per month
 }
 ```
 
-The chart shows one line per option (`assetsEndByYearCents`) on a shared x-axis (years 1..`projectionYears`). Refund-at-exit is **not** added to the runway's `totalOutOfPocketCents` — a refund is hypothetical until exit actually happens. The refund row in the derivation is a separate, optional panel and is clearly labelled as a what-if.
+The chart shows one line per option (`assetsEndByMonthCents`) on a shared x-axis of months `1..projectionYears × 12`. **Month resolution is required, not cosmetic**: the question the overlay exists to answer is *where two options cross*, and annual sampling puts at most five points on a five-year line — a crossing inside a year is invisible, and the polyline can imply a crossing that never happened. `assetsEndByYearCents` is retained for tables and stays exactly the monthly series sampled at year boundaries (`RunwayResult.yearlyBreakdown[y-1].assetsEndCents === monthlyBreakdown[y*12-1].assetsEndCents`, asserted in `runway.test.ts`), so a chart and a table on the same screen can never disagree about the same instant.
+
+Refund-at-exit is **not** added to the runway's `totalOutOfPocketCents`, and is **not** netted into the depletion line — a refund is hypothetical until exit actually happens. This has a consequence the chart must handle explicitly: Option A's line drops by its full `entryCents` at move-in and never recovers, so on the depletion curve alone the option with the *best* refund terms looks the *worst*. `refundAtExitByMonthCents` is therefore plotted as its own clearly-labelled series or annotation at the same resolution as the curve it annotates, never silently omitted. A chart showing only the depletion lines would misrepresent precisely the comparison it was built for.
+
+**Every `independent_living` scenario is projected, including one with no `buyInContract` at all.** Option C (rental only) is commonly entered as a quoted monthly rent with no buy-in, and requiring a contract object would silently drop the baseline the other two options are measured against. Such an option reports `buyInEntryCents: 0`, an all-zero refund series, and `isAffordable: true` — the absence of a barrier, not a claim about the family's finances. Scenarios whose `careType` is not `independent_living` are skipped; rows carry `scenarioId` and callers must align on that rather than on index.
 
 **Total-and-parts invariant (this section explicitly defers to §6 "Format a Total and Its Parts at the Same Precision"):** the chart's per-option net cost at month `m` for option `i` is `(sum of monthlyRecurring[m,i]) + buyInEntryCents[i] − cumulativeRefundLiabilityByMonth(m, i)`, formatted at identical precision and summing exactly in the derivation panel. Mismatch is asserted in the unit tests by parsing the rendered strings (not the engine output) per the existing test discipline.
 
