@@ -36,6 +36,7 @@ jobs:
             projects/travel-packing-app/package-lock.json
             projects/smart-recipe-app/package-lock.json
             projects/legal-financial-rag/package-lock.json
+            projects/elder-care-planner/package-lock.json
 
       # 1. Build Portfolio Hub (Root Showcase Site)
       - name: Build Portfolio Hub
@@ -79,6 +80,15 @@ jobs:
           npm run build
           mkdir -p ../portfolio-hub/dist/legal-financial-rag
           cp -r dist/* ../portfolio-hub/dist/legal-financial-rag/
+
+      # 6. Build Elder Care Cost Planner -> dist/elder-care-planner
+      - name: Build Elder Care Cost Planner
+        run: |
+          cd projects/elder-care-planner
+          npm install
+          npm run build
+          mkdir -p ../portfolio-hub/dist/elder-care-planner
+          cp -r out/* ../portfolio-hub/dist/elder-care-planner/
 
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v5
