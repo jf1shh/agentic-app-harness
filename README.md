@@ -4,7 +4,7 @@ A **spec-driven development (SDD) harness** for building and maintaining product
 
 > **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents working under strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. The harness also **closes its own improvement loop** (see the **Agentic Loop** section below): it senses drift and regressions and generates agent work orders **deterministically, with no embedded LLM or API key** — the AI agent is a pluggable actuator, not a hardcoded dependency.
 
-It hosts five real, deployed applications and holds every one of them to the same enforced standard.
+It hosts six real, deployed applications and holds every one of them to the same enforced standard.
 
 ---
 
@@ -15,6 +15,7 @@ It hosts five real, deployed applications and holds every one of them to the sam
 - **Travel Packing App (Wardrobe & Knapsack Weight Optimizer):** [https://jf1shh.github.io/agentic-app-harness/travel-packing-app/](https://jf1shh.github.io/agentic-app-harness/travel-packing-app/)
 - **Smart Kitchen Recipe Manager (Meal Planner & Pantry):** [https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/](https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/)
 - **LexiVault Financial RAG (100% Local Private Legal RAG & Security Engine):** [https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/](https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/)
+- **Elder Care Cost Planner (All-In Care Costs, Funding Runway & Fair Family Split):** [https://jf1shh.github.io/agentic-app-harness/elder-care-planner/](https://jf1shh.github.io/agentic-app-harness/elder-care-planner/)
 
 ---
 
@@ -26,6 +27,7 @@ It hosts five real, deployed applications and holds every one of them to the sam
   - `projects/travel-packing-app`: Smart Wardrobe Packing Assistant (Port 3000).
   - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3001).
   - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3009).
+  - `projects/elder-care-planner`: Offline-first elder care cost, runway and family cost-sharing planner (Port 3011).
 - `specs/`: Markdown specifications for every application. These are the **single source of truth**.
 - `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).
 - `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).

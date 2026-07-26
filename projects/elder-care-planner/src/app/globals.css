@@ -1,0 +1,360 @@
+/*
+ * Design system (spec §5.5).
+ *
+ * Calm and non-clinical, but every colour pair verified at 4.5:1 or better.
+ * Bright 500/600 shades against white fail axe, so the palette commits to
+ * darker variants throughout — see the a11y lesson in .agents/AGENTS.md §6.
+ */
+
+:root {
+  --primary: #1e5f4f; /* deep teal — 7.4:1 on white */
+  --primary-dark: #14453a;
+  --primary-tint: #e8f2ef;
+  --warning: #9a3412; /* amber-800 — 6.5:1 on white */
+  --warning-tint: #fdf2ec;
+  --bg: #f8faf9;
+  --surface: #ffffff;
+  --text: #111827;
+  --text-muted: #4b5563; /* 7.6:1 on white */
+  --border: #d5dedb;
+
+  /* 17px base: many users are older adults, or reading on a phone under
+     stress in a hospital corridor. */
+  --font-size-base: 17px;
+  --radius: 10px;
+  --space: 1rem;
+}
+
+/* Opt-in larger type. Scales everything because it moves the root size. */
+:root[data-textsize='large'] {
+  --font-size-base: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: var(--font-size-base);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+}
+
+/* This is a stressful context. Numbers should appear, not perform. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.page {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: var(--space);
+}
+
+header.site {
+  background: var(--primary);
+  color: #ffffff;
+  padding: 1.25rem 1rem;
+}
+
+header.site .page {
+  padding: 0;
+}
+
+header.site h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+header.site p {
+  margin: 0;
+  color: #e2efeb;
+  font-size: 0.95rem;
+}
+
+.header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+section.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin: 1rem 0;
+}
+
+/* Responsive grid. Never a fixed inline gridTemplateColumns, and never a
+   minmax basis a phone cannot fit — see the `responsive-grid` guardrail. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 1rem;
+}
+
+.grid-narrow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 0.75rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.hint {
+  display: block;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+input[type='text'],
+input[type='number'],
+select {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid #9aa8a4;
+  border-radius: 8px;
+}
+
+input[type='range'] {
+  width: 100%;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: var(--surface);
+  color: var(--primary-dark);
+  border-color: var(--primary);
+}
+
+/* The decision, not the spreadsheet (spec §5.2). */
+.headline {
+  background: var(--primary-tint);
+  border-left: 6px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.headline p {
+  margin: 0.4rem 0;
+  font-size: 1.05rem;
+}
+
+.headline .big {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  display: block;
+  line-height: 1.25;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem;
+}
+
+.stat .value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: block;
+}
+
+.stat .label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.callout {
+  border-left: 6px solid var(--warning);
+  background: var(--warning-tint);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  margin: 0.75rem 0;
+}
+
+.callout strong {
+  color: #7c2d12;
+}
+
+.provenance {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--border);
+  padding-top: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+/* Wide content scrolls inside its own container; the page body never does. */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  font-weight: 700;
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin: 0.75rem 0;
+}
+
+summary {
+  cursor: pointer;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+}
+
+details > .details-body {
+  padding: 0 1rem 1rem;
+}
+
+ul.checklist {
+  padding-left: 1.1rem;
+}
+
+ul.checklist li {
+  margin-bottom: 0.5rem;
+}
+
+.privacy-note {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 1.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+footer.site {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 2rem 0 3rem;
+}
+
+/* One readable page for the family meeting (spec §5.4). */
+@media print {
+  header.site {
+    background: none;
+    color: #000;
+    border-bottom: 2px solid #000;
+  }
+  header.site p {
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+  section.card {
+    border: none;
+    padding: 0;
+    margin: 0.5rem 0;
+    break-inside: avoid;
+  }
+  details {
+    border: none;
+  }
+  details > .details-body {
+    padding: 0;
+  }
+  body {
+    background: #fff;
+    font-size: 11pt;
+  }
+}

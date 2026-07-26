@@ -1,9 +1,10 @@
 # Project Specification: Elder Care Cost Planner
 
-> **Status:** DRAFT — awaiting human approval before implementation (per `.agents/AGENTS.md` §1–2).
-> **Revision 3** — scope from user research (§2); binding non-goals (§1.1); sensitivity,
-> questions-to-ask, and neutral-voice summary added. Region: US-only. Cost data: cited medians +
-> per-facility override.
+> **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
+> `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 4** — scope from user research (§2); binding non-goals (§1.1); sensitivity,
+> questions-to-ask and neutral-voice summary built. Region: US-only. Cost data: cited national
+> medians + per-facility override; state-level figures deliberately not shipped (see §7).
 
 ## 1. Product Overview
 
@@ -121,39 +122,39 @@ combination plus **local-only, no-account privacy**.
 ## 3. Core Features
 
 ### V1 (scope set by §2)
-- [ ] **60-Second Triage** — five inputs (state, care type, parent's monthly income, liquid
+- [x] **60-Second Triage** — five inputs (state, care type, parent's monthly income, liquid
       assets, number of contributors) → immediate all-in cost, runway, and shortfall. Every
       later feature is optional refinement of this result.
-- [ ] **All-In Cost Engine** — base rate + care-level tier + à la carte fees + one-time move-in
+- [x] **All-In Cost Engine** — base rate + care-level tier + à la carte fees + one-time move-in
       fee + annual escalator. Displays **"Advertised base" vs "Realistic all-in"** side by side
       with the delta called out.
-- [ ] **Break-Even Analyzer** — the paid-hours-per-week crossover between in-home and
+- [x] **Break-Even Analyzer** — the paid-hours-per-week crossover between in-home and
       residential care, both sides fully loaded (in-home includes housing carry costs).
-- [ ] **Funding & Runway Engine** — month-by-month depletion with care inflation, income COLA,
+- [x] **Funding & Runway Engine** — month-by-month depletion with care inflation, income COLA,
       asset returns, and expiring LTC benefit periods. Outputs months-to-depletion plus the
       month contributors begin funding from income or debt.
-- [ ] **Scenario Comparison** — up to 4 scenarios on all-in monthly cost, runway, and 5-year total.
-- [ ] **Benefit Reality Check** — Medicare (leading with what it does *not* cover), Medicaid
+- [x] **Scenario Comparison** — up to 4 scenarios on all-in monthly cost, runway, and 5-year total.
+- [x] **Benefit Reality Check** — Medicare (leading with what it does *not* cover), Medicaid
       (spend-down, 5-year lookback, spousal impoverishment protections), VA Aid & Attendance,
       and LTC insurance — each with its timing trap surfaced.
-- [ ] **Family Cost-Sharing Split** — equal / income-proportional / custom, with cash, hours, and
+- [x] **Family Cost-Sharing Split** — equal / income-proportional / custom, with cash, hours, and
       task ownership all treated as contributions.
-- [ ] **Contribution Ledger** — log what was actually paid, by whom, in what category; reconcile
+- [x] **Contribution Ledger** — log what was actually paid, by whom, in what category; reconcile
       actual vs. pledged; feeds the tax estimate.
-- [ ] **Caregiver Opportunity Cost** — lost net wages, lost employer retirement match, and a
+- [x] **Caregiver Opportunity Cost** — lost net wages, lost employer retirement match, and a
       qualitative Social Security flag for reduced work years.
-- [ ] **Tax Estimate** — unreimbursed medical expenses above 7.5% of AGI, with a
+- [x] **Tax Estimate** — unreimbursed medical expenses above 7.5% of AGI, with a
       multiple-support flag when siblings split support.
-- [ ] **"Questions to ask before you sign"** — a scenario-specific checklist that turns the §2.1
+- [x] **"Questions to ask before you sign"** — a scenario-specific checklist that turns the §2.1
       hidden-fee findings into leverage at the moment of negotiation, plus a parallel list for an
       elder law attorney consultation.
-- [ ] **"What would change this answer"** — sensitivity ranking that re-runs the projection with
+- [x] **"What would change this answer"** — sensitivity ranking that re-runs the projection with
       each input perturbed and orders them by impact on runway.
-- [ ] **Family Meeting Summary** — one printable page in a neutral third-party voice:
+- [x] **Family Meeting Summary** — one printable page in a neutral third-party voice:
       recommendation, numbers, assumptions, split.
-- [ ] **Local-only persistence + export/import** — `localStorage`, no account, no network calls
+- [x] **Local-only persistence + export/import** — `localStorage`, no account, no network calls
       for user data; JSON export/import Zod-validated at the boundary.
-- [ ] **Accessibility-first UI** — WCAG 2.1 AA, large-type mode, plain language, full keyboard use.
+- [x] **Accessibility-first UI** — WCAG 2.1 AA, large-type mode, plain language, full keyboard use.
 
 ### Deferred to V2 (documented, not built)
 - [ ] Medicaid eligibility modeling with state-specific asset limits (see §9.4 — deliberate).

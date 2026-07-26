@@ -81,6 +81,26 @@ const RAW_PROJECTS: ProjectItem[] = [
     demoUrl: 'https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/smart-recipe-app',
   },
+  {
+    id: 'elder-care-planner',
+    name: 'Elder Care Cost Planner',
+    tagline: 'What Care Really Costs, How Long the Money Lasts, and How a Family Shares It',
+    description: 'All-in cost modelling beyond the advertised rate, month-by-month funding runway, home-vs-facility break-even, benefit timing traps, and a fair sibling split. Fully offline, no account, no referral revenue.',
+    category: 'Family Finance',
+    techStack: ['Next.js', 'React', 'TypeScript', 'Zod', 'Vitest', 'Playwright', 'Axe-Core'],
+    metrics: {
+      unitTests: 112,
+      e2eTests: 29,
+      a11yScore: '100% WCAG 2.1 AA',
+      securityAudit: '0 High Vulnerabilities',
+    },
+    pwaReady: false,
+    capacitorAndroid: false,
+    monetized: false,
+    specPath: 'specs/elder-care-planner-spec.md',
+    demoUrl: 'https://jf1shh.github.io/agentic-app-harness/elder-care-planner/',
+    githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/elder-care-planner',
+  },
 ];
 
 export const PROJECTS_DATA: ProjectItem[] = RAW_PROJECTS.map(item => ProjectItemSchema.parse(item));
