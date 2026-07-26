@@ -9,9 +9,11 @@ import {
   makeContributors,
   type PlannerState,
 } from '@/lib/plannerState';
-import { computePlan, breakEvenBetween } from '@/lib/engine/plan';
+import { computePlan, breakEvenBetween, aideHourlyRateCents } from '@/lib/engine/plan';
+import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS } from '@/lib/data/costOfCare';
 import type { CareType, Contributor, SplitMethod } from '@/lib/schemas';
+import type { ExplanationSet } from '@/lib/explain/types';
 import { CurrencyInput, NumberInput, SelectInput } from '@/components/Inputs';
 import { ResultsPanel } from '@/components/ResultsPanel';
 import { RefineCostPanel } from '@/components/RefineCostPanel';
@@ -20,6 +22,9 @@ import { SplitPanel } from '@/components/SplitPanel';
 import { BenefitsPanel } from '@/components/BenefitsPanel';
 import { QuestionsPanel } from '@/components/QuestionsPanel';
 import { SummaryPanel } from '@/components/SummaryPanel';
+import { ExplainProvider } from '@/components/ExplainProvider';
+import { ExplainDrawer } from '@/components/ExplainDrawer';
+import { MethodologyPanel } from '@/components/MethodologyPanel';
 
 const RESIDENTIAL: readonly CareType[] = [
   'assisted_living',
@@ -28,6 +33,18 @@ const RESIDENTIAL: readonly CareType[] = [
   'nursing_home_private',
 ];
 const HOURLY: readonly CareType[] = ['in_home_homemaker', 'in_home_health_aide'];
+
+/** Before any scenario exists there is nothing to explain, but the shape holds. */
+const EMPTY_EXPLANATIONS: ExplanationSet = {
+  'base-rate': null,
+  'all-in': null,
+  'first-month': null,
+  'monthly-gap': null,
+  runway: null,
+  'break-even': null,
+  split: null,
+  sensitivity: null,
+};
 
 export default function Home() {
   const [state, setState] = useState<PlannerState>(INITIAL_STATE);
@@ -48,6 +65,24 @@ export default function Home() {
     return breakEvenBetween(inHome, residential);
   }, [state]);
 
+  // Derivations are built from engine output, never recomputed here — a second
+  // implementation of the same arithmetic would drift silently (spec §6.10).
+  const explanations = useMemo(
+    () =>
+      planResult.active
+        ? buildExplanations({
+            plan,
+            result: planResult.active,
+            breakEven,
+            breakEvenHourlyRateCents: aideHourlyRateCents(state.stateCode),
+            breakEvenHoursPerWeek: state.compareHoursPerWeek,
+            split: planResult.split,
+            contributors: state.contributors,
+          })
+        : EMPTY_EXPLANATIONS,
+    [plan, planResult, breakEven, state.stateCode, state.compareHoursPerWeek, state.contributors],
+  );
+
   const isResidential = RESIDENTIAL.includes(state.careType);
   const isHourly = HOURLY.includes(state.careType);
 
@@ -61,7 +96,7 @@ export default function Home() {
   };
 
   return (
-    <>
+    <ExplainProvider explanations={explanations}>
       <header className="site">
         <div className="page">
           <div className="header-bar">
@@ -165,6 +200,8 @@ export default function Home() {
           />
         ) : null}
 
+        <MethodologyPanel />
+
         <div className="no-print">
           <BenefitsPanel />
           <QuestionsPanel careType={state.careType} />
@@ -202,6 +239,8 @@ export default function Home() {
           positions are deliberately not modelled — those need a professional.
         </p>
       </footer>
-    </>
+
+      <ExplainDrawer />
+    </ExplainProvider>
   );
 }

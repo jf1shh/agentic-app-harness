@@ -4,6 +4,7 @@ import type { SplitResult } from '@/lib/engine/split';
 import type { Contributor, SplitMethod } from '@/lib/schemas';
 import { formatCents, formatCentsPrecise } from '@/lib/format';
 import { SelectInput, CurrencyInput, NumberInput } from './Inputs';
+import { WhyButton } from './WhyButton';
 
 interface Props {
   split: SplitResult;
@@ -22,7 +23,9 @@ export function SplitPanel({
 }: Props) {
   return (
     <section className="card" aria-labelledby="split-heading">
-      <h2 id="split-heading">Sharing the cost</h2>
+      <h2 id="split-heading">
+        Sharing the cost <WhyButton id="split" />
+      </h2>
       <p>
         The gap after income is {formatCents(split.shares.reduce((s, x) => s + x.monthlyCents, 0) + split.unfundedCents)} a
         month. Below is one way to divide it. The figures come from the plan, not from whoever
