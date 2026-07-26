@@ -129,6 +129,21 @@ As an AI agent operating within this repository, you must strictly adhere to the
   overwrites the corruption on the way out; seed such fixtures with `addInitScript` before the
   first navigation instead. Not tagged as a guardrail: whether a given `setTimeout` write has a
   matching lifecycle flush is a whole-component property, not a line a regex can see.
+- **An E2E Test That Calls a Live Third-Party API Outsources Your Build Status**: `travel-packing-app`'s
+  E2E suite geocodes through `nominatim.openstreetmap.org` and `geocoding-api.open-meteo.com` for
+  real. That makes a green build depend on someone else's uptime, rate limits and user-agent
+  policy — Nominatim's usage policy explicitly blocks unfamiliar clients — and it means the suite
+  cannot run at all in a network-restricted environment, which is where agents frequently work.
+  The failure is also badly misleading: it surfaces as `expect(locator).toBeVisible()` finding
+  nothing, so it reads as a broken feature rather than a blocked request, and the only clue is a
+  `Geocoding Error: TypeError: Failed to fetch` line buried in the browser console output. Stub the
+  network at the test boundary (`page.route()`) and keep one clearly-labelled opt-in spec for the
+  live integration, so the deterministic suite proves the app's own logic and the live check is a
+  separate signal that can fail without blocking a merge. Discovered while porting CI from
+  `windows-latest` to `ubuntu-latest`: five apps ran clean on Linux and this one did not, which
+  looked like a platform dependency for as long as it took to check whether the host was reachable.
+  Not tagged as a guardrail: distinguishing a deliberate live-integration spec from an accidental
+  one needs judgement, and the fetch is often several call frames from the test file.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
