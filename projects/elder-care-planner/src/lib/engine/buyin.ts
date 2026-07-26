@@ -9,7 +9,7 @@
  * monthly income stream.
  */
 import type { BuyInContract, CareScenario, Plan } from '../schemas';
-import { computeCost } from './cost';
+import { buyInContractFor, computeCost } from './cost';
 import { buildRunwayInput } from './plan';
 import { computeRunway } from './runway';
 
@@ -120,6 +120,12 @@ export interface ILVariantProjection {
  * each option i, the per-line assets-end value equals the runway engine's
  * `Σ pot.balanceCents` at month m. Refund values are read alongside the
  * runway but never folded into the running balance.
+ *
+ * Scenarios that are not `independent_living` are skipped rather than
+ * projected. A non-IL scenario has no contract to compare, so a row for it
+ * would report `isAffordable: true` and an all-zero refund schedule — a
+ * confident-looking answer to a question the option cannot be asked. Rows
+ * carry `scenarioId`, so callers must align on that rather than on index.
  */
 export function projectILVariants(
   plan: Plan,
@@ -129,13 +135,13 @@ export function projectILVariants(
     .filter((a) => a.liquid)
     .reduce((sum, a) => sum + a.balanceCents, 0);
 
-  return scenarios.map((scenario) => {
+  return scenarios.flatMap((scenario) => {
+    const contract = buyInContractFor(scenario);
+    if (!contract) return [];
+
     const cost = computeCost(scenario);
-    const contract = scenario.fees?.buyInContract;
     const buyInEntryCents = cost.buyInEntryCents;
-    const isAffordable = contract
-      ? buyInAffordability(liquidAssets, contract).affordable
-      : true;
+    const isAffordable = buyInAffordability(liquidAssets, contract).affordable;
 
     // Reuse the existing runway simulation, untouched. The buy-in is folded
     // into `oneTimeCents` already (see cost.ts) and the runway draws month 1's
@@ -144,14 +150,14 @@ export function projectILVariants(
     const runway = computeRunway(input);
 
     const refundAtExitByYearCents: number[] = runway.yearlyBreakdown.map((yr) =>
-      contract ? resolveRefundAtTenure(contract, yr.year * 12) : 0,
+      resolveRefundAtTenure(contract, yr.year * 12),
     );
 
     const assetsEndByYearCents: number[] = runway.yearlyBreakdown.map(
       (yr) => yr.assetsEndCents,
     );
 
-    return {
+    return [{
       scenarioId: scenario.id,
       label: scenario.label,
       buyInEntryCents,
@@ -159,6 +165,6 @@ export function projectILVariants(
       isAffordable,
       refundAtExitByYearCents,
       assetsEndByYearCents,
-    };
+    }];
   });
 }

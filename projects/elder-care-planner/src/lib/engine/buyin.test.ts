@@ -11,7 +11,7 @@
  * differ across the cost / runway / buy-in engines.
  */
 import { describe, it, expect } from 'vitest';
-import type { BuyInContract, CareScenario, Plan, PlanSchema } from '../schemas';
+import type { BuyInContract, CareScenario, Plan } from '../schemas';
 import {
   resolveRefundAtTenure,
   buyInAffordability,
@@ -294,10 +294,70 @@ describe('Given three IL scenarios in a Plan (overlay-chart projection)', () => 
     expect(projections[0].isAffordable).toBe(false);
     expect(projections[0].buyInEntryCents).toBe(40_000_000);
   });
+
+  it('Then a scenario that is not independent living is skipped rather than given a row', () => {
+    // Given an assisted-living scenario alongside a genuine IL option — a
+    // non-IL option has no contract to compare, so a row for it would claim
+    // `isAffordable: true` and a zero refund schedule as though those were
+    // answers rather than absences.
+    const plan: Plan = {
+      schemaVersion: 1,
+      careRecipientLabel: 'Mom',
+      scenarios: [],
+      activeScenarioId: undefined,
+      income: [],
+      assets: [
+        {
+          id: 'cash', label: 'Cash', kind: 'cash', balanceCents: 100_000_000,
+          annualReturnRate: 0.04, liquid: true,
+        },
+      ],
+      contributors: [],
+      ledger: [],
+      caregiverImpacts: [],
+      assumptions: {
+        careInflationRate: 0.04, generalInflationRate: 0.03,
+        projectionYears: 5, splitMethod: 'equal',
+      },
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+
+    const assistedLiving: CareScenario = {
+      id: 'al',
+      label: 'Assisted living',
+      careType: 'assisted_living',
+      stateCode: 'US',
+      fees: {
+        communityFeeCents: 400_000,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        // A contract left behind on a non-IL scenario must not be projected.
+        buyInContract: { ...CONTRACT_A, monthlyServiceCentsRate: 350_000 },
+      },
+      ancillary: [],
+    };
+    const independentLiving: CareScenario = {
+      id: 'il',
+      label: 'Independent living, Option A',
+      careType: 'independent_living',
+      stateCode: 'US',
+      fees: {
+        communityFeeCents: 0,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        buyInContract: { ...CONTRACT_A, monthlyServiceCentsRate: 350_000 },
+      },
+      ancillary: [],
+    };
+
+    const projections = projectILVariants(plan, [assistedLiving, independentLiving]);
+
+    // Then only the IL option is projected, and rows are found by id not index
+    expect(projections).toHaveLength(1);
+    expect(projections[0].scenarioId).toBe('il');
+    expect(projections.some((p) => p.scenarioId === 'al')).toBe(false);
+  });
 });
 
-// Compile-time shape check: the type system itself catches a wrong shape.
-// If `Plan` ever drifts and `PlanSchema` is no longer assignable here,
-// TypeScript flags this import — useful as a regression tripwire.
-const _: typeof PlanSchema = undefined as unknown as typeof PlanSchema;
-void _;
