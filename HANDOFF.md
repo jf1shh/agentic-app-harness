@@ -27,8 +27,9 @@ machine without `pwsh`.
 | **Verify** | `node scripts/harness-status.mjs --gate` | Blocking CI gate: fails on guardrail regressions + missing specs (drift only informs). Guardrails are self-tested (`harness-status.test.mjs`). |
 | **Learn** | `node scripts/harness-learn.mjs` | Enforces a closed `Lesson ⇄ Guardrail ⇄ Self-test` loop so new guardrails must trace to a documented lesson. |
 
-Sense now runs three non-blocking sensors alongside the seven blocking guardrails:
-`senseMobileRelease`, `senseProductionBundleTest`, and `senseUnitTests` (§7 below).
+Sense runs three sensors alongside the seven blocking guardrails:
+`senseMobileRelease` and `senseProductionBundleTest` (both non-blocking) and
+`senseUnitTests`, which **blocks** as of this change set (§7 below).
 
 The **full per-app suite is now Node too**: `node scripts/test-app.mjs <AppName>`
 (security audit, lint, tsc, Vitest, Playwright + a11y). `test-app.ps1` is a thin
@@ -42,16 +43,15 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 
 ## 3. Current State / Open Work
 - **Active branch:** `claude/unit-test-driven-dev-1r60jw` — the unit-test-driven
-  development layer (§7 below). Adds the `senseUnitTests` sensor, the
-  `no-op-assertion` guardrail, and the §5 red → green → prove rule. **Harness
-  only**: the only application file it touches is
-  `projects/smart-recipe-app/vitest.config.ts`.
+  development layer (§7 below). Adds the `senseUnitTests` sensor (now blocking),
+  the `no-op-assertion` guardrail, the §5 red → green → prove rule, and the
+  backfilled unit tests that closed the backlog it found: 15 modules across five
+  apps, plus 12 unit test files reformatted to BDD.
 - **Previous branch:** `claude/play-store-production-readiness-weh4sp` (PR #32) —
   Play Store readiness for mood-diner (§6), plus two pieces of
   harness automation: the `senseProductionBundleTest` sensor and the Node port of
   the per-app suite.
-- **Production-bundle coverage: all 5 apps.** (`tasks/` was empty at the end of
-  that session; it now holds the 11 unit-test work orders listed in §7.) Every app now has a
+- **Production-bundle coverage: all 5 apps.** Every app now has a
   `production-bundle.spec.ts` that loads its built output at the real deploy
   subpath and fails on any response >= 400. Each was **proved by mutation** —
   breaking `base`/`basePath` makes the new test fail, restoring it makes it pass.
@@ -83,6 +83,8 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
   guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
 - Consider making the Verify gate `--strict` (drift-blocking) once all specs are
   reconciled, and adding guardrails for any new recurring regression.
+- The one open work order is `elder-care-planner-spec-drift` (5 unchecked spec
+  features). Unit-test coverage is complete and gated; see §7.
 - Play Store: §6 findings are all cleared. What remains is human work — fill the
   privacy-policy placeholders, get it reviewed, produce store listing screenshots,
   and confirm the first real `gradlew bundleRelease` in CI actually succeeds.
@@ -217,12 +219,23 @@ config). **Three remain**, all non-blocking:
 | All 12 non-BDD unit test files | Retitled Given → When → Then across 4 apps |
 | `smart-recipe-app` unscoped Vitest `include` | Set explicitly; same 2 files / 10 tests before and after |
 
-**Still open (`tasks/`):** `elder-care-planner` 6 modules (`lib/photos.ts` + all
-five `lib/data/*`) and `travel-packing-app` 4 (`utils/airlineBaggage`,
-`utils/generator`, `services/db`, `services/logger`). Both are the "data table
-and behaviour" tier described in §7's next-step note below.
+**The backlog is closed.** `tasks/` holds only the pre-existing
+`elder-care-planner-spec-drift` order. Also covered since: travel-packing-app's
+four modules (`utils/airlineBaggage` 20 cases, `utils/generator` 32,
+`services/db` 10, `services/logger` 9) and elder-care-planner's six
+(`lib/data/costOfCare` 26, `benefits` 8, `expenseCategories` 7,
+`feeStructures` 10, `questionsToAsk` 10, `lib/photos` 31).
 
-**Two things the next agent should know, because neither is visible in a diff.**
+**`unit-test-coverage` is now BLOCKING.** That was the promotion criterion, and
+it is met: the type is in `isBlocking`, so adding a logic module without a unit
+test fails `--gate` in the PR that adds it. Verified by dropping a throwaway
+`src/utils/tempProbe.ts` into portfolio-hub — gate exit 1 with it, 0 without.
+To relax it (a spike, a vendored module), remove the type from `isBlocking`
+rather than deleting the sensor, so the finding stays visible while it stops
+blocking; `harness-status.test.mjs` case (i) asserts the current stance and must
+be flipped deliberately alongside it.
+
+**Three things the next agent should know, none visible in a diff.**
 
 1. *The guardrail false-positived on its author's own test within the hour.* A
    chain can be wrapped two ways, and `expect(Schema.parse(x))` with

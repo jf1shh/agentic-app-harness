@@ -386,12 +386,16 @@ describe('run', () => {
     console.error('✗ unit-tests: graded a Playwright e2e spec against the unit-BDD check'); failures++;
   }
 
-  // (i) Must only inform, never gate — the coverage backlog predates the sensor.
-  if (senseUnitTests('a', bare).filter(isBlocking).length) {
-    console.error('✗ unit-tests: finding blocks the gate; this sensor must only inform'); failures++;
+  // (i) These findings MUST gate. Non-blocking while the pre-existing backlog
+  // was open; promoted once it was closed, per the §8 criterion. If this ever
+  // needs relaxing, the type comes out of isBlocking and this case flips with
+  // it — deliberately, rather than by the sensor quietly ceasing to matter.
+  const gating = senseUnitTests('a', bare).filter(isBlocking);
+  if (gating.length !== senseUnitTests('a', bare).length) {
+    console.error('✗ unit-tests: a finding does not block the gate; untested logic must fail the build'); failures++;
   }
 
-  if (!failures) console.log('✓ unit-test sensor (fires on untested logic, credits imported-from tests, scoped off UI, non-blocking)');
+  if (!failures) console.log('✓ unit-test sensor (fires on untested logic, credits imported-from tests, scoped off UI, blocking)');
 } finally {
   rmSync(tmp3, { recursive: true, force: true });
 }

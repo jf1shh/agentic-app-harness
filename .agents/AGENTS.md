@@ -52,14 +52,19 @@ As an AI agent operating within this repository, you must strictly adhere to the
   coverage rather than coverage. This is the path every work order under `tasks/` with
   type `unit-test-coverage` takes; the red-first order above governs new and changed
   logic, which is everything else.
-- **This is sensed, not just documented.** `senseUnitTests` in `scripts/harness-status.mjs`
-  reports every logic module no unit test imports, every unit test file missing
-  Given/When/Then, and any Vitest config without an explicit `include`. It is
-  **non-blocking** (`type: 'unit-test-coverage'`) under the §8 sensor policy, because it
-  describes a backlog that predates it rather than a regression — but every finding
-  becomes a work order under `tasks/`, so "no unit test" is now a visible, claimable
-  gap instead of a silence. The line-level half of the same rule *is* blocking, as the
-  `no-op-assertion` guardrail.
+- **This is sensed and gated, not just documented.** `senseUnitTests` in
+  `scripts/harness-status.mjs` reports every logic module no unit test imports, every
+  unit test file missing Given/When/Then, and any Vitest config without an explicit
+  `include`. `type: 'unit-test-coverage'` findings **block the gate**: add a logic module
+  without a unit test and `node scripts/harness-status.mjs --gate` exits 1 in the PR that
+  adds it. The line-level half of the same rule also blocks, as the `no-op-assertion`
+  guardrail.
+  It was introduced **non-blocking** and promoted only once the backlog it found — 15
+  untested modules and 12 unformatted test files across all six apps — was closed. That
+  order matters and is the §8 policy in miniature: gating on day one would have reddened
+  every PR on every app for work nobody had been asked to do, which teaches agents to
+  route around the gate rather than satisfy it. Gate a rule when it describes a
+  regression, not while it still describes history.
 - You must write End-to-End (E2E) tests using Playwright for critical user flows.
 - **BDD Specification Standard**: All E2E and Unit test scenarios must follow Behavior-Driven Development (BDD) formatting (`Given [Context] -> When [User Action] -> Then [Expected Outcome]`).
 - You must enforce strict Accessibility (a11y) rules using `@axe-core/playwright` within the E2E tests.
@@ -321,16 +326,24 @@ and every hit **blocks merge**. Some real defects are *absence* checks (a missin
 signing config, an unbranded launcher icon, a missing privacy policy) that no regex
 over a line can express, and that describe incomplete work rather than a regression.
 
-Those belong in a **sensor** in `senseApp` with a non-blocking `type` — see
-`senseMobileRelease` (Play Store release readiness), scoped to apps with a native
-container, `senseProductionBundleTest` (does the E2E suite ever load the built
-output?), and `senseUnitTests` (does a unit test reach each logic module, is it
-BDD-formatted, is Vitest scoped?). All three are excluded from `isBlocking` on
-purpose, so incomplete work informs without painting unrelated PRs red. Sensors are
-still self-tested against fixture trees, so they cannot silently stop reporting, and
-they still become work orders via `emit-tasks.mjs`. Promote a sensor check to a
-guardrail only once it is line-detectable *and* the repo has decided it must never
-regress.
+Those belong in a **sensor** in `senseApp` — see `senseMobileRelease` (Play Store
+release readiness), scoped to apps with a native container,
+`senseProductionBundleTest` (does the E2E suite ever load the built output?), and
+`senseUnitTests` (does a unit test reach each logic module, is it BDD-formatted, is
+Vitest scoped?). Sensors are self-tested against fixture trees, so they cannot
+silently stop reporting, and they become work orders via `emit-tasks.mjs`.
+
+A sensor starts **non-blocking** and is promoted later. The rule is not "sensors never
+gate" — it is *gate a check when it describes a regression, not while it still
+describes history*. `senseMobileRelease` and `senseProductionBundleTest` are still
+excluded from `isBlocking`, because both still describe incomplete work. `senseUnitTests`
+was too, and was promoted once its backlog — 15 untested modules and 12 unformatted test
+files — was closed; it now fails the gate. Gating a check on day one, while it is still
+reporting work nobody has been asked to do, reddens unrelated PRs and teaches agents to
+route around the gate rather than satisfy it.
+
+Promote a sensor check to a *guardrail* (as opposed to a blocking sensor) only once it
+is line-detectable, since `test(line)` is the contract the guardrail self-test enforces.
 
 `senseUnitTests` is the clearest example of the split, because the same lesson
 produced one of each. "Is this logic module reached by any unit test?" is an absence

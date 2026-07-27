@@ -659,14 +659,26 @@ function senseApp(app) {
 // legitimate open work and only inform — blocking them would paint every PR
 // red until every spec is 100% implemented.
 // ---------------------------------------------------------------------------
-// 'mobile-readiness' and 'unit-test-coverage' are intentionally absent below:
-// store-submission gaps and missing unit tests are real work, but neither a
-// partially-prepared release nor a coverage backlog that predates the sensor
-// must block unrelated PRs. They surface in the report and become work orders;
-// they never fail the gate. The line-level half of the unit-test lesson — an
-// assertion that cannot fail — IS blocking, as the `no-op-assertion` guardrail.
+// 'mobile-readiness' is intentionally absent below: store-submission gaps are
+// real work, but a partially-prepared release must not block unrelated PRs.
+// They surface in the report and become work orders; they never fail the gate.
+//
+// 'unit-test-coverage' IS blocking, as of the change set that closed the
+// backlog. It was deliberately non-blocking when the sensor was introduced,
+// because it then described 15 untested modules and 12 unformatted test files
+// that predated it — gating that would have reddened every PR on every app for
+// work nobody had yet been asked to do. Those are now all closed, which is the
+// promotion criterion §8 sets out: a check is promoted once it stops describing
+// history and starts describing a regression. From here, a logic module added
+// without a unit test fails the gate in the PR that adds it, which is what
+// "unit tests drive development" has to mean to be more than a preference.
+//
+// If this needs to be relaxed — a spike, a vendored module, a deliberate
+// exception — take the type out of this function rather than deleting the
+// sensor, so the finding stays visible while it stops blocking.
 export function isBlocking(f) {
   if (f.type === 'guardrail') return true;
+  if (f.type === 'unit-test-coverage') return true;
   if (f.type === 'missing-artifact' && f.severity === 'high') return true; // missing spec
   return false;
 }
