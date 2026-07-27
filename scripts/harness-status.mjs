@@ -25,7 +25,7 @@
 // collectStatus / isBlocking are exported.
 
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join, relative, extname, dirname } from 'node:path';
+import { join, relative, extname, dirname, basename, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
@@ -35,6 +35,16 @@ const projectsDir = join(repoRoot, 'projects');
 const specsDir = join(repoRoot, 'specs');
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.vite', 'coverage', 'android', 'playwright-report', 'test-results']);
+
+// A test file, by either convention this monorepo uses: co-located `foo.test.ts`
+// (elder-care-planner, smart-recipe-app), a `__tests__/` sibling (mood-diner,
+// portfolio-hub) or an app-root `__tests__/` (travel-packing-app).
+const TEST_FILE_RE = /\.(test|spec)\.(tsx?|jsx?|mjs|cjs)$/;
+const isE2EPath = (p) => /[\\/]e2e[\\/]/.test(p);
+// A *unit* test is any test file that is not a Playwright E2E spec. The split
+// matters: `e2e/*.spec.ts` is already sensed separately (BDD check, sensor 4),
+// and Vitest is configured everywhere to exclude `e2e/**`.
+const isUnitTestPath = (p) => TEST_FILE_RE.test(p) && !isE2EPath(p);
 
 // ---------------------------------------------------------------------------
 // Guardrails: anti-patterns distilled from AGENTS.md "Learned Lessons". Each
@@ -133,6 +143,30 @@ const GUARDRAILS = [
     severity: 'high',
     gate: 'guardrails',
     why: "Capacitor serves the bundle from https://localhost/ in the Android WebView, so a hardcoded '/<repo>/<app>/' base makes every asset URL 404 and the app boots to a white screen. Use a relative base ('./'), which resolves under both the Pages subpath and the WebView origin.",
+  },
+  {
+    id: 'no-op-assertion',
+    label: 'Assertions that can actually fail (no bare expect(), no self-satisfying type check)',
+    lesson: 'Prove a New Test Can Fail',
+    exts: ['.ts', '.tsx'],
+    // Test files only — `expect(...)` outside a test is not this bug, and the
+    // type-tautology shape is only a lie when it is claimed as coverage.
+    excludePath: (p) => !TEST_FILE_RE.test(p),
+    test: (line) => {
+      // (a) An `expect(x)` with no matcher chained onto it evaluates x and
+      // asserts nothing. Requiring the line to *close* the call keeps a
+      // legitimately wrapped `expect(` / `).toBe(...)` pair out of scope, and
+      // the `).`-anywhere exclusion keeps every real matcher out.
+      if (/^\s*(await\s+)?expect\(.+\)\s*;?\s*$/.test(line) && !/\)\s*\./.test(line)) return true;
+      // (b) A value annotated as `typeof X` and cast back to `typeof X` is the
+      // same type on both sides, so no change to X can ever make it fail.
+      // This is the exact shape PR #41 shipped as a "drift tripwire" (§9.4).
+      if (/:\s*typeof\s+(\w+)\s*=\s*.*\bas\s+.*\btypeof\s+\1\b/.test(line)) return true;
+      return false;
+    },
+    severity: 'high',
+    gate: 'guardrails',
+    why: 'A test that cannot fail is not weak coverage — it is a false statement about what is covered, and it displaces the real test nobody now thinks to write. Chain a matcher onto every expect(), and assert behaviour rather than annotating a type against itself.',
   },
 ];
 
@@ -322,6 +356,156 @@ export function senseProductionBundleTest(app, projPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Unit-test-driven development — an INFORMATIONAL sensor.
+//
+// .agents/AGENTS.md §5 mandates unit tests for all core logic and BDD
+// (Given -> When -> Then) formatting for *every* test scenario, unit and E2E
+// alike. Until this sensor existed only the E2E half was ever checked: sensor 4
+// scans `*.spec.ts` for Given/When/Then, so a core-logic module could ship with
+// no unit test at all, or with a unit test written in no particular style, and
+// nothing in the loop would say so. That is the gap between "we have unit
+// tests" and "unit tests drive the work".
+//
+// Four checks, all *absence* checks — which is why this is a sensor and not a
+// guardrail: no `test(line)` predicate can express "no file anywhere imports
+// this module". (The one line-detectable half of the same lesson — an assertion
+// that cannot fail — IS a guardrail: `no-op-assertion` above.)
+//
+// Deliberately NON-BLOCKING, per the §8 sensor policy: these describe missing
+// coverage rather than a regression, and gating them would paint every PR on
+// every app red until a backlog that predates the sensor is closed. They report,
+// they become work orders via emit-tasks.mjs, and they are promoted to blocking
+// once the backlog is gone.
+//
+// What this sensor does NOT claim: that a covered module is *well* tested. It
+// answers "is this module reached by any unit test?", which is the question a
+// zero-dependency scan can answer honestly. Depth is a line-coverage question,
+// and a line-coverage tool is the right instrument for it.
+// ---------------------------------------------------------------------------
+
+// Directories under src/ that hold logic a unit test can address. Everything
+// else (routes, pages, components) is E2E and a11y territory: a sensor that
+// demanded a unit test per React component would report a hundred findings
+// describing a testing strategy this repo has not chosen.
+const LOGIC_DIRS = new Set(['lib', 'utils', 'services', 'engine', 'core', 'domain', 'data', 'hooks', 'store', 'state']);
+
+// A module with no runtime export declares only types, so there is nothing for
+// a unit test to execute (`src/types.ts` is `export type { … } from './schemas'`).
+// Fail-open by design: an unusual runtime re-export simply is not sensed, which
+// keeps the sensor free of findings nobody can act on.
+const RUNTIME_EXPORT_RE = /^\s*export\s+(default\s+)?(async\s+)?(const|let|var|function|class)\b/m;
+
+// `from '…'`, `import('…')`, `require('…')`. Deliberately excludes `vi.mock('…')`:
+// mocking a module is the opposite of exercising it, and crediting a mock as
+// coverage would let a module be "tested" by a suite that stubs it out.
+const IMPORT_SPEC_RE = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
+
+const VITEST_CONFIGS = ['vitest.config.ts', 'vitest.config.mts', 'vitest.config.js', 'vite.config.ts', 'vite.config.js'];
+
+function resolveImport(spec, fromFile, srcDir) {
+  let base;
+  if (spec.startsWith('.')) base = join(dirname(fromFile), spec);
+  else if (spec.startsWith('@/') || spec.startsWith('~/')) base = join(srcDir, spec.slice(2));
+  else return null; // a bare package specifier is not a module of this app
+  for (const suffix of ['', '.ts', '.tsx', '.js', '.jsx', join(sep, 'index.ts'), join(sep, 'index.tsx')]) {
+    const candidate = base + suffix;
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+export function senseUnitTests(app, projPath) {
+  const findings = [];
+  const srcDir = join(projPath, 'src');
+  if (!existsSync(srcDir)) return findings;
+
+  const add = (id, severity, title, detail, evidence) => findings.push({
+    id: `${app}-unit-${id}`, type: 'unit-test-coverage', severity,
+    gate: 'validate-specs --strict', title, detail,
+    ...(evidence?.length ? { evidence } : {}),
+  });
+
+  // --- 1. Vitest scoping. An implicit `include` lets Vitest reach for whatever
+  // the default glob finds, which is how a Playwright spec ends up being run by
+  // the unit runner (the "Vitest vs. Playwright Test Separation" §6 lesson says
+  // to set it explicitly, and nothing checked that it had been).
+  const cfgPath = VITEST_CONFIGS.map((f) => join(projPath, f)).find((p) => existsSync(p));
+  if (cfgPath) {
+    const cfg = readSafe(cfgPath);
+    if (/\btest\s*:\s*\{/.test(cfg) && !/\binclude\s*:/.test(cfg)) {
+      add('vitest-unscoped', 'medium',
+        `Vitest config for ${app} has no explicit 'include'`,
+        "Without an explicit include, Vitest falls back to its default glob and can pick up files the unit runner was never meant to execute (the Playwright e2e specs are the recurring case). Set include: ['src/**/*.test.ts', 'src/**/*.test.tsx'] alongside the existing exclude. See the 'Vitest vs. Playwright Test Separation' lesson in .agents/AGENTS.md §6.",
+        [{ file: rel(cfgPath), line: 1, snippet: "test: { … } with no include" }]);
+    }
+  }
+
+  // --- 2. Which modules hold logic, and which are reached by a unit test.
+  const modules = walk(srcDir, ['.ts']).filter((f) => {
+    if (/\.d\.ts$/.test(f) || isUnitTestPath(f)) return false;
+    const segs = relative(srcDir, f).split(sep);
+    // Either a top-level module (src/schemas.ts) or inside a logic directory.
+    if (!(segs.length === 1 || LOGIC_DIRS.has(segs[0]))) return false;
+    return RUNTIME_EXPORT_RE.test(readSafe(f));
+  });
+
+  const unitTests = walk(projPath, ['.ts', '.tsx']).filter(isUnitTestPath);
+
+  const covered = new Set();
+  for (const t of unitTests) {
+    const content = readSafe(t);
+    for (const m of content.matchAll(IMPORT_SPEC_RE)) {
+      const resolved = resolveImport(m[1], t, srcDir);
+      if (resolved) covered.add(resolved);
+    }
+    // Naming-convention fallback, scoped to the same directory or a `__tests__`
+    // sibling. This exists so a test that reaches its subject through a mock
+    // boundary or a barrel file is not miscounted as absent; it never reaches
+    // across the tree, so two same-named modules in different directories
+    // cannot credit each other.
+    const stem = basename(t).replace(TEST_FILE_RE, '');
+    const dirs = [dirname(t)];
+    if (basename(dirname(t)) === '__tests__') dirs.push(dirname(dirname(t)));
+    for (const d of dirs) {
+      for (const ext of ['.ts', '.tsx']) {
+        const candidate = join(d, stem + ext);
+        if (existsSync(candidate)) covered.add(candidate);
+      }
+    }
+  }
+
+  if (modules.length && unitTests.length === 0) {
+    add('no-unit-tests', 'high',
+      `No unit tests at all in projects/${app}`,
+      `${modules.length} core-logic module(s) ship with no Vitest suite. §5 mandates unit tests for all core logic. Add *.test.ts files covering each module's behaviour, written Given -> When -> Then, and prove each new test can fail by breaking the code once (§9.4).`,
+      modules.slice(0, 25).map((f) => ({ file: rel(f), line: 1, snippet: 'no unit test' })));
+  } else {
+    const untested = modules.filter((f) => !covered.has(f));
+    if (untested.length) {
+      add('untested-modules', 'medium',
+        `${untested.length}/${modules.length} core-logic module(s) have no unit test in projects/${app}`,
+        `No unit test directly imports these modules, so nothing but the E2E suite (and whatever reaches them transitively) exercises them — and an E2E failure localises to a page, not a function. Add a *.test.ts per module (Given -> When -> Then), and prove each new test can fail by breaking the code once (§9.4). A module that genuinely has no behaviour to assert should export only types, which takes it out of this sensor's scope.`,
+        untested.slice(0, 25).map((f) => ({ file: rel(f), line: 1, snippet: 'no unit test imports this module' })));
+    }
+  }
+
+  // --- 3. BDD formatting of unit tests. §5 requires it of every scenario, but
+  // only the E2E specs were ever checked for it.
+  const nonBdd = unitTests.filter((f) => {
+    const c = readSafe(f);
+    return !(/given/i.test(c) && /when/i.test(c) && /then/i.test(c));
+  });
+  if (nonBdd.length) {
+    add('bdd-noncompliant', 'medium',
+      `${nonBdd.length}/${unitTests.length} unit test file(s) not BDD-formatted in projects/${app}`,
+      'The BDD Specification Standard (§5) applies to unit tests, not only E2E specs: describe the Given (context), When (action) and Then (outcome) in the test names so a failure reads as a broken behaviour rather than a broken function call.',
+      nonBdd.slice(0, 25).map((f) => ({ file: rel(f), line: 1, snippet: 'no Given/When/Then' })));
+  }
+
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function walk(root, exts) {
@@ -452,6 +636,9 @@ function senseApp(app) {
   // 8. Production-bundle E2E coverage (informational; any app with Playwright).
   for (const f of senseProductionBundleTest(app, projPath)) add(f);
 
+  // 9. Unit-test-driven development (informational; any app with a src/ tree).
+  for (const f of senseUnitTests(app, projPath)) add(f);
+
   return findings;
 }
 
@@ -462,9 +649,12 @@ function senseApp(app) {
 // legitimate open work and only inform — blocking them would paint every PR
 // red until every spec is 100% implemented.
 // ---------------------------------------------------------------------------
-// 'mobile-readiness' is intentionally absent below: store-submission gaps are
-// real work, but a partially-prepared release must not block unrelated PRs.
-// They surface in the report and become work orders; they never fail the gate.
+// 'mobile-readiness' and 'unit-test-coverage' are intentionally absent below:
+// store-submission gaps and missing unit tests are real work, but neither a
+// partially-prepared release nor a coverage backlog that predates the sensor
+// must block unrelated PRs. They surface in the report and become work orders;
+// they never fail the gate. The line-level half of the unit-test lesson — an
+// assertion that cannot fail — IS blocking, as the `no-op-assertion` guardrail.
 export function isBlocking(f) {
   if (f.type === 'guardrail') return true;
   if (f.type === 'missing-artifact' && f.severity === 'high') return true; // missing spec

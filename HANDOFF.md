@@ -27,6 +27,9 @@ machine without `pwsh`.
 | **Verify** | `node scripts/harness-status.mjs --gate` | Blocking CI gate: fails on guardrail regressions + missing specs (drift only informs). Guardrails are self-tested (`harness-status.test.mjs`). |
 | **Learn** | `node scripts/harness-learn.mjs` | Enforces a closed `Lesson ⇄ Guardrail ⇄ Self-test` loop so new guardrails must trace to a documented lesson. |
 
+Sense now runs three non-blocking sensors alongside the seven blocking guardrails:
+`senseMobileRelease`, `senseProductionBundleTest`, and `senseUnitTests` (§7 below).
+
 The **full per-app suite is now Node too**: `node scripts/test-app.mjs <AppName>`
 (security audit, lint, tsc, Vitest, Playwright + a11y). `test-app.ps1` is a thin
 wrapper around it, so CI and existing docs are unchanged. This matters for agents:
@@ -38,11 +41,17 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 `.agents/AGENTS.md` §8 and `tasks/README.md` for the bring-your-own-agent contract.
 
 ## 3. Current State / Open Work
-- **Active branch:** `claude/play-store-production-readiness-weh4sp` (PR #32, open,
-  **not merged**) — Play Store readiness for mood-diner (§6), plus two pieces of
+- **Active branch:** `claude/unit-test-driven-dev-1r60jw` — the unit-test-driven
+  development layer (§7 below). Adds the `senseUnitTests` sensor, the
+  `no-op-assertion` guardrail, and the §5 red → green → prove rule. **Harness
+  only**: the only application file it touches is
+  `projects/smart-recipe-app/vitest.config.ts`.
+- **Previous branch:** `claude/play-store-production-readiness-weh4sp` (PR #32) —
+  Play Store readiness for mood-diner (§6), plus two pieces of
   harness automation: the `senseProductionBundleTest` sensor and the Node port of
   the per-app suite.
-- **Production-bundle coverage: all 5 apps, `tasks/` empty.** Every app now has a
+- **Production-bundle coverage: all 5 apps.** (`tasks/` was empty at the end of
+  that session; it now holds the 11 unit-test work orders listed in §7.) Every app now has a
   `production-bundle.spec.ts` that loads its built output at the real deploy
   subpath and fails on any response >= 400. Each was **proved by mutation** —
   breaking `base`/`basePath` makes the new test fail, restoring it makes it pass.
@@ -160,3 +169,55 @@ asset-URL test, while the Pages test correctly still passes.
 **Verify the sensor:** `node scripts/harness-status.test.mjs` covers it against
 fixture trees — it asserts every check fires on an unprepared app, none fire on a
 release-ready one, nothing fires on a web-only app, and no finding is blocking.
+
+## 7. Unit-Test-Driven Development (this session)
+
+**What was missing.** Every app had Vitest and some unit tests, but nothing made
+unit tests *drive* the work. Sensor 4 checked Given/When/Then on `*.spec.ts`
+only — i.e. the Playwright half — so a core-logic module could ship with no unit
+test at all, or with a unit test in no particular style, and the loop said
+nothing. §9.4 ("prove a new test can fail") was prose with no mechanism.
+
+**What now enforces it.**
+- `senseUnitTests` (`scripts/harness-status.mjs`) — a **non-blocking** sensor,
+  `type: 'unit-test-coverage'`, four checks: no unit tests at all; logic modules
+  no unit test imports; unit test files with no Given/When/Then; a Vitest config
+  with no explicit `include`.
+- `[guardrail: no-op-assertion]` — **blocking**, line-level: an `expect()` with
+  no matcher chained onto it, and the `typeof X = … as … typeof X` tautology PR
+  #41 shipped. It had **zero hits** across all 31 unit tests and 16 E2E specs
+  when added, so it blocks nothing that exists.
+- `.agents/AGENTS.md` §5 now states the red → green → prove order explicitly,
+  and §8 explains why this one lesson produced both a sensor and a guardrail.
+
+**Scoping decisions, so the next agent does not relitigate them.**
+- *Logic dirs only* (`lib`, `utils`, `services`, `engine`, `core`, `domain`,
+  `data`, `hooks`, `store`, `state`, plus top-level `src/*.ts`). `.tsx` is out —
+  components and routes are Playwright/axe territory, and demanding a unit test
+  per React component would describe a strategy this repo has not chosen.
+- *Type-only modules are out.* `src/types.ts` is `export type { … }` and has
+  nothing to execute. Detected by the absence of a runtime `export`.
+- *Coverage means "a unit test imports it"*, resolved against the filesystem —
+  which is how `legal-financial-rag`'s single `unit.test.ts` correctly credits
+  eleven modules. It does **not** mean well tested; depth is a line-coverage
+  question and wants a line-coverage tool.
+- `vi.mock()` deliberately does not count as coverage — stubbing a module out is
+  the opposite of exercising it.
+
+**Open backlog it found — 11 work orders in `tasks/`, all non-blocking:**
+- **15 untested logic modules**: elder-care-planner 6 (`lib/photos.ts` + all five
+  `lib/data/*`), travel-packing-app 4 (`utils/airlineBaggage`, `utils/generator`,
+  `services/db`, `services/logger`), mood-diner 2 (`lib/schemas`,
+  `data/restaurantsData`), and one each in legal-financial-rag
+  (`hooks/useAutoLock`), portfolio-hub (`schemas`) and smart-recipe-app
+  (`lib/rag/schemas`).
+- **12 of 31 unit test files are not BDD-formatted**: all 5 in mood-diner, 5 of 6
+  in travel-packing-app, and one each in legal-financial-rag and portfolio-hub.
+- **Fixed here, not deferred**: `smart-recipe-app/vitest.config.ts` had no
+  explicit `include` — the one live violation of the existing "Vitest vs.
+  Playwright Test Separation" §6 lesson. Same 2 files / 10 tests before and after.
+
+**Promotion criterion.** `unit-test-coverage` is excluded from `isBlocking` on
+purpose (§8 sensor policy). Promote it to blocking once the backlog above is
+closed — at that point it stops describing history and starts describing a
+regression.

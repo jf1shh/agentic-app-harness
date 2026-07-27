@@ -40,10 +40,11 @@ It hosts six real, deployed applications and holds every one of them to the same
 1. **Spec-Driven Development (SDD)**: Specs dictate architecture, data models, and acceptance criteria before code is written.
 2. **Contract-First Schema Validation (Zod)**: Every app defines its data models as runtime Zod schemas and infers its TypeScript types from them (`z.infer<typeof Schema>`), validating untrusted input (storage, imports) at the boundary.
 3. **Behavior-Driven Development (BDD)**: All E2E and unit scenarios follow `Given [Context] -> When [Action] -> Then [Outcome]`.
-4. **Mandatory Testing & Verification**: Each app must pass `node scripts/test-app.mjs <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility. Cross-platform, so the authoritative gate runs anywhere Node does (`.\scripts\test-app.ps1 -AppName <AppName>` wraps it).
-5. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
-6. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict` on pull requests — which **fails the build** if any app is missing a spec, Zod schema, or BDD specs. Compliance is a gate, not a claim.
-7. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see below).
+4. **Unit-Test-Driven Development**: Every change to a logic module (`src/lib`, `src/utils`, `src/services`, `src/engine`, `src/data`, …) starts with a failing Vitest case, and any behaviour a PR claims to protect must be proved by breaking the code and watching the test go red. This is sensed, not just asked for: `senseUnitTests` reports every logic module that no unit test reaches, every unit test missing `Given/When/Then`, and any Vitest config without an explicit `include` — as non-blocking work orders under `tasks/`. Its line-level half, the `no-op-assertion` guardrail, **is** blocking: an `expect()` with no matcher, or a type annotated against itself, is a test that cannot fail.
+5. **Mandatory Testing & Verification**: Each app must pass `node scripts/test-app.mjs <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility. Cross-platform, so the authoritative gate runs anywhere Node does (`.\scripts\test-app.ps1 -AppName <AppName>` wraps it).
+6. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
+7. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict` on pull requests — which **fails the build** if any app is missing a spec, Zod schema, or BDD specs. Compliance is a gate, not a claim.
+8. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see below).
 
 ---
 
@@ -62,7 +63,7 @@ LEARN      node scripts/harness-learn.mjs         → CI fails unless new guardr
 
 | Stage | Command (or `.\scripts\harness.ps1 …`) | What it does |
 |---|---|---|
-| **Sense** | `harness.ps1 status` | Deterministically scans every app for missing artifacts, contract/BDD gaps, spec drift (unchecked spec features), and anti-pattern guardrails distilled from `AGENTS.md`'s learned lessons — with file:line evidence — and writes `harness-status.json`. |
+| **Sense** | `harness.ps1 status` | Deterministically scans every app for missing artifacts, contract/BDD gaps, unit-test coverage of logic modules, spec drift (unchecked spec features), and anti-pattern guardrails distilled from `AGENTS.md`'s learned lessons — with file:line evidence — and writes `harness-status.json`. |
 | **Propose** | `harness.ps1 tasks` | Turns each finding into a self-contained, bring-your-own-agent work order under `tasks/`. Idempotent; `--prune` retires resolved orders. See [`tasks/README.md`](tasks/README.md) for the contract. |
 | **Act** | *(any agent)* | An agent claims an open task, does the work, and opens a PR. Agents **never self-merge** — a human reviews. |
 | **Verify** | `harness.ps1 verify` | A **blocking** CI gate: fails on guardrail regressions and missing specs, while drift/manual-review only inform. The guardrails are themselves self-tested (`harness-status.test.mjs`), so the gate can't silently rot. |

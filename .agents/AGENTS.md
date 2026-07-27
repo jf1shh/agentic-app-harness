@@ -21,6 +21,33 @@ As an AI agent operating within this repository, you must strictly adhere to the
 
 ## 5. Mandatory Testing & Verification (CI/CD)
 - You must write unit tests (Vitest) for all core logic.
+- **Unit-Test-Driven Development (the order of operations)**: for every change to a
+  logic module — anything under `src/lib`, `src/utils`, `src/services`, `src/engine`,
+  `src/core`, `src/domain`, `src/data`, `src/hooks`, `src/store`, `src/state`, or a
+  top-level `src/*.ts` — write the failing unit test **first**, watch it fail, then make
+  it pass. The order is not ceremony: a test written after the code is a test written
+  against the code you happened to produce, and §9.4 exists because a test that has
+  never been red is a claim about coverage rather than coverage. The three steps, and
+  what each one is for:
+  1. **Red** — add the case and run `npx vitest run` in `projects/<app>`. If it passes
+     before you have written the implementation, the test is asserting something the
+     code already does and is not the test you meant to write.
+  2. **Green** — write the smallest implementation that satisfies it.
+  3. **Prove** — for any behaviour you claim to protect, break the implementation once,
+     confirm the test goes red, restore it. State the mutation and its result in the PR
+     body (§9.4). This is the same discipline as the guardrail self-tests: the thing
+     that gates merges is itself gated.
+  Components, pages and routes (`.tsx`) are deliberately **out** of this rule — they are
+  covered by Playwright and `@axe-core`, and demanding a unit test per React component
+  would describe a testing strategy this repo has not chosen.
+- **This is sensed, not just documented.** `senseUnitTests` in `scripts/harness-status.mjs`
+  reports every logic module no unit test imports, every unit test file missing
+  Given/When/Then, and any Vitest config without an explicit `include`. It is
+  **non-blocking** (`type: 'unit-test-coverage'`) under the §8 sensor policy, because it
+  describes a backlog that predates it rather than a regression — but every finding
+  becomes a work order under `tasks/`, so "no unit test" is now a visible, claimable
+  gap instead of a silence. The line-level half of the same rule *is* blocking, as the
+  `no-op-assertion` guardrail.
 - You must write End-to-End (E2E) tests using Playwright for critical user flows.
 - **BDD Specification Standard**: All E2E and Unit test scenarios must follow Behavior-Driven Development (BDD) formatting (`Given [Context] -> When [User Action] -> Then [Expected Outcome]`).
 - You must enforce strict Accessibility (a11y) rules using `@axe-core/playwright` within the E2E tests.
@@ -208,6 +235,24 @@ As an AI agent operating within this repository, you must strictly adhere to the
   substring of another is a property of two separate JSX nodes.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
+- **Prove a New Test Can Fail** `[guardrail: no-op-assertion]`: §9.4 states the rule and the
+  evidence — PR #41 shipped `const _: typeof PlanSchema = undefined as unknown as typeof
+  PlanSchema;` as a "drift tripwire", where the annotation and the assertion are the same
+  type, so no change to `Plan` could ever make it red. The mechanically detectable half of
+  that lesson is now a guardrail, because both shapes it takes are visible in a single line.
+  (1) *An `expect()` with no matcher chained onto it* evaluates its argument and asserts
+  nothing — `expect(splitCosts(plan));` passes on every possible return value, including a
+  thrown-away one, and reads in review exactly like an assertion. (2) *A value annotated
+  `typeof X` and cast back to `typeof X`* is a tautology in type space. Both are worse than
+  absent coverage: they are false statements about what is covered, and they displace the
+  real test nobody now thinks to write. The regex requires the `expect(` call to **close on
+  the same line**, so a legitimately wrapped call whose matcher sits on a later line is out
+  of scope, and it excludes any line with a `).` matcher — verified against all 31 unit
+  tests and 16 E2E specs in the repo at the time it was added, with zero hits, so it blocks
+  nothing that exists and only catches the regression. The judgement half of the lesson
+  cannot be automated and stays prose: no regex can tell whether a test that *does* assert
+  is asserting the thing that matters, which is why §9.4 still asks you to break the code
+  and watch the test go red.
 - **Collapsing a Page Hides Whatever the Page Was Promising**: Turning a twelve-card scroll into
   disclosure sections is the right call for `projects/elder-care-planner`, and it silently
   demoted three separate guarantees on the way. (1) *A closed section says nothing*, so the
@@ -256,12 +301,25 @@ over a line can express, and that describe incomplete work rather than a regress
 
 Those belong in a **sensor** in `senseApp` with a non-blocking `type` — see
 `senseMobileRelease` (Play Store release readiness), scoped to apps with a native
-container, and `senseProductionBundleTest` (does the E2E suite ever load the built
-output?). Both are excluded from `isBlocking` on purpose, so incomplete work informs
-without painting unrelated PRs red. Sensors are still self-tested against fixture
-trees, so they cannot silently stop reporting, and they still become work orders via
-`emit-tasks.mjs`. Promote a sensor check to a guardrail only once it is
-line-detectable *and* the repo has decided it must never regress.
+container, `senseProductionBundleTest` (does the E2E suite ever load the built
+output?), and `senseUnitTests` (does a unit test reach each logic module, is it
+BDD-formatted, is Vitest scoped?). All three are excluded from `isBlocking` on
+purpose, so incomplete work informs without painting unrelated PRs red. Sensors are
+still self-tested against fixture trees, so they cannot silently stop reporting, and
+they still become work orders via `emit-tasks.mjs`. Promote a sensor check to a
+guardrail only once it is line-detectable *and* the repo has decided it must never
+regress.
+
+`senseUnitTests` is the clearest example of the split, because the same lesson
+produced one of each. "Is this logic module reached by any unit test?" is an absence
+check across the whole tree — it resolves every import specifier in every unit test
+file against the filesystem, which no `test(line)` predicate can express — so it is a
+non-blocking sensor. "Does this assertion have a matcher?" is one line, always wrong,
+and had zero hits when added — so it is the blocking `no-op-assertion` guardrail. Note
+what the sensor deliberately does **not** claim: crediting a module because a test
+imports it answers "is this reached?", not "is this well tested". Depth is a
+line-coverage question and wants a line-coverage tool; a zero-dependency scan should
+report only what it can actually see.
 
 ### Protocol: adding a learned lesson
 When you discover a reusable lesson, decide whether it is **mechanically detectable**:
