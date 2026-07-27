@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseClosetFile } from '../src/utils/fileImporter';
 
 describe('fileImporter', () => {
-  it('should parse simple markdown bullet lists with auto role/color/warmth detection', () => {
+  it('Given a closet file written as a plain markdown bullet list, When it is imported, Then each garment gets its role, colour and warmth inferred', () => {
     const mdContent = `
 # My Travel Closet
 - White Linen Buttondown
@@ -31,7 +31,7 @@ describe('fileImporter', () => {
     expect(garments[2].warmth).toBeGreaterThanOrEqual(7); // Wool sweater scores high
   });
 
-  it('should parse pipe-separated custom attributes', () => {
+  it('Given a closet file whose lines carry pipe-separated attributes, When it is imported, Then those explicit attributes are used instead of the inferred ones', () => {
     const pipeContent = `
 Navy Blazer | topper | navy | 8
 White Cotton Tee | top | white | 2

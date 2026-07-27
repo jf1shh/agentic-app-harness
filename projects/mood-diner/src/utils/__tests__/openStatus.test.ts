@@ -33,16 +33,16 @@ const mockRestaurant: Restaurant = {
 };
 
 describe('openStatus', () => {
-  it('correctly identifies open hours during operating hours', () => {
+  it('Given a restaurant trading 11 AM to 10 PM, When the time is 2 PM that day, Then it reports as open', () => {
     expect(isRestaurantOpenNow(mockRestaurant, 'Tuesday', 14)).toBe(true);
   });
 
-  it('correctly identifies closed status outside operating hours', () => {
+  it('Given a restaurant trading 11 AM to 10 PM, When the time is before opening or after closing, Then it reports as closed', () => {
     expect(isRestaurantOpenNow(mockRestaurant, 'Tuesday', 9)).toBe(false);
     expect(isRestaurantOpenNow(mockRestaurant, 'Tuesday', 23)).toBe(false);
   });
 
-  it('formats opening hours string nicely', () => {
+  it('Given a trading day with an opening-hours range, When those hours are formatted, Then they read as "11 AM - 10 PM"', () => {
     expect(formatOpeningHours(mockRestaurant, 'Tuesday')).toBe('11 AM - 10 PM');
   });
 });

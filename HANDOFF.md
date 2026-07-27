@@ -27,6 +27,10 @@ machine without `pwsh`.
 | **Verify** | `node scripts/harness-status.mjs --gate` | Blocking CI gate: fails on guardrail regressions + missing specs (drift only informs). Guardrails are self-tested (`harness-status.test.mjs`). |
 | **Learn** | `node scripts/harness-learn.mjs` | Enforces a closed `Lesson ⇄ Guardrail ⇄ Self-test` loop so new guardrails must trace to a documented lesson. |
 
+Sense runs three sensors alongside the seven blocking guardrails:
+`senseMobileRelease` and `senseProductionBundleTest` (both non-blocking) and
+`senseUnitTests`, which **blocks** as of this change set (§7 below).
+
 The **full per-app suite is now Node too**: `node scripts/test-app.mjs <AppName>`
 (security audit, lint, tsc, Vitest, Playwright + a11y). `test-app.ps1` is a thin
 wrapper around it, so CI and existing docs are unchanged. This matters for agents:
@@ -38,11 +42,16 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 `.agents/AGENTS.md` §8 and `tasks/README.md` for the bring-your-own-agent contract.
 
 ## 3. Current State / Open Work
-- **Active branch:** `claude/play-store-production-readiness-weh4sp` (PR #32, open,
-  **not merged**) — Play Store readiness for mood-diner (§6), plus two pieces of
+- **Active branch:** `claude/unit-test-driven-dev-1r60jw` — the unit-test-driven
+  development layer (§7 below). Adds the `senseUnitTests` sensor (now blocking),
+  the `no-op-assertion` guardrail, the §5 red → green → prove rule, and the
+  backfilled unit tests that closed the backlog it found: 15 modules across five
+  apps, plus 12 unit test files reformatted to BDD.
+- **Previous branch:** `claude/play-store-production-readiness-weh4sp` (PR #32) —
+  Play Store readiness for mood-diner (§6), plus two pieces of
   harness automation: the `senseProductionBundleTest` sensor and the Node port of
   the per-app suite.
-- **Production-bundle coverage: all 5 apps, `tasks/` empty.** Every app now has a
+- **Production-bundle coverage: all 5 apps.** Every app now has a
   `production-bundle.spec.ts` that loads its built output at the real deploy
   subpath and fails on any response >= 400. Each was **proved by mutation** —
   breaking `base`/`basePath` makes the new test fail, restoring it makes it pass.
@@ -74,6 +83,8 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
   guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
 - Consider making the Verify gate `--strict` (drift-blocking) once all specs are
   reconciled, and adding guardrails for any new recurring regression.
+- The one open work order is `elder-care-planner-spec-drift` (5 unchecked spec
+  features). Unit-test coverage is complete and gated; see §7.
 - Play Store: §6 findings are all cleared. What remains is human work — fill the
   privacy-policy placeholders, get it reviewed, produce store listing screenshots,
   and confirm the first real `gradlew bundleRelease` in CI actually succeeds.
@@ -160,3 +171,116 @@ asset-URL test, while the Pages test correctly still passes.
 **Verify the sensor:** `node scripts/harness-status.test.mjs` covers it against
 fixture trees — it asserts every check fires on an unprepared app, none fire on a
 release-ready one, nothing fires on a web-only app, and no finding is blocking.
+
+## 7. Unit-Test-Driven Development (this session)
+
+**What was missing.** Every app had Vitest and some unit tests, but nothing made
+unit tests *drive* the work. Sensor 4 checked Given/When/Then on `*.spec.ts`
+only — i.e. the Playwright half — so a core-logic module could ship with no unit
+test at all, or with a unit test in no particular style, and the loop said
+nothing. §9.4 ("prove a new test can fail") was prose with no mechanism.
+
+**What now enforces it.**
+- `senseUnitTests` (`scripts/harness-status.mjs`) — a **non-blocking** sensor,
+  `type: 'unit-test-coverage'`, four checks: no unit tests at all; logic modules
+  no unit test imports; unit test files with no Given/When/Then; a Vitest config
+  with no explicit `include`.
+- `[guardrail: no-op-assertion]` — **blocking**, line-level: an `expect()` with
+  no matcher chained onto it, and the `typeof X = … as … typeof X` tautology PR
+  #41 shipped. It had **zero hits** across all 31 unit tests and 16 E2E specs
+  when added, so it blocks nothing that exists.
+- `.agents/AGENTS.md` §5 now states the red → green → prove order explicitly,
+  and §8 explains why this one lesson produced both a sensor and a guardrail.
+
+**Scoping decisions, so the next agent does not relitigate them.**
+- *Logic dirs only* (`lib`, `utils`, `services`, `engine`, `core`, `domain`,
+  `data`, `hooks`, `store`, `state`, plus top-level `src/*.ts`). `.tsx` is out —
+  components and routes are Playwright/axe territory, and demanding a unit test
+  per React component would describe a strategy this repo has not chosen.
+- *Type-only modules are out.* `src/types.ts` is `export type { … }` and has
+  nothing to execute. Detected by the absence of a runtime `export`.
+- *Coverage means "a unit test imports it"*, resolved against the filesystem —
+  which is how `legal-financial-rag`'s single `unit.test.ts` correctly credits
+  eleven modules. It does **not** mean well tested; depth is a line-coverage
+  question and wants a line-coverage tool.
+- `vi.mock()` deliberately does not count as coverage — stubbing a module out is
+  the opposite of exercising it.
+
+**The backlog it found, and what has been closed.** It opened at 11 work orders
+(15 untested logic modules, 12 non-BDD unit test files, 1 unscoped Vitest
+config). **Three remain**, all non-blocking:
+
+| Closed | How |
+|---|---|
+| `legal-financial-rag` `hooks/useAutoLock` | 13 BDD cases, fake timers; 7 mutations |
+| `portfolio-hub` `schemas` | 13 cases incl. the real dataset; 4 mutations |
+| `mood-diner` `lib/schemas` + `data/restaurantsData` | 26 cases incl. the real dataset; 8 mutations |
+| `smart-recipe-app` `lib/rag/schemas` | 13 cases incl. an embed-corpus drift tripwire; 6 mutations |
+| All 12 non-BDD unit test files | Retitled Given → When → Then across 4 apps |
+| `smart-recipe-app` unscoped Vitest `include` | Set explicitly; same 2 files / 10 tests before and after |
+
+**The backlog is closed.** `tasks/` holds only the pre-existing
+`elder-care-planner-spec-drift` order. Also covered since: travel-packing-app's
+four modules (`utils/airlineBaggage` 20 cases, `utils/generator` 32,
+`services/db` 10, `services/logger` 9) and elder-care-planner's six
+(`lib/data/costOfCare` 26, `benefits` 8, `expenseCategories` 7,
+`feeStructures` 10, `questionsToAsk` 10, `lib/photos` 31).
+
+**`unit-test-coverage` is now BLOCKING.** That was the promotion criterion, and
+it is met: the type is in `isBlocking`, so adding a logic module without a unit
+test fails `--gate` in the PR that adds it. Verified by dropping a throwaway
+`src/utils/tempProbe.ts` into portfolio-hub — gate exit 1 with it, 0 without.
+To relax it (a spike, a vendored module), remove the type from `isBlocking`
+rather than deleting the sensor, so the finding stays visible while it stops
+blocking; `harness-status.test.mjs` case (i) asserts the current stance and must
+be flipped deliberately alongside it.
+
+**Three things the next agent should know, none visible in a diff.**
+
+1. *The guardrail false-positived on its author's own test within the hour.* A
+   chain can be wrapped two ways, and `expect(Schema.parse(x))` with
+   `.toEqual(y);` on the next line closes its call and is a complete statement by
+   shape — indistinguishable from `expect(x);` except for the semicolon, which
+   the regex now requires. "Zero hits across the repo when added" proved only
+   that nobody had yet written a shape the rule mishandled. The §6 lesson has
+   been corrected to say so; do not read the original "verified, zero hits"
+   framing as a guarantee for any future line-level rule.
+2. *The `const { key: _unused, ...rest }` omit idiom does not lint here.* Every
+   app runs `@typescript-eslint/no-unused-vars` with no `^_` ignore pattern and
+   `--max-warnings 0`, so the standard way of building a "missing one field"
+   fixture fails the suite — and `npx vitest run` passes throughout, so it only
+   surfaces at `test-app.mjs`. The replacement is a local `without(obj, key)`
+   helper (see any of the three new schema tests); note it needs
+   `{ ...(obj as Record<string, unknown>) }`, because spreading a bare
+   `T extends object` into an index-signature type is a TS2322. Both mistakes
+   were made and fixed in this change set.
+3. *`travel-packing-app/__tests__/packingChecklist.test.ts` tests nothing.* It
+   imports only a type, rebuilds the essentials list and the progress formula in
+   the test body, and asserts against its own arithmetic — the real list lives
+   inline in `src/components/PackingChecklist.tsx`. It is now BDD-formatted, so
+   the sensor is satisfied and the file is still hollow. This is the §9.4 defect
+   in a shape the `no-op-assertion` guardrail cannot see, because the assertions
+   have real matchers and only their *subject* is wrong. Fixing it means
+   extracting the essentials builder and the percentage calculation out of the
+   component into a logic module — a structural change deliberately not smuggled
+   into a formatting sweep. A header comment in the file says all of this.
+
+**Promotion criterion.** `unit-test-coverage` is excluded from `isBlocking` on
+purpose (§8 sensor policy). Promote it to blocking once the backlog above is
+closed — at that point it stops describing history and starts describing a
+regression. Two apps stand between here and that flip.
+
+**Next steps, in the order they are worth doing.**
+1. `travel-packing-app`'s four modules — `utils/generator` and
+   `utils/airlineBaggage` are real behaviour; `services/db` and
+   `services/logger` are thin but sit on persistence.
+2. `elder-care-planner`'s six — `lib/photos.ts` is behaviour (the IndexedDB
+   downscaling path from the §6 binary-attachment lesson); the five `lib/data/*`
+   modules are data tables, so the tests are formulaic: parse every row through
+   its schema and assert the domain invariants the "Cite Confidence" lesson
+   already established (every `confidence` tag is one of the declared three,
+   every state resolves or falls back to the national median *and says so*).
+3. Extract and test the packing-checklist logic (point 2 above).
+4. Flip `unit-test-coverage` to blocking in `isBlocking`, and only then consider
+   line-coverage thresholds — a threshold set after the backlog closes can come
+   from a real measurement instead of a guess.

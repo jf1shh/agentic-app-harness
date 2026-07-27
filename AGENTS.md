@@ -27,10 +27,14 @@
 4. **Work in the right directory.** This is a monorepo; apps live under [`projects/`](projects/). Scope
    every command and edit to the correct `projects/<app-name>`.
 
-5. **Testing is mandatory.** Unit tests (Vitest) for all core logic; Playwright E2E for critical flows;
-   `@axe-core/playwright` accessibility. All test scenarios use BDD `Given → When → Then`. A feature is
-   not complete until `node scripts/test-app.mjs <AppName>` passes (security, lint, type-check,
-   Vitest, Playwright + a11y).
+5. **Testing is mandatory, and unit tests come first.** For any change to a logic module
+   (`src/lib`, `src/utils`, `src/services`, `src/engine`, `src/data`, …) write the failing Vitest
+   case **first**, watch it fail, then make it pass — and prove it can fail by breaking the code
+   once. Playwright E2E for critical flows; `@axe-core/playwright` accessibility. All test
+   scenarios — unit *and* E2E — use BDD `Given → When → Then`. A feature is not complete until
+   `node scripts/test-app.mjs <AppName>` passes (security, lint, type-check, Vitest, Playwright +
+   a11y). `node scripts/harness-status.mjs` reports every logic module no unit test reaches; see
+   `.agents/AGENTS.md` §5.
 
 6. **Never self-merge.** An agent may open a PR but a human reviews and merges. See the Sense → Propose →
    Act → Verify → Learn loop in `.agents/AGENTS.md` §8.

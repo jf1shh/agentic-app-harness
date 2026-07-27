@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { sanitizeInput, sanitizeObject } from '../securitySanitizer';
 
 describe('Security Input Sanitizer Suite', () => {
-  it('strips script tags and neutralizes javascript: protocols', () => {
+  it('Given input carrying a script tag, When it is sanitized, Then the script is stripped and the legitimate text survives', () => {
     const maliciousInput = '<script>alert("XSS")</script>Delicious Bistro';
     const sanitized = sanitizeInput(maliciousInput);
 
@@ -11,7 +11,7 @@ describe('Security Input Sanitizer Suite', () => {
     expect(sanitized).toContain('Delicious Bistro');
   });
 
-  it('neutralizes inline event handlers like onerror and onload', () => {
+  it('Given an img tag with an inline onerror handler, When it is sanitized, Then the handler is removed and the markup is escaped', () => {
     const maliciousImage = '<img src="x" onerror="alert(1)" />';
     const sanitized = sanitizeInput(maliciousImage);
 
@@ -19,7 +19,7 @@ describe('Security Input Sanitizer Suite', () => {
     expect(sanitized).toContain('&lt;img');
   });
 
-  it('recursively sanitizes nested objects', () => {
+  it('Given a nested payload with malicious values in fields and arrays, When the object is sanitized, Then every level is cleaned', () => {
     const maliciousPayload = {
       name: '<script>doBadThing()</script>Gary Danko',
       address: '800 North Point St',
