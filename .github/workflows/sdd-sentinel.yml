@@ -13,7 +13,13 @@ permissions:
 jobs:
   sdd-agent-review:
     name: SDD Spec & Quality Sentinel Audit
-    runs-on: windows-latest
+    # Ubuntu, not Windows. Every gate below is zero-dependency Node ESM. The one
+    # step that needed PowerShell — the spec & schema coverage audit — was a
+    # PowerShell re-implementation of sensors this repo already owns in Node;
+    # it is now validate-specs.mjs presenting those sensors' findings, and the
+    # .ps1 is a thin wrapper. Nothing here requires a Windows runner, and
+    # ci.yml, deploy-pages.yml and android-release.yml already run on Linux.
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
@@ -37,19 +43,14 @@ jobs:
       # suite runs in parallel in the Harness Testing Suite workflow (ci.yml) — this
       # job deliberately does not duplicate it.
       - name: Install RAG eval dependencies
-        shell: pwsh
-        run: |
-          Push-Location projects/legal-financial-rag
-          npm install --include=dev
-          Pop-Location
+        working-directory: projects/legal-financial-rag
+        run: npm install --include=dev
 
       - name: Harness Guardrail Self-Test (verify the verifier)
-        shell: pwsh
-        run: node .\scripts\harness-status.test.mjs
+        run: node scripts/harness-status.test.mjs
 
       - name: Blast-Radius Self-Test (verify the verifier)
-        shell: pwsh
-        run: node .\scripts\check-enum-blast-radius.test.mjs
+        run: node scripts/check-enum-blast-radius.test.mjs
 
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
@@ -57,26 +58,21 @@ jobs:
       # change needed, because ..." stays a legitimate answer.
       - name: Blast-Radius Gate (widened types must visit their consumers)
         if: github.event_name == 'pull_request'
-        shell: pwsh
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node .\scripts\check-enum-blast-radius.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node scripts/check-enum-blast-radius.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
-        shell: pwsh
-        run: node .\scripts\harness-learn.mjs
+        run: node scripts/harness-learn.mjs
 
       - name: Harness Verify Gate (blocks on guardrail regressions & missing specs)
-        shell: pwsh
-        run: node .\scripts\harness-status.mjs --gate
+        run: node scripts/harness-status.mjs --gate
 
       - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
-        shell: pwsh
-        run: node .\scripts\rag-eval-gate.mjs
+        run: node scripts/rag-eval-gate.mjs
 
       - name: Run Spec & Schema Coverage Audit
-        shell: pwsh
-        run: .\scripts\validate-specs.ps1 -Strict
+        run: node scripts/validate-specs.mjs --strict
 
       - name: Post SDD Sentinel PR Review Comment
         if: success() && github.event_name == 'pull_request'
@@ -86,7 +82,7 @@ jobs:
             const body = `### 🤖 SDD Sentinel — Spec & Quality Gate Report
 
             ✅ **All required spec & quality gates passed on this PR.**
-            - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
+            - **Spec & schema coverage audit** (\`validate-specs.mjs --strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
             - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), and the blocking \`verify\` gate all passed.
             - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 

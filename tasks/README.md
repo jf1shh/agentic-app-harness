@@ -27,7 +27,7 @@ findings** — the regressions we've already paid for:
 | `guardrail` | **yes** | A documented anti-pattern was reintroduced. |
 | `missing-artifact` (missing spec) | **yes** | Hard SDD mandate. |
 | `drift` (unchecked spec features) | no — informs | Legitimate open work; tracked as a task. |
-| `contract` / `test-coverage` | no here* | Already enforced by `validate-specs.ps1 -Strict`. |
+| `contract` / `test-coverage` | no here* | Already enforced by `validate-specs.mjs --strict`. |
 | `manual-review` | no — informs | Needs human judgement. |
 
 \* The guardrails are also self-tested: `scripts/harness-status.test.mjs`

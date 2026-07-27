@@ -5,10 +5,10 @@
 // so the thing that gates merges is itself gated. Zero dependencies; run with:
 //   node scripts/harness-status.test.mjs
 
-import { GUARDRAILS, senseMobileRelease, senseProductionBundleTest, isBlocking } from './harness-status.mjs';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { GUARDRAILS, scanGuardrails, senseMobileRelease, senseProductionBundleTest, isBlocking } from './harness-status.mjs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // For each guardrail id: a line that MUST trip it, and one that MUST NOT.
@@ -252,6 +252,134 @@ try {
   if (!failures) console.log('✓ production-bundle sensor (fires on dev-only, silent when the build is served, non-blocking)');
 } finally {
   rmSync(tmp2, { recursive: true, force: true });
+}
+
+// ---------------------------------------------------------------------------
+// Single-pass scanner equivalence.
+//
+// scanGuardrails() walks an app once and reads each file once, instead of
+// re-walking and re-reading per guardrail (4.4x fewer reads on this repo). That
+// is only worth having if it is a *pure* refactor, so this asserts it against
+// the naive implementation it replaced: same findings, same order, same
+// evidence, same line numbers — on a fixture built to stress exactly the cases
+// where a single pass could diverge.
+// ---------------------------------------------------------------------------
+function naiveScan(projPath, guardrails) {
+  const out = [];
+  for (const g of guardrails) {
+    if (g.appliesTo && !g.appliesTo(projPath)) continue;
+    const evidence = [];
+    for (const f of walkFixture(projPath, g.exts)) {
+      if (g.excludePath && g.excludePath(f)) continue;
+      const lines = readFileSync(f, 'utf8').split(/\r?\n/);
+      for (let i = 0; i < lines.length; i++) {
+        if (g.test(lines[i])) evidence.push({ file: f, line: i + 1, snippet: lines[i].trim().slice(0, 160) });
+      }
+    }
+    if (evidence.length) out.push({ id: g.id, evidence });
+  }
+  return out;
+}
+
+// Mirrors harness-status.mjs's walk() traversal order (stack-based, leaf-filtered).
+function walkFixture(root, exts) {
+  const out = [];
+  const stack = [root];
+  while (stack.length) {
+    const dir = stack.pop();
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, e.name);
+      if (e.isDirectory()) stack.push(full);
+      else if (exts.includes(extname(e.name))) out.push(full);
+    }
+  }
+  return out;
+}
+
+const tmp3 = mkdtempSync(join(tmpdir(), 'harness-scan-'));
+try {
+  // A tree that exercises the divergence risks: guardrails overlapping on one
+  // extension, one line tripping two guardrails at once, an excludePath'd file,
+  // a scoped (appliesTo) guardrail, multiple hits per file, and nesting so
+  // traversal order actually matters.
+  const app = join(tmp3, 'app');
+  mkdirSync(join(app, 'src', 'nested', 'deep'), { recursive: true });
+  mkdirSync(join(app, 'e2e'), { recursive: true });
+
+  writeFileSync(join(app, 'index.html'),
+    '<meta name="viewport" content="width=device-width, user-scalable=no">\n'
+    + '<script>navigator.serviceWorker.register("/sw.js")</script>\n');
+
+  // Two guardrails (explicit-any, responsive-grid) on one file; line 3 is clean.
+  writeFileSync(join(app, 'src', 'a.ts'), [
+    'let x: any = 1;',
+    "const s = { gridTemplateColumns: '1fr 1fr' };",
+    'const ok: string = "fine";',
+    'const y = z as any;',
+  ].join('\n'));
+
+  // One line tripping explicit-any AND pbkdf2-salt-buffer simultaneously.
+  writeFileSync(join(app, 'src', 'nested', 'b.tsx'),
+    'const k = derive({ salt: saltBytes.buffer } as any);\n');
+
+  writeFileSync(join(app, 'src', 'nested', 'deep', 'c.ts'), 'let deep: any;\n');
+  writeFileSync(join(app, 'src', 'styles.css'), 'grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));\n');
+
+  // excludePath: explicit-any must ignore e2e/ and *.test.ts.
+  writeFileSync(join(app, 'e2e', 'flow.spec.ts'), 'const ignored: any = 1;\n');
+  writeFileSync(join(app, 'src', 'a.test.ts'), 'const alsoIgnored: any = 1;\n');
+
+  // appliesTo: capacitor-absolute-base only fires with a native container.
+  writeFileSync(join(app, 'vite.config.ts'), "export default { base: '/agentic-app-harness/app/' };\n");
+
+  for (const [label, native] of [['web-only app', false], ['native-container app', true]]) {
+    if (native) mkdirSync(join(app, 'android'), { recursive: true });
+
+    const fast = scanGuardrails(app).map((r) => ({ id: r.guardrail.id, evidence: r.evidence }));
+    const slow = naiveScan(app, GUARDRAILS);
+
+    // Compare ids+order first so a mismatch reports something readable.
+    const fastIds = fast.map((r) => r.id).join(',');
+    const slowIds = slow.map((r) => r.id).join(',');
+    if (fastIds !== slowIds) {
+      console.error(`✗ scanGuardrails (${label}): finding set/order differs\n    single-pass: ${fastIds}\n    naive:       ${slowIds}`);
+      failures++;
+    } else {
+      // Evidence: same count, same line numbers, same snippets, same order.
+      // (Paths differ by design — scanGuardrails returns repo-relative.)
+      for (let i = 0; i < fast.length; i++) {
+        const f = fast[i].evidence.map((e) => `${e.line}:${e.snippet}`).join('|');
+        const s = slow[i].evidence.map((e) => `${e.line}:${e.snippet}`).join('|');
+        if (f !== s) {
+          console.error(`✗ scanGuardrails (${label}): evidence differs for '${fast[i].id}'\n    single-pass: ${f}\n    naive:       ${s}`);
+          failures++;
+        }
+      }
+    }
+
+    // The fixture must actually be exercising something, or this proves nothing.
+    if (fast.length < 4) {
+      console.error(`✗ scanGuardrails (${label}): fixture only tripped ${fast.length} guardrail(s); it is not stressing the scanner`);
+      failures++;
+    }
+    if (native && !fastIds.includes('capacitor-absolute-base')) {
+      console.error('✗ scanGuardrails: appliesTo guardrail did not fire on a native-container fixture'); failures++;
+    }
+    if (!native && fastIds.includes('capacitor-absolute-base')) {
+      console.error('✗ scanGuardrails: appliesTo guardrail fired on a web-only fixture'); failures++;
+    }
+  }
+
+  // excludePath must have held: no evidence may come from e2e/ or *.test.ts.
+  const anyEvidence = scanGuardrails(app).flatMap((r) => r.evidence).map((e) => e.file);
+  if (anyEvidence.some((f) => /[\\/]e2e[\\/]|\.test\.ts$/.test(f))) {
+    console.error(`✗ scanGuardrails: excludePath ignored — evidence from ${anyEvidence.filter((f) => /[\\/]e2e[\\/]|\.test\.ts$/.test(f)).join(', ')}`);
+    failures++;
+  }
+
+  if (!failures) console.log('✓ single-pass scanner (finding order, evidence order, excludePath and appliesTo all match the naive scan)');
+} finally {
+  rmSync(tmp3, { recursive: true, force: true });
 }
 
 if (failures) {

@@ -29,18 +29,30 @@ const flag = (n) => argv.includes(`--${n}`);
 const valueOf = (n) => { const i = argv.indexOf(`--${n}`); return i !== -1 ? argv[i + 1] : null; };
 const appName = valueOf('app') || argv.find((a) => !a.startsWith('--'));
 
+const availableApps = readdirSync(projectsDir, { withFileTypes: true })
+  .filter((e) => e.isDirectory()).map((e) => e.name);
+
 if (!appName) {
   console.error('Usage: node scripts/test-app.mjs <AppName>');
-  console.error(`Available: ${readdirSync(projectsDir, { withFileTypes: true })
-    .filter((e) => e.isDirectory()).map((e) => e.name).join(', ')}`);
+  console.error(`Available: ${availableApps.join(', ')}`);
   process.exit(2);
 }
 
-const appPath = join(projectsDir, appName);
-if (!existsSync(appPath)) {
-  console.error(`${C.red}Error: project '${appName}' does not exist at ${appPath}${C.reset}`);
+// Resolve the app by exact membership in projects/, NOT by testing whether
+// join(projectsDir, appName) happens to exist. `existsSync` is true for a
+// traversal too: `--app ../..` resolves above the repo, passes an existence
+// check, and then clean() runs `rmSync(<that dir>/dist, { recursive: true,
+// force: true })` — deleting dist/, build/, coverage/ and .next/ OUTSIDE the
+// repo before `npm install` and the test commands run there under `shell: true`.
+// An allow-list drawn from the real directory listing makes traversal, absolute
+// paths and shell metacharacters unrepresentable rather than merely unlikely.
+if (!availableApps.includes(appName)) {
+  console.error(`${C.red}Error: '${appName}' is not a project in projects/.${C.reset}`);
+  console.error(`Available: ${availableApps.join(', ')}`);
   process.exit(1);
 }
+
+const appPath = join(projectsDir, appName);
 
 // --- cleanup (mirrors clean-app.ps1) ---------------------------------------
 const CLEAN_TARGETS = ['.next', '.next-prod', 'dist', 'build', '.vite', 'playwright-report', 'test-results', 'coverage', 'tsconfig.tsbuildinfo'];
@@ -111,9 +123,19 @@ console.log(`${C.cyan}=========================================${C.reset}`);
 
 clean('pre-build');
 
-// Check the actual test-runner binary, not just node_modules: a top-level install
-// can leave node_modules present while the app's devDependencies are missing.
-if (!existsSync(join(appPath, 'node_modules', '@playwright', 'test'))) {
+// Check the test runner's ENTRY POINT, not just node_modules and not just the
+// package directory. Three states look alike on disk and only the last one works:
+//   1. no node_modules at all;
+//   2. node_modules present from a top-level install, app devDependencies absent;
+//   3. node_modules/@playwright/test present but EMPTY — an interrupted or
+//      partial install leaves the directory behind with nothing in it.
+// (3) satisfied the old existsSync(<dir>) check, so the install was skipped and
+// lint, tsc, Vitest and Playwright all failed at once with errors that read like
+// code defects (an ESLint config migration notice, ERR_MODULE_NOT_FOUND) rather
+// than "your dependencies are not installed". Resolving package.json proves the
+// package is actually usable, which is the property this guard is claiming.
+const playwrightEntry = join(appPath, 'node_modules', '@playwright', 'test', 'package.json');
+if (!existsSync(playwrightEntry)) {
   // `npm install`, not `npm ci`: with the vite 8 / rolldown toolchain `npm ci`
   // can skip a platform's optional native binary, which then fails at build time.
   step('Install dependencies', 'npm install');

@@ -51,6 +51,7 @@
 ```
 node scripts/harness-status.mjs --gate   # blocking gate: guardrails + missing specs
 node scripts/harness-learn.mjs           # lesson ⇄ guardrail ⇄ self-test traceability
+node scripts/validate-specs.mjs --strict # spec/README/Zod/BDD coverage audit
 node scripts/test-app.mjs <AppName>      # full per-app suite (security, lint, tsc, Vitest, Playwright)
 ```
 

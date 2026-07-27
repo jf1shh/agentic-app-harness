@@ -29,7 +29,7 @@ It hosts six real, deployed applications and holds every one of them to the same
   - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3009).
   - `projects/elder-care-planner`: Offline-first elder care cost, runway and family cost-sharing planner (Port 3011).
 - `specs/`: Markdown specifications for every application. These are the **single source of truth**.
-- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).
+- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`, plus thin `test-app.ps1` / `validate-specs.ps1` wrappers), and the agentic-loop core, the spec audit and the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `validate-specs.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).
 - `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).
 - `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo.
 
@@ -42,7 +42,7 @@ It hosts six real, deployed applications and holds every one of them to the same
 3. **Behavior-Driven Development (BDD)**: All E2E and unit scenarios follow `Given [Context] -> When [Action] -> Then [Outcome]`.
 4. **Mandatory Testing & Verification**: Each app must pass `node scripts/test-app.mjs <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility. Cross-platform, so the authoritative gate runs anywhere Node does (`.\scripts\test-app.ps1 -AppName <AppName>` wraps it).
 5. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
-6. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict` on pull requests — which **fails the build** if any app is missing a spec, Zod schema, or BDD specs. Compliance is a gate, not a claim.
+6. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.mjs --strict` on pull requests — which **fails the build** if any app is missing a spec, Zod schema, or BDD specs. Compliance is a gate, not a claim.
 7. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see below).
 
 ---

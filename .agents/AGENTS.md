@@ -47,7 +47,7 @@ As an AI agent operating within this repository, you must strictly adhere to the
 - **Next.js Static Export Server Action Scoping**: In Next.js static exports (`output: 'export'`), Node filesystem calls and Server Actions (`'use server'`) fail static page generation during `next build`. Refactor server actions to browser-compatible storage (`localStorage`) and import functions directly inside `'use client'` components rather than passing functions as props across server/client component boundaries.
 - **PWA Service Worker Subpath Scoping** `[guardrail: root-service-worker]`: In Vite/React PWA applications deployed under subfolder paths on static hosts like GitHub Pages (`/agentic-app-harness/mood-diner/`), registering root `/sw.js` or caching root `/index.html` causes 404 cache failures. Use dynamic `self.location.pathname` in `sw.js` and `window.location.pathname + 'sw.js'` in `index.html` to guarantee subpath compatibility.
 - **Node WebCrypto TypedArray Buffer Normalization** `[guardrail: pbkdf2-salt-buffer]`: When deriving WebCrypto keys via `subtle.deriveKey` with `PBKDF2`, passing `saltBytes.buffer` as `salt` fails in Node.js 20 WebCrypto bindings with `TypeError: 'salt' of 'Pbkdf2Params' is not instance of ArrayBuffer`. Pass a fresh `new Uint8Array(saltBytes)` cast as `BufferSource` to guarantee cross-platform compatibility across both browser and Node.js WebCrypto runtimes.
-- **Harness CI Dependency Guarding**: In monorepo CI scripts where a top-level `npm install` runs before subproject test scripts, subproject `test-app.ps1` scripts must check for specific test runner binaries (e.g., `if (-Not (Test-Path "node_modules/@playwright/test"))`) rather than generic `if (-Not (Test-Path "node_modules"))` to ensure devDependencies are installed even if `node_modules` already exists.
+- **Harness CI Dependency Guarding**: In monorepo CI scripts where a top-level `npm install` runs before subproject test scripts, subproject test scripts must check for specific test runner binaries (e.g. `node_modules/@playwright/test`) rather than generic `node_modules` to ensure devDependencies are installed even if `node_modules` already exists. **Check the package's entry point, not its directory** — an interrupted install leaves the package *directory* behind while it is empty, which satisfies a `Test-Path`/`existsSync` on the directory and skips the install anyway. Resolve `node_modules/@playwright/test/package.json`, which is the property the guard is actually claiming. This was found the expensive way: an empty `@playwright/test/` made lint, type-check, Vitest and Playwright all fail at once with errors that read like code defects (an ESLint plugin `TypeError`, `ERR_MODULE_NOT_FOUND` from a *different* package), and nothing in the output said "your dependencies are not installed." When several unrelated gates fail simultaneously on a tree that is supposed to be green, suspect the install before the code: `find node_modules -mindepth 1 -maxdepth 2 -type d -empty` names the damage in one line, and `rm -rf node_modules && npm install` fixed every one of those failures without a source change.
 - **Responsive Grid Layouts** `[guardrail: responsive-grid]`: Apps must render on phones. Never ship a fixed multi-track **inline** grid — `style={{ gridTemplateColumns: '1fr 1fr' }}` (or `'1fr 2fr'`, `'200px 1fr'`, …) — because inline styles cannot be overridden by media queries, so the grid never collapses on narrow screens. Never use a fixed `minmax()` basis of 300px or more, which overflows phone viewports. Instead use `repeat(auto-fit, minmax(min(BASIS, 100%), 1fr))` (collapses gracefully and never overflows), or a responsive class with a `@media` breakpoint. A `grid-template-columns` value in a CSS file is exempt from the guardrail because it can be handled by an accompanying media query — but it still must actually be handled.
 - **Test the Artifact You Ship, at Every Origin It Ships To**: A Playwright suite pointed only at the dev server proves nothing about the production bundle — the dev server rewrites away exactly the deploy-specific configuration (`base`, asset URLs, minified chunk names) that breaks a real deployment. An app that ships to more than one origin needs a smoke test that loads the **built** output at **each** origin, and asserts on failed requests (`response.status() >= 400`), not just on rendered text. Serve each origin on its **own port**: one server answering several mounts will resolve an asset URL pinned to the wrong origin and pass on an app that is broken in production. Prove such a test works by mutation — reintroduce the bug and confirm the test actually fails — because a smoke test that silently passes on a broken build is worse than none. See `projects/mood-diner/e2e/production-bundle.spec.ts`. This is now mechanically sensed: `senseProductionBundleTest` reports any app whose Playwright `webServer` entries only ever run a dev server, and `scripts/serve-dist.mjs` is the shared server so adopting it is a config line rather than new code. The stand-in server must **resolve URLs the way the real host does** — GitHub Pages serves `/recipes` from `recipes.html`, and a Next.js static export prefetches exactly those extensionless paths, so a server that only tried the literal path reported four 404s the live site never produces. A smoke test that cries wolf gets muted, which is worse than not having one; but resolve only the *requested* path, never a blanket SPA fallback to the root `index.html`, or a misrouted asset URL silently returns HTML and the test passes on a broken build.
 - **A Dependency Bump Is Only Safe If Its Peers Move With It**: Single-package automated bumps break a
@@ -207,6 +207,56 @@ As an AI agent operating within this repository, you must strictly adhere to the
   already being done here and was not enough. Not tagged as a guardrail: whether one label is a
   substring of another is a property of two separate JSX nodes.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
+- **One Rule, One Implementation — a Second Copy in Another Language Drifts Silently**:
+  `validate-specs.ps1` re-implemented four mandates (spec present, README present, Zod in
+  `src/`, Given/When/Then in every `*.spec.ts`) that `harness-status.mjs` already owned as
+  sensors 1-4 — the same regexes, written twice. Nothing was failing, which is the point: two
+  checkers of one rule set can disagree about whether an app complies and each looks correct
+  read on its own, so the drift surfaces as a contradiction between two green reports rather
+  than as a red build. The duplicate also had a second cost that was invisible from inside it:
+  being PowerShell, it was the *sole* reason the SDD Sentinel job ran on `windows-latest`, long
+  after the rest of the loop had been ported to Node precisely so no gate needed `pwsh` — and
+  §5's claim that "you do not need PowerShell for any gate" was, strictly, false while it
+  existed. The rule: a reporting script must **present** the sensors' findings, never re-detect
+  them; select the findings it cares about **by id, not by `type`** (`test-coverage` is emitted
+  by the production-bundle sensor too, which is a different mandate); and keep the `.ps1` as a
+  thin wrapper so existing muscle memory and CI steps survive the port. Not tagged as a
+  guardrail: "these two functions decide the same thing" is a cross-file semantic property, and
+  the two copies shared no line a regex could match.
+- **`existsSync` Is Not an Allow-List**: `test-app.mjs` resolved its app argument with
+  `join(projectsDir, appName)` and accepted it if `existsSync` returned true. That is an
+  existence check wearing a validation costume: `--app ../..` resolves *above the repo*, exists,
+  and is therefore accepted — after which `clean()` runs `rmSync(<that dir>/dist, { recursive:
+  true, force: true })` over `dist`, `build`, `coverage` and `.next`, then `npm install` and the
+  test commands execute there under `shell: true`. Nothing malicious is needed to reach it; a
+  mistyped relative path from a script is enough, and the destructive step runs before any
+  output would hint at the wrong directory. When a user-supplied string selects one of a known
+  set, **enumerate the real set and require exact membership** — `readdirSync(projectsDir)`
+  then `includes(appName)`. An allow-list makes traversal, absolute paths and shell
+  metacharacters *unrepresentable* rather than individually defended against, which is why it
+  beats sanitising the input. The same reasoning applies one layer down: contain a served path
+  by comparing whole path **segments** (`p === root || p.startsWith(root + sep)`), never a raw
+  string prefix, or a sibling directory whose name merely starts with the root's name
+  (`dist-secret/` against `dist/`) falls inside the boundary. Not tagged as a guardrail:
+  whether a given string is user-controlled is not visible in the line that consumes it.
+- **A Fan-Out Scanner Must Walk Once, and a Refactor of a Verifier Needs an Equivalence Test**:
+  The guardrail scan ran `walk(projPath, g.exts)` once *per guardrail*, re-walking the tree and
+  re-reading every file for every rule whose extensions it matched. Because the guardrails
+  overlap heavily on `.ts`/`.tsx`, that measured 954 reads of 216 unique files across 36 tree
+  walks — 4.4x amplification, at O(guardrails x files). The cost is structural and points the
+  wrong way: every new guardrail taxes every existing app, in a harness whose entire thesis is
+  that it accumulates rules over time. Walk the union of the extensions once, read each file
+  once, and offer each line only to the rules that apply to it (measured 35.3ms -> 25.5ms here;
+  the constant matters less than removing the multiplier). The second half of the lesson is how
+  to land it safely: a verifier is the thing everything else is trusted against, so a refactor
+  of one must be proved **equivalent**, not merely still-green. Keep the naive implementation in
+  the self-test and assert the fast path matches it — same findings, same order, same evidence,
+  same line numbers — on a fixture built to stress exactly where a single pass could diverge
+  (overlapping extensions, one line tripping two rules, an `excludePath`d file, a scoped
+  `appliesTo` rule, nested directories). Then prove that test can fail: dropping `excludePath`,
+  reversing evidence order, and ignoring `appliesTo` each turn it red. "The gate still passes"
+  proves nothing about a change to the gate — it is exactly what a silently weakened gate looks
+  like. Not tagged as a guardrail: this is an algorithmic shape, not a line pattern.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.

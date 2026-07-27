@@ -37,6 +37,20 @@ Linux container could only be verified by pushing and waiting for Windows CI.
 commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 `.agents/AGENTS.md` §8 and `tasks/README.md` for the bring-your-own-agent contract.
 
+## 2b. Harness efficiency, security & de-duplication pass (latest session)
+Five changes to the harness layer itself; no application source was touched.
+
+| Area | Change |
+|---|---|
+| **Efficiency** | `harness-status.mjs` guardrail scanning is now a **single pass** (`scanGuardrails`). It walked the tree once *per guardrail* and re-read every file per matching rule — 954 reads of 216 unique files across 36 walks (4.4x amplification, O(guardrails x files)). Now 1x; measured 35.3ms -> 25.5ms. Proved a pure refactor by an equivalence self-test against the naive implementation (same findings, order, evidence, line numbers), mutation-verified three ways. |
+| **Security** | `test-app.mjs` resolved its app argument with `existsSync(join(projectsDir, appName))`. `--app ../..` resolves above the repo, passes, and then `clean()` `rmSync`s `dist`/`build`/`coverage`/`.next` there before running `npm install` under `shell: true`. Now an **allow-list** from the real `projects/` listing. |
+| **Security** | `serve-dist.mjs` contained traversal with `base.startsWith(distDir)`, which also accepts a sibling like `dist-secret/`. Now compares whole path **segments**. Defence in depth — no live escape was reachable (verified by request), but the guarantee should hold on the check itself. |
+| **De-duplication** | `validate-specs.ps1` re-implemented four mandates already owned by `harness-status.mjs` sensors 1-4. Replaced by `validate-specs.mjs`, which **presents** those findings rather than re-detecting them (selected by finding id, not `type` — the production-bundle sensor also emits `test-coverage`). The `.ps1` is now a thin wrapper. Because it was the last PowerShell gate, **SDD Sentinel moved from `windows-latest` to `ubuntu-latest`**, making §5's "you do not need PowerShell for any gate" true rather than aspirational. |
+| **Robustness** | `test-app.mjs`'s dependency guard checked the `@playwright/test` *directory*; a partial install leaves it empty, so the install was skipped and four gates failed with errors that looked like code defects. Now resolves the package's `package.json`. |
+
+New sensor finding: `<app>-no-src` (low, non-blocking) — an app with no `src/*.ts(x)` at all, kept
+distinct from `no-zod` so the coverage report can say which it is. Fires on zero apps today.
+
 ## 3. Current State / Open Work
 - **Active branch:** `claude/play-store-production-readiness-weh4sp` (PR #32, open,
   **not merged**) — Play Store readiness for mood-diner (§6), plus two pieces of
@@ -67,7 +81,8 @@ commands. The loop runs in CI via `.github/workflows/sdd-sentinel.yml`. See
 - Whole-repo sense + gates: `.\scripts\harness.ps1 status`, then `verify` and `learn`.
 - A single app: `node scripts/test-app.mjs <AppName>` (security, lint,
   type-check, Vitest, Playwright + a11y).
-- Spec/schema coverage: `.\scripts\validate-specs.ps1 -Strict`.
+- Spec/schema coverage: `node scripts/validate-specs.mjs --strict`
+  (`.\scripts\validate-specs.ps1 -Strict` still works as a thin wrapper).
 
 ## 5. Next Steps for the Next Agent
 - When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:

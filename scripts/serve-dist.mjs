@@ -25,7 +25,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join, extname, normalize, resolve } from 'node:path';
+import { join, extname, normalize, resolve, sep } from 'node:path';
 
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
@@ -84,8 +84,18 @@ function serve(port, mount) {
     if (path.endsWith('/')) path += 'index.html';
 
     // Contain traversal: resolve inside dist/ or refuse.
+    //
+    // The containment check compares whole path SEGMENTS, not a raw string
+    // prefix. `startsWith(distDir)` alone also accepts a sibling directory
+    // whose name merely begins with the dist name — serving `dist-secret/` or
+    // `dist.bak/` out of a server pointed at `dist/`. No traversal through the
+    // URL is currently reachable (the WHATWG URL parser collapses `..`, and
+    // normalize() drops any that survive percent-decoding, because `path`
+    // always starts with `/`), so this is defence in depth rather than a fix
+    // for a live escape — but the guarantee should hold on the check itself,
+    // not on three upstream behaviours staying exactly as they are.
     const base = join(distDir, normalize(path).replace(/^([/\\])+/, ''));
-    if (!base.startsWith(distDir)) {
+    if (base !== distDir && !base.startsWith(distDir + sep)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       return res.end('forbidden');
     }
