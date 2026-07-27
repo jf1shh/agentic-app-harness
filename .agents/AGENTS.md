@@ -31,7 +31,7 @@ As an AI agent operating within this repository, you must strictly adhere to the
 - **No Local Server Runs During Deployment Waits**: When waiting for live GitHub Pages or remote CI/CD builds to finish, agents do NOT need to launch or maintain local dev servers (`npm run dev`) or test servers locally; rely on scheduled reminder timers (`schedule`) and direct remote HTTP status checks.
 
 ## 6. Learned Lessons & Best Practices
-- **Every agent re-reads and conforms to the harness instructions on every task.** [`AGENTS.md`](../../AGENTS.md) is the universal entry-point for every AI agent on this repo (OpenAI Codex, Cursor, GitHub Copilot, Gemini CLI, Aider, Windsurf, Zed, Warp, RooCode, Factory, Google Jules, Devin, Google Antigravity, and Claude Code as a fallback); the authoritative rulebook is [`.agents/AGENTS.md`](../../.agents/AGENTS.md) and the rules there are *enforced in CI, not just documented*, so a non-compliant change fails the build regardless of which tool wrote it. The plain-language "seven non-negotiables" at the top of `AGENTS.md` is a navigation summary, not the rulebook — an agent that reads only the summary will miss the long-form clauses, the §6 lessons with `[guardrail: <id>]` tags, and the §8 protocol for adding new lessons. Re-read both `AGENTS.md` and `.agents/AGENTS.md` at the *start of every change set* (a first-time read is not an up-to-date read after the repo evolves), and conform to them before: writing code or features (read the matching `specs/<app>-spec.md` first), inventing a release-time field that already exists in the spec, choosing a stack outside `projects/<app>/` scope, crafting a commit (`node scripts/harness-status.mjs --gate` must pass), opening a PR (mention the gate result), and merging on the user's behalf (agents **never self-merge** — human reviews and merges per §5/§8). When the user asks for something that contradicts the spec or the rulebook, **stop and flag the conflict** rather than silently diverging.
+- **Every agent re-reads and conforms to the harness instructions on every task.** [`AGENTS.md`](../../AGENTS.md) is the universal entry-point for every AI agent on this repo (OpenAI Codex, Cursor, GitHub Copilot, Gemini CLI, Aider, Windsurf, Zed, Warp, RooCode, Factory, Google Jules, Devin, Google Antigravity, and Claude Code as a fallback); the authoritative rulebook is [`.agents/AGENTS.md`](../../.agents/AGENTS.md) and the rules there are *enforced in CI, not just documented*, so a non-compliant change fails the build regardless of which tool wrote it. The plain-language "eight non-negotiables" at the top of `AGENTS.md` is a navigation summary, not the rulebook — an agent that reads only the summary will miss the long-form clauses, the §6 lessons with `[guardrail: <id>]` tags, and the §8 protocol for adding new lessons. Re-read both `AGENTS.md` and `.agents/AGENTS.md` at the *start of every change set* (a first-time read is not an up-to-date read after the repo evolves), and conform to them before: writing code or features (read the matching `specs/<app>-spec.md` first), inventing a release-time field that already exists in the spec, choosing a stack outside `projects/<app>/` scope, crafting a commit (`node scripts/harness-status.mjs --gate` must pass), opening a PR (mention the gate result), and merging on the user's behalf (agents **never self-merge** — human reviews and merges per §5/§8). When the user asks for something that contradicts the spec or the rulebook, **stop and flag the conflict** rather than silently diverging.
 - **Authentic Real-World Datasets**: When building recommendation engines, prioritize authentic real-world data (real addresses, actual Google/Yelp ratings, real menus & pricing) and provide a live import mechanism so users can work with real locations.
 - **Vitest vs. Playwright Test Separation**: Always explicitly set `include: ['src/**/*.test.ts']` and `exclude: ['e2e/**']` in `vite.config.ts` so Vitest does not attempt to execute Playwright `e2e` specs.
 - **Modal Component State Sync**: When opening modals with contextual initial tab props (e.g. "Book Table" vs "Menu"), assign a unique `key` (e.g. `key={restaurantId + tab}`) to force a clean remount of modal state.
@@ -196,3 +196,103 @@ When you discover a reusable lesson, decide whether it is **mechanically detecta
 1. **Mechanical** (a pattern a regex can catch): (a) add a guardrail object to `GUARDRAILS` in `scripts/harness-status.mjs` with a `lesson` field; (b) add a known-bad + known-good case to `scripts/harness-status.test.mjs`; (c) add the lesson bullet to section 6 below and tag it `` `[guardrail: <id>]` ``. Run `.\scripts\harness.ps1 verify` — self-test, learn, and gate must all pass.
 2. **Non-mechanical** (needs human judgement): add a plain prose bullet to section 6. Do **not** add a `[guardrail: ...]` tag (there is nothing to enforce it).
 Never tag a lesson `[guardrail: <id>]` without a real guardrail of that id — the Learn gate will fail the build.
+
+---
+
+## 9. Opening a pull request: report what you ran, not what you meant to run
+
+Every rule in this section was written after a specific PR shipped a specific defect. They are
+stated with the evidence attached because a rule whose cost is visible gets followed, and an
+abstract exhortation does not — §5 already said, in bold, that running the harness before pushing
+is mandatory and that "CI will tell me" is not an acceptable substitute. A PR ignored it anyway
+and then asserted the opposite. Prose alone did not carry the point, so these rules are phrased as
+things you *do and paste*, not things you *affirm*.
+
+### 9.1 Never self-certify verification
+
+**Write only what a command actually printed.** Do not write "all checks pass," "CI-clean," or
+"harness gate: 0 blocking findings" unless you ran the command in this session and are pasting its
+output.
+
+PR #41 shipped with a section headed "Verification (CI-clean)" reporting a passing harness gate and
+0 blocking findings. CI was red on that commit: type-check failed and the E2E stage never started
+because the same error broke `next build`. Only `npx vitest run` had been run. The unit tests
+genuinely did pass — which is how the claim got written — but they were not the gate, and the gate
+is what the sentence claimed.
+
+The damage is not the red build; CI catches that. The damage is that a reviewer who trusts the body
+merges a broken change, and a reviewer who does not trust it must re-verify everything the body
+says, which costs more than an empty body would have.
+
+- A red suite, honestly reported, is fine. Say what failed and why the PR is open anyway.
+- "Not run, because …" is fine. CI becomes the record and reviewers read it that way.
+- A green suite claimed but not run is not fine, and is the one failure mode this section exists
+  to prevent.
+
+The same applies to the PR body's own factual claims about the diff. PR #41 stated that a broken
+test fixture "is gone" when it was still in the file. If you assert something about the code, look
+at the code first.
+
+### 9.2 Widening a type obligates you to visit every consumer
+
+Adding a member to a `z.enum`, a union, or any exported type is not a local change. Every
+`Record<Type, …>`, `switch`, and `Object.keys()` over that type is now incomplete, and the compiler
+only catches the subset that is exhaustively typed.
+
+Before pushing such a change, run:
+
+```
+grep -rln "<TypeName>" projects/<app>/src/
+```
+
+Open **every** file it returns. In the PR body, list each one and say how it handles the new member
+or why it needs no change.
+
+PR #41 added `'independent_living'` to `CareTypeSchema`. That type had **seven consumers in the
+app; the PR opened two**. Of the five it skipped, three were where the failures lived:
+
+| Skipped file | What it cost |
+|---|---|
+| `data/costOfCare.ts` | `Record<CareType, string>` was unsatisfied → type-check failed → `next build` failed → the entire Playwright stage never ran |
+| `explain/build.ts` | `CARE_TYPE_LABELS[careType]` was `undefined`, and `.toLowerCase()` on it crashed the methodology panel at runtime |
+| `app/page.tsx` | the care-type dropdown enumerates that type, so the option became selectable with no cost data and no way to price it |
+
+Fixing all of it touched nine files. Three of the four that actually needed changing were files the
+authoring pass never opened.
+
+### 9.3 A new case kind belongs in every existing sweep
+
+Where a suite enumerates cases — a `CASES` array, a table-driven test, an invariant checked across
+a spread of fixtures — adding a new kind of case obliges you to add a fixture to that sweep.
+Otherwise the suite stays green by not looking.
+
+`explain/build.test.ts` already asserted `isBalanced` across every derivation, in both
+engine-value and rendered-string form. PR #41 introduced a code path that broke that invariant in
+two panels — one showing `$0.00` of parts against a `$3,500.00` total, the other `$7,500.00`
+against `$407,500.00` — and the suite passed throughout, because no fixture in the sweep used the
+new care type. The tests were not wrong. They were not looking.
+
+### 9.4 Prove a new test can fail
+
+For every behaviour a PR claims to protect: break the code, watch the test go red, put it back.
+State the mutation and its result in the PR body.
+
+PR #41 ended `buyin.test.ts` with
+
+```ts
+const _: typeof PlanSchema = undefined as unknown as typeof PlanSchema;
+```
+
+described in a comment as a tripwire that would flag drift in `Plan`. The annotation and the
+assertion are the same type, so it cannot fail under any change whatsoever. A test that cannot
+fail is not weak coverage — it is a false statement about what is covered, and it displaces the
+real test nobody now thinks to write.
+
+### 9.5 Scope claims must be achievable
+
+State what a change forces, not what you intended it to touch. PR #41 said "**Engine only.** No UI
+changes in this PR" — but the care-type dropdown is built from `Object.keys(CARE_TYPE_LABELS)`, so
+the moment the enum gained a member the UI gained an option. The claim could not have been true.
+
+If a change forces a user-visible surface, either handle it or say plainly that it is unhandled.
+An unachievable scope claim tells a reviewer not to look where the problem is.
