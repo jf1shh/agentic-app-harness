@@ -13,7 +13,7 @@ What care really costs, how long the money lasts, and how a family can share it.
 ### Triage-first information architecture
 Landing route **is** the calculator, not a marketing page. Five fields (state, care type, monthly income, savings available, number of contributors) → instant all-in cost, runway, and per-sibling shortfall. Everything below is optional refinement.
 
-### Nine pure-function engines (`src/lib/engine/**`)
+### Ten pure-function engines (`src/lib/engine/**`)
 | Module | What it computes |
 |---|---|
 | `cost.ts` | All-in monthly cost: base rate + care-level tier + add-on fees + annual escalator; advertised vs. realistic side by side |
@@ -25,8 +25,38 @@ Landing route **is** the calculator, not a marketing page. Five fields (state, c
 | `opportunity.ts` | Caregiver lost wages, lost employer match, qualitative Social Security flag |
 | `tax.ts` | Medical-expense deduction estimate above 7.5% AGI |
 | `buyin.ts` | Independent living buy-in contracts: refund at a given tenure, entry-fee affordability, and the per-option overlay projection |
+| `fit.ts` | Facility shortlist: weighted scores across eight tour dimensions, the exclusions behind them, and what pricing the plan at a community would cost in months of runway |
 
 Engines are pure — no React, no storage, no ambient `Date.now()` — so 100% Vitest coverage of the math is achievable.
+
+### Facility shortlist and tour notes (`components/FacilityPanel.tsx`, spec §11.2)
+A family tours four to six communities in a fortnight, under time pressure, and by the end cannot
+reconstruct which one had the staff they liked. Each visit is written up here — eight dimensions
+(community, food, activities, apartment, staff, location, upkeep, and the overall feeling) scored
+out of five, with notes, quoted figures and photographs — and weighted by what this particular
+family cares about.
+
+Three things make it more than a notes app:
+
+- **Adopting a community re-prices the whole plan.** Its quoted monthly rate, tier and move-in fee
+  are written into the active scenario, so the all-in engine, runway, break-even and split all
+  re-run against a real quote instead of a survey median. The panel states the trade before
+  anything is committed to: *"Oakmont's quoted rate is $900/month above the plan's current figure,
+  which shortens the projection by about 14 months."*
+- **Nothing is ranked and nothing is named best.** Communities stay in the order they were entered.
+  Cost is computed; a feeling about a dining room is not, and blending them into a single verdict
+  would make both harder to argue with.
+- **An unassessed dimension is excluded, not scored zero**, and the panel names which ones were
+  left out and why — separately for "nobody assessed it" and "this family said it doesn't matter".
+
+This is **not** a facility directory (see the binding non-goals below). Nothing is searched,
+fetched, or supplied by any community or referral service; every entry is one somebody walked into.
+
+Photographs live in **IndexedDB, in a store the plan payload does not share**, downscaled to
+1280px JPEG and capped at 6 per community / 40 overall. That separation is load-bearing rather than
+tidy: `localStorage` holds ~5MB per origin, so a base64 photo stored beside the plan raises
+`QuotaExceededError` on the *plan* write, and a family loses their ledger because they attached a
+picture of a dining room.
 
 ### Independent living comparison (`components/ILComparisonPanel.tsx`)
 Independent living contracts come in three shapes — a large entry fee that is partly refundable on
@@ -74,16 +104,20 @@ src/
     Inputs.tsx, ResultsPanel.tsx, RefineCostPanel.tsx,
     BreakEvenPanel.tsx, RunwayChart.tsx, SplitPanel.tsx,
     LedgerPanel.tsx, BenefitsPanel.tsx, QuestionsPanel.tsx,
+    FacilityPanel.tsx, FacilityPhotos.tsx,
     SummaryPanel.tsx, MethodologyPanel.tsx,
     ExplainProvider.tsx, ExplainDrawer.tsx, ExplanationBody.tsx, WhyButton.tsx
   lib/
     schemas.ts                       # Zod contracts + inferred types
-    engine/{breakeven,cost,ledger,opportunity,plan,runway,sensitivity,split,tax}.ts
+    engine/{breakeven,buyin,cost,fit,ledger,opportunity,plan,runway,sensitivity,split,tax}.ts
     explain/{build,types}.ts         # engine output → derivations
     data/{costOfCare,benefits,expenseCategories,feeStructures,questionsToAsk}.ts
     plannerState.ts                  # form-state → Plan projection
     recommendation.ts                # neutral-voice summary copy
     storage.ts                       # localStorage boundary, Zod-validated
+    photos.ts                        # IndexedDB boundary for tour photos — kept
+                                     # apart from the plan so a photo quota
+                                     # failure can never fail a plan write
     format.ts                        # money + percentage formatters
 ```
 
@@ -99,7 +133,9 @@ Three intentional decisions:
 - **Writes are debounced and flushed on `pagehide`/`visibilitychange`.** A pure debounce loses the last edit when the tab closes or a phone is backgrounded.
 - **A payload that fails the contract is reported, not silently discarded.** `absent` (first visit) and `invalid` (corrupt / hand-edited / schema mismatch) are distinguished and the second puts a notice on screen.
 
-A confirmed **"Forget everything on this device"** control clears every key the app owns. Nothing else leaves the browser.
+A confirmed **"Forget everything on this device"** control clears every key the app owns **and
+empties the IndexedDB photo store** — a separate store needs a separate erase, or the promise is
+broken on exactly the shared computer it was made for. Nothing else leaves the browser.
 
 ## Accessibility
 
@@ -123,6 +159,9 @@ Coverage bullets (per projectData.ts and the per-file Vitest suite):
 - **Golden fixtures are hand-computed by a human.** Values captured from the implementation would only prove the code agrees with itself.
 - **Derivations are checked as rendered, not as computed** — the parts shown must sum to the total shown; assertions parse the formatted strings.
 - **Persistence is proved by reloading.**
+- **Photo isolation is proved by measuring**, not by reading the code: the spec records the stored
+  plan's length before and after an attachment, asserts it grew by an id rather than an image, and
+  then reloads to confirm the photo survived.
 - **E2E specs wait for hydration before their first interaction** (`document.documentElement.dataset.planready`), because a `fill()` that lands before React attaches is silently reverted.
 - **Privacy is proved, not asserted:** a spec blocks every outbound request and runs the full triage → refinement → split → summary flow to completion.
 
@@ -130,7 +169,8 @@ For the latest counts, run `node scripts/test-app.mjs elder-care-planner` from t
 
 ## Status
 
-V1 complete, plus the independent living comparison (spec §6.5b). The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
+V1 complete, plus the independent living comparison (spec §6.5b) and the facility shortlist
+(spec §11.2). The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
 
 `independent_living` is deliberately absent from the triage care-type picker: it is priced from a
 community contract rather than a survey median, and the comparison panel is the only place such a

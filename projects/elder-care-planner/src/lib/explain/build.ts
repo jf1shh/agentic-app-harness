@@ -19,6 +19,15 @@ import type { SensitivityResult } from '../engine/sensitivity';
 import type { BreakEvenResult } from '../engine/breakeven';
 import type { SplitResult } from '../engine/split';
 import type { LedgerSummary } from '../engine/ledger';
+import {
+  DEFAULT_WEIGHT,
+  MAX_SCORE,
+  MAX_WEIGHT,
+  WEIGHT_LABELS,
+  formatComposite,
+  type FacilityFit,
+} from '../engine/fit';
+import { FACILITY_DIMENSIONS, type FacilityDimension } from '../schemas';
 import type { ScenarioResult } from '../engine/plan';
 import { buildRunwayInput } from '../engine/plan';
 import { incomeAtMonth } from '../engine/runway';
@@ -37,6 +46,13 @@ import type { Explanation, ExplainStep, ExplanationSet } from './types';
 
 const WEEKS_PER_YEAR = 52;
 const MONTHS_PER_YEAR = 12;
+
+/** Dimension keys as the labels a reader recognises, in display order. */
+function dimensionLabels(dimensions: readonly FacilityDimension[]): string {
+  return FACILITY_DIMENSIONS.filter((d) => dimensions.includes(d.dimension))
+    .map((d) => d.label.toLowerCase())
+    .join(', ');
+}
 
 /** Provenance lines shared by every explanation that leans on a published median. */
 function costSourceLines(scenario: CareScenario, cost: CostBreakdown): string[] {
@@ -953,6 +969,109 @@ function explainSensitivity(sensitivity: SensitivityResult): Explanation {
 }
 
 /* ------------------------------------------------------------------ */
+/* 10. How a community's overall score is reached                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The facility composite (spec §11.2.2).
+ *
+ * Unlike every other derivation here this one is not money, and it is not a sum
+ * — it is a weighted mean, so its parts add to a *points total* which is then
+ * divided by the total weight. It therefore follows the `sensitivity` pattern:
+ * `reference` steps carrying `valueText`, and a `valueText` result. There are
+ * no cents-typed `add`/`subtract` steps, so `isBalanced` holds vacuously and
+ * correctly rather than by dressing scores up as currency. The real check —
+ * that the products sum to the stated total and that the total over the stated
+ * weight equals the composite — is asserted in `fit.test.ts` on engine output
+ * and in `e2e/facilities.spec.ts` on the rendered strings (spec §11.2.5).
+ *
+ * The caveats do the most important work in this panel. Everything above them
+ * is arithmetic on eight subjective judgements, and the panel has to say so.
+ */
+function explainFacilityFit(fit: FacilityFit): Explanation {
+  const steps: ExplainStep[] = [];
+
+  steps.push({
+    kind: 'note',
+    label: `How ${fit.label} scored, on the dimensions this family both assessed and said mattered.`,
+  });
+
+  for (const part of fit.parts) {
+    steps.push({
+      kind: 'reference',
+      label: part.label,
+      workingOut: `scored ${part.score} out of ${MAX_SCORE} × weight ${part.weight} (${WEIGHT_LABELS[part.weight]})`,
+      valueText: `${part.weightedPoints} points`,
+    });
+  }
+
+  if (fit.notWeighted.length > 0) {
+    steps.push({
+      kind: 'note',
+      label: `Left out because this family weighted them "${WEIGHT_LABELS[0]}": ${dimensionLabels(
+        fit.notWeighted,
+      )}. They were assessed; they are not counted.`,
+    });
+  }
+
+  if (fit.unrated.length > 0) {
+    steps.push({
+      kind: 'note',
+      label: `Left out because no score was recorded: ${dimensionLabels(
+        fit.unrated,
+      )}. An unassessed dimension is not a zero — counting it as one would mark a community down for a question nobody got to ask.`,
+    });
+  }
+
+  steps.push({
+    kind: 'reference',
+    label: 'Points in total',
+    workingOut: fit.parts.map((p) => `${p.score}×${p.weight}`).join(' + ') || 'nothing counted',
+    valueText: `${fit.weightedPointsTotal} points`,
+  });
+  steps.push({
+    kind: 'reference',
+    label: 'Weight in total',
+    workingOut: fit.parts.map((p) => String(p.weight)).join(' + ') || 'nothing counted',
+    valueText: String(fit.weightTotal),
+  });
+  steps.push({
+    kind: 'result',
+    label: 'Weighted score',
+    workingOut:
+      fit.compositeScore === null
+        ? undefined
+        : `${fit.weightedPointsTotal} ÷ ${fit.weightTotal}`,
+    valueText: formatComposite(fit.compositeScore),
+  });
+
+  return {
+    id: 'facility-fit',
+    title: `How the weighted score for ${fit.label} is reached`,
+    question: `How is the weighted score for ${fit.label} worked out?`,
+    plainLanguage:
+      'Each dimension was given a score out of five on the visit, and a weight saying how much it matters to this family. Every score is multiplied by its weight, the results are added together, and the total is divided by the total weight. Weighting is what stops a great dining room outvoting worrying staff for a family who cares more about staff.',
+    formula:
+      'weighted score = sum of (score × weight) ÷ sum of the weights, over the dimensions that were both scored and weighted above zero',
+    steps,
+    assumptions: [
+      `Scores run from 1 to ${MAX_SCORE} and weights from 0 to ${MAX_WEIGHT}. A dimension with no weight set counts as ${DEFAULT_WEIGHT} ("${WEIGHT_LABELS[DEFAULT_WEIGHT]}").`,
+      'Dimensions with no score are excluded from both the points total and the weight total, so a community is compared only on what was actually assessed.',
+      'Every community on the shortlist is scored against the same set of weights, which is what makes the scores comparable at all.',
+    ],
+    sources: [
+      'Every score and note here was entered by the family from their own visit. Nothing on this panel is fetched, published, or supplied by any community or referral service — this app has no facility directory and takes no referral revenue (spec §1.1).',
+    ],
+    caveats: [
+      'This is arithmetic on impressions, not a measurement. Two people touring the same community on the same afternoon would score it differently, and neither would be wrong.',
+      'A single visit sees one shift on one day. Staffing on a weekday morning is not staffing on a Sunday night, and turnover in the months ahead is not visible from a tour at all.',
+      'The score deliberately does not include cost. What a community costs is worked out by the rest of this page, and the two are shown side by side rather than blended — a number that mixed a family’s feeling about the dining room with the price of the apartment could not be argued with sensibly.',
+      'No community is named as the best one here. Ranking eight subjective scores would claim an authority this arithmetic has not got.',
+    ],
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Assembly                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -968,6 +1087,12 @@ export interface ExplanationInputs {
   /** Reconciled ledger, or null when nothing has been logged yet. */
   readonly ledger: LedgerSummary | null;
   readonly monthsElapsed: number;
+  /**
+   * The community whose weighted score is currently on screen, or null when the
+   * shortlist is empty. Only one derivation is built at a time because only one
+   * "?" is open at a time; the panel passes the facility being explained.
+   */
+  readonly facilityFit: FacilityFit | null;
 }
 
 /** Every derivation the results screen can currently show. */
@@ -988,6 +1113,7 @@ export function buildExplanations(inputs: ExplanationInputs): ExplanationSet {
     split: split ? explainSplit(split, contributors, runway.monthlyShortfallCents) : null,
     ledger: inputs.ledger ? explainLedger(inputs.ledger, inputs.monthsElapsed) : null,
     sensitivity: explainSensitivity(sensitivity),
+    'facility-fit': inputs.facilityFit ? explainFacilityFit(inputs.facilityFit) : null,
   };
 }
 
@@ -1002,4 +1128,5 @@ export const EXPLANATION_ORDER = [
   'break-even',
   'split',
   'ledger',
+  'facility-fit',
 ] as const;

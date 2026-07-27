@@ -114,6 +114,44 @@ export function TextInput({
   );
 }
 
+interface TextAreaInputProps {
+  label: string;
+  hint?: string;
+  value: string;
+  maxLength?: number;
+  rows?: number;
+  placeholder?: string;
+  onChange: (value: string) => void;
+}
+
+export function TextAreaInput({
+  label,
+  hint,
+  value,
+  maxLength,
+  rows = 3,
+  placeholder,
+  onChange,
+}: TextAreaInputProps) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id}>
+        {label}
+        {hint ? <span className="hint">{hint}</span> : null}
+      </label>
+      <textarea
+        id={id}
+        value={value}
+        rows={rows}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
 interface DateInputProps {
   label: string;
   hint?: string;

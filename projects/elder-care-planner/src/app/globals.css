@@ -537,6 +537,102 @@ table.derivation .step-note td {
   color: var(--text-muted);
 }
 
+/* ---- Facility shortlist (spec §11.2) ---- */
+
+.option-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.option-card h4 {
+  margin: 1.25rem 0 0.5rem;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.result-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.consequence {
+  background: var(--primary-tint);
+  border-left: 4px solid var(--primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+
+/* A score is text first. The bar repeats it, so colour and length are never
+   the only encoding of a value (spec §5.5 / §11.2.5). */
+.score {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.score-text {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.score-bar {
+  display: inline-block;
+  width: 3.5rem;
+  height: 0.5rem;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.score-fill {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.score-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.photos {
+  margin: 1rem 0;
+}
+
+.photo-strip {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: 0.75rem;
+}
+
+.photo-strip img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.photo-strip button {
+  margin-top: 0.35rem;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
 footer.site {
   color: var(--text-muted);
   font-size: 0.85rem;

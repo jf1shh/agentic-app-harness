@@ -7,12 +7,23 @@ import {
   buildPlan,
   breakEvenScenarios,
   makeContributors,
+  makeFacility,
+  withFacilityAdopted,
   ilScenarios,
   makeILOption,
   MAX_IL_OPTIONS,
   type PlannerState,
 } from '@/lib/plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '@/lib/engine/plan';
+import {
+  MAX_FACILITIES,
+  compareFacilities,
+  costConsequence,
+  dimensionRows,
+  type CostConsequence,
+} from '@/lib/engine/fit';
+import { clearPhotos } from '@/lib/photos';
+import { FacilityPanel } from '@/components/FacilityPanel';
 import { summariseLedger } from '@/lib/engine/ledger';
 import {
   browserStorage,
@@ -24,7 +35,15 @@ import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS, SELECTABLE_CARE_TYPES } from '@/lib/data/costOfCare';
 import { ILComparisonPanel } from '@/components/ILComparisonPanel';
 import { projectILVariants } from '@/lib/engine/buyin';
-import type { CareType, Contributor, ILOption, LedgerEntry, SplitMethod } from '@/lib/schemas';
+import type {
+  CareType,
+  Contributor,
+  FacilityDimension,
+  FacilityNote,
+  ILOption,
+  LedgerEntry,
+  SplitMethod,
+} from '@/lib/schemas';
 import type { ExplanationSet } from '@/lib/explain/types';
 import { CurrencyInput, NumberInput, SelectInput } from '@/components/Inputs';
 import { ResultsPanel } from '@/components/ResultsPanel';
@@ -58,6 +77,7 @@ const EMPTY_EXPLANATIONS: ExplanationSet = {
   split: null,
   ledger: null,
   sensitivity: null,
+  'facility-fit': null,
 };
 
 export default function Home() {
@@ -69,6 +89,10 @@ export default function Home() {
   const [restored, setRestored] = useState(false);
   const [restoreFailed, setRestoreFailed] = useState(false);
   const [confirmingErase, setConfirmingErase] = useState(false);
+  // Which community's weighted score the "?" would explain. One
+  // `ExplanationId` covers all of them, so the click that opens the drawer sets
+  // this first (see WhyButton's `onActivate`).
+  const [focusedFacilityId, setFocusedFacilityId] = useState<string | null>(null);
 
   const update = useCallback((patch: Partial<PlannerState>) => {
     setState((prev) => ({ ...prev, ...patch }));
@@ -148,6 +172,10 @@ export default function Home() {
   const eraseEverything = () => {
     const storage = browserStorage();
     if (storage) clearPlannerState(storage);
+    // Tour photos live in IndexedDB rather than localStorage, so clearing the
+    // plan does not touch them. "Forget everything on this device" has to mean
+    // everything, or the control is a lie on a shared computer.
+    void clearPhotos();
     setState(INITIAL_STATE);
     setRestoreFailed(false);
     setConfirmingErase(false);
@@ -167,6 +195,40 @@ export default function Home() {
     () => projectILVariants(plan, ilScenarios(state)),
     [plan, state],
   );
+
+  // The shortlist, scored against one shared set of weights (spec §11.2).
+  const facilityFits = useMemo(
+    () => compareFacilities(state.facilities, state.facilityWeights),
+    [state.facilities, state.facilityWeights],
+  );
+  const facilityRows = useMemo(
+    () => dimensionRows(state.facilities, state.facilityWeights),
+    [state.facilities, state.facilityWeights],
+  );
+
+  /**
+   * What pricing the plan at each community would do to it (spec §11.2.3).
+   *
+   * Each community is run through exactly the same engines as the live plan,
+   * on a copy of the state with its quoted figures adopted. Nothing is
+   * recomputed by hand here — the comparison is between two proper engine
+   * results, which is what keeps the "14 months shorter" sentence honest.
+   */
+  const facilityConsequences = useMemo(() => {
+    const baseline = {
+      allInMonthlyCents: planResult.active?.cost.allInMonthlyCents ?? 0,
+      depletionMonth: planResult.active?.runway.depletionMonth ?? null,
+    };
+    const out: Record<string, CostConsequence> = {};
+    for (const facility of state.facilities) {
+      const priced = computePlan(buildPlan(withFacilityAdopted(state, facility)));
+      out[facility.id] = costConsequence(baseline, {
+        allInMonthlyCents: priced.active?.cost.allInMonthlyCents ?? 0,
+        depletionMonth: priced.active?.runway.depletionMonth ?? null,
+      });
+    }
+    return out;
+  }, [state, planResult.active]);
 
   // Reconciled against the shares the split panel is displaying, so "expected by
   // now" always matches the number the family agreed on rather than a second
@@ -199,6 +261,10 @@ export default function Home() {
             contributors: state.contributors,
             ledger: ledgerSummary,
             monthsElapsed: state.monthsElapsed,
+            facilityFit:
+              facilityFits.find((f) => f.facilityId === focusedFacilityId) ??
+              facilityFits[0] ??
+              null,
           })
         : EMPTY_EXPLANATIONS,
     [
@@ -210,6 +276,8 @@ export default function Home() {
       state.contributors,
       state.monthsElapsed,
       ledgerSummary,
+      facilityFits,
+      focusedFacilityId,
     ],
   );
 
@@ -244,6 +312,38 @@ export default function Home() {
 
   const onILOptionRemove = (id: string) => {
     update({ ilOptions: state.ilOptions.filter((o) => o.id !== id) });
+  };
+
+  const onFacilityChange = (id: string, patch: Partial<FacilityNote>) => {
+    update({
+      facilities: state.facilities.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    });
+  };
+
+  const onFacilityAdd = () => {
+    if (state.facilities.length >= MAX_FACILITIES) return;
+    update({
+      facilities: [...state.facilities, makeFacility(state.facilities.length, state.careType)],
+    });
+  };
+
+  // The photo bytes are deliberately left in IndexedDB rather than swept here.
+  // Removing a card is an editing action a family may well undo by re-adding
+  // it, and destroying images on the way past would be a surprise; the erase
+  // control is where deletion is promised, and where it happens.
+  const onFacilityRemove = (id: string) => {
+    update({ facilities: state.facilities.filter((f) => f.id !== id) });
+    if (focusedFacilityId === id) setFocusedFacilityId(null);
+  };
+
+  const onFacilityWeightChange = (dimension: FacilityDimension, weight: number) => {
+    const others = state.facilityWeights.filter((w) => w.dimension !== dimension);
+    update({ facilityWeights: [...others, { dimension, weight }] });
+  };
+
+  const onFacilityAdopt = (id: string) => {
+    const facility = state.facilities.find((f) => f.id === id);
+    if (facility) setState((prev) => withFacilityAdopted(prev, facility));
   };
 
   const onContributorChange = (index: number, next: Contributor) => {
@@ -367,6 +467,21 @@ export default function Home() {
             onRemoveEntry={onRemoveLedgerEntry}
           />
         </div>
+
+        <FacilityPanel
+          facilities={state.facilities}
+          weights={state.facilityWeights}
+          fits={facilityFits}
+          rows={facilityRows}
+          consequences={facilityConsequences}
+          focusedFacilityId={focusedFacilityId}
+          onFocus={setFocusedFacilityId}
+          onChange={onFacilityChange}
+          onAdd={onFacilityAdd}
+          onRemove={onFacilityRemove}
+          onWeightChange={onFacilityWeightChange}
+          onAdopt={onFacilityAdopt}
+        />
 
         <ILComparisonPanel
           options={state.ilOptions}

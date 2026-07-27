@@ -45,7 +45,8 @@ export type ExplanationId =
   | 'break-even'
   | 'split'
   | 'ledger'
-  | 'sensitivity';
+  | 'sensitivity'
+  | 'facility-fit';
 
 export interface Explanation {
   readonly id: ExplanationId;

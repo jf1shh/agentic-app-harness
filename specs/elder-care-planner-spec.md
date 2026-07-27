@@ -2,6 +2,11 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 9 — §11 records a batch of user-supplied feature ideas, adjudicated.** Four of the
+> eight contradict the binding non-goals in §1.1/§1.2 and were rejected with reasoning (§11.1); a
+> human confirmed the non-goals stand. Of the four that survive, **§11.2 (facility shortlist and
+> tour notes) is APPROVED AND BUILT**; §11.3, §11.4, §11.5 and §11.6 are designed but **PROPOSED,
+> NOT APPROVED, NOT BUILT** and may not be implemented until a human approves each one.
 > **Revision 8** — Independent Living comparison (§6.5b) is built: three contract shapes on one
 > asset-depletion chart, with the refund drawn as a band that collapses as the schedule steps down.
 > **Revision 7** — local persistence wired up (§4.1): the form state is the stored artifact, with
@@ -163,6 +168,10 @@ combination plus **local-only, no-account privacy**.
       the page for anyone who wants to read the whole method at once (§6.10).
 - [x] **Family Meeting Summary** — one printable page in a neutral third-party voice:
       recommendation, numbers, assumptions, split.
+- [x] **Facility shortlist & tour notes** — up to six communities the family actually visited,
+      scored across eight dimensions against weights they set, with notes, quoted figures and
+      photographs; adopting one re-prices the whole plan from its quote. A notebook, never a
+      directory (§11.2).
 - [x] **Local-only persistence + export/import** — `localStorage`, no account, no network calls
       for user data; JSON export/import Zod-validated at the boundary.
 - [x] **Accessibility-first UI** — WCAG 2.1 AA, large-type mode, plain language, full keyboard use.
@@ -1077,3 +1086,333 @@ human before V1 ships, and a failure blocks release as surely as a red test:
 5. **Ledger scope creep.** The contribution ledger (§6.6) edges toward being an expense-tracking
    app. V1 keeps it deliberately minimal — amount, date, category, who paid — with receipts and
    recurring entries deferred. Confirm that boundary.
+
+---
+
+## 11. PROPOSED (revision 9) — user-supplied feature batch, adjudicated
+
+> **Status: PROPOSED. Not approved. Not built.** This section exists because a batch of feature
+> ideas arrived from a prospective user. Per `.agents/AGENTS.md` §1–2, ideas that contradict a
+> binding commitment are flagged here rather than implemented; ideas that are compatible are
+> designed here before any code is written. Each subsection carries its own approval state.
+
+### 11.0 The batch, and what happened to each idea
+
+| # | Idea, as received | Verdict |
+|---|---|---|
+| 1 | "Look for actual facilities and maybe ratings" | **Rejected — §1.1.** A facility directory is a named non-goal. Partially served by §11.2 instead. |
+| 2 | "Maybe a service or some sort to do all the busy work, because it's emotional" | **Out of scope as stated** (it is a staffed service, not software). The software-shaped part is §11.5. |
+| 3 | "Add a facility with notes and photos, ranking community / food / activity / apartment / quality of staff / location / rent, so you can remember; vibes comparison" | **Accepted, designed → §11.2.** The strongest idea in the batch. |
+| 4 | "Orgs like A Place for Mom might sponsor the app" | **Rejected — §1.1**, and not a close call. See §11.1. |
+| 5 | "Calculate the APR etc. and calculate your own finances against the cost, consideration for inflation" | **Accepted, designed → §11.3.** |
+| 6 | "Often both elders will go into facilities at the same time" | **Accepted, designed → §11.4.** Real gap; largest blast radius of the batch. |
+| 7 | "RAG for translation of medical docs and everything into plain English" | **Rejected as RAG — §1.2** (it requires shipping user documents to a model over the network). A network-free subset is designed as §11.5. |
+| 8 | "Contribute multiple families, like Google Drive, shared and synced" | **Rejected as sync — §1.1/§1.2.** The compatible form is already deferred in §3 (encrypted share link) and is restated as §11.6. |
+
+### 11.1 The four rejections, stated plainly
+
+These are not "later" — reversing them requires revising §1.1, and §1.1 says why that would cost
+more than it gains.
+
+**Facility directory + ratings (#1).** §1.1: *"No facility directory, no 'get matched with
+communities,' no lead capture, no affiliate or referral fees."* Beyond the commitment, two
+mechanical problems: a directory lookup sends the family's location and care needs to a third
+party, which breaks the §1.2 local-only claim that the privacy E2E spec enforces; and third-party
+review scores would be redistributed data with its own licensing question, which §10.1 shows is
+already unresolved for a much simpler dataset. The *need* underneath the idea — "I toured six
+places and cannot remember which one had the good dining room" — is real and is met by §11.2
+without any of that.
+
+**Sponsorship by a referral company (#4).** A Place for Mom is a lead-generation business: it is
+paid by communities when a family moves in. §1.1 exists specifically to rule this out, and the
+reasoning is in the spec: *"The moment this app has a financial interest in which option a family
+picks, its cost comparisons stop being believable — including the honest ones."* The app's entire
+wedge against incumbent calculators (§2.7) is that it is not this. Taking the sponsorship would
+not compromise the product at the margin; it would delete the reason the product exists.
+
+**RAG over medical/legal documents (#7).** Retrieval-augmented generation requires an LLM, which
+means the family's medical records and admission agreements leave the device. §1.2 makes local-only
+storage *functional*, not decorative — and `e2e/privacy.spec.ts` fails the build on an outbound
+request carrying user data. This repo already has a home for document-grounded Q&A:
+`projects/legal-financial-rag`. If the capability is wanted, it belongs there, where the privacy
+contract is different, and this app can link to it. §11.5 covers what can be done here with no
+network at all.
+
+**Multi-family shared sync (#8).** "Like Google Drive" means an account, a server, and family
+financial data at rest on someone else's disk — three things §1.1 forbids by name. §3 already
+defers the compatible version: an encrypted payload in a URL fragment, which never reaches a
+server because fragments are not sent in HTTP requests. That is restated with a design in §11.6.
+
+### 11.2 APPROVED AND IMPLEMENTED — Facility shortlist & tour notes (`engine/fit.ts`, `FacilityPanel`)
+
+> Status: approved and built — `src/lib/engine/fit.ts`, `src/lib/photos.ts`,
+> `src/components/FacilityPanel.tsx`, covered by `e2e/facilities.spec.ts`. One acceptance
+> criterion was corrected before implementation; see §11.2.5.
+
+**The problem.** A family tours four to six communities in about two weeks, under stress, and then
+cannot reconstruct which one had the staff they liked. The decision is made on a blur of half-remembered
+impressions plus whichever brochure is on top of the pile — and the cost work this app already does
+never gets connected to the place that actually felt right.
+
+**What this is not.** Not a directory. Nothing is searched, fetched, ranked for the family, or
+sent anywhere. Every facility in the list is one the family entered because they visited it. This
+is a *notebook*, and that distinction is what keeps it clear of §1.1.
+
+#### 11.2.1 Contract
+
+```ts
+export const FacilityDimensionSchema = z.enum([
+  'community',    // residents, social life, atmosphere
+  'food',         // dining — the single most-cited satisfaction driver in resident surveys
+  'activities',
+  'apartment',    // the unit itself: light, size, bathroom, storage
+  'staff',        // observed interactions, turnover answer, call-bell response
+  'location',     // distance from family, not "desirability"
+  'upkeep',       // cleanliness, smell, maintenance
+  'gut',          // "vibes" — recorded honestly as its own axis, never folded into the others
+]);
+
+export const FacilityRatingSchema = z.object({
+  dimension: FacilityDimensionSchema,
+  score: z.number().int().min(1).max(5).optional(),  // optional: unvisited ≠ zero
+  note: z.string().max(400).optional(),
+});
+
+export const FacilityNoteSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1).max(80),
+  careType: CareTypeSchema,
+  locality: z.string().max(80).optional(),      // "20 min from Dana" — never a street address
+  visitedOn: z.string().max(40).optional(),
+  visitedBy: z.string().max(80).optional(),     // a label, per §8 privacy
+  quotedMonthlyCents: z.number().int().min(0).optional(),
+  quotedCommunityFeeCents: z.number().int().min(0).optional(),
+  quotedTierCents: z.number().int().min(0).optional(),
+  waitlist: z.enum(['none', 'weeks', 'months', 'unknown']).default('unknown'),
+  ratings: z.array(FacilityRatingSchema).default([]),
+  photoIds: z.array(z.string().min(1)).default([]),   // see §11.2.4
+  notes: z.string().max(2000).optional(),
+});
+```
+
+`FacilityDimensionSchema` is a new `z.enum`, so **§9.2 applies to it from the moment it exists**:
+every `Record<FacilityDimension, …>` and every sweep over it must be visited when a dimension is
+added, and `scripts/check-enum-blast-radius.mjs` will enforce that in CI.
+
+#### 11.2.2 Weights, and the honest way to score
+
+The family sets a 0–3 weight per dimension ("doesn't matter" → "this is the decision"), and the app
+shows a weighted mean of the scores given. Three rules keep this from becoming false precision
+(§5.3), which is the live risk in any scoring UI:
+
+1. **Per-dimension bars are the primary display; the composite is secondary.** A single number that
+   hides "great food, worrying staff" is worse than no number.
+2. **The composite is never rendered as a ranking or a winner.** No "Best: Oakmont." The app orders
+   the cards in the order the family entered them and says what each scored.
+3. **Unrated dimensions are excluded from the mean and named as excluded** — a facility is not
+   penalised for a dimension nobody assessed, and the reader is told which ones those were.
+
+Per §6.10 (*"a figure on screen without a derivation is a defect"*) the composite gains an
+`ExplanationId` — `facility-fit` — whose steps list each dimension, its score, its weight, the
+product, the divisor, and the excluded dimensions. Parts must sum to the displayed total as
+rendered, per the standing invariant.
+
+#### 11.2.3 The connection that makes this worth building
+
+The shortlist is not a separate app pinned next to the calculator. **Adopting a facility writes its
+quoted figures into the active scenario** — `quotedMonthlyCents → costOverrideCents`,
+`quotedCommunityFeeCents → fees.communityFeeCents`, `quotedTierCents → fees.careLevelTierCents` —
+so the existing all-in engine, runway, break-even and split all re-run against the real quote.
+The panel then states the trade in one line, in the neutral register of §5.4:
+
+> *"Oakmont scored highest on the dimensions weighted most. Its quoted rate is $900/month above
+> Brookside, which shortens the projection by about 14 months."*
+
+That sentence is the feature. Ratings alone are a notes app; the cost consequence of a preference
+is the thing no incumbent tool puts on one screen.
+
+#### 11.2.4 Photos — the part that can corrupt the plan if done carelessly
+
+Photos are the highest-risk element in this section, and the risk is not privacy but **storage
+quota**. `localStorage` holds ~5 MB per origin and the plan payload shares it. Base64-encoding a
+single phone photo (~3–4 MB raw, ~4–5 MB encoded) exceeds the entire budget, and the failure mode
+is a `QuotaExceededError` on the *plan* write — the family loses thirty ledger entries because
+they attached a picture of a dining room. Binding rules:
+
+- **Photos live in IndexedDB, in a store the plan payload does not share.** A quota failure on a
+  photo must be reported as a failed photo, and must not be able to fail a plan write. This is the
+  whole reason for the separate store.
+- **Downscale before storing**: longest edge ≤ 1280px, JPEG q0.7, via `canvas`. No original bytes
+  are retained.
+- **Hard caps**: 6 photos per facility, 40 total, with a visible usage meter — a limit the family
+  can see beats a write that fails at the worst moment.
+- **`navigator.storage.estimate()` is checked before each write** and the family is warned at 80%.
+- **Photos are excluded from JSON export by default**, with the reason stated on the control: an
+  export with 40 embedded images is a file too large to email, which is what export is for. An
+  opt-in "include photos" checkbox is acceptable if the size is shown before the download.
+- **A privacy caution on the capture control**: photographs taken inside a community may include
+  other residents, who have not consented. The copy says so once, plainly, without lecturing.
+
+#### 11.2.5 Acceptance criteria (BDD)
+
+- *Given* three facilities with ratings and weights, *When* the comparison is rendered, *Then* each
+  dimension shows per-facility bars and no facility is labelled best or ranked.
+- *Given* a facility with two unrated dimensions, *When* its composite is shown, *Then* the divisor
+  excludes them and the excluded dimensions are named on screen.
+- *Given* a facility with a quoted rate, *When* it is adopted into the active scenario, *Then* the
+  all-in figure, runway and split all change to match the quote, and the delta versus the previous
+  scenario is stated in months of runway.
+- *Given* the `facility-fit` derivation, *When* its parts are parsed **from the rendered page**,
+  *Then* the stated `score × weight` products sum exactly to the stated weighted total, and that
+  total divided by the stated weight sum equals the displayed composite.
+
+  > **Corrected before implementation.** This criterion originally read "*they sum exactly to the
+  > displayed composite (§6.10 invariant)*", which is not a true statement about a weighted mean:
+  > the parts sum to the weighted *total*, which is then divided by the weight sum. Writing it the
+  > original way would have forced either a false assertion or an abuse of the cents-typed
+  > `add`/`subtract` machinery that `isBalanced` checks. `facility-fit` therefore follows the
+  > existing `sensitivity` pattern — `reference` steps with `valueText`, a `valueText` result, and
+  > `hasArithmetic() === false`, so the §6.10 cents invariant is satisfied vacuously and correctly.
+  > The real check is the division above, asserted on the rendered strings in
+  > `e2e/facilities.spec.ts` and on the engine output in `fit.test.ts`.
+- *Given* a photo is attached, *When* the page is reloaded, *Then* the photo is still shown and the
+  plan payload in `localStorage` has not grown by the photo's size.
+- *Given* the photo store is at quota, *When* another photo is attached, *Then* the failure is
+  reported against the photo and a subsequent plan edit still saves and survives a reload.
+- *Given* the shortlist is printed with the Family Meeting Summary, *When* the copy is read, *Then*
+  it never addresses the reader in the second person (§5.4).
+- *Given* the panel is on screen, *When* it is audited, *Then* `@axe-core/playwright` reports no
+  violations — including that a rating is not encoded by colour alone (§5.5).
+
+### 11.3 PROPOSED — Financing the gap: APR, and today's dollars (`engine/financing.ts`)
+
+**The problem.** §2.5 already establishes that ~60% of people supporting a parent take on debt and
+13% take on $25,000 or more, and §6.3 already flags *when* contributors must start funding from
+debt. What the app never says is **what that borrowing costs**. A plan that reports "contributors
+fund from month 34" and stops there has hidden the most expensive fact in it.
+
+#### 11.3.1 Engine
+
+Pure, like every other engine (§4 — no React, no storage, no ambient `Date.now()`).
+
+```
+input:  borrowedByMonthCents[]   // from RunwayResult: the part of each month's
+                                 // contribution that exceeds stated capacity
+        aprRate                  // decimal, e.g. 0.0899
+        mode: 'interest_only' | 'amortizing'
+        repaymentMonths          // term after care ends, for the payoff view
+
+for each month m:
+  interest(m)  = balance * aprRate / 12
+  balance      = balance + borrowed(m) + interest(m) - payment(m)
+
+output: balanceByMonthCents[], peakBalanceCents, totalInterestCents,
+        monthlyPaymentAfterCareCents, monthsToRepay
+```
+
+- **Instrument presets ship as cited typical APR *ranges*, never quoted rates** — the same
+  discipline as `data/feeStructures.ts`, with the same provenance block (source, retrieval date,
+  confidence). A quoted rate the family did not receive is a false precision that costs money.
+- **401(k) withdrawals are deliberately excluded from V1** of this engine. Their cost is marginal
+  tax plus a 10% early-withdrawal penalty plus lost growth, not an APR, and getting it subtly wrong
+  is the kind of harm §10.4 already refuses to risk with Medicaid. A note names the omission and
+  refers out.
+- Reverse mortgage stays deferred per §10.3.
+
+#### 11.3.2 Today's dollars
+
+A ten-year nominal projection overstates what the later years mean, and the app currently only
+shows nominal. A **"show in today's dollars"** toggle deflates every projected figure by
+`generalInflationRate`, applies to the runway chart, the yearly table and the totals together, and
+states which basis is on screen. It must never be possible to read a nominal figure next to a real
+one without a label — that is a total-and-parts failure in a different coat.
+
+#### 11.3.3 Non-advice boundary
+
+This is an estimator (§1). It computes the cost of a borrowing plan the family describes; it does
+not recommend borrowing, does not compare lenders, does not rank instruments, and carries the same
+"confirm with a professional" framing as §6.9. `financing` gains an `ExplanationId` in the same
+change that gives it a UI (§6.10, binding).
+
+#### 11.3.4 Acceptance criteria (BDD)
+
+- *Given* a plan whose contributions exceed capacity from month 34, *When* an APR is entered,
+  *Then* the peak balance, total interest and post-care monthly payment are displayed with their
+  derivation.
+- *Given* an APR of 0, *When* the projection runs, *Then* total interest is exactly zero and the
+  balance equals the sum borrowed (a hand-computed golden fixture, per §8).
+- *Given* interest-only versus amortizing at the same APR, *When* both are run, *Then* the
+  amortizing total interest is lower and both are hand-verified fixtures.
+- *Given* "today's dollars" is enabled, *When* the runway table is read, *Then* every figure on
+  screen is on that basis and the basis is stated.
+
+### 11.4 PROPOSED — Two care recipients at once (couples)
+
+**The problem, and it is a real gap.** Both parents entering care in the same period is common —
+often the same fall or diagnosis triggers it for both — and the app cannot express it at all today.
+`PlanSchema.careRecipientLabel` is a single string, and every engine reads one active scenario.
+A family in this position currently has to run the planner twice and add the answers by hand, which
+is wrong: the two people share assets, share income, and share a shortfall, and running two
+independent projections double-counts the assets in both.
+
+**Three shapes, and the recommended one:**
+
+| Approach | What it gives | Cost |
+|---|---|---|
+| (a) Second-person add-on only | Two people, one unit, one care type — the `second_person` add-on already in `FacilityAddOnSchema` | Cheap; does not cover the common case of *different* care levels (one assisted living, one memory care) |
+| (b) `careRecipients: [{ id, label, scenarioIds }]` on `Plan` | Full generality | Touches every engine and every explanation; largest blast radius in the batch |
+| **(c) Concurrent scenarios drawing on one asset pool** — **recommended** | Two scenarios marked concurrent; costs summed per month; one shared income and asset base; one combined shortfall into the existing split | Contained: `runway.ts` gains a summed cost stream, `PlanSchema` gains `concurrentScenarioIds`. Comparison scenarios stay comparisons. |
+
+(c) is recommended because it preserves the existing meaning of "scenario" (an option under
+consideration) while adding "these two are both happening", and because it keeps the shared-asset
+arithmetic in one place instead of two.
+
+**Consequences that must be handled in the same change, not after:**
+
+- **Break-even (§6.2)** is per person and must say so — one parent at home while the other is in a
+  community is a real and common arrangement, and a combined crossover figure would be meaningless.
+- **Medicaid framing (§6.8)** changes materially: the spousal-impoverishment protections that
+  shelter a community spouse **do not apply when both spouses are institutionalised**. This is
+  exactly the kind of state-specific rule §10.4 refuses to model — so the card's copy changes to
+  say the protection may not apply and to refer out. It must not compute anything new.
+- **Benefit interaction:** two SSA benefits, and possibly a survivor-benefit change, are outside
+  what this app models. Named as a caveat, not estimated.
+- **§9.2 discipline is mandatory here.** `grep -rln "CareScenario\|careRecipientLabel"
+  projects/elder-care-planner/src/` and open every file returned, listing each in the PR body with
+  how it handles the concurrent case. `explain/build.ts` (1,005 lines, reads scenario shape
+  throughout) is the one most likely to be missed.
+- **Every existing sweep gains a two-recipient fixture** (§9.3) — `explain/build.test.ts`'s
+  `isBalanced` sweep in particular, which is precisely where a new case kind previously slipped
+  through green.
+
+### 11.5 PROPOSED — Plain-language decoder (no network, no model)
+
+The defensible core of ideas #2 and #7. Families are handed an admission agreement, a level-of-care
+assessment and an EOB in the same week, and the vocabulary is the barrier — not the reasoning.
+
+A **static, cited glossary** (`data/plainLanguage.ts`, same provenance block as `data/benefits.ts`)
+covering the terms that actually appear in these documents: *level-of-care assessment, community
+fee, second-person fee, care tier, elimination period, benefit period, spend-down, lookback,
+MAPR, ADLs/IADLs, respite, discharge planning, custodial vs. skilled care, aid & attendance*.
+Each entry: the term, what it means in one sentence, why it matters to the family's money, and a
+link to the §6.5 question that turns it into leverage.
+
+This is `data/questionsToAsk.ts`'s pattern applied to comprehension rather than negotiation: zero
+computation, zero network, and plausibly one of the highest-value-per-line screens in the app.
+Document *upload* and generated summaries stay out — that is `projects/legal-financial-rag`.
+
+### 11.6 PROPOSED — Shared family link (restating the §3 deferral, with a design)
+
+The compatible answer to idea #8, and already listed in §3's V2 deferrals:
+
+- The plan is serialised, compressed, encrypted with a passphrase the sender shares out of band,
+  and placed in the **URL fragment**. Fragments are never transmitted to a server, so the payload
+  reaches the sibling without ever reaching a host — the §1.2 claim survives intact.
+- It is a **snapshot, not sync.** The link says when it was made and by whom (a label). Two
+  siblings editing the same link produce two plans, and the UI must say that plainly rather than
+  implying convergence it cannot deliver.
+- URL length limits cap this well below the photo store, so **§11.2 photos are excluded** from the
+  link on the same grounds as export.
+
+Anything beyond a snapshot — real merge, presence, live sync — requires a server and an account,
+and is the rejection in §11.1, not a bigger version of this.
