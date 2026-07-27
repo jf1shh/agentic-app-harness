@@ -154,10 +154,20 @@ const GUARDRAILS = [
     excludePath: (p) => !TEST_FILE_RE.test(p),
     test: (line) => {
       // (a) An `expect(x)` with no matcher chained onto it evaluates x and
-      // asserts nothing. Requiring the line to *close* the call keeps a
-      // legitimately wrapped `expect(` / `).toBe(...)` pair out of scope, and
-      // the `).`-anywhere exclusion keeps every real matcher out.
-      if (/^\s*(await\s+)?expect\(.+\)\s*;?\s*$/.test(line) && !/\)\s*\./.test(line)) return true;
+      // asserts nothing. Three things keep legitimate code out of scope:
+      // the `).`-anywhere exclusion (a matcher on this line), requiring the
+      // call to *close* here (so a wrapped `expect(` whose matcher is below is
+      // untouched), and requiring a terminating `;` — because the other way to
+      // wrap a chain puts the matcher on the NEXT line:
+      //     expect(Schema.parse(x))
+      //       .toEqual(y);
+      // That first line closes the call and is a complete statement by shape,
+      // so only the absent semicolon distinguishes it from the real defect.
+      // Cost of the semicolon requirement: a genuinely bare `expect(x)` written
+      // without one is missed. Accepted deliberately — every app here lints
+      // under ESLint with semicolons, and a false positive on a normal chain
+      // would block real work, which is far worse for a blocking guardrail.
+      if (/^\s*(await\s+)?expect\(.+\)\s*;\s*$/.test(line) && !/\)\s*\./.test(line)) return true;
       // (b) A value annotated as `typeof X` and cast back to `typeof X` is the
       // same type on both sides, so no change to X can ever make it fail.
       // This is the exact shape PR #41 shipped as a "drift tripwire" (§9.4).

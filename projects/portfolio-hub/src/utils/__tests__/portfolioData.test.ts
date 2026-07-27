@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { PROJECTS_DATA } from '../../data/projectsData';
 
 describe('Portfolio Data Integrity', () => {
-  it('contains valid project items', () => {
+  it('Given the shipped portfolio dataset, When it is loaded, Then it contains at least one project', () => {
     expect(PROJECTS_DATA.length).toBeGreaterThan(0);
   });
 
-  it('ensures all projects have required metrics and specs', () => {
+  it('Given the shipped portfolio dataset, When each project is inspected, Then it carries an id, a name, non-negative metrics, a WCAG score and a spec path', () => {
     PROJECTS_DATA.forEach((proj) => {
       expect(proj.id).toBeTruthy();
       expect(proj.name).toBeTruthy();

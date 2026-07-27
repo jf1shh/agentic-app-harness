@@ -51,7 +51,7 @@ const sampleRestaurant: Restaurant = {
 };
 
 describe('reviewVibeParser', () => {
-  it('parses review comments and extracts romantic mood keywords & quotes', () => {
+  it('Given reviews that mention a romantic atmosphere, When they are parsed for the Romantic mood, Then the matching keywords and quotes are extracted and scored highly', () => {
     const result = parseReviewCommentsForMood(sampleRestaurant, 'Romantic');
 
     expect(result.vibeMatchScore).toBeGreaterThanOrEqual(80);
@@ -61,7 +61,7 @@ describe('reviewVibeParser', () => {
     expect(result.summaryText).toContain('reviewer comments explicitly mention');
   });
 
-  it('handles "All" mood without failing', () => {
+  it('Given the catch-all "All" mood, When reviews are parsed, Then a neutral baseline score is returned rather than an error', () => {
     const result = parseReviewCommentsForMood(sampleRestaurant, 'All');
     expect(result.vibeMatchScore).toBe(90);
   });

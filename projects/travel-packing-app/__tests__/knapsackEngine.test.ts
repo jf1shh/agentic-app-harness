@@ -21,7 +21,7 @@ describe('knapsackEngine', () => {
     ]
   };
 
-  it('should correctly calculate total weight and volume of packed items', () => {
+  it('Given a scheduled wardrobe and a carry-on model, When the packing physics are calculated, Then total weight, volume and suitcase capacity are reported and the load is judged compliant', () => {
     const suitcase = MODELS[0]; // Away Carry-On (55 x 34.8 x 22.8) -> ~43 Liters
     const result = calculateKnapsackPhysics(mockReport, mockGarments, suitcase, 'DL'); // Delta (no weight limit, 56x35x23)
     

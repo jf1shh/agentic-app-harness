@@ -47,7 +47,7 @@ const CASES = {
   'no-op-assertion': {
     bad: [
       '  expect(result);',
-      '  expect(splitCosts(plan))',
+      '  expect(splitCosts(plan));',
       '  await expect(loadPlan());',
       '  const _: typeof PlanSchema = undefined as unknown as typeof PlanSchema;',
     ],
@@ -58,6 +58,13 @@ const CASES = {
       '  await expect(page.getByRole("button")).toBeVisible();',
       '  expect(', // a wrapped call: the matcher is on a later line
       '  ).toEqual({ a: 1 });',
+      // The other wrap: the call closes here and the matcher is on the NEXT
+      // line. This shape is real — it is how mood-diner/src/lib/schemas.test.ts
+      // formats a long parse assertion, and an earlier version of this guardrail
+      // false-positived on exactly it. Only the absent semicolon separates it
+      // from `expect(x);`, which is why the regex requires one.
+      '    expect(OpeningHourRangeSchema.parse({ openHour: 12, closeHour: 23 }))',
+      '      .toEqual({ openHour: 12, closeHour: 23 });',
       '  expect.assertions(2);',
       '  const parsed: typeof PlanSchema = OtherSchema;',
       '  const w: typeof A = b as unknown as typeof B;',

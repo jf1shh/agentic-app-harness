@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calculateWarmthTarget, transformWeatherToItinerary } from '../src/services/weatherApi';
 
 describe('weatherApi logic', () => {
-  it('should calculate warmth target based on temperature', () => {
+  it('Given a forecast temperature, When the warmth target is calculated, Then colder days demand a higher warmth rating', () => {
     // 40C (104F) -> 1
     expect(calculateWarmthTarget(40)).toBe(1);
     
@@ -13,7 +13,7 @@ describe('weatherApi logic', () => {
     expect(calculateWarmthTarget(-10)).toBe(10);
   });
 
-  it('should transform open-meteo response to a valid Itinerary array', () => {
+  it('Given a raw open-meteo forecast response, When it is transformed, Then it becomes a valid day-by-day itinerary', () => {
     const mockMeteoResponse = {
       time: ['2026-08-01', '2026-08-02'],
       temperature_2m_max: [30, 15],

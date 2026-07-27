@@ -65,7 +65,7 @@ const sampleSummerPatioRestaurant: Restaurant = {
 };
 
 describe('weatherEngine', () => {
-  it('discourages hot soup restaurants during 92°F hot summer weather', () => {
+  it('Given a hot-soup restaurant, When the weather is a 92°F summer day, Then it is discouraged and the note explains why', () => {
     const hotSummer: WeatherCondition = {
       temperatureF: 92,
       condition: 'Hot',
@@ -79,7 +79,7 @@ describe('weatherEngine', () => {
     expect(result.weatherNote).toContain('Hot weather');
   });
 
-  it('boosts outdoor rooftop sushi bars during hot summer weather', () => {
+  it('Given a rooftop restaurant serving chilled dishes, When the weather is a 92°F summer day, Then it is favoured rather than discouraged', () => {
     const hotSummer: WeatherCondition = {
       temperatureF: 92,
       condition: 'Hot',
@@ -93,7 +93,7 @@ describe('weatherEngine', () => {
     expect(result.weatherNote).toContain('chilled options');
   });
 
-  it('boosts hot soup and ramen during 35°F freezing winter weather', () => {
+  it('Given a hot-soup restaurant, When the weather is a 35°F winter day, Then it is favoured and the note cites winter warmth', () => {
     const coldWinter: WeatherCondition = {
       temperatureF: 35,
       condition: 'Cold',

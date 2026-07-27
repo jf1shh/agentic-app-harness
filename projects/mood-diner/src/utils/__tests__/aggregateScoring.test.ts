@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calculateAggregateScore } from '../aggregateScoring';
 
 describe('calculateAggregateScore', () => {
-  it('calculates weighted composite score for Google and Yelp reviews', () => {
+  it('Given Google and Yelp ratings, When the aggregate is calculated, Then the composite sits between the two source ratings and reads as acclaimed', () => {
     const google = { rating: 4.8, reviewCount: 1500 };
     const yelp = { rating: 4.6, reviewCount: 800 };
 
@@ -13,7 +13,7 @@ describe('calculateAggregateScore', () => {
     expect(result.sentimentSummary).toContain('acclaimed');
   });
 
-  it('calculates multi-source aggregate with TripAdvisor, OpenTable, and Infatuation scores', () => {
+  it('Given ratings from five review sources, When the aggregate is calculated, Then every source is carried through onto the result', () => {
     const google = { rating: 4.8, reviewCount: 3200 };
     const yelp = { rating: 4.7, reviewCount: 5500 };
     const tripAdvisor = { rating: 4.8, reviewCount: 4100 };
@@ -28,7 +28,7 @@ describe('calculateAggregateScore', () => {
     expect(result.infatuationScore).toBe(9.3);
   });
 
-  it('applies Michelin Star bonus to composite rating', () => {
+  it('Given a three-star Michelin restaurant, When the aggregate is calculated, Then the star bonus lifts the composite to 5.0 and the summary names the stars', () => {
     const google = { rating: 4.8, reviewCount: 3500 };
     const yelp = { rating: 4.6, reviewCount: 2800 };
     const michelin = { stars: 3 as const, description: '3 Michelin Stars' };

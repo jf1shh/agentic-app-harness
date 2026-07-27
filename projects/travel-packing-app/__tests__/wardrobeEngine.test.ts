@@ -10,7 +10,7 @@ describe('wardrobeEngine', () => {
     { id: 'bottom2', name: 'Khaki Shorts', category: 'shorts', roles: ['bottom'], colors: ['khaki'], warmth: 2, exclusionTags: [], weightGrams: 300, volumeCm3: 1000 },
   ];
 
-  it('should filter out outfits based on exclusion tags', () => {
+  it('Given garments carrying conflicting exclusion tags, When outfits are generated, Then the clashing combinations are excluded', () => {
     const outfits = generateAllValidOutfits(basicGarments);
     
     // Navy Chinos (bottom1) has 'clash_navy'. 
@@ -24,7 +24,7 @@ describe('wardrobeEngine', () => {
     expect(validOutfit).toBeDefined();
   });
 
-  it('should handle multi-role garments correctly', () => {
+  it('Given a garment that can fill more than one role, When outfits are generated, Then it is used in each role it supports', () => {
     const outfits = generateAllValidOutfits(basicGarments);
     
     // top1 (White Linen Shirt) is both top and topper.
@@ -37,7 +37,7 @@ describe('wardrobeEngine', () => {
     expect(asTopper).toBeDefined();
   });
 
-  it('should prevent consecutive day base outfit repeats and detect dead weight', () => {
+  it('Given a multi-day itinerary, When the wardrobe is analysed, Then no base outfit repeats on consecutive days and unworn garments are reported as dead weight', () => {
     const itinerary: DayItinerary[] = [
       { dayNumber: 1, weatherWarmthTarget: 5, activity: 'sightseeing' },
       { dayNumber: 2, weatherWarmthTarget: 5, activity: 'sightseeing' },

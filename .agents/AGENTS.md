@@ -40,6 +40,18 @@ As an AI agent operating within this repository, you must strictly adhere to the
   Components, pages and routes (`.tsx`) are deliberately **out** of this rule — they are
   covered by Playwright and `@axe-core`, and demanding a unit test per React component
   would describe a testing strategy this repo has not chosen.
+- **Backfilling coverage on a module that already works is the exception, and it is only
+  the exception to step 1.** You cannot write a failing test for behaviour that is already
+  correct, so do not contort one into existence — a test rewritten until it goes red
+  against working code is asserting the bug you invented, not the behaviour you meant to
+  protect. Skip **Red**; **Prove** is then not optional, it is the entire guarantee:
+  write the assertion, break the module (flip a comparison, drop a clamp, return a
+  constant), watch that test and no other go red, restore. State the mutation and its
+  result in the PR body. A backfilled test whose mutation was never run is exactly the
+  §9.4 defect wearing a different hat — it has never been red, so it is a claim about
+  coverage rather than coverage. This is the path every work order under `tasks/` with
+  type `unit-test-coverage` takes; the red-first order above governs new and changed
+  logic, which is everything else.
 - **This is sensed, not just documented.** `senseUnitTests` in `scripts/harness-status.mjs`
   reports every logic module no unit test imports, every unit test file missing
   Given/When/Then, and any Vitest config without an explicit `include`. It is
@@ -245,11 +257,21 @@ As an AI agent operating within this repository, you must strictly adhere to the
   thrown-away one, and reads in review exactly like an assertion. (2) *A value annotated
   `typeof X` and cast back to `typeof X`* is a tautology in type space. Both are worse than
   absent coverage: they are false statements about what is covered, and they displace the
-  real test nobody now thinks to write. The regex requires the `expect(` call to **close on
-  the same line**, so a legitimately wrapped call whose matcher sits on a later line is out
-  of scope, and it excludes any line with a `).` matcher — verified against all 31 unit
-  tests and 16 E2E specs in the repo at the time it was added, with zero hits, so it blocks
-  nothing that exists and only catches the regression. The judgement half of the lesson
+  real test nobody now thinks to write. The regex excludes any line carrying a `).` matcher,
+  requires the `expect(` call to **close on the line**, and requires a terminating `;`. That
+  last condition was not in the first version, and the guardrail false-positived on its
+  author's own new test within the hour — because a chain can be wrapped *two* ways, and
+  `expect(Schema.parse(x))` with `.toEqual(y);` on the next line closes its call and is a
+  complete statement by shape. Only the missing semicolon distinguishes it from the defect.
+  The trade is deliberate and worth stating: a bare `expect(x)` written without a semicolon
+  is now missed, which is acceptable because every app here lints with semicolons, whereas a
+  blocking guardrail that reddens an ordinary wrapped assertion costs real work. The wider
+  lesson is about the *evidence* rather than the regex — "zero hits across the repo when
+  added" proved only that no one had yet written a shape the rule mishandled, and a
+  line-level rule is one formatting habit away from its first false positive. Re-verified
+  after the fix across all 35 unit test files and 24 E2E specs, with zero hits — a count
+  worth re-running rather than restating, since an earlier draft of this bullet quoted both
+  numbers wrong. The judgement half of the lesson
   cannot be automated and stays prose: no regex can tell whether a test that *does* assert
   is asserting the thing that matters, which is why §9.4 still asks you to break the code
   and watch the test go red.

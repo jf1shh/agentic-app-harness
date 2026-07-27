@@ -204,20 +204,70 @@ nothing. §9.4 ("prove a new test can fail") was prose with no mechanism.
 - `vi.mock()` deliberately does not count as coverage — stubbing a module out is
   the opposite of exercising it.
 
-**Open backlog it found — 11 work orders in `tasks/`, all non-blocking:**
-- **15 untested logic modules**: elder-care-planner 6 (`lib/photos.ts` + all five
-  `lib/data/*`), travel-packing-app 4 (`utils/airlineBaggage`, `utils/generator`,
-  `services/db`, `services/logger`), mood-diner 2 (`lib/schemas`,
-  `data/restaurantsData`), and one each in legal-financial-rag
-  (`hooks/useAutoLock`), portfolio-hub (`schemas`) and smart-recipe-app
-  (`lib/rag/schemas`).
-- **12 of 31 unit test files are not BDD-formatted**: all 5 in mood-diner, 5 of 6
-  in travel-packing-app, and one each in legal-financial-rag and portfolio-hub.
-- **Fixed here, not deferred**: `smart-recipe-app/vitest.config.ts` had no
-  explicit `include` — the one live violation of the existing "Vitest vs.
-  Playwright Test Separation" §6 lesson. Same 2 files / 10 tests before and after.
+**The backlog it found, and what has been closed.** It opened at 11 work orders
+(15 untested logic modules, 12 non-BDD unit test files, 1 unscoped Vitest
+config). **Three remain**, all non-blocking:
+
+| Closed | How |
+|---|---|
+| `legal-financial-rag` `hooks/useAutoLock` | 13 BDD cases, fake timers; 7 mutations |
+| `portfolio-hub` `schemas` | 13 cases incl. the real dataset; 4 mutations |
+| `mood-diner` `lib/schemas` + `data/restaurantsData` | 26 cases incl. the real dataset; 8 mutations |
+| `smart-recipe-app` `lib/rag/schemas` | 13 cases incl. an embed-corpus drift tripwire; 6 mutations |
+| All 12 non-BDD unit test files | Retitled Given → When → Then across 4 apps |
+| `smart-recipe-app` unscoped Vitest `include` | Set explicitly; same 2 files / 10 tests before and after |
+
+**Still open (`tasks/`):** `elder-care-planner` 6 modules (`lib/photos.ts` + all
+five `lib/data/*`) and `travel-packing-app` 4 (`utils/airlineBaggage`,
+`utils/generator`, `services/db`, `services/logger`). Both are the "data table
+and behaviour" tier described in §7's next-step note below.
+
+**Two things the next agent should know, because neither is visible in a diff.**
+
+1. *The guardrail false-positived on its author's own test within the hour.* A
+   chain can be wrapped two ways, and `expect(Schema.parse(x))` with
+   `.toEqual(y);` on the next line closes its call and is a complete statement by
+   shape — indistinguishable from `expect(x);` except for the semicolon, which
+   the regex now requires. "Zero hits across the repo when added" proved only
+   that nobody had yet written a shape the rule mishandled. The §6 lesson has
+   been corrected to say so; do not read the original "verified, zero hits"
+   framing as a guarantee for any future line-level rule.
+2. *The `const { key: _unused, ...rest }` omit idiom does not lint here.* Every
+   app runs `@typescript-eslint/no-unused-vars` with no `^_` ignore pattern and
+   `--max-warnings 0`, so the standard way of building a "missing one field"
+   fixture fails the suite — and `npx vitest run` passes throughout, so it only
+   surfaces at `test-app.mjs`. The replacement is a local `without(obj, key)`
+   helper (see any of the three new schema tests); note it needs
+   `{ ...(obj as Record<string, unknown>) }`, because spreading a bare
+   `T extends object` into an index-signature type is a TS2322. Both mistakes
+   were made and fixed in this change set.
+3. *`travel-packing-app/__tests__/packingChecklist.test.ts` tests nothing.* It
+   imports only a type, rebuilds the essentials list and the progress formula in
+   the test body, and asserts against its own arithmetic — the real list lives
+   inline in `src/components/PackingChecklist.tsx`. It is now BDD-formatted, so
+   the sensor is satisfied and the file is still hollow. This is the §9.4 defect
+   in a shape the `no-op-assertion` guardrail cannot see, because the assertions
+   have real matchers and only their *subject* is wrong. Fixing it means
+   extracting the essentials builder and the percentage calculation out of the
+   component into a logic module — a structural change deliberately not smuggled
+   into a formatting sweep. A header comment in the file says all of this.
 
 **Promotion criterion.** `unit-test-coverage` is excluded from `isBlocking` on
 purpose (§8 sensor policy). Promote it to blocking once the backlog above is
 closed — at that point it stops describing history and starts describing a
-regression.
+regression. Two apps stand between here and that flip.
+
+**Next steps, in the order they are worth doing.**
+1. `travel-packing-app`'s four modules — `utils/generator` and
+   `utils/airlineBaggage` are real behaviour; `services/db` and
+   `services/logger` are thin but sit on persistence.
+2. `elder-care-planner`'s six — `lib/photos.ts` is behaviour (the IndexedDB
+   downscaling path from the §6 binary-attachment lesson); the five `lib/data/*`
+   modules are data tables, so the tests are formulaic: parse every row through
+   its schema and assert the domain invariants the "Cite Confidence" lesson
+   already established (every `confidence` tag is one of the declared three,
+   every state resolves or falls back to the national median *and says so*).
+3. Extract and test the packing-checklist logic (point 2 above).
+4. Flip `unit-test-coverage` to blocking in `isBlocking`, and only then consider
+   line-coverage thresholds — a threshold set after the backlog closes can come
+   from a real measurement instead of a guess.
