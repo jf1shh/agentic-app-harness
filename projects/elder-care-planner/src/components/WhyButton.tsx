@@ -11,7 +11,19 @@ import { useExplain } from './ExplainProvider';
  * than a punctuation mark — a screen reader user hearing "question mark, button"
  * eleven times down a page has been given nothing.
  */
-export function WhyButton({ id }: { id: ExplanationId }) {
+export function WhyButton({
+  id,
+  onActivate,
+}: {
+  id: ExplanationId;
+  /**
+   * Run before the panel opens. Needed where one `ExplanationId` covers several
+   * subjects — the facility shortlist builds `facility-fit` for whichever
+   * community is in focus, so the click has to move the focus before the drawer
+   * reads the derivation.
+   */
+  onActivate?: () => void;
+}) {
   const { get, open, openId } = useExplain();
   const explanation = get(id);
   if (!explanation) return null;
@@ -26,7 +38,10 @@ export function WhyButton({ id }: { id: ExplanationId }) {
       aria-haspopup="dialog"
       aria-expanded={openId === id}
       title={explanation.question}
-      onClick={() => open(id)}
+      onClick={() => {
+        onActivate?.();
+        open(id);
+      }}
     >
       <span aria-hidden="true">?</span>
     </button>

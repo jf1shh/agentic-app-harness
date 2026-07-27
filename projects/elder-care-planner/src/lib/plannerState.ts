@@ -9,17 +9,19 @@ import {
   type AddOnToggle,
   type CareScenario,
   type Contributor,
+  type FacilityNote,
   type Plan,
   type PlannerState,
   type CareType,
   type ILOption,
 } from './schemas';
+import { SELECTABLE_CARE_TYPES } from './data/costOfCare';
 
 // The form's shape is a Zod schema in schemas.ts, so what the app holds in
 // React and what it validates on read out of the browser cannot drift apart
 // (.agents/AGENTS.md §1). Re-exported here because this is where callers
 // already look for it.
-export type { AddOnToggle, PlannerState, ILOption };
+export type { AddOnToggle, PlannerState, ILOption, FacilityNote };
 
 /** How many IL options the comparison panel will hold (spec §6.5b.4). */
 export const MAX_IL_OPTIONS = 3;
@@ -37,6 +39,55 @@ export function makeILOption(index: number): ILOption {
     amortized: false,
     refundSchedule: [],
     monthlyServiceCentsRate: 0,
+  };
+}
+
+/**
+ * A blank facility card. All figures start empty rather than seeded: §7 forbids
+ * inventing numbers, and a plausible-looking default rent is exactly the kind a
+ * family leaves in place and then compares against.
+ */
+export function makeFacility(index: number, careType: CareType): FacilityNote {
+  return {
+    id: `f${index + 1}`,
+    label: `Community ${index + 1}`,
+    careType,
+    waitlist: 'unknown',
+    ratings: [],
+    photoIds: [],
+  };
+}
+
+/**
+ * The plan priced at this community's quoted figures (spec §11.2.3).
+ *
+ * This is the join that makes the shortlist worth building: without it the
+ * ratings are a notes app sitting next to a calculator, and the family never
+ * finds out what preferring a place costs them. With it, every downstream
+ * engine — all-in cost, runway, break-even, split — re-runs against a real
+ * quote instead of a survey median.
+ *
+ * All three quoted figures are written together, with an absent quote taken as
+ * zero rather than left at whatever the previous community charged. Carrying
+ * one place's community fee into another place's pricing is a silent
+ * misattribution, and it would land on the one number a family is least likely
+ * to re-check. The panel says plainly that adopting replaces all three.
+ */
+export function withFacilityAdopted(
+  state: PlannerState,
+  facility: FacilityNote,
+): PlannerState {
+  return {
+    ...state,
+    // Guarded rather than assigned: a hand-edited payload could name a care
+    // type the triage picker cannot show, which would strand the form on an
+    // option the family has no control to change.
+    careType: SELECTABLE_CARE_TYPES.includes(facility.careType)
+      ? facility.careType
+      : state.careType,
+    costOverrideCents: facility.quotedMonthlyCents ?? null,
+    communityFeeCents: facility.quotedCommunityFeeCents ?? 0,
+    careLevelTierCents: facility.quotedTierCents ?? 0,
   };
 }
 
@@ -111,6 +162,9 @@ export const INITIAL_STATE: PlannerState = {
   monthsElapsed: 1,
 
   ilOptions: [],
+
+  facilities: [],
+  facilityWeights: [],
 };
 
 function isResidential(careType: CareType): boolean {

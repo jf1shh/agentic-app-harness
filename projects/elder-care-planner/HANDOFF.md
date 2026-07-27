@@ -1,10 +1,10 @@
 # Agent Handoff — Elder Care Cost Planner
 
-**State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b).
-`node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only, lint,
-type-check, 206 Vitest, 58 Playwright + axe).
+**State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b) and the
+facility shortlist (spec §11.2). `node scripts/test-app.mjs elder-care-planner` passes all checks
+(security advisory-only, lint, type-check, 237 Vitest, 70 Playwright + axe).
 
-**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 5,
+**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 9,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
 not from intuition.
 
@@ -34,6 +34,38 @@ Three things here are load-bearing and easy to undo by accident:
 3. **`RunwayResult.yearlyBreakdown` is now the monthly series sampled, not a second
    accumulation.** Both read one `assetsEndCents` per month. Re-splitting them would let the chart
    and the table disagree about the same instant; `runway.test.ts` asserts they cannot.
+
+**Facility shortlist (spec §11.2, added in revision 9).** Tour notes for up to six communities:
+eight scored dimensions, weights, quoted figures, free notes and photographs, plus a comparison
+table and a `facility-fit` derivation. `engine/fit.ts` is pure scoring; `components/FacilityPanel.tsx`
+holds the cards and table; `components/FacilityPhotos.tsx` and `lib/photos.ts` own the images.
+
+Four things here are load-bearing:
+
+1. **Photos are in IndexedDB, in a store the plan does not share, and only ids reach
+   `PlannerState`.** This is not tidiness. `localStorage` is ~5MB per origin, so a base64 photo
+   stored beside the plan raises `QuotaExceededError` on the *plan* write — the family loses their
+   ledger because they attached a picture of a dining room, with nothing on screen connecting the
+   two. `e2e/facilities.spec.ts` measures the stored payload before and after an attachment and
+   fails if it grew by more than 200 bytes; mutation-verified by lengthening the stored id.
+2. **A separate store needs a separate erase.** `eraseEverything` calls `clearPhotos()` as well as
+   `clearPlannerState()`. Removing it fails no assertion about `localStorage` and quietly breaks
+   the one promise that matters on a borrowed computer; there is an E2E spec that counts the
+   IndexedDB rows after an erase.
+3. **An unassessed dimension is excluded from the weighted mean, never scored zero** — and the
+   panel names the exclusions, separately for "nobody assessed it" and "weighted as not
+   mattering". Counting an unassessed dimension as zero marks a community down for a question the
+   family never got to ask, and it is a one-line change away at all times.
+4. **Nothing is ranked.** `compareFacilities` returns the family's own order and there is
+   deliberately no `bestFacilityId`. A unit test asserts the absence of `rank` / `isBest` keys, and
+   an E2E spec asserts no "best community" copy reaches the page.
+
+The `facility-fit` derivation is the app's first **non-money** explanation. It states a weighted
+mean, whose parts sum to a points total that is then divided — so it follows the `sensitivity`
+pattern (`reference` steps with `valueText`, a `valueText` result, `hasArithmetic() === false`)
+rather than forcing 1-to-5 scores through the cents-typed `isBalanced` check. Spec §11.2.5 carries
+the corrected acceptance criterion and the reasoning; do not "fix" this by giving the steps
+`valueCents`.
 
 **Local persistence (spec §4.1, added in revision 7).** Everything typed is saved to
 `localStorage` and restored on the next visit, with a disclosed privacy note and a confirmed
@@ -96,7 +128,17 @@ Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpat
    the browser clears its storage", which local-only storage cannot. This is the natural next
    piece, and `Plan` is already the right shape for it.
 
-6. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
+6. **The rest of the user feature batch is specified but unbuilt** — spec §11 records eight
+   user-supplied ideas, adjudicated. Approved and built: §11.2 only. Designed, compatible, and
+   awaiting a decision: §11.3 (financing the funding gap at an APR, plus a "today's dollars"
+   basis), §11.4 (two care recipients at once — the largest blast radius of the batch; read its
+   §9.2 checklist before starting), §11.5 (a network-free plain-language decoder), §11.6 (the
+   encrypted share link, already a V2 deferral). **Recommended for rejection, with reasoning, in
+   §11.1**: a facility directory with ratings, sponsorship by a referral company, RAG over user
+   documents, and server-backed family sync — all four contradict the §1.1/§1.2 non-goals, and a
+   human confirmed they stand. Do not quietly reopen them.
+
+7. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
    drift — that finding is expected, not a defect): Medicaid eligibility modelling, encrypted shared
    family link, care-hours scheduler, reverse-mortgage modelling, receipt capture.
 
@@ -126,6 +168,11 @@ Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpat
   table that visibly does not add up. Where a value is clamped — the funding gap cannot go below
   zero — the clamp is an explicit step. Removing it makes the arithmetic fail to balance in exactly
   the case where the reader is least expecting an error. Both properties are mutation-verified.
+
+- **The facility shortlist is a notebook, not a directory.** It is the closest thing in this app to
+  the §1.1 non-goal, and the distinction is that every entry is one the family walked into: nothing
+  is searched, fetched, or supplied by a community or a referral service. Adding a lookup, an
+  imported rating, or a "find communities near me" control crosses the line the non-goal draws.
 
 - **The non-goals in spec §1.1 are binding**, not preferences. No facility directory, no lead capture,
   no referral revenue, no accounts, no analytics. `e2e/privacy.spec.ts` enforces the network and

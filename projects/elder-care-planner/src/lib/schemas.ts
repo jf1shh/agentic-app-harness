@@ -298,6 +298,103 @@ export const ILOptionSchema = z.object({
 });
 export type ILOption = z.infer<typeof ILOptionSchema>;
 
+/**
+ * The dimensions a family actually compares communities on (spec §11.2).
+ *
+ * `gut` is deliberately its own axis rather than being folded into the others.
+ * A family that left a tour uneasy without being able to say why is holding
+ * real information, and the honest place to record it is a line of its own —
+ * averaging it invisibly into "staff" would launder a feeling into a judgement
+ * about something specific.
+ *
+ * Widening this enum is a §9.2 event: every `Record<FacilityDimension, …>` and
+ * every sweep over it must be visited in the same change.
+ */
+export const FacilityDimensionSchema = z.enum([
+  'community', // the residents, the social life, the atmosphere
+  'food', // dining — the most-cited satisfaction driver in resident surveys
+  'activities',
+  'apartment', // the unit itself: light, size, bathroom, storage
+  'staff', // observed interactions, turnover answer, call-bell response
+  'location', // distance from the family, not "desirability"
+  'upkeep', // cleanliness, smell, maintenance
+  'gut', // the overall feeling of the place
+]);
+export type FacilityDimension = z.infer<typeof FacilityDimensionSchema>;
+
+/** Display order and copy for the dimensions, in one place. */
+export const FACILITY_DIMENSIONS: readonly {
+  dimension: FacilityDimension;
+  label: string;
+  hint: string;
+}[] = [
+  { dimension: 'community', label: 'Community', hint: 'The residents, and whether anyone seemed to be enjoying themselves.' },
+  { dimension: 'food', label: 'Food', hint: 'Dining is the thing residents complain about most. Eat there if the tour allows it.' },
+  { dimension: 'activities', label: 'Activities', hint: 'What was actually happening, not what the calendar on the wall claimed.' },
+  { dimension: 'apartment', label: 'Apartment', hint: 'Light, size, storage, and whether the bathroom works for someone unsteady.' },
+  { dimension: 'staff', label: 'Staff', hint: 'How staff spoke to residents when they thought nobody was watching.' },
+  { dimension: 'location', label: 'Location', hint: 'How long the drive is for whoever will actually be visiting.' },
+  { dimension: 'upkeep', label: 'Upkeep', hint: 'Cleanliness, smell, and whether anything was visibly broken.' },
+  { dimension: 'gut', label: 'Overall feeling', hint: 'The impression left on the way out, whether or not it can be pinned to a reason.' },
+];
+
+/**
+ * One dimension's assessment of one facility.
+ *
+ * `score` is optional and that is load-bearing: a dimension nobody assessed is
+ * not a zero, and scoring it as one would penalise a community for a question
+ * the family never got to ask.
+ */
+export const FacilityRatingSchema = z.object({
+  dimension: FacilityDimensionSchema,
+  score: z.number().int().min(1).max(5).optional(),
+  note: z.string().max(400).optional(),
+});
+export type FacilityRating = z.infer<typeof FacilityRatingSchema>;
+
+/**
+ * How much a dimension matters to this family, 0 ("doesn't matter") to 3
+ * ("this is the decision").
+ *
+ * Stored as a list rather than a `Record` so that adding a dimension to the
+ * enum cannot fail the parse of a payload written before it existed — an
+ * absent dimension resolves to the default weight (see `engine/fit.ts`).
+ */
+export const FacilityWeightSchema = z.object({
+  dimension: FacilityDimensionSchema,
+  weight: z.number().int().min(0).max(3),
+});
+export type FacilityWeight = z.infer<typeof FacilityWeightSchema>;
+
+/**
+ * One community the family actually visited (spec §11.2).
+ *
+ * This is a notebook, not a directory: nothing here is searched, fetched, or
+ * ranked for the family, and nothing is sent anywhere. Every entry exists
+ * because someone toured the place. That distinction is what keeps this clear
+ * of the §1.1 non-goal against facility directories and referral revenue.
+ *
+ * `locality` is free text like "20 minutes from Dana" rather than a street
+ * address — the §8 privacy rule applies here as everywhere else.
+ */
+export const FacilityNoteSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1).max(80),
+  careType: CareTypeSchema,
+  locality: z.string().max(80).optional(),
+  visitedOn: z.string().max(40).optional(),
+  visitedBy: z.string().max(80).optional(),
+  quotedMonthlyCents: z.number().int().min(0).optional(),
+  quotedCommunityFeeCents: z.number().int().min(0).optional(),
+  quotedTierCents: z.number().int().min(0).optional(),
+  waitlist: z.enum(['unknown', 'none', 'weeks', 'months']).default('unknown'),
+  ratings: z.array(FacilityRatingSchema).default([]),
+  /** Keys into the IndexedDB photo store — never the image bytes. See lib/photos.ts. */
+  photoIds: z.array(z.string().min(1)).default([]),
+  notes: z.string().max(2000).optional(),
+});
+export type FacilityNote = z.infer<typeof FacilityNoteSchema>;
+
 export const PlannerStateSchema = z.object({
   // Triage
   stateCode: z.string().length(2),
@@ -335,6 +432,12 @@ export const PlannerStateSchema = z.object({
   // this panel existed still parses against the v1 storage key — no migration,
   // no silent data loss for a family returning to an older saved plan.
   ilOptions: z.array(ILOptionSchema).default([]),
+
+  // Facility shortlist (§11.2). Defaulted for the same reason `ilOptions` is:
+  // a plan stored before this panel existed still parses against the v1 key,
+  // so no migration and no silent data loss for a family coming back to it.
+  facilities: z.array(FacilityNoteSchema).default([]),
+  facilityWeights: z.array(FacilityWeightSchema).default([]),
 });
 export type PlannerState = z.infer<typeof PlannerStateSchema>;
 

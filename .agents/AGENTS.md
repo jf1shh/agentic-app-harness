@@ -159,6 +159,53 @@ As an AI agent operating within this repository, you must strictly adhere to the
   the comparison it claims to, and it will pass or fail for reasons unrelated to the feature.
   Not tagged as a guardrail: whether a given series can legitimately be flat is a property of the
   data the test builds, several call frames from the assertion, and no regex over a line can see it.
+- **A Binary Attachment Must Not Share a Storage Budget With the Record It Annotates**: Adding
+  photos to `projects/elder-care-planner`'s facility shortlist looked like three lines beside the
+  existing `localStorage` write, and that version would have destroyed data. `localStorage` is
+  ~5MB **per origin**, so the plan and the images compete for one budget: a single phone photo,
+  base64-encoded, is 4–5MB on its own, and the `QuotaExceededError` it raises lands on the *plan*
+  write. A family loses thirty ledger entries because they attached a picture of a dining room,
+  and nothing on screen connects the two events. The rule is structural, not a size limit — put
+  binaries in **IndexedDB, in a store the document does not share**, keep only ids in the
+  document, and downscale before storing (longest edge ≤1280px, JPEG q0.7) so the cap is generous
+  rather than theoretical. Two consequences worth knowing. (1) *A separate store needs a separate
+  erase*: "forget everything on this device" cleared `localStorage` and silently left the images
+  behind, which on a shared computer is precisely the promise being broken. (2) *Prove the
+  isolation by measuring the payload, not by reading the code* — the E2E spec records
+  `localStorage.length` before and after attaching, asserts it grew by less than 200 bytes, and
+  then reloads to confirm the image is still there; mutation-verified by lengthening the stored id,
+  which fails exactly that assertion. Both writes are debounced, so the before/after readings must
+  poll for the write to land rather than sampling straight after typing. Not tagged as a
+  guardrail: "does this blob share a quota with that document" is a cross-module property, and the
+  `setItem` call that eventually fails is nowhere near the code that attached the file.
+- **Not Every Displayed Total Is a Sum, and Forcing One Into the Sum Check Breaks Both**: The
+  §6.10 arithmetic-integrity rule — displayed parts must add to the displayed total, in cents —
+  is right for every derivation in `explain/` that states a sum, and wrong for one that states a
+  **weighted mean**. The facility score's parts add to a *points total* which is then divided by
+  the total weight, so a literal reading of "the parts sum to the composite" is false. The
+  approved spec said exactly that, and implementing it faithfully would have meant either a test
+  asserting something untrue or dressing 1-to-5 scores up as `valueCents` so `isBalanced` had
+  something to check — the second is worse, because it would make a currency-formatted "$19.00"
+  appear where a score belongs and quietly satisfy the invariant while meaning nothing. The
+  resolution is to **correct the criterion in the spec, in writing, before building against it**,
+  and to follow the existing non-money precedent (`sensitivity` uses `reference` steps with
+  `valueText` and a `valueText` result, so `hasArithmetic()` is false and the cents invariant
+  holds vacuously *and* correctly). The real check is then stated in the form the figure actually
+  takes: products sum to the stated points total, and that total over the stated weight equals the
+  displayed score — asserted on the engine in the unit tests and on the **rendered strings** in
+  the E2E spec, as the total-and-parts lesson above already requires. Not tagged as a guardrail:
+  deciding whether a given figure is a sum or a quotient is exactly the judgement no regex has.
+- **`getByLabel` Matches a Substring of the Accessible Name, So One Label Can Resolve to Two
+  Controls**: A per-dimension score `<select>` labelled "Food at Oakmont" sat beside its own note
+  field labelled "Note about food at Oakmont", and `getByLabel('Food at Oakmont')` matched both —
+  twelve specs failed at once on a strict-mode violation that reads like a duplicated element
+  rather than a naming collision. `exact: true` does not rescue it either, because these labels
+  carry a hint `<span>` that is part of the accessible name. Locate by **role plus name**
+  (`getByRole('combobox', { name })`) whenever two controls in one card describe the same subject;
+  it disambiguates on the thing that actually differs, and it fails loudly if the control's role
+  changes. This is a sharper form of the existing strict-mode lesson: scoping to a container was
+  already being done here and was not enough. Not tagged as a guardrail: whether one label is a
+  substring of another is a property of two separate JSX nodes.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning

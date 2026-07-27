@@ -17,7 +17,8 @@ import {
 } from '../plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '../engine/plan';
 import { summariseLedger } from '../engine/ledger';
-import type { CareScenario, LedgerEntry, Plan } from '../schemas';
+import { compareFacilities } from '../engine/fit';
+import { FacilityNoteSchema, type CareScenario, type LedgerEntry, type Plan } from '../schemas';
 import { formatCentsPrecise } from '../format';
 
 /**
@@ -66,6 +67,11 @@ function explanationsFor(state: PlannerState): {
     contributors: state.contributors,
     ledger,
     monthsElapsed: state.monthsElapsed,
+    // The page explains whichever community is in focus, defaulting to the
+    // first on the shortlist. Threading it here rather than passing null keeps
+    // `facility-fit` inside every sweep below — a new case kind that no fixture
+    // exercises leaves the suite green by not looking (.agents/AGENTS.md §9.3).
+    facilityFit: compareFacilities(state.facilities, state.facilityWeights)[0] ?? null,
   };
 
   return { set: buildExplanations(inputs), planResult, ledger };
@@ -95,6 +101,42 @@ const CASES: readonly { name: string; state: PlannerState }[] = [
       communityFeeCents: 400_000,
       ancillaryMonthlyCents: 45_000,
       addOns: INITIAL_STATE.addOns.map((a) => ({ ...a, enabled: true })),
+    },
+  },
+  {
+    // The new case kind, added to the sweep in the same change that introduced
+    // it (.agents/AGENTS.md §9.3). It deliberately carries all three states a
+    // dimension can be in — scored and weighted, scored but weighted at zero,
+    // and never assessed — because those are the branches the derivation has.
+    name: 'a plan with a shortlist of communities the family toured',
+    state: {
+      ...INITIAL_STATE,
+      facilities: [
+        FacilityNoteSchema.parse({
+          id: 'f1',
+          label: 'Oakmont',
+          careType: 'assisted_living',
+          quotedMonthlyCents: 690_000,
+          ratings: [
+            { dimension: 'community', score: 4 },
+            { dimension: 'food', score: 5 },
+            { dimension: 'staff', score: 2, note: 'Two aides for the whole floor' },
+            { dimension: 'location', score: 5 },
+            { dimension: 'gut', score: 3 },
+          ],
+        }),
+        FacilityNoteSchema.parse({
+          id: 'f2',
+          label: 'Brookside',
+          careType: 'assisted_living',
+          ratings: [{ dimension: 'food', score: 3 }],
+        }),
+      ],
+      facilityWeights: [
+        { dimension: 'staff', weight: 3 },
+        { dimension: 'food', weight: 2 },
+        { dimension: 'location', weight: 0 },
+      ],
     },
   },
   {
@@ -377,6 +419,9 @@ describe('Given the derivations must never become a second implementation of the
       contributors: [],
       ledger: null,
       monthsElapsed: 0,
+      // No shortlist on this plan: the IL comparison is priced from contracts,
+      // not from tour notes.
+      facilityFit: null,
     });
     return { set, cost: planResult.active!.cost };
   }
@@ -656,6 +701,111 @@ describe('Given a plan where nothing has been logged yet', () => {
   });
 });
 
+describe('Given a community on the shortlist with a weighted score on screen', () => {
+  const withShortlist = CASES.find((c) => c.name.includes('shortlist'))!.state;
+
+  it('When its derivation is read, Then the products stated reach the total stated, and that total over the weight is the score shown', () => {
+    // Given the derivation the "?" beside the score opens
+    const { set } = explanationsFor(withShortlist);
+    const fit = compareFacilities(withShortlist.facilities, withShortlist.facilityWeights)[0];
+    const explanation = set['facility-fit']!;
+
+    // Hand-computed for Oakmont, with staff at weight 3, food at 2, location at
+    // 0 and the rest at the default 1:
+    //   community 4×1 = 4, food 5×2 = 10, staff 2×3 = 6, gut 3×1 = 3
+    //   = 23 points over 1+2+3+1 = 7 weight  →  23 ÷ 7 = 3.285… → "3.3 out of 5"
+    expect(fit.weightedPointsTotal).toBe(23);
+    expect(fit.weightTotal).toBe(7);
+
+    // When the figures the panel prints are parsed back out of its own steps
+    const pointsRow = explanation.steps.find((s) => s.label === 'Points in total')!;
+    const weightRow = explanation.steps.find((s) => s.label === 'Weight in total')!;
+    const result = resultStep(explanation)!;
+    const points = Number(pointsRow.valueText!.replace(' points', ''));
+    const weight = Number(weightRow.valueText!);
+    const shown = Number(result.valueText!.replace(/ out of \d+$/, ''));
+
+    // Then the parts reach the stated total, and the stated total over the
+    // stated weight is the score displayed (spec §11.2.5)
+    const partSum = explanation.steps
+      .filter((s) => s.valueText?.endsWith('points') && s.label !== 'Points in total')
+      .reduce((sum, s) => sum + Number(s.valueText!.replace(' points', '')), 0);
+    expect(partSum).toBe(points);
+    expect(points / weight).toBeCloseTo(Number(shown), 1);
+  });
+
+  it('When the derivation is read, Then it restates the engine rather than recomputing the score', () => {
+    // Given the engine's own result
+    const { set } = explanationsFor(withShortlist);
+    const fit = compareFacilities(withShortlist.facilities, withShortlist.facilityWeights)[0];
+    const explanation = set['facility-fit']!;
+
+    // Then every product in the panel is one the engine produced
+    const printed = explanation.steps
+      .filter((s) => s.valueText?.endsWith('points') && s.label !== 'Points in total')
+      .map((s) => Number(s.valueText!.replace(' points', '')));
+    expect(printed).toEqual(fit.parts.map((p) => p.weightedPoints));
+  });
+
+  it('When a dimension was never assessed, Then the derivation says so instead of quietly dropping it', () => {
+    // Given a card where activities, apartment and upkeep were never scored
+    const { set } = explanationsFor(withShortlist);
+    const explanation = set['facility-fit']!;
+    const notes = explanation.steps.filter((s) => s.kind === 'note').map((s) => s.label);
+
+    // Then the omission is stated, with the reason it is not a zero
+    expect(notes.some((n) => n.includes('no score was recorded'))).toBe(true);
+    expect(notes.some((n) => n.includes('activities'))).toBe(true);
+    expect(notes.some((n) => n.includes('is not a zero'))).toBe(true);
+
+    // And the dimension the family said does not matter is reported separately
+    expect(notes.some((n) => n.includes('location'))).toBe(true);
+  });
+
+  it('When the score changes, Then the derivation moves with it rather than going stale', () => {
+    // Given the same shortlist with the staff score raised from 2 to 5
+    const before = explanationsFor(withShortlist).set['facility-fit']!;
+    const after = explanationsFor({
+      ...withShortlist,
+      facilities: [
+        {
+          ...withShortlist.facilities[0],
+          ratings: withShortlist.facilities[0].ratings.map((r) =>
+            r.dimension === 'staff' ? { ...r, score: 5 } : r,
+          ),
+        },
+        withShortlist.facilities[1],
+      ],
+    }).set['facility-fit']!;
+
+    // Then the points total moves by exactly the weighted difference: staff
+    // carries weight 3, so 5 − 2 = 3 more score is 9 more points
+    const points = (e: Explanation) =>
+      Number(
+        e.steps.find((s) => s.label === 'Points in total')!.valueText!.replace(' points', ''),
+      );
+    expect(points(after) - points(before)).toBe(9);
+  });
+
+  it('When the panel is read, Then it states that nothing on it came from a directory or a referral service', () => {
+    // Given the sources block — the §1.1 non-goal is a claim this app has to
+    // keep making where a reader would reasonably wonder
+    const { set } = explanationsFor(withShortlist);
+    const sources = set['facility-fit']!.sources.join(' ');
+
+    expect(sources).toMatch(/entered by the family/i);
+    expect(sources).toMatch(/referral/i);
+  });
+
+  it('When the caveats are read, Then the score does not claim to be a measurement or a verdict', () => {
+    const { set } = explanationsFor(withShortlist);
+    const caveats = set['facility-fit']!.caveats.join(' ');
+
+    expect(caveats).toMatch(/impressions, not a measurement/i);
+    expect(caveats).toMatch(/best one/i);
+  });
+});
+
 describe('Given every headline figure on the results screen', () => {
   it('When the explanation set is built, Then one exists for each of them', () => {
     // Given the default plan
@@ -676,7 +826,14 @@ describe('Given every headline figure on the results screen', () => {
     for (const id of required) {
       expect(set[id], `${id} is missing`).not.toBeNull();
     }
-    expect([...EXPLANATION_ORDER].sort()).toEqual([...required].sort());
+
+    // `facility-fit` has nothing to explain until a community is on the
+    // shortlist, so it is conditional rather than always-present — but it is
+    // still in the order, and this assertion is what stops a tenth derivation
+    // being added without appearing in the methodology section.
+    const conditional: ExplanationId[] = ['facility-fit'];
+    expect(set['facility-fit']).toBeNull();
+    expect([...EXPLANATION_ORDER].sort()).toEqual([...required, ...conditional].sort());
   });
 
   it('When there are no family members sharing the cost, Then the split derivation is withheld rather than faked', () => {

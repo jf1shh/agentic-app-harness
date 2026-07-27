@@ -2,10 +2,11 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
-> **Revision 9 — §11 is PROPOSED, NOT APPROVED, NOT BUILT.** It records a batch of user-supplied
-> feature ideas, adjudicates each against the binding non-goals in §1.1, and designs the ones that
-> survive. Four of the eight contradict §1.1/§1.2 outright and are recommended for rejection
-> (§11.1). Nothing in §11 may be implemented until a human approves it section by section.
+> **Revision 9 — §11 records a batch of user-supplied feature ideas, adjudicated.** Four of the
+> eight contradict the binding non-goals in §1.1/§1.2 and were rejected with reasoning (§11.1); a
+> human confirmed the non-goals stand. Of the four that survive, **§11.2 (facility shortlist and
+> tour notes) is APPROVED AND BUILT**; §11.3, §11.4, §11.5 and §11.6 are designed but **PROPOSED,
+> NOT APPROVED, NOT BUILT** and may not be implemented until a human approves each one.
 > **Revision 8** — Independent Living comparison (§6.5b) is built: three contract shapes on one
 > asset-depletion chart, with the refund drawn as a band that collapses as the schedule steps down.
 > **Revision 7** — local persistence wired up (§4.1): the form state is the stored artifact, with
@@ -167,6 +168,10 @@ combination plus **local-only, no-account privacy**.
       the page for anyone who wants to read the whole method at once (§6.10).
 - [x] **Family Meeting Summary** — one printable page in a neutral third-party voice:
       recommendation, numbers, assumptions, split.
+- [x] **Facility shortlist & tour notes** — up to six communities the family actually visited,
+      scored across eight dimensions against weights they set, with notes, quoted figures and
+      photographs; adopting one re-prices the whole plan from its quote. A notebook, never a
+      directory (§11.2).
 - [x] **Local-only persistence + export/import** — `localStorage`, no account, no network calls
       for user data; JSON export/import Zod-validated at the boundary.
 - [x] **Accessibility-first UI** — WCAG 2.1 AA, large-type mode, plain language, full keyboard use.
@@ -1138,7 +1143,11 @@ financial data at rest on someone else's disk — three things §1.1 forbids by 
 defers the compatible version: an encrypted payload in a URL fragment, which never reaches a
 server because fragments are not sent in HTTP requests. That is restated with a design in §11.6.
 
-### 11.2 PROPOSED — Facility shortlist & tour notes (`engine/fit.ts`, `FacilityPanel`)
+### 11.2 APPROVED AND IMPLEMENTED — Facility shortlist & tour notes (`engine/fit.ts`, `FacilityPanel`)
+
+> Status: approved and built — `src/lib/engine/fit.ts`, `src/lib/photos.ts`,
+> `src/components/FacilityPanel.tsx`, covered by `e2e/facilities.spec.ts`. One acceptance
+> criterion was corrected before implementation; see §11.2.5.
 
 **The problem.** A family tours four to six communities in about two weeks, under stress, and then
 cannot reconstruct which one had the staff they liked. The decision is made on a blur of half-remembered
@@ -1254,7 +1263,18 @@ they attached a picture of a dining room. Binding rules:
   all-in figure, runway and split all change to match the quote, and the delta versus the previous
   scenario is stated in months of runway.
 - *Given* the `facility-fit` derivation, *When* its parts are parsed **from the rendered page**,
-  *Then* they sum exactly to the displayed composite (§6.10 invariant).
+  *Then* the stated `score × weight` products sum exactly to the stated weighted total, and that
+  total divided by the stated weight sum equals the displayed composite.
+
+  > **Corrected before implementation.** This criterion originally read "*they sum exactly to the
+  > displayed composite (§6.10 invariant)*", which is not a true statement about a weighted mean:
+  > the parts sum to the weighted *total*, which is then divided by the weight sum. Writing it the
+  > original way would have forced either a false assertion or an abuse of the cents-typed
+  > `add`/`subtract` machinery that `isBalanced` checks. `facility-fit` therefore follows the
+  > existing `sensitivity` pattern — `reference` steps with `valueText`, a `valueText` result, and
+  > `hasArithmetic() === false`, so the §6.10 cents invariant is satisfied vacuously and correctly.
+  > The real check is the division above, asserted on the rendered strings in
+  > `e2e/facilities.spec.ts` and on the engine output in `fit.test.ts`.
 - *Given* a photo is attached, *When* the page is reloaded, *Then* the photo is still shown and the
   plan payload in `localStorage` has not grown by the photo's size.
 - *Given* the photo store is at quota, *When* another photo is attached, *Then* the failure is
