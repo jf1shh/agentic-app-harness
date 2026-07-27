@@ -22,6 +22,7 @@ import { formatCents, formatMonths } from '@/lib/format';
 import { CurrencyInput, SelectInput, TextInput, TextAreaInput } from './Inputs';
 import { WhyButton } from './WhyButton';
 import { FacilityPhotos } from './FacilityPhotos';
+import { CollapsibleCard } from './CollapsibleCard';
 
 interface Props {
   facilities: readonly FacilityNote[];
@@ -353,9 +354,16 @@ export function FacilityPanel({
   const weightFor = (dimension: FacilityDimension) =>
     weights.find((w) => w.dimension === dimension)?.weight ?? 1;
 
+  // Counts, never a ranking. This panel refuses to name a best community on
+  // purpose (see the closing note below), and a status line that crowned one
+  // would overturn that editorial decision from the outside (spec §5.1a).
+  const status =
+    facilities.length === 0
+      ? 'Nothing added yet'
+      : `${facilities.length} ${facilities.length === 1 ? 'community' : 'communities'} visited`;
+
   return (
-    <section className="card" aria-labelledby="facilities-heading">
-      <h2 id="facilities-heading">The places actually visited</h2>
+    <CollapsibleCard id="facilities" title="The places actually visited" status={status}>
       <p>
         Four communities in a fortnight blur together, and the one detail that decides it — how
         staff spoke to residents when nobody was watching — is the first thing to go. This is where
@@ -491,6 +499,6 @@ export function FacilityPanel({
           {focusedFacilityId}
         </p>
       )}
-    </section>
+    </CollapsibleCard>
   );
 }

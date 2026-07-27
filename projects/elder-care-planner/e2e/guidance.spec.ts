@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * The two pieces of guidance with the highest value per byte in the whole app:
@@ -14,7 +14,17 @@ test.describe('BDD Spec: The Medicare correction is unavoidable', () => {
     await gotoPlanner(page);
 
     // When the benefits section is read without expanding anything
-    // Then the most expensive misconception in the domain is corrected in plain sight
+    // Then the most expensive misconception in the domain is corrected in plain
+    // sight. The section is collapsed by default (spec §5.1a), so the guarantee
+    // lives in its status line — which is exactly why that line carries the
+    // correction rather than a count of benefit cards.
+    await expect(page.getByTestId('status-benefits')).toBeVisible();
+    await expect(page.getByTestId('status-benefits')).toContainText(
+      'Medicare does not pay for long-term custodial care',
+    );
+
+    // And the full correction is there for anyone who opens it
+    await openSection(page, 'benefits');
     await expect(page.getByTestId('medicare-correction')).toBeVisible();
     await expect(page.getByTestId('medicare-correction')).toContainText(
       'Medicare does not pay for long-term custodial care',
@@ -27,7 +37,9 @@ test.describe('BDD Spec: The Medicare correction is unavoidable', () => {
     // Given the planner
     await gotoPlanner(page);
 
-    // When the Medicaid card is expanded
+    // When the Medicaid card is expanded — inside the benefits section, which
+    // is itself collapsed on arrival (spec §5.1a)
+    await openSection(page, 'benefits');
     const medicaid = page.getByTestId('benefit-medicaid');
     await medicaid.locator('summary').click();
 

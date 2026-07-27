@@ -11,6 +11,7 @@ import { formatCents, formatCentsPrecise } from '@/lib/format';
 import { makeId } from '@/lib/format';
 import { CurrencyInput, DateInput, NumberInput, SelectInput, TextInput, CheckboxInput } from './Inputs';
 import { WhyButton } from './WhyButton';
+import { CollapsibleCard } from './CollapsibleCard';
 
 interface Props {
   summary: LedgerSummary;
@@ -90,15 +91,26 @@ export function LedgerPanel({
 
   const orphaned = entries.filter((e) => !contributors.some((c) => c.id === e.contributorId));
 
+  // Closed, this section reports the one thing a family checks it for: whether
+  // anyone is behind. Both figures come from the same `LedgerSummary` the tables
+  // below render.
+  const furthestBehind = summary.reconciliation.reduce<number>(
+    (worst, r) => Math.min(worst, r.balanceCents),
+    0,
+  );
+  const status =
+    summary.entryCount === 0
+      ? 'Nothing logged yet'
+      : furthestBehind < 0
+        ? `${summary.entryCount} logged, ${formatCents(summary.totalPaidCents)} paid — ${formatCents(Math.abs(furthestBehind))} behind`
+        : `${summary.entryCount} logged, ${formatCents(summary.totalPaidCents)} paid — all square`;
+
   return (
-    <section className="card" aria-labelledby="ledger-heading">
-      <h2 id="ledger-heading">
-        What has actually been paid <WhyButton id="ledger" />
-      </h2>
+    <CollapsibleCard id="ledger" title="What has actually been paid" status={status} noPrint>
       <p>
         The split above is what was agreed. This is what happened. Logging payments as they are
         made turns a running argument into a running total — and the record belongs to the plan,
-        not to whichever family member has been keeping score.
+        not to whichever family member has been keeping score. <WhyButton id="ledger" />
       </p>
 
       {contributors.length === 0 ? (
@@ -319,6 +331,6 @@ export function LedgerPanel({
           ) : null}
         </>
       ) : null}
-    </section>
+    </CollapsibleCard>
   );
 }

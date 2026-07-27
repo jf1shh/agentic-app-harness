@@ -4,6 +4,7 @@ import type { PlannerState } from '@/lib/plannerState';
 import { TYPICAL_FEE_RANGES, FEE_RANGE_SOURCE, ANNUAL_ESCALATOR_BAND } from '@/lib/data/feeStructures';
 import { formatCents, formatPercent } from '@/lib/format';
 import { CurrencyInput, NumberInput } from './Inputs';
+import { CollapsibleCard } from './CollapsibleCard';
 
 interface Props {
   state: PlannerState;
@@ -17,9 +18,15 @@ interface Props {
  * on its own, and this only sharpens it (spec §5.1).
  */
 export function RefineCostPanel({ state, isResidential, isHourly, onChange }: Props) {
+  // The one thing worth knowing without opening this: whether the plan is still
+  // running on a published median or on a real quote. That is the difference
+  // between an estimate and a figure worth taking to a family meeting.
+  const status = state.costOverrideCents
+    ? `Using a quoted ${formatCents(state.costOverrideCents)} a month`
+    : 'Using the published median — add a quote to sharpen it';
+
   return (
-    <section className="card" aria-labelledby="refine-heading">
-      <h2 id="refine-heading">Make the cost more accurate</h2>
+    <CollapsibleCard id="refine" title="Make the cost more accurate" status={status} noPrint>
       <p>
         The advertised rate is rarely the final bill. Adding what is known below moves the
         estimate from a median toward this family&rsquo;s actual situation.
@@ -167,6 +174,6 @@ export function RefineCostPanel({ state, isResidential, isHourly, onChange }: Pr
           onChange={(v) => onChange({ incomeColaRate: v / 100 })}
         />
       </div>
-    </section>
+    </CollapsibleCard>
   );
 }

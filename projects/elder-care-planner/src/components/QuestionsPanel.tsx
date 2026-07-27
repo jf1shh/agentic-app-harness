@@ -2,6 +2,7 @@
 
 import { questionsFor } from '@/lib/data/questionsToAsk';
 import type { CareType } from '@/lib/schemas';
+import { CollapsibleCard } from './CollapsibleCard';
 
 /**
  * The cheapest genuinely useful screen in the app. Modelling hidden fees helps;
@@ -10,10 +11,15 @@ import type { CareType } from '@/lib/schemas';
  */
 export function QuestionsPanel({ careType }: { careType: CareType }) {
   const groups = questionsFor(careType);
+  const total = groups.reduce((sum, group) => sum + group.questions.length, 0);
 
   return (
-    <section className="card" aria-labelledby="questions-heading">
-      <h2 id="questions-heading">Questions to ask before signing anything</h2>
+    <CollapsibleCard
+      id="questions"
+      title="Questions to ask before signing anything"
+      status={`${total} questions, in ${groups.length} groups`}
+      noPrint
+    >
       <p>
         Most of the costs that surprise families are answerable in advance. These are the
         questions that surface them. Ask for the answers in writing.
@@ -30,6 +36,6 @@ export function QuestionsPanel({ careType }: { careType: CareType }) {
           </ul>
         </div>
       ))}
-    </section>
+    </CollapsibleCard>
   );
 }

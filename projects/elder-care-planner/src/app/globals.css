@@ -327,6 +327,135 @@ details > .details-body {
   padding: 0 1rem 1rem;
 }
 
+/* ─── Collapsible sections (spec §5.1a) ──────────────────────────────────────
+   Every section after the results is a `<details>` inside a `section.card`.
+   The card already draws the border, so the details inside it must not draw a
+   second one — these rules are child-scoped (`> details`) precisely so the
+   nested disclosures inside a section body keep the framed look above. */
+section.card.collapsible {
+  padding: 0;
+}
+
+section.card.collapsible > details {
+  border: none;
+  background: none;
+  margin: 0;
+}
+
+.section-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 1.1rem 1.25rem;
+  font-weight: inherit;
+  border-radius: var(--radius);
+  /* Flex layout puts the default triangle on a line of its own, so it is
+     replaced below with a chevron that sits inline and tracks the state. */
+  list-style: none;
+}
+
+.section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-summary::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.1rem;
+  border-right: 2.5px solid var(--primary);
+  border-bottom: 2.5px solid var(--primary);
+  transform: rotate(-45deg);
+  transition: transform 150ms ease;
+}
+
+details[open] > .section-summary::before {
+  transform: rotate(45deg);
+}
+
+.section-summary:hover {
+  background: var(--primary-tint);
+}
+
+.section-summary h2 {
+  margin: 0;
+}
+
+/* The figure a closed section reports. Muted so it reads as an answer rather
+   than as a second heading; `--text-muted` is 7.6:1 on white. */
+.section-status {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.section-body {
+  padding: 0 1.25rem 1.25rem;
+}
+
+/* ─── "On this page" jump bar ────────────────────────────────────────────── */
+.section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 1rem 0;
+  padding: 0.6rem 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.section-nav-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.section-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.section-nav a {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.section-nav a:hover {
+  background: var(--primary-tint);
+  border-color: var(--primary);
+}
+
+/* Keep a jumped-to heading clear of the sticky bar that sent you there. */
+section.card {
+  scroll-margin-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-summary::before {
+    transition: none;
+  }
+}
+
 ul.checklist {
   padding-left: 1.1rem;
 }
@@ -663,6 +792,19 @@ footer.site {
   }
   details > .details-body {
     padding: 0;
+  }
+  /* The section chrome is a screen affordance. On paper the disclosure control
+     is meaningless — `openForPrint` has already opened every section — so the
+     chevron goes and the heading sits flush with the rest of the page. */
+  .section-summary,
+  .section-body {
+    padding: 0;
+  }
+  .section-summary::before {
+    display: none;
+  }
+  .section-status {
+    color: #000;
   }
   body {
     background: #fff;

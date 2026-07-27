@@ -2,7 +2,7 @@
 
 What care really costs, how long the money lasts, and how a family can share it. A private, offline-first planner that takes five inputs and produces an answer in under a minute, then refines with fee detail, break-even analysis, benefit timing, and a sibling contribution ledger. Nothing is sent over the network. There is no account.
 
-> Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single source of truth (currently rev 7).
+> Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single source of truth (currently rev 10).
 >
 > Live: <https://jf1shh.github.io/agentic-app-harness/elder-care-planner/>
 
@@ -12,6 +12,27 @@ What care really costs, how long the money lasts, and how a family can share it.
 
 ### Triage-first information architecture
 Landing route **is** the calculator, not a marketing page. Five fields (state, care type, monthly income, savings available, number of contributors) → instant all-in cost, runway, and per-sibling shortfall. Everything below is optional refinement.
+
+The triage card and the results card are always open; **every section after them is a collapsed
+disclosure** (`CollapsibleCard`), with a sticky **"On this page"** jump bar in between (spec §5.1a).
+Three things about that are load-bearing rather than cosmetic:
+
+- **A closed section still states its figure.** Each one renders a status line read off the same
+  engine output the open panel renders — `Equally — 3 sharing $3,540 a month`, `4 logged, $1,200
+  paid — $340 behind`, `Using a quoted $7,200 a month`. It is derived, never recomputed.
+- **Two status lines inherit an editorial constraint.** The shortlist counts communities and
+  **must not rank them** (§11.2 declines to name a best one on purpose); the benefits section
+  carries **the Medicare correction itself**, because putting the domain's most expensive
+  misconception behind a click is exactly the help-article treatment that panel exists to avoid.
+- **Printing does not depend on what is open.** `lib/printExpansion.ts` opens every printable
+  section on `beforeprint` and synchronously around the in-app print button, then restores only
+  the ones it opened. There is no CSS that reliably reveals a closed `<details>`, so this is
+  behaviour, and `e2e/printing.spec.ts` proves it rather than assuming it.
+
+There is **no tab bar**, deliberately: tabs would hide the consequence of an edit (raising a fee has
+to visibly move the runway), put the Family Meeting Summary behind a control the print stylesheet
+cannot see, and require the `role="tablist"` handling whose failure mode is already recorded in
+`.agents/AGENTS.md` §6.
 
 ### Ten pure-function engines (`src/lib/engine/**`)
 | Module | What it computes |
@@ -141,6 +162,11 @@ broken on exactly the shared computer it was made for. Nothing else leaves the b
 
 WCAG 2.1 AA, zero axe violations. 17px base type with a larger-text toggle (scales the root to 20px) for users reading on a phone in a hospital corridor. All colour pairs verified ≥ 4.5:1. No animation on results — the context is stressful; numbers should appear, not perform.
 
+Since the sections collapse, **axe runs against the expanded page as well as the collapsed one**,
+and so does the 200% zoom overflow check. A collapsed page has almost none of its controls in the
+accessibility tree, so auditing only the default view would have quietly stopped covering every
+table, select and form the suite was written for.
+
 ## Testing
 
 ```bash
@@ -155,7 +181,11 @@ npx playwright test   # E2E + axe a11y
 Coverage bullets (per projectData.ts and the per-file Vitest suite):
 
 - **112 unit tests** (Vitest) on engines, storage, and every derivation; BDD-formatted.
-- **29 E2E specs** including axe on the default view, the large-text view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
+- **E2E specs** including axe on the default view, the large-text view, the fully-expanded view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
+- **Printing is tested as behaviour, not assumed from CSS** (`e2e/printing.spec.ts`): the app's
+  print button, the browser's `beforeprint`, and the print stylesheet are each exercised
+  separately, because a collapsed `<details>` prints collapsed and no stylesheet reliably says
+  otherwise. Mutation-verified — making `openForPrint` a no-op fails three of those specs.
 - **Golden fixtures are hand-computed by a human.** Values captured from the implementation would only prove the code agrees with itself.
 - **Derivations are checked as rendered, not as computed** — the parts shown must sum to the total shown; assertions parse the formatted strings.
 - **Persistence is proved by reloading.**

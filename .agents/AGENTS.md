@@ -208,6 +208,31 @@ As an AI agent operating within this repository, you must strictly adhere to the
   substring of another is a property of two separate JSX nodes.
 - **Capacitor Absolute Base Path** `[guardrail: capacitor-absolute-base]`: An app that ships a Capacitor/Android container must never hardcode its static-host deploy subpath as the bundler `base` / `basePath` (e.g. `base: '/agentic-app-harness/mood-diner/'`). Capacitor serves the built bundle from `https://localhost/` inside the Android WebView, so every `/agentic-app-harness/...` asset URL 404s and the app boots to a blank white screen. The trap is that the *same* build is correct on GitHub Pages — so web CI, Playwright, and the live Pages deploy all stay green while the shipped Android artifact is dead on arrival. Use a relative `base: './'`, which resolves correctly under both the Pages subpath and the WebView origin. The guardrail is scoped via `appliesTo` and does not fire on web-only apps, where an absolute subpath base is the right answer.
 
+- **Collapsing a Page Hides Whatever the Page Was Promising**: Turning a twelve-card scroll into
+  disclosure sections is the right call for `projects/elder-care-planner`, and it silently
+  demoted three separate guarantees on the way. (1) *A closed section says nothing*, so the
+  Medicare correction — the most expensive misconception in the domain, deliberately placed on the
+  results page rather than in a help article — went behind a click, and the E2E spec that guarded
+  it still passed because `toContainText` does not assert visibility. The fix is a **status line**
+  on every collapsed section, carrying the figure or the correction the reader came for, derived
+  from engine output rather than recomputed beside it; and the two panels whose status lines carry
+  editorial constraints must respect them — the facility shortlist counts communities and must not
+  rank them, because §11.2 declines to name a best one on purpose. (2) *A collapsed `<details>`
+  prints collapsed*, so the Family Meeting Summary would have reached the meeting as a heading. No
+  stylesheet reliably reveals a closed `details` across browsers, so this is behaviour: open every
+  printable section on `beforeprint` **and** synchronously around the in-app print button, then
+  close only the ones you opened — printing must not rearrange the page someone was reading.
+  (3) *An a11y audit of a collapsed page audits almost nothing*, because the controls are not in
+  the accessibility tree; the axe sweep and the 200%-zoom overflow check both have to run against
+  the expanded page or they quietly stop covering what they were written for. Two mechanical
+  notes. `<details open={x}>` as a React prop is wrong on a page that re-renders per keystroke —
+  it slams the section shut mid-typing; leave `open` out of props entirely and let the DOM hold
+  it. And `locator('summary')` inside a section that contains its own nested `<details>` matches
+  two elements, which surfaces as a strict-mode violation reading like a duplicated component.
+  Not tagged as a guardrail: whether a given collapsed section has hidden something load-bearing
+  is a judgement about what that panel was for, and the failing E2E assertion is usually in a
+  different file from the component that collapsed.
+
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.
 - **Create Agent Handoff File**: Agents MUST create or update a dedicated handoff file (e.g., `HANDOFF.md` in the project root or relevant app directory) detailing current project state, key changes, open bugs/blockers, and exact next steps so any future AI agent can seamlessly take over the work without loss of context.

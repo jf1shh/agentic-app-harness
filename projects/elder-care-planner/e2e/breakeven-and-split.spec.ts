@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * Two decisions families actually face: home or a facility, and who pays.
@@ -10,6 +10,7 @@ test.describe('BDD Spec: The home-versus-facility crossover', () => {
   }) => {
     // Given a modest amount of paid help at home
     await gotoPlanner(page);
+    await openSection(page, 'breakeven');
     await page.getByLabel('Paid help at home, hours per week').fill('20');
     await expect(page.getByTestId('cheaper-option')).toContainText('Care at home');
 
@@ -25,6 +26,7 @@ test.describe('BDD Spec: The home-versus-facility crossover', () => {
   }) => {
     // Given 40 hours a week of paid help and no housing costs counted
     await gotoPlanner(page);
+    await openSection(page, 'breakeven');
     await page.getByLabel('Paid help at home, hours per week').fill('40');
     const before = await page.getByTestId('in-home-monthly').textContent();
 
@@ -41,6 +43,7 @@ test.describe('BDD Spec: The home-versus-facility crossover', () => {
   }) => {
     // Given the planner
     await gotoPlanner(page);
+    await openSection(page, 'breakeven');
 
     // When the break-even summary is read
     // Then it names a concrete number of hours
@@ -55,6 +58,7 @@ test.describe('BDD Spec: Splitting the cost between family members', () => {
     // Given three contributors
     await gotoPlanner(page);
     await page.getByLabel('How many family members will share the cost?').fill('3');
+    await openSection(page, 'split');
 
     // When the shares are read
     const shares = await page.locator('[data-testid^="share-c"]').allTextContents();
@@ -73,6 +77,7 @@ test.describe('BDD Spec: Splitting the cost between family members', () => {
   }) => {
     // Given two contributors
     await gotoPlanner(page);
+    await openSection(page, 'split');
 
     // When one provides 20 unpaid hours a week
     await page.getByLabel('Unpaid care hours per week').first().fill('20');
@@ -88,6 +93,7 @@ test.describe('BDD Spec: Splitting the cost between family members', () => {
   }) => {
     // Given an income-proportional split
     await gotoPlanner(page);
+    await openSection(page, 'split');
     await page.getByLabel('How should the cost be divided?').selectOption('income_proportional');
 
     // When incomes are supplied
