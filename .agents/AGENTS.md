@@ -248,6 +248,15 @@ grep -rln "<TypeName>" projects/<app>/src/
 Open **every** file it returns. In the PR body, list each one and say how it handles the new member
 or why it needs no change.
 
+**This one is enforced in CI.** `scripts/check-enum-blast-radius.mjs` compares the enum members at
+the merge base against HEAD, resolves the inferred type through its `z.infer` alias, and fails the
+build if any file referencing that type was neither touched nor named in the PR body. It is
+diff-shaped rather than line-shaped, which is why it is a workflow step rather than a
+`harness-status.mjs` guardrail — a guardrail's `test(line)` contract cannot express "this changed
+relative to another commit". It is self-tested (`check-enum-blast-radius.test.mjs`) against the
+real shape of the PR below, so it cannot silently stop firing. Naming a file in the body counts as
+handling it, so "needs no change, because …" stays available and stays visible to a reviewer.
+
 PR #41 added `'independent_living'` to `CareTypeSchema`. That type had **seven consumers in the
 app; the PR opened two**. Of the five it skipped, three were where the failures lived:
 
