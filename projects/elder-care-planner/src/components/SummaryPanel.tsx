@@ -7,6 +7,7 @@ import { buildRecommendation } from '@/lib/recommendation';
 import { formatCents, formatCentsPrecise, formatPercent } from '@/lib/format';
 import { CARE_TYPE_LABELS, COST_DATA_SOURCE } from '@/lib/data/costOfCare';
 import type { PlannerState } from '@/lib/plannerState';
+import { CollapsibleCard } from './CollapsibleCard';
 
 interface Props {
   result: ScenarioResult;
@@ -28,9 +29,15 @@ export function SummaryPanel({ result, split, breakEven, state }: Props) {
   const { cost, runway } = result;
 
   return (
-    <section className="card" aria-labelledby="summary-heading">
-      <h2 id="summary-heading">Summary for a family conversation</h2>
-
+    // Collapsible like every other section after the results, and printed
+    // regardless of whether it happens to be open — `openForPrint` reveals it
+    // first. A page whose printed output depended on what the reader had
+    // clicked would be the worst possible way to discover this section exists.
+    <CollapsibleCard
+      id="summary"
+      title="Summary for a family conversation"
+      status="One printable page for the meeting"
+    >
       <p>{rec.headline}</p>
       <p>{rec.runwayLine}</p>
       <p>{rec.nextAction}</p>
@@ -117,6 +124,6 @@ export function SummaryPanel({ result, split, breakEven, state }: Props) {
         These are estimates produced by a planning tool, not financial, legal, tax or medical
         advice. Medicaid eligibility and tax positions are deliberately not modelled.
       </p>
-    </section>
+    </CollapsibleCard>
   );
 }

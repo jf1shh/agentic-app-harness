@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { cents, gotoPlanner } from './support';
+import { cents, gotoPlanner, openSection } from './support';
 
 /**
  * The Independent Living comparison (spec §6.5b.4).
@@ -22,6 +22,9 @@ interface OptionSpec {
 }
 
 async function addOption(page: Page, index: number, spec: OptionSpec) {
+  // The comparison is collapsed on arrival (spec §5.1a). Idempotent, so every
+  // caller gets it without having to remember.
+  await openSection(page, 'il');
   await page.getByTestId('il-add-option').click();
   const card = page.getByTestId(`il-option-il${index + 1}`);
   await expect(card).toBeVisible();
@@ -103,6 +106,7 @@ test.describe('BDD Spec: Three independent living contracts on one chart', () =>
     page,
   }) => {
     await gotoPlanner(page);
+    await openSection(page, 'il');
     await expect(page.getByTestId('il-empty')).toBeVisible();
     await expect(page.getByTestId('il-overlay-chart')).toHaveCount(0);
   });

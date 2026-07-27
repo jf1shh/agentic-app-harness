@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * The facility shortlist (spec §11.2).
@@ -44,6 +44,9 @@ const TINY_PNG = Buffer.from(
 );
 
 async function addTour(page: Page, index: number, tour: Tour) {
+  // The shortlist is collapsed on arrival (spec §5.1a). Idempotent, so calling
+  // it once per tour costs nothing and keeps every caller from having to know.
+  await openSection(page, 'facilities');
   await page.getByTestId('add-facility').click();
   const card = page.getByTestId(`facility-f${index + 1}`);
   await expect(card).toBeVisible();

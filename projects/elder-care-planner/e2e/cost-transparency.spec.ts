@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * The headline research finding: the advertised rate is not the price. Care
@@ -16,6 +16,7 @@ test.describe('BDD Spec: The real cost is shown, not the advertised one', () => 
   }) => {
     // Given assisted living priced at the published median
     await gotoPlanner(page);
+    await openSection(page, 'refine');
     const advertised = await page.getByTestId('advertised').textContent();
     await expect(page.getByTestId('all-in')).toHaveText(advertised ?? '');
 
@@ -33,6 +34,7 @@ test.describe('BDD Spec: The real cost is shown, not the advertised one', () => 
   }) => {
     // Given the planner
     await gotoPlanner(page);
+    await openSection(page, 'refine');
 
     // When a tier and two billed-separately services are added
     await page.getByLabel('Care-level surcharge, monthly').fill('1500');
@@ -49,6 +51,7 @@ test.describe('BDD Spec: The real cost is shown, not the advertised one', () => 
   }) => {
     // Given the planner
     await gotoPlanner(page);
+    await openSection(page, 'refine');
 
     // When a non-refundable move-in fee is added
     await page.getByLabel('Community or move-in fee, one-time').fill('4000');

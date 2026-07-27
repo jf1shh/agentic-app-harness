@@ -1,10 +1,11 @@
 # Agent Handoff — Elder Care Cost Planner
 
-**State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b) and the
-facility shortlist (spec §11.2). `node scripts/test-app.mjs elder-care-planner` passes all checks
-(security advisory-only, lint, type-check, 237 Vitest, 70 Playwright + axe).
+**State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
+facility shortlist (spec §11.2) and the collapsed information architecture (spec §5.1a).
+`node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only, lint,
+type-check, 242 Vitest, 86 Playwright + axe).
 
-**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 9,
+**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
 not from intuition.
 
@@ -95,6 +96,16 @@ Registered in the CI matrix (`.github/workflows/ci.yml`), the Pages deploy
 `projects/portfolio-hub/src/schemas.ts` with `'Family Finance'`).
 
 Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpath.
+
+**Most recent change (revision 10).** The page rendered twelve full-height cards at once, so
+reaching the printable summary meant scrolling past every refinement panel. Everything after the
+results card is now a `CollapsibleCard`, closed on arrival, with a derived status line beside each
+heading and a sticky "On this page" jump bar. New files: `components/CollapsibleCard.tsx`,
+`components/SectionNav.tsx`, `lib/printExpansion.ts` (+ unit tests), `e2e/sections.spec.ts`,
+`e2e/printing.spec.ts`. `e2e/support.ts` gained `openSection`/`openAllSections`, and nine existing
+specs now open the section they work in. Read the four new bullets under "Things to not undo"
+before changing any of it — three separate guarantees were nearly lost to this change and each is
+now held up by a specific test.
 
 ## Open items, in priority order
 
@@ -192,8 +203,36 @@ Ports: dev `3011`, production bundle `5189` root / `5190` under the Pages subpat
 - **`formatCentsPrecise` in the split tables.** Whole-dollar rounding made the displayed shares fail to
   sum to the displayed total. See the lesson added to `.agents/AGENTS.md` §6.
 
-- **Medicare copy stays on the results page**, not behind a disclosure. Assuming Medicare covers
-  long-term custodial care is the most expensive misconception in this domain.
+- **The Medicare correction stays readable without a click.** Assuming Medicare covers long-term
+  custodial care is the most expensive misconception in this domain, so it must never be something
+  a reader has to go looking for. When the page moved to collapsed sections (spec §5.1a) the
+  benefits card became a disclosure like every other section, and the correction moved into its
+  **status line** — the text rendered beside the heading while the section is shut — rather than
+  being demoted behind the control. `e2e/guidance.spec.ts` asserts both halves: the correction is
+  present before anything is opened, and the full callout is there once it is. A status line
+  rewritten to say "3 programmes" would pass a naive reading of the collapse and quietly undo the
+  reason this panel exists.
+
+- **Every section after the results is collapsed, and none of that reaches the printer.**
+  `lib/printExpansion.ts` opens the printable sections on `beforeprint` and synchronously around
+  the in-app print button, then closes only the ones it opened. Do not try to replace it with CSS:
+  no stylesheet reliably reveals the content of a closed `<details>` across browsers, which is why
+  this is behaviour and why `e2e/printing.spec.ts` exercises the button, the browser event and the
+  print stylesheet separately. The restore is deliberately non-destructive — a section the reader
+  had already opened stays open — and that property is what the unit tests in
+  `printExpansion.test.ts` are mostly about.
+
+- **A section's status line is derived from engine output, never recomputed beside it.** It is the
+  same rule as `explain/` and it fails the same way: a second implementation passes review and then
+  drifts the first time the engine changes, except here it drifts *in the summary a reader trusts
+  instead of opening the panel*. Two status lines also carry editorial constraints that are easy to
+  undo — the shortlist counts communities and must not rank them (§11.2 declines to name a best one
+  on purpose), and the benefits line carries the correction above.
+
+- **`CollapsibleCard` never passes `open` as a React prop.** The page re-renders on every keystroke,
+  so a controlled `open={false}` would slam a section shut while someone was typing in it. Leaving
+  the attribute out of props entirely means React never touches it and the DOM keeps whatever the
+  user, the jump bar or the print handler last set — no state required.
 
 ## Verify before pushing
 

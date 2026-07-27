@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * Local persistence (spec §1.2, §4).
@@ -39,6 +39,7 @@ test.describe('BDD Spec: The plan is still here on the next visit', () => {
   }) => {
     // Given several months of care and a logged payment
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await page.getByLabel('Months of care paid for so far').fill('5');
     await page.getByLabel('When?').fill('2026-02-01');
     await page.getByLabel('How much?').fill('1200');
@@ -48,6 +49,9 @@ test.describe('BDD Spec: The plan is still here on the next visit', () => {
     // When the page is reloaded
     await page.reload();
     await gotoPlanner(page);
+    // Which section is open is a view preference, not part of the plan, so it
+    // deliberately does not persist — the ledger has to be reopened to read it.
+    await openSection(page, 'ledger');
 
     // Then the entry, the total and the months behind the reconciliation are intact
     await expect(page.getByTestId('ledger-row')).toHaveCount(1);

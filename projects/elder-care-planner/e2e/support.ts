@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /**
  * Open the planner and wait until it is genuinely ready to be typed into.
@@ -19,6 +19,35 @@ import type { Page } from '@playwright/test';
 export async function gotoPlanner(page: Page) {
   await page.goto('/');
   await page.waitForFunction(() => document.documentElement.dataset.planready === 'true');
+}
+
+/**
+ * Expand one of the collapsible sections (spec §5.1a).
+ *
+ * Every section after the results card is closed on arrival, so a spec that
+ * wants to touch a control inside one has to open it first. Clicking the
+ * `summary` would *toggle* rather than open — a section left open by an earlier
+ * step in the same test would be closed by it, and the failure would surface
+ * three actions later on a control that had been on screen a moment before.
+ * Setting `open` is idempotent, which is what a test helper needs to be.
+ */
+export async function openSection(page: Page, id: string) {
+  const details = page.getByTestId(`section-${id}`);
+  await details.evaluate((el) => {
+    (el as HTMLDetailsElement).open = true;
+  });
+  // The section body is inert until the browser has applied `open`; asserting
+  // it here fails at the helper rather than at whatever the caller did next.
+  await expect(details.locator('.section-body')).toBeVisible();
+}
+
+/** Open every collapsible section, for audits that must see the whole page. */
+export async function openAllSections(page: Page) {
+  await page.evaluate(() => {
+    document
+      .querySelectorAll<HTMLDetailsElement>('details[data-print-open]')
+      .forEach((d) => (d.open = true));
+  });
 }
 
 /** Parse a rendered "$1,234.56" cell back into integer cents. */

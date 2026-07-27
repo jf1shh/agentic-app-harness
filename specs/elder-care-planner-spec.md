@@ -2,6 +2,11 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 10 — §5.1a fixes the shape of the progressive disclosure §5.1.2 has always required.**
+> Everything after the results card collapses into disclosure sections with derived status lines,
+> reached through a sticky "On this page" bar; there is still no tab bar, and printing no longer
+> depends on what a reader happened to leave open.
+>
 > **Revision 9 — §11 records a batch of user-supplied feature ideas, adjudicated.** Four of the
 > eight contradict the binding non-goals in §1.1/§1.2 and were rejected with reasoning (§11.1); a
 > human confirmed the non-goals stand. Of the four that survive, **§11.2 (facility shortlist and
@@ -274,6 +279,66 @@ Driven by §2.2. The landing route **is** the calculator, not a marketing page:
 
 The result panel always shows its confidence basis: *"Based on the state median. Add your
 facility's actual quote to sharpen this."*
+
+### 5.1a How the progressive disclosure of §5.1.2 is actually built — **APPROVED**
+
+§5.1.2 has always required progressive disclosure, and for several revisions the page did not
+implement it: every refinement panel rendered expanded, so a family reaching the printable summary
+scrolled past twelve full-height cards. This section fixes the shape that disclosure takes, so the
+next panel added to the page is not a twelfth judgement call.
+
+**Two sections never collapse.** The triage card and the results card are the answer §5.1.1 and
+§5.2 promise inside a minute; hiding either behind a disclosure control would make the app a
+questionnaire. Everything after the results is a `CollapsibleCard`, closed on first load.
+
+**A closed section still has to say something.** A disclosure control labelled only "Sharing the
+cost" costs a click to learn anything, which is how accordions come to be seen as a way of hiding
+work rather than ordering it. Every `CollapsibleCard` therefore renders a **status line** beside
+its heading, computed from the same engine output the open panel renders — `Equally — 3 sharing
+$3,540 a month`, `4 logged, $1,200 paid — $340 behind`. The status line is derived, never a second
+implementation of the arithmetic (§6.10 applies to it exactly as it applies to `explain/`).
+
+A status line inherits its panel's editorial constraints, and two of them bite. The facility
+shortlist (§11.2) deliberately declines to name a winner — *"none of them is marked as the best
+one"* — so its status line counts what has been visited and must not rank (`3 communities visited`,
+never `Oakmont leads`). The benefits panel exists to correct the single most expensive
+misconception in the domain, so its status line carries **the correction itself** (`Medicare does
+not pay for long-term custodial care`) rather than a count of cards; putting that behind a click
+would be the help-article treatment the panel was built to avoid.
+
+**No tab bar.** This restates and generalises the §6.5b.4 decision, which is now a page-wide rule
+rather than a note about one panel. Tabs would (a) hide the consequence of an edit — the app's
+central claim is that raising a fee visibly moves the runway, which fails if the fee input and the
+runway live on different tabs; (b) put the Family Meeting Summary behind a control the print
+stylesheet cannot see; and (c) require a `role="tablist"` / roving-tabindex implementation whose
+failure mode is already recorded in `.agents/AGENTS.md` §6. `<details>`/`<summary>` is native,
+keyboard-operable and printable, and is already the idiom in `BenefitsPanel`, `MethodologyPanel`
+and `RefineCostPanel`.
+
+**Navigation replaces the scroll, and is not chrome.** A sticky **"On this page"** bar lists the
+sections that currently exist — conditional panels appear in it only when rendered — and
+activating an entry opens that section before scrolling to it, because scrolling to a closed
+section lands the reader on a control rather than on content. Scrolling honours
+`prefers-reduced-motion` per §5.5.
+
+**Printing must not depend on what happens to be open.** `.no-print` sections are irrelevant here,
+but the split table, the facility shortlist and the Family Meeting Summary all print, and a
+collapsed `<details>` prints collapsed. Every collapsible is therefore opened before a print and
+restored afterwards — on `beforeprint`/`afterprint`, *and* synchronously around the in-app "Print
+this summary" button, since a print begun from the button must not race the event. This is
+behaviour, not styling, and it is asserted in E2E rather than assumed.
+
+**Acceptance criteria (BDD).**
+- *Given* a first visit, *When* the page loads, *Then* the triage and results cards are open and
+  every section after them is closed.
+- *Given* a closed section, *When* it is read without being opened, *Then* its status line states a
+  figure that equals the one the open panel renders.
+- *Given* a closed section, *When* its entry in the "On this page" bar is activated, *Then* the
+  section is open and scrolled into view.
+- *Given* every section is closed, *When* the page is printed, *Then* the Family Meeting Summary,
+  the split table and the facility shortlist are all present in the printed output.
+- *Given* the collapsed page, *When* it is audited, *Then* `@axe-core/playwright` reports no
+  violations, both with sections closed and with them open.
 
 ### 5.2 Ship the decision, not the spreadsheet
 A projection is not an answer. Every results view leads with a plain-language recommendation, the

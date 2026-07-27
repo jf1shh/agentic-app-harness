@@ -6,13 +6,18 @@ import { MAX_IL_OPTIONS } from '@/lib/plannerState';
 import { formatCents } from '@/lib/format';
 import { CurrencyInput, NumberInput, TextInput, CheckboxInput } from './Inputs';
 import { ILOverlayChart, ILComparisonTable } from './ILOverlayChart';
+import { CollapsibleCard } from './CollapsibleCard';
 
 /**
  * Independent Living comparison (spec §6.5b.4).
  *
  * Rendered as a card in the single-page flow rather than a literal tab — this
  * app has no tab bar, and inventing one for a single panel would sit oddly
- * beside every other section.
+ * beside every other section. That decision is now page-wide rather than local
+ * to this panel: spec §5.1a collapses every section after the results into a
+ * disclosure and reaches them through a jump bar, for reasons that apply to all
+ * of them (tabs hide the consequence of an edit, and hide printable content
+ * from the print stylesheet).
  *
  * Income, assets and assumptions are deliberately NOT editable here. They come
  * from the plan and are shared across all options, which is the whole reason
@@ -39,10 +44,21 @@ export function ILComparisonPanel({
 }) {
   const byId = new Map(projections.map((p) => [p.scenarioId, p]));
 
-  return (
-    <section className="card no-print" aria-labelledby="il-heading">
-      <h2 id="il-heading">Comparing independent living communities</h2>
+  // Which contract is cheaper depends on how long the stay lasts, so the closed
+  // section counts the options rather than declaring one — the same reason the
+  // open panel draws curves instead of printing a single figure.
+  const status =
+    options.length === 0
+      ? 'No contracts entered yet'
+      : `${options.length} ${options.length === 1 ? 'contract' : 'contracts'} compared`;
 
+  return (
+    <CollapsibleCard
+      id="il"
+      title="Comparing independent living communities"
+      status={status}
+      noPrint
+    >
       <p>
         Independent living contracts usually come in three shapes: a large entry fee that is partly
         refundable on a schedule that shrinks with each year of residence, a smaller entry fee that
@@ -220,6 +236,6 @@ export function ILComparisonPanel({
           <ILComparisonTable projections={projections} />
         </>
       ) : null}
-    </section>
+    </CollapsibleCard>
   );
 }

@@ -57,6 +57,8 @@ import { LedgerPanel } from '@/components/LedgerPanel';
 import { ExplainProvider } from '@/components/ExplainProvider';
 import { ExplainDrawer } from '@/components/ExplainDrawer';
 import { MethodologyPanel } from '@/components/MethodologyPanel';
+import { SectionNav, type NavSection } from '@/components/SectionNav';
+import { listenForPrint, openForPrint, restoreAfterPrint } from '@/lib/printExpansion';
 
 const RESIDENTIAL: readonly CareType[] = [
   'assisted_living',
@@ -168,6 +170,21 @@ export default function Home() {
   useEffect(() => {
     if (restored) document.documentElement.dataset.planready = 'true';
   }, [restored]);
+
+  // Every section after the results is collapsed by default, and a collapsed
+  // `<details>` prints collapsed — so printing has to open them first or the
+  // family meeting summary reaches the meeting as a heading (spec §5.1a).
+  useEffect(() => listenForPrint(), []);
+
+  const printSummary = () => {
+    // Done synchronously around `window.print()` rather than left to the
+    // `beforeprint` listener above: a print started from this button must not
+    // race the event, and `window.print()` can begin painting before a listener
+    // has run.
+    openForPrint();
+    window.print();
+    restoreAfterPrint();
+  };
 
   const eraseEverything = () => {
     const storage = browserStorage();
@@ -283,6 +300,35 @@ export default function Home() {
 
   const isResidential = RESIDENTIAL.includes(state.careType);
   const isHourly = HOURLY.includes(state.careType);
+
+  // The jump bar lists what is actually on the page — an entry pointing at a
+  // section that is not rendered is a broken link (spec §5.1a).
+  //
+  // These conditions deliberately mirror the render guards below rather than
+  // restating them in a weaker form. `buildPlan` always produces at least one
+  // scenario, so in practice every branch is taken; the point is that if the
+  // guard below ever stops holding, the bar stops advertising the section in
+  // the same commit rather than in whichever one notices. `sections.spec.ts`
+  // asserts the two sets are equal rather than checking any one branch.
+  const navSections = useMemo<readonly NavSection[]>(() => {
+    const sections: NavSection[] = [
+      { id: 'refine', label: 'Refine the cost' },
+      { id: 'breakeven', label: 'Home or facility' },
+    ];
+    if (planResult.split) sections.push({ id: 'split', label: 'Sharing the cost' });
+    sections.push(
+      { id: 'ledger', label: 'What was paid' },
+      { id: 'facilities', label: 'Places visited' },
+      { id: 'il', label: 'Independent living' },
+    );
+    if (planResult.active) sections.push({ id: 'methodology', label: 'How it is worked out' });
+    sections.push(
+      { id: 'benefits', label: 'Public benefits' },
+      { id: 'questions', label: 'Questions to ask' },
+    );
+    if (planResult.active) sections.push({ id: 'summary', label: 'Family summary' });
+    return sections;
+  }, [planResult.split, planResult.active]);
 
   const onContributorCountChange = (count: number) => {
     update({ contributorCount: count, contributors: makeContributors(count, state.contributors) });
@@ -429,22 +475,25 @@ export default function Home() {
           />
         ) : null}
 
-        <div className="no-print">
-          <RefineCostPanel
-            state={state}
-            isResidential={isResidential}
-            isHourly={isHourly}
-            onChange={update}
-          />
+        {/* Everything below is collapsed on arrival, so the jump bar is how a
+            reader gets to a section rather than scrolling for it. It sits after
+            the answer because the answer is what §5.1 promises first. */}
+        <SectionNav sections={navSections} />
 
-          <BreakEvenPanel
-            result={breakEven}
-            hoursPerWeek={state.compareHoursPerWeek}
-            housingCarryMonthlyCents={state.housingCarryMonthlyCents}
-            onHoursChange={(v) => update({ compareHoursPerWeek: v })}
-            onHousingCarryChange={(v) => update({ housingCarryMonthlyCents: v })}
-          />
-        </div>
+        <RefineCostPanel
+          state={state}
+          isResidential={isResidential}
+          isHourly={isHourly}
+          onChange={update}
+        />
+
+        <BreakEvenPanel
+          result={breakEven}
+          hoursPerWeek={state.compareHoursPerWeek}
+          housingCarryMonthlyCents={state.housingCarryMonthlyCents}
+          onHoursChange={(v) => update({ compareHoursPerWeek: v })}
+          onHousingCarryChange={(v) => update({ housingCarryMonthlyCents: v })}
+        />
 
         {planResult.split ? (
           <SplitPanel
@@ -456,17 +505,15 @@ export default function Home() {
           />
         ) : null}
 
-        <div className="no-print">
-          <LedgerPanel
-            summary={ledgerSummary}
-            entries={state.ledger}
-            contributors={state.contributors}
-            monthsElapsed={state.monthsElapsed}
-            onMonthsElapsedChange={(months) => update({ monthsElapsed: months })}
-            onAddEntry={onAddLedgerEntry}
-            onRemoveEntry={onRemoveLedgerEntry}
-          />
-        </div>
+        <LedgerPanel
+          summary={ledgerSummary}
+          entries={state.ledger}
+          contributors={state.contributors}
+          monthsElapsed={state.monthsElapsed}
+          onMonthsElapsedChange={(months) => update({ monthsElapsed: months })}
+          onAddEntry={onAddLedgerEntry}
+          onRemoveEntry={onRemoveLedgerEntry}
+        />
 
         <FacilityPanel
           facilities={state.facilities}
@@ -494,10 +541,8 @@ export default function Home() {
 
         <MethodologyPanel />
 
-        <div className="no-print">
-          <BenefitsPanel />
-          <QuestionsPanel careType={state.careType} />
-        </div>
+        <BenefitsPanel />
+        <QuestionsPanel careType={state.careType} />
 
         {planResult.active ? (
           <SummaryPanel
@@ -509,7 +554,7 @@ export default function Home() {
         ) : null}
 
         <div className="no-print">
-          <button type="button" onClick={() => window.print()}>
+          <button type="button" onClick={printSummary}>
             Print this summary
           </button>
         </div>

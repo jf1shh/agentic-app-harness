@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * Calculation transparency (spec §6.10).
@@ -38,6 +38,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
   }) => {
     // Given a plan with fees that push the real cost above the advertised one
     await gotoPlanner(page);
+    await openSection(page, 'refine');
     await page.getByLabel('Care-level surcharge, monthly').fill('1500');
     await page.getByLabel(/Medication management/).check();
 
@@ -57,6 +58,7 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
   }) => {
     // Given a plan carrying a surcharge, two add-ons and everyday costs
     await gotoPlanner(page);
+    await openSection(page, 'refine');
     await page.getByLabel('Care-level surcharge, monthly').fill('1500');
     await page.getByLabel(/Medication management/).check();
     await page.getByLabel(/Incontinence care and supplies/).check();
@@ -127,6 +129,8 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
   }) => {
     // Given the planner
     await gotoPlanner(page);
+    await openSection(page, 'breakeven');
+    await openSection(page, 'split');
 
     // When the crossover explanation is opened
     await page.getByTestId('why-break-even').click();
@@ -140,13 +144,22 @@ test.describe('BDD Spec: Every number can be checked by the family reading it', 
     await expect(page.getByRole('dialog')).toContainText('largest-remainder');
   });
 
-  test('Given a reader who wants the whole method at once, When the page is read without opening anything, Then every derivation is already present', async ({
+  test('Given a reader who wants the whole method at once, When the methodology section is opened, Then every derivation is already present', async ({
     page,
   }) => {
-    // Given the planner as loaded, with nothing opened
+    // Given the planner as loaded
     await gotoPlanner(page);
 
+    // The section is collapsed like every other one after the results (spec
+    // §5.1a), so what stands in for "visible without hunting" is its status
+    // line: it states how many derivations are inside before anything is
+    // clicked, rather than making the reader open it to find out.
+    await expect(page.getByTestId('status-methodology')).toContainText(
+      'derived step by step',
+    );
+
     // When the methodology section is inspected
+    await openSection(page, 'methodology');
     const methodology = page.getByRole('region', {
       name: 'How every number on this page is worked out',
     });

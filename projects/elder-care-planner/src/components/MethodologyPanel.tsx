@@ -3,6 +3,7 @@
 import { EXPLANATION_ORDER } from '@/lib/explain/build';
 import { useExplain } from './ExplainProvider';
 import { ExplanationBody } from './ExplanationBody';
+import { CollapsibleCard } from './CollapsibleCard';
 
 /**
  * Every derivation on the page at once.
@@ -22,8 +23,12 @@ export function MethodologyPanel() {
   if (available.length === 0) return null;
 
   return (
-    <section className="card no-print" aria-labelledby="methodology-heading">
-      <h2 id="methodology-heading">How every number on this page is worked out</h2>
+    <CollapsibleCard
+      id="methodology"
+      title="How every number on this page is worked out"
+      status={`${available.length} figures, derived step by step`}
+      noPrint
+    >
       <p>
         Nothing here is a black box. Each figure below shows its formula, the numbers that went
         into it, where those numbers came from, and what it cannot account for. The same
@@ -47,6 +52,6 @@ export function MethodologyPanel() {
           </div>
         </details>
       ))}
-    </section>
+    </CollapsibleCard>
   );
 }

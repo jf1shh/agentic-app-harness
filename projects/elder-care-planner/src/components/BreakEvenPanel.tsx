@@ -4,6 +4,7 @@ import type { BreakEvenResult } from '@/lib/engine/breakeven';
 import { formatCents } from '@/lib/format';
 import { NumberInput, CurrencyInput } from './Inputs';
 import { WhyButton } from './WhyButton';
+import { CollapsibleCard } from './CollapsibleCard';
 
 interface Props {
   result: BreakEvenResult;
@@ -24,15 +25,29 @@ export function BreakEvenPanel({
     ? `${Math.round(result.breakEvenHoursPerWeek * 10) / 10} hours a week`
     : 'never, at a zero hourly rate';
 
+  const cheaper =
+    result.cheaperOption === 'in_home'
+      ? `Care at home is cheaper by ${formatCents(result.monthlyDifferenceCents)} a month`
+      : result.cheaperOption === 'residential'
+        ? `Residential care is cheaper by ${formatCents(result.monthlyDifferenceCents)} a month`
+        : 'The two cost about the same';
+
   return (
-    <section className="card" aria-labelledby="breakeven-heading">
-      <h2 id="breakeven-heading">
-        Home or a facility? <WhyButton id="break-even" />
-      </h2>
+    <CollapsibleCard
+      id="breakeven"
+      title="Home or a facility?"
+      status={`${cheaper}, at ${hoursPerWeek} hrs/week`}
+      noPrint
+    >
+      {/* The "?" moved out of the heading when this became a disclosure
+          section: a button inside a `summary` is a control inside a control,
+          and clicking it would toggle the section rather than open the
+          derivation. */}
       <p data-testid="breakeven-summary">
         {result.residentialAlwaysCheaper
           ? 'Residential care is cheaper here even before any paid help at home is added, because the cost of running the home already exceeds the facility rate.'
-          : `The two options cost the same at ${crossover} of paid help. Below that, care at home is cheaper; above it, residential care is.`}
+          : `The two options cost the same at ${crossover} of paid help. Below that, care at home is cheaper; above it, residential care is.`}{' '}
+        <WhyButton id="break-even" />
       </p>
 
       <div className="grid-narrow">
@@ -82,6 +97,6 @@ export function BreakEvenPanel({
         Cost is one input among several. Safety, supervision needs and isolation are not modelled
         here, and they often matter more than the money.
       </p>
-    </section>
+    </CollapsibleCard>
   );
 }

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { cents, gotoPlanner } from './support';
+import { cents, gotoPlanner, openSection } from './support';
 
 /**
  * The contribution ledger (spec §6.6).
@@ -36,6 +36,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given the planner with two family members sharing
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
 
     // When a payment is logged
     await logPayment(page, { date: '2026-03-04', dollars: '1200', category: 'Medication' });
@@ -50,6 +51,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given three months of care and an equal split
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await page.getByLabel('Months of care paid for so far').fill('3');
 
     // When two people log what they have paid
@@ -72,6 +74,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given four months elapsed
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await page.getByLabel('Months of care paid for so far').fill('4');
     await logPayment(page, { date: '2026-01-04', dollars: '500' });
 
@@ -90,6 +93,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given two logged payments
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await logPayment(page, { date: '2026-01-04', dollars: '1000' });
     await logPayment(page, { date: '2026-02-04', dollars: '250' });
     await expect(page.getByTestId('ledger-total')).toHaveText('$1,250.00');
@@ -107,6 +111,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given a medication payment, which pre-ticks the medical-expense box
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await logPayment(page, { date: '2026-01-04', dollars: '800', category: 'Medication' });
 
     // When the category totals are read
@@ -123,6 +128,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given payments from two people
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await page.getByLabel('Months of care paid for so far').fill('2');
     await logPayment(page, { who: 'Family member 1', date: '2026-01-04', dollars: '1200' });
     await logPayment(page, { who: 'Family member 2', date: '2026-02-19', dollars: '300' });
@@ -145,6 +151,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given a ledger with an entry in it
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await logPayment(page, { date: '2026-01-04', dollars: '640', note: 'Pharmacy' });
 
     // When axe audits the page
@@ -161,6 +168,7 @@ test.describe('BDD Spec: The ledger records what was actually paid', () => {
   }) => {
     // Given only an amount
     await gotoPlanner(page);
+    await openSection(page, 'ledger');
     await page.getByLabel('How much?').fill('400');
 
     // Then the entry cannot be logged without a date

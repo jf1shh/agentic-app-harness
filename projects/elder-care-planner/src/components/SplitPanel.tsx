@@ -5,6 +5,13 @@ import type { Contributor, SplitMethod } from '@/lib/schemas';
 import { formatCents, formatCentsPrecise } from '@/lib/format';
 import { SelectInput, CurrencyInput, NumberInput } from './Inputs';
 import { WhyButton } from './WhyButton';
+import { CollapsibleCard } from './CollapsibleCard';
+
+const METHOD_LABELS: Record<SplitMethod, string> = {
+  equal: 'Equally',
+  income_proportional: 'In proportion to income',
+  custom: 'By what each has offered',
+};
 
 interface Props {
   split: SplitResult;
@@ -21,15 +28,19 @@ export function SplitPanel({
   onMethodChange,
   onContributorChange,
 }: Props) {
+  // Read off the same `SplitResult` the table below renders, so the closed
+  // section and the open one cannot state different figures (spec §5.1a).
+  const gapCents = split.shares.reduce((s, x) => s + x.monthlyCents, 0) + split.unfundedCents;
+
   return (
-    <section className="card" aria-labelledby="split-heading">
-      <h2 id="split-heading">
-        Sharing the cost <WhyButton id="split" />
-      </h2>
+    <CollapsibleCard
+      id="split"
+      title="Sharing the cost"
+      status={`${METHOD_LABELS[method]} — ${split.shares.length} sharing ${formatCents(gapCents)} a month`}
+    >
       <p>
-        The gap after income is {formatCents(split.shares.reduce((s, x) => s + x.monthlyCents, 0) + split.unfundedCents)} a
-        month. Below is one way to divide it. The figures come from the plan, not from whoever
-        raised the subject.
+        The gap after income is {formatCents(gapCents)} a month. Below is one way to divide it. The
+        figures come from the plan, not from whoever raised the subject. <WhyButton id="split" />
       </p>
 
       <div className="grid">
@@ -143,6 +154,6 @@ export function SplitPanel({
           </div>
         ))}
       </div>
-    </section>
+    </CollapsibleCard>
   );
 }

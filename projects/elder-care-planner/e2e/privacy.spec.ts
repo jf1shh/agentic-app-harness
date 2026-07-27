@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoPlanner } from './support';
+import { gotoPlanner, openSection } from './support';
 
 /**
  * Non-goal enforcement (spec §1.1/§8).
@@ -30,6 +30,7 @@ test.describe('BDD Spec: The local-only claim is provable, not just stated', () 
     await page.getByLabel('Their monthly income').fill('2500');
     await page.getByLabel('Savings available for care').fill('150000');
     await page.getByLabel('How many family members will share the cost?').fill('3');
+    await openSection(page, 'refine');
     await page.getByLabel('Care-level surcharge, monthly').fill('1200');
     await page.getByLabel('Community or move-in fee, one-time').fill('3500');
 
