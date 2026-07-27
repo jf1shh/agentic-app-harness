@@ -18,6 +18,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
+        with:
+          # The blast-radius gate diffs the PR head against its merge base, which
+          # a shallow clone cannot compute. The other steps are static analyzers
+          # and do not care either way.
+          fetch-depth: 0
 
       - name: Setup Node.js Environment
         uses: actions/setup-node@v7
@@ -41,6 +46,21 @@ jobs:
       - name: Harness Guardrail Self-Test (verify the verifier)
         shell: pwsh
         run: node .\scripts\harness-status.test.mjs
+
+      - name: Blast-Radius Self-Test (verify the verifier)
+        shell: pwsh
+        run: node .\scripts\check-enum-blast-radius.test.mjs
+
+      # Blocks a PR that widens a z.enum without opening every consumer of the
+      # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
+      # naming a file in the blast-radius table counts as handling it — "no
+      # change needed, because ..." stays a legitimate answer.
+      - name: Blast-Radius Gate (widened types must visit their consumers)
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node .\scripts\check-enum-blast-radius.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh

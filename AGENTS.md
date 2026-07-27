@@ -35,7 +35,13 @@
 6. **Never self-merge.** An agent may open a PR but a human reviews and merges. See the Sense → Propose →
    Act → Verify → Learn loop in `.agents/AGENTS.md` §8.
 
-7. **Close the loop.** When you hit a bug or learn a reusable lesson, don't just patch the code — persist
+7. **Report what you ran, not what you meant to run.** Never self-certify verification — paste
+   what the command printed. Widening a `z.enum` or union obliges you to open every consumer of
+   that type (`grep -rln "<TypeName>" projects/<app>/src/`), add a fixture to every test sweep the
+   new case kind belongs in, and prove each new test can fail by breaking the code. See
+   `.agents/AGENTS.md` §9, which is written against a PR that got each of these wrong.
+
+8. **Close the loop.** When you hit a bug or learn a reusable lesson, don't just patch the code — persist
    the lesson into `.agents/AGENTS.md` and, when the pattern is mechanically detectable, encode it as a
    guardrail in `scripts/harness-status.mjs` (with a self-test) so the harness catches the regression
    deterministically. See the "adding a learned lesson" protocol in `.agents/AGENTS.md` §8.
