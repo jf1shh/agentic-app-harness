@@ -5,11 +5,13 @@ import { formatCents } from '@/lib/format';
 import { NumberInput, CurrencyInput } from './Inputs';
 import { WhyButton } from './WhyButton';
 import { CollapsibleCard } from './CollapsibleCard';
+import { BreakEvenSlider } from './BreakEvenSlider';
 
 interface Props {
   result: BreakEvenResult;
   hoursPerWeek: number;
   housingCarryMonthlyCents: number;
+  hourlyRateCents: number;
   onHoursChange: (hours: number) => void;
   onHousingCarryChange: (cents: number) => void;
 }
@@ -18,6 +20,7 @@ export function BreakEvenPanel({
   result,
   hoursPerWeek,
   housingCarryMonthlyCents,
+  hourlyRateCents,
   onHoursChange,
   onHousingCarryChange,
 }: Props) {
@@ -76,6 +79,15 @@ export function BreakEvenPanel({
           </span>
         </div>
       </div>
+
+      <BreakEvenSlider
+        hoursPerWeek={hoursPerWeek}
+        onHoursChange={onHoursChange}
+        hourlyRateCents={hourlyRateCents}
+        housingCarryMonthlyCents={housingCarryMonthlyCents}
+        inHomeFixedMonthlyCents={result.inHomeFixedMonthlyCents}
+        residentialMonthlyCents={result.residentialMonthlyCents}
+      />
 
       <div className="grid">
         <NumberInput

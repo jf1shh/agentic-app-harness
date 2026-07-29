@@ -2,6 +2,34 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 12 — §11 records one more user-supplied feature idea, adjudicated.** An NYT-style
+> interactive slider (§11.10 below) is admissible against §1.1/§1.2 on inspection, *provided* the §1.1
+> "no point estimates where a range is the honest answer" rule is satisfied at the UI layer rather
+> than at the engine: `engine/breakeven.ts` returns a single `breakEvenHoursPerWeek` and **must not be
+> changed** without a §9.2 walk of its **ten** current references (`engine/breakeven.ts` itself,
+> the three consuming components `BreakEvenPanel.tsx` / `ResultsPanel.tsx` / `SummaryPanel.tsx`,
+> the `plan.ts` `PlanState` builder, `lib/explain/build.ts`, `lib/recommendation.ts`, the four vitest
+> specs `breakeven.test.ts` / `explain/build.test.ts` / `recommendation.test.ts` / plus the
+> `app/page.tsx` binding — so the slider surfaces the *band* by calling `computeBreakEven` twice —
+> at the low and high cents bounds of a **new** hourly-rate band entry added to `data/costOfCare.ts`
+> (carrying the same `FigureConfidence` tags the existing `NATIONAL_MEDIANS` rows carry, so the
+> cited provenance is uniform with §6) — and drawing the
+> intersection as a low–high rectangle. Initial thumb position binds to
+> `PlanState.currentHoursPerWeek` so the saved plan and the chart read the same number. **PROPOSED,
+> NOT APPROVED, NOT BUILT** as §11.10. Implementation PRs are separate from this spec-only record.
+>
+> **Revision 11 — §11 records three more user-supplied feature ideas, adjudicated.** Two (a
+> coarse living-cost pre-fill for the in-home / stay-at-home path; an explicit "values shown are
+> in today's dollars" label on the charts) are admissible on inspection against §1.1/§1.2 — the
+> math for the label is already in place, and the pre-fill satisfies Cite Confidence by being a
+> range with a confidence tag rather than a single point. One (a year-axis on the comparison
+> graph) is partially admissible: the data is already sampled at year boundaries
+> (`assetsEndByYearCents`) and shown beside the monthly chart, and §6.5b.3 keeps monthly
+> resolution in the *chart* itself — what the idea actually wants is *year-boundary labels* on
+> the existing monthly chart. All three are **PROPOSED, NOT APPROVED, NOT BUILT** as §11.7, §11.8,
+> and §11.9, and may not be implemented until a human approves each one. Implementation PRs are
+> separate from this spec-only record.
+>
 > **Revision 10 — §5.1a fixes the shape of the progressive disclosure §5.1.2 has always required.**
 > Everything after the results card collapses into disclosure sections with derived status lines,
 > reached through a sticky "On this page" bar; there is still no tab bar, and printing no longer
@@ -1154,7 +1182,7 @@ human before V1 ships, and a failure blocks release as surely as a red test:
 
 ---
 
-## 11. PROPOSED (revision 9) — user-supplied feature batch, adjudicated
+## 11. PROPOSED (revisions 9, 11, 12) — user-supplied feature batch, adjudicated
 
 > **Status: PROPOSED. Not approved. Not built.** This section exists because a batch of feature
 > ideas arrived from a prospective user. Per `.agents/AGENTS.md` §1–2, ideas that contradict a
@@ -1481,3 +1509,84 @@ The compatible answer to idea #8, and already listed in §3's V2 deferrals:
 
 Anything beyond a snapshot — real merge, presence, live sync — requires a server and an account,
 and is the rejection in §11.1, not a bigger version of this.
+
+### 11.7 PROPOSED — Coarse living-cost pre-fill (food + housing carry)
+
+Given the user has no per-line figures for `HousingCarryCostSchema`, When they enter *any one* of food, utilities, rent, or property tax in the in-home / stay-at-home path, Then the panel offers a national metro-area **range** (low–high, not a single number) for the other lines, each tagged with one of the §6 confidence levels (`verified` / `needs_verification` / `derived`), and pre-filled only on explicit user action.
+
+- **Range, never a point.** A single median is exactly the §1.1 shape this app refuses, and the Cite Confidence lesson in `.agents/AGENTS.md` §6 says ranges also carry a confidence tag.
+- **Never additive to a residential base rate.** Per §2.1 and the §11.2 reasoning, residential advertising already bundles room+board+meals into `advertisedMonthly`; this pre-fill applies only to in-home / stay-at-home scenarios whose `careType` is in `{in_home_homemaker, in_home_health_aide, family_provided, adult_day_care}`.
+- **Pre-fill, not result.** Numbers arrive labelled "Estimated (your state, …, confidence: …)" until the user confirms or overrides. The headline number never comes from a pre-fill alone; the derivation panel (per §6.10) lists exactly which lines came from the pre-fill and which the user replaced.
+- **No network call.** Per §1.2, the dataset ships in `src/lib/data/livingCost.ts`; no API, no telemetry of which figures were taken.
+
+### 11.8 PROPOSED — Year-boundary labels on the monthly comparison chart
+
+Given any `independent_living` scenario is projected, When the comparison chart is shown, Then year boundaries (month 12, 24, …, N×12) carry a tick mark, an axis label, and a subtle vertical guideline, while the data resolution stays **monthly** per §6.5b.3.
+
+- **Data resolution is not changed.** The underlying `assetsEndByMonthCents` series is untouched — annual sampling is exactly the option §6.5b.3 records as rejected, and revisiting that decision would require a spec revision under §1.1's "reversing any of them requires revising this spec."
+- **Crossings stay truthful.** A year label landing on a non-zero crossing means the curve actually crossed there in a month inside the year; an interpolated landing is explicitly drawn as a faint marker.
+- **Reuses existing data.** No schema change. The chart component (`ILOverlayChart.tsx`) gains year tick rendering; the existing yearly table is unchanged.
+
+### 11.9 PROPOSED — Explicit "values shown are in today's dollars" label
+
+Given any chart is displayed (runway, sensitivity, IL comparison, scenarios), When the chart is on screen, Then a small text label on the chart states which dollar basis the line is drawn in, and the §6.10 derivation panel for that figure names the basis in its `assumptions` array.
+
+- **Today's dollars, with growth rates surfaced.** The engine already applies `annualEscalatorRate` to care and `colaRate` to income (§6.3). A reader who doesn't know that the line ALREADY incorporates inflation is the failure mode the friend identified.
+- **A label, not a new math axis.** This proposal adds no second set of curves (that would double-derive the projection) — it labels the existing one and links to the derivation where the rates are listed.
+- **Required where unlabeled today.** Currently the chart axes say cents but say nothing about which year those cents represent. The friend is correct that this is a transparency gap, and §6.10 + the Cite Confidence lesson already establish the principle.
+
+### 11.10 PROPOSED — NYT-style interactive break-even slider
+
+Given the break-even section is open, *When* the user moves an interactive slider driving paid in-home
+hours per week, *Then* the in-home monthly cost line updates across the slider’s range, the residential
+all-in cost baseline is drawn as a horizontal reference, and the crossover is drawn as a *band* (per
+§1.1 / §5.3) — a low–high rectangle, not a single point — annotated where the two lines intersect
+the band.
+
+- **Same engine, band comes from the UI.** No new math is added to `engine/breakeven.ts`. The slider
+  component reads the user’s chosen `hourlyRateCents` and *also* the citation bounds already used in
+  §6.2 (low rate, high rate) from `data/costOfCare.ts` (a newly-cited `CostOfCareEntry`-shaped band carrying low cents, high cents, a `FigureConfidence` tag matching the §6 Cite Confidence rule, and a `note` naming the survey of origin) — calls `computeBreakEven` *twice* — once at the
+  low bound, once at the high — and uses the two crossover hours as the slider’s band edges. Reusing
+  the pure engine keeps `BreakEvenResult.breakEvenHoursPerWeek` schema untouched; no consumer migration
+  is required (`explain/build.ts`, `BreakEvenPanel.tsx`, etc.). When `computeBreakEven` returns the
+  degenerate case `breakEvenHoursPerWeek === 0` or `=== Number.POSITIVE_INFINITY` (defined at
+  `engine/breakeven.ts:68-72`), the band collapses to a single-point anchor at the lower or upper
+  axis edge — never an unbounded axis range — and the slider thumb still binds to
+  `PlanState.currentHoursPerWeek`.
+- **Range, not point, on screen.** Per §1.1, a single hour readout on screen is exactly the shape this
+  app refuses. The midpoint of the band is *available* but is never the only thing shown. The band is
+  drawn as a shaded rectangle intersecting the in-home cost line; the user’s `aria-valuenow` (their own
+  input) is the only per-tick number on screen, and §5.3 forbids false precision on *output*, not on a
+  reader’s own input.
+- **Initial slider position = the plan’s current value.** When the panel mounts the thumb sits at
+  `PlanState.currentHoursPerWeek` (the same number already encoded in the saved plan), not at 0 or at a
+  default. Closing the tab discards the slider state; reopening returns to that saved value, so the
+  family’s chart never disagrees with their saved plan.
+- **Slider redraw uses `useDeferredValue`.** The thumb position itself updates on every input event;
+  the SVG line and band redraw on a deferred tick. Deferred render is *not* animation, so §5.5 holds.
+- **Neutral voice, derived status line.** Per §5.4 the panel never says "your hours" or "your plan";
+  it says "Selected hours" and "Current plan: 40 hrs". A derived status line on the closed panel
+  reports the band midpoint ("crossover roughly 38–46 hrs/week") so a closed panel still says
+  something, per §5.1a.
+- **§6.10 follows.** The existing `break-even` `ExplanationId` derivation in `src/lib/explain/build.ts`
+  already covers the math. It is reachable from the panel’s `why-break-even` WhyButton; no new
+  `ExplanationId` is required. The derivation panel reads from the *current slider position*, not the
+  plan default.
+- **Out of scope:** scenario-selector sliders (those are the §3 four-scenario table); §6.5b IL
+  comparison chart (its axes are time, not rate — §11.8 is enough); pure sensitivity sliders (§6.4).
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the break-even slider at any position in its range, *When* the panel loads, *Then* the
+    in-home line, residential baseline, and a shaded crossover band are all drawn on the same axis.
+  - *Given* the user drags the slider, *When* the value changes, *Then* the in-home line and band
+    shift continuously and the residential baseline stays fixed.
+  - *Given* any rate state with bounds in the new `data/costOfCare.ts` band entry, *When* the band is drawn, *Then*
+    its width equals the two crossover hours produced by `computeBreakEven` at the low and high bound.
+  - *Given* the plan’s `currentHoursPerWeek` is, say, 25, *When* the panel mounts, *Then* the thumb
+    sits at 25, the in-home line and band intersect the residential baseline visibly to one side of
+    the crossover, and the panel’s status line reports the band as a band — never a single hour.
+  - *Given* a screen reader, *When* the slider’s value changes, *Then* `aria-valuetext` announces
+    "X hours per week", not a raw index.
+  - *Given* the `why-break-even` WhyButton is pressed, *When* the derivation panel opens, *Then* it
+    reads engine output from the *current slider position*, not from the saved default.
+  - *Given* the panel is on screen, *When* the page is audited, *Then* `@axe-core/playwright` reports
+    no violations and the slider is reachable by Tab order.

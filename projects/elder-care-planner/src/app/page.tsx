@@ -491,6 +491,7 @@ export default function Home() {
           result={breakEven}
           hoursPerWeek={state.compareHoursPerWeek}
           housingCarryMonthlyCents={state.housingCarryMonthlyCents}
+          hourlyRateCents={aideHourlyRateCents(state.stateCode)}
           onHoursChange={(v) => update({ compareHoursPerWeek: v })}
           onHousingCarryChange={(v) => update({ housingCarryMonthlyCents: v })}
         />

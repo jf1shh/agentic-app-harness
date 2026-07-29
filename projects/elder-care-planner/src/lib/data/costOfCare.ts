@@ -49,6 +49,10 @@ export interface CostOfCareEntry {
   readonly stateCode: string; // 'US' = national median
   readonly medianMonthlyCents?: number;
   readonly medianHourlyCents?: number;
+  /** Hourly-rate band low (cents), spec §11.10. Optional: requires the band shape. */
+  readonly lowHourlyCents?: number;
+  /** Hourly-rate band high (cents), spec §11.10. Optional: requires the band shape. */
+  readonly highHourlyCents?: number;
   readonly medianDailyCents?: number;
   readonly confidence: FigureConfidence;
   readonly note?: string;
@@ -68,6 +72,8 @@ export const NATIONAL_MEDIANS: readonly CostOfCareEntry[] = [
     careType: 'in_home_homemaker',
     stateCode: 'US',
     medianHourlyCents: NON_MEDICAL_CAREGIVER_HOURLY_CENTS,
+    lowHourlyCents: 3000,
+    highHourlyCents: 4000,
     confidence: 'verified',
     note: 'Published as the merged "non-medical caregiver" rate: $35/hr, $80,080/yr at 44 hrs/week.',
   },
@@ -75,6 +81,8 @@ export const NATIONAL_MEDIANS: readonly CostOfCareEntry[] = [
     careType: 'in_home_health_aide',
     stateCode: 'US',
     medianHourlyCents: NON_MEDICAL_CAREGIVER_HOURLY_CENTS,
+    lowHourlyCents: 3000,
+    highHourlyCents: 4000,
     confidence: 'verified',
     note: 'Same merged "non-medical caregiver" rate; the 2025 survey no longer prices these separately.',
   },
