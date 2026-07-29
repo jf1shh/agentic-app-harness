@@ -31,6 +31,7 @@ test.describe('BDD Spec: The page opens on the answer, not on twelve panels', ()
       'split',
       'ledger',
       'facilities',
+      'guide',
       'il',
       'methodology',
       'benefits',

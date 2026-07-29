@@ -34,6 +34,7 @@ import {
 import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS, SELECTABLE_CARE_TYPES } from '@/lib/data/costOfCare';
 import { ILComparisonPanel } from '@/components/ILComparisonPanel';
+import { StartingGuidePanel } from '@/components/StartingGuidePanel';
 import { projectILVariants } from '@/lib/engine/buyin';
 import type {
   CareType,
@@ -319,6 +320,10 @@ export default function Home() {
     sections.push(
       { id: 'ledger', label: 'What was paid' },
       { id: 'facilities', label: 'Places visited' },
+      // §11.11 — sits after the shortlist (“Places visited”) and before the IL
+      // comparison in both the jump bar and the page render. The navSections
+      // and section-* data-testid arrays must remain equal (sections.spec.ts).
+      { id: 'guide', label: 'A starting guide to outside help' },
       { id: 'il', label: 'Independent living' },
     );
     if (planResult.active) sections.push({ id: 'methodology', label: 'How it is worked out' });
@@ -530,6 +535,12 @@ export default function Home() {
           onWeightChange={onFacilityWeightChange}
           onAdopt={onFacilityAdopt}
         />
+
+        {/* §11.11 — read-only directory of outside help. Lives right after
+            the shortlist; status line carries the trust claim (no referral
+            fees earned by this app), not an entry count, per the lesson
+            recorded in section §5.1a. */}
+        <StartingGuidePanel />
 
         <ILComparisonPanel
           options={state.ilOptions}

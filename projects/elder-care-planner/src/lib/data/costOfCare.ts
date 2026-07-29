@@ -11,6 +11,7 @@
  * with the derivation recorded, and flagged for the user.
  */
 import type { CareType } from '../schemas';
+import { z } from 'zod';
 
 export interface CostDataSource {
   readonly name: string;
@@ -35,14 +36,24 @@ export const COST_DATA_SOURCE: CostDataSource = {
   licensingConfirmed: false,
 };
 
-/** How confident we are in an individual figure. */
-export type FigureConfidence =
+/**
+ * How confident we are in an individual figure.
+ *
+ * Exported as a runtime Zod enum so neighbouring data files (e.g. §11.11's
+ * curated directory in `data/startingGuide.ts`) can reuse the exact same
+ * ensemble without redefining it; the inferred type keeps the call sites
+ * type-safe. Widening this enum is a §9.2 event: every consumer that switches
+ * on the type must be visited in the same change.
+ */
+export const FigureConfidenceSchema = z.enum([
   /** Cross-checked against two independent reports of the primary survey. */
-  | 'verified'
+  'verified',
   /** Reported by a single secondary summary; needs primary-source check. */
-  | 'needs_verification'
+  'needs_verification',
   /** Not a surveyed category — computed from a verified figure. */
-  | 'derived';
+  'derived',
+]);
+export type FigureConfidence = z.infer<typeof FigureConfidenceSchema>;
 
 export interface CostOfCareEntry {
   readonly careType: CareType;

@@ -2,6 +2,8 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 13 — §11 records one more user-supplied feature idea, adjudicated.** A curated "Finding Assisted/Independent Living: A Starting Guide" (proposed §11.11 below) is admissible against §1.1/§1.2 on inspection, *provided* (a) every external URL carries a `FigureConfidence` tag, since AGENTS.md §6 forbids unattributed or un-aged assertions, and (b) the guide is read-only — it does not write to `PlanState`, so the §6.5b.3 "values shown are in today's dollars" rule and the §9 zero-engine-change rule both hold vacuously. The directory is deliberately separate from the §6.5b.4 charged Independent Living comparison panel (which draws money curves) because it lists *un-charged* external services; ID and `data-testid` namespaces are kept disjoint so the two features cannot collide. **PROPOSED, NOT APPROVED, NOT BUILT** as §11.11. Implementation PRs are separate from this spec-only record.
+>
 > **Revision 12 — §11 records one more user-supplied feature idea, adjudicated.** An NYT-style
 > interactive slider (§11.10 below) is admissible against §1.1/§1.2 on inspection, *provided* the §1.1
 > "no point estimates where a range is the honest answer" rule is satisfied at the UI layer rather
@@ -1182,7 +1184,7 @@ human before V1 ships, and a failure blocks release as surely as a red test:
 
 ---
 
-## 11. PROPOSED (revisions 9, 11, 12) — user-supplied feature batch, adjudicated
+## 11. PROPOSED (revisions 9, 11, 12, 13) — user-supplied feature batch, adjudicated
 
 > **Status: PROPOSED. Not approved. Not built.** This section exists because a batch of feature
 > ideas arrived from a prospective user. Per `.agents/AGENTS.md` §1–2, ideas that contradict a
@@ -1590,3 +1592,59 @@ the band.
     reads engine output from the *current slider position*, not from the saved default.
   - *Given* the panel is on screen, *When* the page is audited, *Then* `@axe-core/playwright` reports
     no violations and the slider is reachable by Tab order.
+
+### 11.11 PROPOSED — Finding Assisted/Independent Living: A Starting Guide
+
+The friend, in §11.0, suggested a curated "starting guide" pointing at the external services
+families themselves use to *start* their search, before this app's arithmetic takes over. This
+§11.11 is the adjudicated proposal for that guide.
+
+Given the planner is loaded, *When* the user opens the "Starting Guide" section, *Then* it renders
+a five-category directory (in-home care; community evaluation; legal & financial planning; moving
+logistics; other resources) with every entry carrying `label`, `url`, a `confidence` tag, an
+optional `note`, and an `intake` flag (`free | paid | unknown`). All addresses open in a new tab
+with `rel="noopener noreferrer"` (a single reusable `<ExternalLink>` component).
+
+- **Adjudication: admissible against §1.1/§1.2 on inspection.** §1.1 forbids referral
+  revenue and lead generation; the guide is a *directory of external services*, not a referral
+  path. Every URL publishes where it goes, exactly as the cost figures do. AGENTS.md §6
+  "Cite Confidence, Not Just Sources" applies: external links change; an author can vouch for
+  reachability on a date close to publication. The default tag is `verified` only if the URL was
+  reachable at the time the file was authored; otherwise `needs_verification` is the honest
+  reading for a long-standing category whose canonical URL moves over time (a domain change, a
+  regional split, an editorial rename).
+- **No engine change.** §9's contract — engine modules are pure functions with no I/O,
+  no React, no storage — is unaffected: the guide is read-only and does not write to
+  `PlanState` or to any stored artifact. The §6.5b.3 "values shown are in today's dollars"
+  rule holds vacuously because the guide exposes no figures; it is editorial copy, not
+  calculations.
+- **Distinct from §6.5b.4.* The §6.5b.4 Independent Living comparison panel is *charged*
+  (it draws asset-depletion curves from the family's numbers); the §11.11 guide is *un-charged*
+  directory of services a family might call. They share the noun "community" without overlap in
+  math, ID, or testid namespace. The guide's `data-testid` prefix is `starting-guide-`; the IL
+  panel's prefix is `section-il-`.
+- **Five categories, scope-locked.** Per §1.1's "no point estimates where a range is the honest
+  answer" discipline and AGENTS.md §3 "no add-elsewhere, add-forever creep" hygiene: §11.11
+  caps at the five categories the friend named. Adding a sixth (e.g. veterans benefits, transport
+  subsidies) is its own §11.X proposal, scoped separately, so the directory does not drift
+  into a copy-edited grab bag.
+- **Confidence on the same visible model as figures.** Each entry renders a small inline tag
+  matching the visual weight already used by `costOfCare.ts`: `verified` is a plain note, not a
+  confidence boost; `needs_verification` gets a muted "(check before relying on this)" inline.
+  The point of the tag is honesty — there is no persuasion either way.
+- **Out of scope for this section:** automated link-liveness checks, affiliate or referral-code
+  injection on outbound URLs, replacing the curated list with an LLM-generated recommendation,
+  ranking entries by reviews or news scrapes. A web is a moving target and this app's role is to
+  publish a *whole-method* selection, not to chase it.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* a populated `Starting Guide`, *When* the planner is loaded, *Then* the section's
+    status line (per §5.1a) states the directory is present without summarising it, and a
+    closed `<details>` reports the same.
+  - *Given* any entry, *When* the entry is rendered, *Then* its `label`, `url`, and `confidence`
+    tag are visible; the URL is a `<a target="_blank" rel="noopener noreferrer">`.
+  - *Given* the section is open, *When* a screen reader enters, *Then* `confidence` values are
+    announced on the entry they belong to (`aria-describedby`), not as a separate list.
+  - *Given* the section is on screen, *When* the page is audited, *Then* `@axe-core/playwright`
+    reports no violations and the section is reachable by Tab order.
+  - *Given* the page is printed, *When* the OS print dialog opens, *Then* the guide panel
+    still renders, with URLs plain enough to type by hand.
