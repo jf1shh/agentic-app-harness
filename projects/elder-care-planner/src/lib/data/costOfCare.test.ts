@@ -243,3 +243,42 @@ describe('hourlyToMonthlyCents', () => {
     expect(Number.isInteger(result)).toBe(true);
   });
 });
+
+describe("the hourly-rate band rows (spec §11.10)", () => {
+  // Mirrors the band-symmetry rule feeStructures.test.ts:72-77 already asserts
+  // on the residential add-on bands, applied at hourly-cents scale for the two
+  // hourly-care rows. The band is the same between in_home_homemaker and
+  // in_home_health_aide because the 2025 Genworth survey merged those two
+  // care types into a single published hourly figure (costOfCare.ts note).
+  it("Given an hourly-care row, When lowHourlyCents and highHourlyCents are read, Then low <= high and both are positive", () => {
+    const hourly = NATIONAL_MEDIANS.filter(
+      (e) => e.careType === "in_home_homemaker" || e.careType === "in_home_health_aide",
+    );
+    expect(hourly.length).toBe(2);
+
+    for (const entry of hourly) {
+      expect(entry.lowHourlyCents, `${entry.careType} missing lowHourlyCents`).toBeDefined();
+      expect(entry.highHourlyCents, `${entry.careType} missing highHourlyCents`).toBeDefined();
+      expect(entry.lowHourlyCents as number, `${entry.careType} low <= 0`).toBeGreaterThan(0);
+      expect(entry.highHourlyCents as number, `${entry.careType} high <= 0`).toBeGreaterThan(0);
+      expect(entry.lowHourlyCents as number).toBeLessThanOrEqual(entry.highHourlyCents as number);
+    }
+  });
+
+  it("Given the published non-medical caregiver median, When it is checked against each band, Then it sits inside the band", () => {
+    // 3500 is the implicit midpoint of the band per §11.10 / Rev 12 banner.
+    // PlanState keeps using medianHourlyCents as the single user-side figure;
+    // the slider UI reads the band separately. Keeping the median inside the
+    // band here means the two cannot drift past one another unnoticed.
+    const MEDIAN = 3500;
+    const hourly = NATIONAL_MEDIANS.filter(
+      (e) => e.careType === "in_home_homemaker" || e.careType === "in_home_health_aide",
+    );
+    for (const entry of hourly) {
+      expect(entry.lowHourlyCents).toBeDefined();
+      expect(entry.highHourlyCents).toBeDefined();
+      expect(entry.lowHourlyCents as number, `${entry.careType} band lower than the published median`).toBeLessThanOrEqual(MEDIAN);
+      expect(entry.highHourlyCents as number, `${entry.careType} band higher than the published median`).toBeGreaterThanOrEqual(MEDIAN);
+    }
+  });
+});
