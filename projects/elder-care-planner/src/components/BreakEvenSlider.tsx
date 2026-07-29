@@ -128,13 +128,10 @@ export function BreakEvenSlider({
 
   return (
     <div className="break-even-slider" data-testid="break-even-slider">
-      <label htmlFor={id}>
-        Paid help at home, hours per week
-        <span className="hint">
-          Slide to compare options. The thumb sits at the family&apos;s saved plan, and the shaded band
-          shows where the crossover lies across the published hourly-rate range.
-        </span>
-      </label>
+      <p className="hint" data-testid="slider-description">
+        Slide to compare options. The thumb sits at the family&apos;s saved plan, and the shaded
+        band shows where the crossover lies across the published hourly-rate range.
+      </p>
       <input
         id={id}
         type="range"
@@ -146,6 +143,7 @@ export function BreakEvenSlider({
         aria-valuemax={HOURS_PER_WEEK_MAX}
         aria-valuenow={hoursPerWeek}
         aria-valuetext={`${hoursPerWeek} hours per week`}
+        aria-label="Drag to choose hours of paid help at home"
         data-testid="break-even-slider-thumb"
         onChange={(e) => {
           const next = Number(e.target.value);
@@ -155,9 +153,9 @@ export function BreakEvenSlider({
       <svg
         role="img"
         aria-label="Break-even chart: in-home cost line rising with paid hours, residential baseline, and the crossover band"
-        width={width}
-        height={height}
+        style={{ width: '100%', height: 'auto' }}
         viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
         data-testid={isDegenerateBand ? 'break-even-chart-degenerate' : 'break-even-chart'}
       >
         <line
