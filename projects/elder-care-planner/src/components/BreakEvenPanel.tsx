@@ -6,6 +6,11 @@ import { NumberInput, CurrencyInput } from './Inputs';
 import { WhyButton } from './WhyButton';
 import { CollapsibleCard } from './CollapsibleCard';
 import { BreakEvenSlider } from './BreakEvenSlider';
+import {
+  resolveCitedBreakEvenBand,
+  breakEvenBandInputFrom,
+} from '@/lib/engine/citedBreakEvenBand';
+import { buildCrossoverSummary } from '@/lib/breakEvenHeadline';
 
 interface Props {
   result: BreakEvenResult;
@@ -24,9 +29,19 @@ export function BreakEvenPanel({
   onHoursChange,
   onHousingCarryChange,
 }: Props) {
-  const crossover = Number.isFinite(result.breakEvenHoursPerWeek)
-    ? `${Math.round(result.breakEvenHoursPerWeek * 10) / 10} hours a week`
-    : 'never, at a zero hourly rate';
+  // The band is resolved ONCE here and handed to both consumers — this summary
+  // and the slider below. Resolving it in each of them is how the summary came
+  // to state a single crossover hour while the slider stated a range.
+  const cited = resolveCitedBreakEvenBand(
+    breakEvenBandInputFrom(
+      hourlyRateCents,
+      hoursPerWeek,
+      housingCarryMonthlyCents,
+      result.inHomeFixedMonthlyCents,
+      result.residentialMonthlyCents,
+    ),
+  );
+  const crossoverSummary = buildCrossoverSummary(result, cited.band);
 
   const cheaper =
     result.cheaperOption === 'in_home'
@@ -47,9 +62,7 @@ export function BreakEvenPanel({
           and clicking it would toggle the section rather than open the
           derivation. */}
       <p data-testid="breakeven-summary">
-        {result.residentialAlwaysCheaper
-          ? 'Residential care is cheaper here even before any paid help at home is added, because the cost of running the home already exceeds the facility rate.'
-          : `The two options cost the same at ${crossover} of paid help. Below that, care at home is cheaper; above it, residential care is.`}{' '}
+        {crossoverSummary}{' '}
         <WhyButton id="break-even" />
       </p>
 
@@ -82,6 +95,7 @@ export function BreakEvenPanel({
 
       <BreakEvenSlider
         result={result}
+        cited={cited}
         hoursPerWeek={hoursPerWeek}
         onHoursChange={onHoursChange}
         hourlyRateCents={hourlyRateCents}

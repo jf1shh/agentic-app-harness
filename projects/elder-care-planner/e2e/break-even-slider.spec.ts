@@ -252,6 +252,37 @@ test.describe('BDD Spec: The break-even slider follows the saved plan and the li
     expect(text).not.toMatch(/\bshould\b|\brecommend|\bbest\b/i);
   });
 
+  test('Given the panel summary and the headline both state the crossover, When both are read, Then neither gives a single hour and they quote the same range', async ({
+    page,
+  }) => {
+    // The defect: the summary said "the two options cost the same at 38.5 hours
+    // a week" — §1.1's forbidden point estimate — directly above a headline and
+    // a status line that both correctly stated a band. Three renderings of one
+    // fact, one of them the wrong shape, and it was the most prominent.
+    await gotoPlanner(page);
+    await openSection(page, 'breakeven');
+
+    const summary = (await page.getByTestId('breakeven-summary').textContent()) ?? '';
+    const headline = (await page.getByTestId('break-even-headline').textContent()) ?? '';
+
+    const rangeRe = /between (\d+(?:\.\d+)?) and (\d+(?:\.\d+)?) hours a week/;
+    const summaryRange = summary.match(rangeRe);
+    const headlineRange = headline.match(rangeRe);
+
+    // Either both quote a range, or the plan is a no-crossing case and both say so.
+    if (summaryRange || headlineRange) {
+      expect(summaryRange, `summary gave no range: "${summary}"`).not.toBeNull();
+      expect(headlineRange, `headline gave no range: "${headline}"`).not.toBeNull();
+      expect(summaryRange?.[1]).toBe(headlineRange?.[1]);
+      expect(summaryRange?.[2]).toBe(headlineRange?.[2]);
+    } else {
+      expect(summary).toMatch(/before any paid help|do not cross/i);
+    }
+
+    // The old point-estimate phrasing must not return.
+    expect(summary).not.toMatch(/cost the same at \d+(?:\.\d+)? hours/);
+  });
+
   test('Given the slider subtree is rendered, When axe-core audits it against WCAG 2.1 AA, Then there are no violations', async ({
     page,
   }) => {

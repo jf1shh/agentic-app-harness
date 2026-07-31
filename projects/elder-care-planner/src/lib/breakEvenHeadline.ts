@@ -34,6 +34,22 @@ function hoursText(hours: number): string {
 }
 
 /**
+ * The crossover range, or `null` when the band cannot express one.
+ *
+ * Exported and shared because the headline and the panel's summary paragraph
+ * both state this figure. They previously computed it separately, and the
+ * summary's version was a single hour while the headline's was a range — two
+ * sentences in one card describing the same crossing in contradictory shapes.
+ * One builder means they cannot disagree again.
+ */
+export function crossoverRangeText(band: BreakEvenBand): string | null {
+  const low = Math.min(band.lowHours, band.highHours);
+  const high = Math.max(band.lowHours, band.highHours);
+  if (band.isDegenerate || !Number.isFinite(low) || !Number.isFinite(high)) return null;
+  return `between ${Math.round(low * 10) / 10} and ${Math.round(high * 10) / 10} hours a week`;
+}
+
+/**
  * The comparison at the selected hours, in one sentence.
  *
  * `hoursPerWeek` is the *live* slider position rather than the saved plan
@@ -68,19 +84,47 @@ export function buildBreakEvenHeadline(
     crossover =
       'Residential care is already the cheaper of the two before any paid help is added, so the two never cross';
   } else {
-    const low = Math.min(band.lowHours, band.highHours);
-    const high = Math.max(band.lowHours, band.highHours);
+    // §1.1: a range, because the hourly rate is uncertain. A single crossover
+    // hour would be a precision the data does not support.
+    const range = crossoverRangeText(band);
     crossover =
-      band.isDegenerate || !Number.isFinite(low) || !Number.isFinite(high)
+      range === null
         ? 'Across the range of hourly rates, the two do not cross within a week’s hours'
-        : // §1.1: a range, because the hourly rate is uncertain. A single
-          // crossover hour would be a precision the data does not support.
-          `Across the range of hourly rates, they cross somewhere between ${
-            Math.round(low * 10) / 10
-          } and ${Math.round(high * 10) / 10} hours a week`;
+        : `Across the range of hourly rates, they cross somewhere ${range}`;
   }
 
   // §11.9: this comparison is one month at current rates, so the sentence must
   // not be readable as a projection.
   return `${atHours}, ${comparison}. ${crossover}, at today’s rates.`;
+}
+
+/**
+ * The panel's summary paragraph (spec §11.11).
+ *
+ * Replaces the sentence "The two options cost the same at 38.5 hours a week of
+ * paid help" — a point estimate, which §1.1 refuses where a range is the honest
+ * answer, and which sat directly above a headline and a slider status line that
+ * both correctly stated a band. The crossover figure comes from the same
+ * `crossoverRangeText` the headline uses, so the two cannot diverge again.
+ */
+export function buildCrossoverSummary(result: BreakEvenResult, band: BreakEvenBand): string {
+  if (result.residentialAlwaysCheaper) {
+    return (
+      'Residential care is cheaper here even before any paid help at home is added, because the '
+      + 'cost of running the home already exceeds the facility rate.'
+    );
+  }
+
+  const range = crossoverRangeText(band);
+  if (range === null) {
+    return (
+      'Across the range of hourly rates shown, the two options do not cross '
+      + 'within a week’s hours.'
+    );
+  }
+
+  return (
+    `Across the range of hourly rates shown, the two options cost the same ${range} `
+    + 'of paid help. Below that, care at home is cheaper; above it, residential care is.'
+  );
 }

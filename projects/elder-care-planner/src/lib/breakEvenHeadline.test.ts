@@ -19,7 +19,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeBreakEven, type BreakEvenInput } from './engine/breakeven';
 import { computeBreakEvenBand } from './engine/breakevenBand';
-import { buildBreakEvenHeadline } from './breakEvenHeadline';
+import { buildBreakEvenHeadline, buildCrossoverSummary, crossoverRangeText } from './breakEvenHeadline';
 // The real formatter, not a copy of it. A test that re-implements the
 // formatting it asserts against passes while the UI renders something else.
 import { formatCents } from './format';
@@ -139,4 +139,87 @@ describe('Given the degenerate cases the engine can return', () => {
     expect(result.cheaperOption).toBe('equal');
     expect(buildBreakEvenHeadline(result, band, 0)).toMatch(/about the same/i);
   });
+});
+
+describe('Given the panel summary must not contradict the headline above it (spec §11.11)', () => {
+  function summaryFor(overrides: Partial<BreakEvenInput> = {}) {
+    const inp = input(overrides);
+    const result = computeBreakEven(inp);
+    const band = computeBreakEvenBand(inp, { lowRateCents: 3000, highRateCents: 4000 });
+    return buildCrossoverSummary(result, band);
+  }
+
+  it('When the summary states the crossover, Then it gives a range rather than a single hour', () => {
+    // The defect: the panel said "the two options cost the same at 38.5 hours a
+    // week" — a point estimate, §1.1's forbidden shape — directly above a
+    // headline and a status line that both stated a band.
+    expect(summaryFor()).toMatch(/between \d+(?:\.\d+)? and \d+(?:\.\d+)? hours a week/);
+    expect(summaryFor()).not.toMatch(/the same at \d+(?:\.\d+)? hours/);
+  });
+
+  it('When both the summary and the headline state the crossover, Then they quote the same range', () => {
+    // The whole point of sharing one phrase builder. Two sentences in one card
+    // quoting different crossovers is worse than either being absent.
+    const inp = input();
+    const result = computeBreakEven(inp);
+    const band = computeBreakEvenBand(inp, { lowRateCents: 3000, highRateCents: 4000 });
+    const range = crossoverRangeText(band);
+
+    expect(range).not.toBeNull();
+    expect(buildCrossoverSummary(result, band)).toContain(range as string);
+    expect(buildBreakEvenHeadline(result, band, inp.currentHoursPerWeek)).toContain(range as string);
+  });
+
+  it('When residential is already cheaper, Then the summary says so rather than quoting a crossover', () => {
+    const summary = summaryFor({ housingCarryMonthlyCents: 1_000_000 });
+    expect(summary).toMatch(/before any paid help/i);
+    expect(summary).not.toMatch(/between \d/);
+  });
+
+  it('When the summary is built for any case, Then it holds the same voice constraints as the headline', () => {
+    for (const overrides of [{}, { housingCarryMonthlyCents: 1_000_000 }, { hourlyRateCents: 0 }]) {
+      const summary = summaryFor(overrides);
+      expect(summary).not.toMatch(/\byour\b|\byou\b/i);
+      expect(summary).not.toMatch(/\bshould\b|\brecommend|\bbest\b/i);
+      expect(summary.trim().endsWith('.')).toBe(true);
+    }
+  });
+
+  it('When the band is degenerate, Then the range text is null rather than an unbounded figure', () => {
+    const inp = input({ hourlyRateCents: 0 });
+    const band = computeBreakEvenBand(inp, { lowRateCents: 0, highRateCents: 0 });
+    expect(crossoverRangeText(band)).toBeNull();
+  });
+});
+
+describe('Given the rate band is derived rather than surveyed', () => {
+  // A first draft of buildCrossoverSummary said "the published data". The
+  // survey publishes ONE merged $35/hr figure; the spread around it is
+  // computed. Calling it published is the laundering the §6 "Cite Confidence"
+  // lesson names, and it is easy to reintroduce because it reads well.
+  const cases: [string, Partial<BreakEvenInput>][] = [
+    ['a typical plan', {}],
+    ['residential already cheaper', { housingCarryMonthlyCents: 1_000_000 }],
+    ['a zero hourly rate', { hourlyRateCents: 0 }],
+  ];
+
+  it.each(cases)(
+    'When the summary is built for %s, Then it never calls the rate band published',
+    (_name, overrides) => {
+      const inp = input(overrides);
+      const result = computeBreakEven(inp);
+      const band = computeBreakEvenBand(inp, { lowRateCents: 3000, highRateCents: 4000 });
+      expect(buildCrossoverSummary(result, band)).not.toMatch(/published/i);
+    },
+  );
+
+  it.each(cases)(
+    'When the headline is built for %s, Then it never calls the rate band published',
+    (_name, overrides) => {
+      const inp = input(overrides);
+      const result = computeBreakEven(inp);
+      const band = computeBreakEvenBand(inp, { lowRateCents: 3000, highRateCents: 4000 });
+      expect(buildBreakEvenHeadline(result, band, inp.currentHoursPerWeek)).not.toMatch(/published/i);
+    },
+  );
 });
