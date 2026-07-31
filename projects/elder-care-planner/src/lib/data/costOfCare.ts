@@ -53,6 +53,17 @@ export interface CostOfCareEntry {
   readonly lowHourlyCents?: number;
   /** Hourly-rate band high (cents), spec §11.10. Optional: requires the band shape. */
   readonly highHourlyCents?: number;
+  /**
+   * Confidence in the *band*, which is not the same figure as the row's
+   * `medianHourlyCents` and must not inherit its tag (spec §11.10 requires a
+   * `FigureConfidence` tag on the band; §6 "Cite Confidence, Not Just
+   * Sources"). The survey publishes a single merged hourly rate, so any
+   * spread around it is computed rather than surveyed — `derived`, never
+   * `verified`.
+   */
+  readonly hourlyBandConfidence?: FigureConfidence;
+  /** Names the survey the band was derived from (spec §11.10). */
+  readonly hourlyBandNote?: string;
   readonly medianDailyCents?: number;
   readonly confidence: FigureConfidence;
   readonly note?: string;
@@ -74,6 +85,11 @@ export const NATIONAL_MEDIANS: readonly CostOfCareEntry[] = [
     medianHourlyCents: NON_MEDICAL_CAREGIVER_HOURLY_CENTS,
     lowHourlyCents: 3000,
     highHourlyCents: 4000,
+    hourlyBandConfidence: 'derived',
+    hourlyBandNote:
+      'Derived, not surveyed: the 2025 Genworth Cost of Care Survey publishes one merged '
+      + '"non-medical caregiver" rate ($35/hr). The $30-$40 band is a symmetric spread around '
+      + 'that figure, shown to convey rate uncertainty rather than to report a surveyed range.',
     confidence: 'verified',
     note: 'Published as the merged "non-medical caregiver" rate: $35/hr, $80,080/yr at 44 hrs/week.',
   },
@@ -83,6 +99,11 @@ export const NATIONAL_MEDIANS: readonly CostOfCareEntry[] = [
     medianHourlyCents: NON_MEDICAL_CAREGIVER_HOURLY_CENTS,
     lowHourlyCents: 3000,
     highHourlyCents: 4000,
+    hourlyBandConfidence: 'derived',
+    hourlyBandNote:
+      'Derived, not surveyed: the 2025 Genworth Cost of Care Survey merges this care type into '
+      + 'the single "non-medical caregiver" rate ($35/hr). The $30-$40 band is a symmetric spread '
+      + 'around that figure, shown to convey rate uncertainty rather than to report a surveyed range.',
     confidence: 'verified',
     note: 'Same merged "non-medical caregiver" rate; the 2025 survey no longer prices these separately.',
   },
