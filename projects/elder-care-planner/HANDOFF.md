@@ -1,9 +1,9 @@
 # Agent Handoff — Elder Care Cost Planner
 
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
-facility shortlist (spec §11.2) and the collapsed information architecture (spec §5.1a).
-`node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only, lint,
-type-check, 242 Vitest, 86 Playwright + axe).
+facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), and the
+§11.8–§11.13 batch described below. `node scripts/test-app.mjs elder-care-planner` passes all
+checks (security advisory-only, lint, type-check, 437 Vitest, 119 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
@@ -12,6 +12,32 @@ not from intuition.
 ---
 
 ## What was built
+
+**Most recent batch (§11.8–§11.13).** Seven commits, all spec-first:
+
+- **§11.10 correction.** The hourly rate band shipped as `$30–$40` on a row tagged
+  `confidence: 'verified'` and described in the UI as "the published hourly-rate range". The survey
+  publishes ONE merged $35/hr figure — the spread is derived. The band now carries its own
+  `hourlyBandConfidence` and a note naming its origin, and its tests pin exact bounds: the previous
+  containment-only assertions passed on a band of `[1, 999999]`, mutation-proven.
+- **§11.9 dollar-basis labels.** The runway and IL charts are drawn in *future* dollars (the engine
+  compounds escalators); break-even is in *today's* dollars (no time dimension at all). Both bases
+  now name themselves, from one module (`lib/dollarBasis.ts`) that the chart labels and the §6.10
+  derivation `assumptions` both read. The spec's own title said "today's dollars" for all of them,
+  which was false — corrected in writing before implementing.
+- **§11.8 year labels + depletion marker.** The IL chart had two x-axis labels and no marker for the
+  event families read it to find. `engine/depletion.ts` reads the depletion month off the plotted
+  series and never snaps it to a year boundary.
+- **§11.11 headline sentence, and the summary that contradicted it.** The panel stated the crossover
+  as a single hour while the slider stated a band. The band is now resolved once
+  (`engine/citedBreakEvenBand.ts`) above every consumer and passed down.
+- **§11.12 itemised home costs.** `HousingCarryCostSchema` had per-line fields since V1 and
+  `engine/cost.ts` summed them, but `plannerState.ts` hardcoded six of seven to zero at both
+  scenario builders. Now enterable. Nothing is pre-filled.
+- **§11.13 "Where to start looking".** Process guidance and resources, each carrying a funding label;
+  anything paid by the providers it recommends must carry a note naming the conflict, enforced by a
+  sweep rather than by editor diligence.
+
 
 Triage-first single-page planner. Five fields produce an all-in cost, a funding runway, a sensitivity
 ranking and a per-sibling share; everything else is optional refinement. Nine pure engines under
@@ -154,6 +180,19 @@ now held up by a specific test.
    family link, care-hours scheduler, reverse-mortgage modelling, receipt capture.
 
 ## Things to not undo
+
+- **The funding labels in `data/startingGuide.ts`.** A referral service paid a commission by the
+  communities it recommends is useful and conflicted; dropping the label or the note turns the
+  section into advertising. The unit sweep fails if a conflicted entry is added without disclosure.
+
+- **`otherCents` in the `housingCarryMonthlyCents` sum (`engine/cost.ts`).** It carries the
+  pre-§11.12 single-figure entry. Omitting the term zeroes the home side of the comparison for
+  every plan saved before itemised entry existed.
+
+- **One band, resolved above its consumers.** `BreakEvenPanel` resolves the crossover band once and
+  hands the same object to its summary and to the slider. Resolving it in each component is exactly
+  how the two came to state different crossovers.
+
 
 - **The stored artifact is the form state, not a `Plan`** — see the persistence note above. Moving
   storage onto `PlanSchema` would look tidier and would silently drop three real inputs.

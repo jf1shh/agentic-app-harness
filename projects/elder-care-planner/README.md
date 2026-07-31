@@ -106,8 +106,22 @@ Every headline figure carries a question-mark control that opens a derivation pa
 - `benefits.ts` — Medicare, Medicaid (5-year lookback, spousal protections), VA Aid & Attendance, LTC insurance.
 - `questionsToAsk.ts` — scenario-keyed negotiation + elder-law-attorney checklists.
 - `expenseCategories.ts` — plain-language names for ledger categories.
+- `startingGuide.ts` — where to look and how to tour (spec §11.13). Every named organisation carries
+  a **funding label**, and anything paid by the providers it recommends must carry a note naming the
+  conflict — a sweep in the unit tests fails if one is added without it. The most prominent
+  directories in this field earn a commission when a family moves in; listing them as neutral
+  guidance would be the same laundering the confidence tags exist to prevent, applied to advice.
 
-Every entry carries a confidence level (`verified`, `needs_verification`, `derived`) and the UI surfaces it inline.
+Every entry carries a confidence level (`verified`, `needs_verification`, `derived`) and the UI
+surfaces it inline. A figure **derived from** a cited one carries its own tag rather than inheriting
+its row's — the §11.10 hourly band is a computed spread around a single published rate, and says so.
+
+### Which dollars a figure is in (`src/lib/dollarBasis.ts`, spec §11.9)
+The runway and independent-living charts compound the care escalator and the income COLA, so they are
+drawn in the **dollars of each future month**. The break-even comparison has no time dimension at all
+— one month at current rates — so it is in **today's dollars**. Both now say which, from one
+definition that the chart labels and the §6.10 derivation `assumptions` both read, because two copies
+of that sentence drift the first time one is edited.
 
 ## Non-goals (binding — see spec §1.1)
 
@@ -180,7 +194,7 @@ npx playwright test   # E2E + axe a11y
 
 Coverage bullets (per projectData.ts and the per-file Vitest suite):
 
-- **112 unit tests** (Vitest) on engines, storage, and every derivation; BDD-formatted.
+- **437 unit tests** (Vitest) on engines, storage, and every derivation; BDD-formatted.
 - **E2E specs** including axe on the default view, the large-text view, the fully-expanded view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
 - **Printing is tested as behaviour, not assumed from CSS** (`e2e/printing.spec.ts`): the app's
   print button, the browser's `beforeprint`, and the print stylesheet are each exercised
@@ -199,8 +213,10 @@ For the latest counts, run `node scripts/test-app.mjs elder-care-planner` from t
 
 ## Status
 
-V1 complete, plus the independent living comparison (spec §6.5b) and the facility shortlist
-(spec §11.2). The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
+V1 complete, plus the independent living comparison (spec §6.5b), the facility shortlist
+(spec §11.2), and the §11.8–§11.13 batch: dollar-basis labels on every chart, year labels and a
+depletion marker on the comparison chart, a live headline sentence on the break-even panel,
+itemised home-running costs entered by the family, and the "Where to start looking" guide. The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
 
 `independent_living` is deliberately absent from the triage care-type picker: it is priced from a
 community contract rather than a survey median, and the comparison panel is the only place such a
