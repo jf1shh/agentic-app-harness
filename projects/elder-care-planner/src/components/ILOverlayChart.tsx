@@ -2,6 +2,7 @@
 
 import type { ILVariantProjection } from '@/lib/engine/buyin';
 import { formatCents } from '@/lib/format';
+import { DOLLAR_BASIS_LABEL } from '@/lib/dollarBasis';
 
 /**
  * The Independent Living overlay chart (spec §6.5b.4).
@@ -187,6 +188,12 @@ export function ILOverlayChart({
           Month {months}
         </text>
       </svg>
+
+      {/* Spec §11.9: this overlay reads its series verbatim from the runway
+          engine, so it carries the same escalators and the same basis. */}
+      <p className="hint" data-testid="il-dollar-basis">
+        {DOLLAR_BASIS_LABEL.nominal}
+      </p>
     </>
   );
 }

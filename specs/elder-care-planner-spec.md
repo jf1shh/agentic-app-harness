@@ -1527,13 +1527,47 @@ Given any `independent_living` scenario is projected, When the comparison chart 
 - **Crossings stay truthful.** A year label landing on a non-zero crossing means the curve actually crossed there in a month inside the year; an interpolated landing is explicitly drawn as a faint marker.
 - **Reuses existing data.** No schema change. The chart component (`ILOverlayChart.tsx`) gains year tick rendering; the existing yearly table is unchanged.
 
-### 11.9 PROPOSED — Explicit "values shown are in today's dollars" label
+### 11.9 APPROVED — Explicit dollar-basis label on every chart
 
-Given any chart is displayed (runway, sensitivity, IL comparison, scenarios), When the chart is on screen, Then a small text label on the chart states which dollar basis the line is drawn in, and the §6.10 derivation panel for that figure names the basis in its `assumptions` array.
+> **Criterion corrected before implementation (Rev 13).** This section was titled *"values shown are
+> in today's dollars"*, and that phrase is false for two of the three charts. The runway simulation
+> compounds `annualEscalatorRate` on care and `colaRate` on income, and the IL overlay reads its
+> series *verbatim from the runway engine* — so both are drawn in the **nominal dollars of each
+> future month**, not in today's. Only the break-even comparison is in today's dollars, because
+> `engine/breakeven.ts` has no time dimension at all: it is a single-month snapshot at current
+> rates. Implementing the original wording would have printed a confident, incorrect statement on
+> the two charts that most need an accurate one — the §6 "Explain the Arithmetic Without
+> Re-implementing It" failure mode, where the transparency feature is itself the thing that misleads.
+> Per §2 the criterion is corrected here, in writing, before code is written against it. The
+> requirement is a label naming **the basis each chart is actually drawn in**, not a label asserting
+> one basis for all of them.
 
-- **Today's dollars, with growth rates surfaced.** The engine already applies `annualEscalatorRate` to care and `colaRate` to income (§6.3). A reader who doesn't know that the line ALREADY incorporates inflation is the failure mode the friend identified.
-- **A label, not a new math axis.** This proposal adds no second set of curves (that would double-derive the projection) — it labels the existing one and links to the derivation where the rates are listed.
-- **Required where unlabeled today.** Currently the chart axes say cents but say nothing about which year those cents represent. The friend is correct that this is a transparency gap, and §6.10 + the Cite Confidence lesson already establish the principle.
+Given any chart is displayed (runway, sensitivity, IL comparison, break-even), When the chart is on screen, Then a small text label on the chart states which dollar basis that chart's series are drawn in, and the §6.10 derivation panel for that figure names the same basis in its `assumptions` array.
+
+- **Two bases exist, and they must not be confused for one another.** *Nominal (future dollars)* for
+  anything the runway simulation produces — the runway chart, the IL overlay, and the sensitivity
+  sweep, which varies escalator rates over that same projection. *Today's dollars* for the break-even
+  comparison, which prices one month at current rates and applies no inflation. The defect this
+  closes is not that inflation is missing; it is that an inflation-loaded projection and a
+  today's-dollars comparison sit in adjacent panels with nothing on screen distinguishing them.
+- **One definition, consumed twice.** The basis strings live in a single logic module
+  (`src/lib/dollarBasis.ts`) that both the chart label and the derivation `assumptions` array read.
+  A chart labelled from one string and a derivation labelled from another is the drift the §6
+  "Explain the Arithmetic" lesson forbids, and it is exactly the kind that survives review.
+- **A label, not a new math axis.** This adds no second set of curves (that would double-derive the
+  projection) and changes no engine. It labels the existing series and points at the derivation
+  where the rates are listed.
+- **Deliberately out of scope:** deflating nominal figures to real terms (that is §11.3's
+  "show in today's dollars" toggle, still PROPOSED and unapproved) and making the break-even
+  comparison time-dependent (a new section, requiring a §9.2 walk of the ten `breakeven.ts`
+  references the Rev 12 banner locks).
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the runway chart or the IL overlay is on screen, *When* its basis label is read, *Then*
+    it names nominal/future dollars and does not claim the figures are in today's dollars.
+  - *Given* the break-even chart is on screen, *When* its basis label is read, *Then* it names
+    today's dollars and says no inflation is applied.
+  - *Given* any of those derivations is opened, *When* its `assumptions` are read, *Then* they carry
+    the same basis sentence the chart label carries, from the same source.
 
 ### 11.10 PROPOSED — NYT-style interactive break-even slider
 

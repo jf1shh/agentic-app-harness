@@ -33,6 +33,7 @@
 import { useDeferredValue, useId, useMemo } from 'react';
 import { computeBreakEvenBand } from '@/lib/engine/breakevenBand';
 import { NATIONAL_MEDIANS } from '@/lib/data/costOfCare';
+import { DOLLAR_BASIS_LABEL } from '@/lib/dollarBasis';
 
 const HOURS_PER_WEEK_MAX = 168;
 const WEEKS_PER_MONTH = 52 / 12;
@@ -256,6 +257,13 @@ export function BreakEvenSlider({
       </p>
       <p className="hint" data-testid="slider-band-provenance">
         {bandProvenance}
+      </p>
+      {/* Spec §11.9: unlike the runway and IL charts, this comparison has no
+          time dimension — `engine/breakeven.ts` prices one month at current
+          rates. Saying so here is what stops a reader carrying the runway's
+          inflated basis across to this panel. */}
+      <p className="hint" data-testid="break-even-dollar-basis">
+        {DOLLAR_BASIS_LABEL.today}
       </p>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import type { RunwayYear } from '@/lib/engine/runway';
 import { formatCents } from '@/lib/format';
+import { DOLLAR_BASIS_LABEL } from '@/lib/dollarBasis';
 
 /**
  * Hand-rolled inline SVG rather than a charting dependency: it keeps the bundle
@@ -44,6 +45,13 @@ export function RunwayChart({ years }: { years: readonly RunwayYear[] }) {
           );
         })}
       </svg>
+
+      {/* Spec §11.9: the runway compounds the care escalator and the income
+          COLA, so these bars are in future dollars. Saying so on the chart is
+          the whole point — the figures are inflation-loaded, not missing it. */}
+      <p className="hint" data-testid="runway-dollar-basis">
+        {DOLLAR_BASIS_LABEL.nominal}
+      </p>
 
       <div className="table-wrap">
         <table>

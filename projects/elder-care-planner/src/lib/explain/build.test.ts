@@ -20,6 +20,7 @@ import { summariseLedger } from '../engine/ledger';
 import { compareFacilities } from '../engine/fit';
 import { FacilityNoteSchema, type CareScenario, type LedgerEntry, type Plan } from '../schemas';
 import { formatCentsPrecise } from '../format';
+import { DOLLAR_BASIS_ASSUMPTION, basisForExplanation } from '../dollarBasis';
 
 /**
  * These tests exist to stop the explanations becoming a second, divergent
@@ -848,5 +849,49 @@ describe('Given every headline figure on the results screen', () => {
     const split = set.split as Explanation;
     expect(split.steps.filter((s) => s.kind === 'add')).toHaveLength(0);
     expect(resultStep(split)?.valueCents).toBe(0);
+  });
+});
+
+describe('Given the charts and their derivations must agree on which dollars are on screen (spec §11.9)', () => {
+  // The failure this guards is subtle and survives review: an inflation-loaded
+  // projection and a today's-dollars comparison sit in adjacent panels, and
+  // nothing on screen distinguishes them. Asserting the derivation carries the
+  // SAME string the chart label carries — rather than merely carrying "some
+  // sentence about inflation" — is what stops the two drifting apart later.
+  it('When the runway derivation is read, Then its assumptions carry the nominal basis verbatim from dollarBasis.ts', () => {
+    const { set } = explanationsFor(INITIAL_STATE);
+    const runway = set.runway as Explanation;
+    expect(basisForExplanation('runway')).toBe('nominal');
+    expect(runway.assumptions).toContain(DOLLAR_BASIS_ASSUMPTION.nominal);
+  });
+
+  it('When the sensitivity derivation is read, Then it carries the same nominal basis, because it sweeps the same projection', () => {
+    const { set } = explanationsFor(INITIAL_STATE);
+    const sensitivity = set.sensitivity as Explanation;
+    expect(sensitivity.assumptions).toContain(DOLLAR_BASIS_ASSUMPTION.nominal);
+  });
+
+  it('When the break-even derivation is read, Then it carries the today basis and NOT the nominal one', () => {
+    // The load-bearing half: break-even has no time dimension, so inheriting
+    // the runway's basis would be a false statement about the figure.
+    const { set } = explanationsFor(INITIAL_STATE);
+    const breakEven = set['break-even'] as Explanation;
+    expect(basisForExplanation('break-even')).toBe('today');
+    expect(breakEven.assumptions).toContain(DOLLAR_BASIS_ASSUMPTION.today);
+    expect(breakEven.assumptions).not.toContain(DOLLAR_BASIS_ASSUMPTION.nominal);
+  });
+
+  it('When every derivation is swept, Then no derivation carries both bases at once', () => {
+    // A derivation asserting two contradictory bases is worse than one
+    // asserting neither. Sweeping all of them means a new derivation cannot
+    // quietly acquire both (.agents/AGENTS.md §9.3).
+    const { set } = explanationsFor(INITIAL_STATE);
+    for (const id of EXPLANATION_ORDER) {
+      const explanation = set[id];
+      if (!explanation) continue;
+      const hasNominal = explanation.assumptions.includes(DOLLAR_BASIS_ASSUMPTION.nominal);
+      const hasToday = explanation.assumptions.includes(DOLLAR_BASIS_ASSUMPTION.today);
+      expect(hasNominal && hasToday, `${id} claims both dollar bases at once`).toBe(false);
+    }
   });
 });
