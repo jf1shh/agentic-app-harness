@@ -49,18 +49,32 @@ type-check and taking the whole E2E stage down with the build), crashed the meth
 runtime, and silently exposed an unpriced option in a dropdown. The type had **7 consumers; the PR
 opened 2**, and three of the five it skipped were where the failures lived.
 
-For each type you widened, run:
+For each type you widened, run **both** of these:
 
 ```
-grep -rln "<TypeName>" projects/<app>/src/
+grep -rln "<TypeName>" projects/<app>/src/          # names the type
+grep -rln "<fieldName>" projects/<app>/src/          # touches the data
 ```
 
-List every file it returns, and for each say how it handles the new member or why it needs no
+List every file they return, and for each say how it handles the new member or why it needs no
 change. A `Record<Type, …>`, a `switch`, or an `Object.keys()` over that type is a mandatory edit.
 
-| File | Handles the new member how? |
-|---|---|
-| | |
+**The second grep is not optional, and here is what it costs to skip.** PR #68 added `otherCents` to
+`HousingCarryCostSchema`. The type-name grep returned three files and **none of them was where the
+bug was**: `engine/cost.ts` destructures `scenario.housingCarry` and never writes the type's name,
+yet it holds the only *sum* of those fields. Omitting the new term there would have zeroed the home
+side of the comparison for every plan saved before the change — a silent wrong answer, not a
+compiler error, because adding a field to an object type breaks no existing read. The unit tests
+caught it; the type-name grep alone would not have. Widening the search to the **field** name
+returned 17 files and did include it.
+
+The general rule: a *type-name* grep finds annotations, and a *field-name* grep finds the code that
+actually reads the data. Aggregations — sums, averages, serialisers, `Object.values()` — are exactly
+the consumers that use the fields without naming the type, and exactly the ones a new member breaks.
+
+| File | Found by (type / field grep) | Handles the new member how? |
+|---|---|---|
+| | | |
 
 ## 🧪 Proof the new tests can fail
 
