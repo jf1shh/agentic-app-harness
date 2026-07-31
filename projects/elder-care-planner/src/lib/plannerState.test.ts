@@ -17,6 +17,7 @@ import {
   type PlannerState,
 } from './plannerState';
 import { PlanSchema } from './schemas';
+import { housingCarryMonthlyCents } from './engine/cost';
 
 describe('Given the initial triage state', () => {
   it('When a plan is built, Then it satisfies the Plan contract', () => {
@@ -188,5 +189,75 @@ describe('Given independent living options entered in the comparison panel', () 
     expect(option.amortized).toBe(false);
     expect(option.label).toBe('Option A');
     expect(makeILOption(2).label).toBe('Option C');
+  });
+});
+
+describe('Given a family with itemised home-running costs (spec §11.12)', () => {
+  // The gap this closes: HousingCarryCostSchema has carried per-line fields
+  // since V1 and engine/cost.ts already sums all of them, but plannerState
+  // hardcoded six of the seven to zero, so anything typed into them could
+  // never reach the engine.
+  const itemised = {
+    homeMortgageOrRentCents: 180_000,
+    homeUtilitiesCents: 24_000,
+    homePropertyTaxMonthlyCents: 40_000,
+    homeInsuranceMonthlyCents: 12_000,
+    homeGroceriesCents: 50_000,
+    homeMaintenanceMonthlyCents: 15_000,
+    homeTransportCents: 9_000,
+  };
+  const itemisedTotal = Object.values(itemised).reduce((a, b) => a + b, 0);
+
+  it('When the categories are entered, Then the break-even in-home scenario carries every one of them', () => {
+    const { inHome } = breakEvenScenarios({ ...INITIAL_STATE, ...itemised });
+    const carry = inHome.housingCarry;
+
+    expect(carry?.mortgageOrRentCents).toBe(itemised.homeMortgageOrRentCents);
+    expect(carry?.utilitiesCents).toBe(itemised.homeUtilitiesCents);
+    expect(carry?.propertyTaxMonthlyCents).toBe(itemised.homePropertyTaxMonthlyCents);
+    expect(carry?.insuranceMonthlyCents).toBe(itemised.homeInsuranceMonthlyCents);
+    expect(carry?.groceriesCents).toBe(itemised.homeGroceriesCents);
+    expect(carry?.maintenanceMonthlyCents).toBe(itemised.homeMaintenanceMonthlyCents);
+    expect(carry?.transportCents).toBe(itemised.homeTransportCents);
+  });
+
+  it('When the categories are entered, Then the engine totals them rather than counting one line', () => {
+    const { inHome } = breakEvenScenarios({ ...INITIAL_STATE, ...itemised });
+    expect(housingCarryMonthlyCents(inHome)).toBe(itemisedTotal);
+  });
+
+  it('When only some categories are filled, Then the untouched ones contribute zero', () => {
+    const { inHome } = breakEvenScenarios({
+      ...INITIAL_STATE,
+      homeGroceriesCents: 50_000,
+      homeUtilitiesCents: 24_000,
+    });
+    expect(housingCarryMonthlyCents(inHome)).toBe(74_000);
+  });
+
+  it('When a plan predating this feature is loaded, Then its lump sum still totals to the same figure', () => {
+    // Backward compatibility: housingCarryMonthlyCents always meant
+    // "everything", and for a family that itemises nothing it still does.
+    const { inHome } = breakEvenScenarios({
+      ...INITIAL_STATE,
+      housingCarryMonthlyCents: 250_000,
+    });
+    expect(housingCarryMonthlyCents(inHome)).toBe(250_000);
+  });
+
+  it('When a lump sum and itemised lines are both present, Then the total is their sum and nothing is double counted', () => {
+    const { inHome } = breakEvenScenarios({
+      ...INITIAL_STATE,
+      housingCarryMonthlyCents: 30_000,
+      ...itemised,
+    });
+    expect(housingCarryMonthlyCents(inHome)).toBe(itemisedTotal + 30_000);
+  });
+
+  it('When an hourly-care scenario is built from the planner, Then it carries the itemised lines too', () => {
+    // The other mapping site. Both zeroed the same six fields, so a fix to one
+    // and not the other would leave the main planner path broken (§9.3).
+    const scenario = primaryScenario({ ...INITIAL_STATE, careType: 'in_home_health_aide', ...itemised });
+    expect(housingCarryMonthlyCents(scenario)).toBe(itemisedTotal);
   });
 });

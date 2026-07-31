@@ -58,6 +58,7 @@ import { ExplainProvider } from '@/components/ExplainProvider';
 import { ExplainDrawer } from '@/components/ExplainDrawer';
 import { MethodologyPanel } from '@/components/MethodologyPanel';
 import { SectionNav, type NavSection } from '@/components/SectionNav';
+import { StartingGuidePanel } from '@/components/StartingGuidePanel';
 import { listenForPrint, openForPrint, restoreAfterPrint } from '@/lib/printExpansion';
 
 const RESIDENTIAL: readonly CareType[] = [
@@ -325,6 +326,7 @@ export default function Home() {
     sections.push(
       { id: 'benefits', label: 'Public benefits' },
       { id: 'questions', label: 'Questions to ask' },
+      { id: 'starting-guide', label: 'Where to start looking' },
     );
     if (planResult.active) sections.push({ id: 'summary', label: 'Family summary' });
     return sections;
@@ -491,6 +493,16 @@ export default function Home() {
           result={breakEven}
           hoursPerWeek={state.compareHoursPerWeek}
           housingCarryMonthlyCents={state.housingCarryMonthlyCents}
+          homeCosts={{
+            homeMortgageOrRentCents: state.homeMortgageOrRentCents,
+            homeGroceriesCents: state.homeGroceriesCents,
+            homeUtilitiesCents: state.homeUtilitiesCents,
+            homePropertyTaxMonthlyCents: state.homePropertyTaxMonthlyCents,
+            homeInsuranceMonthlyCents: state.homeInsuranceMonthlyCents,
+            homeMaintenanceMonthlyCents: state.homeMaintenanceMonthlyCents,
+            homeTransportCents: state.homeTransportCents,
+          }}
+          onHomeCostChange={(key, v) => update({ [key]: v })}
           hourlyRateCents={aideHourlyRateCents(state.stateCode)}
           onHoursChange={(v) => update({ compareHoursPerWeek: v })}
           onHousingCarryChange={(v) => update({ housingCarryMonthlyCents: v })}
@@ -544,6 +556,8 @@ export default function Home() {
 
         <BenefitsPanel />
         <QuestionsPanel careType={state.careType} />
+
+        <StartingGuidePanel />
 
         {planResult.active ? (
           <SummaryPanel

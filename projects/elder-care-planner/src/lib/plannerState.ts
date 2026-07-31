@@ -14,6 +14,7 @@ import {
   type PlannerState,
   type CareType,
   type ILOption,
+  type HousingCarryCost,
 } from './schemas';
 import { SELECTABLE_CARE_TYPES } from './data/costOfCare';
 
@@ -154,6 +155,13 @@ export const INITIAL_STATE: PlannerState = {
 
   compareHoursPerWeek: 40,
   housingCarryMonthlyCents: 0,
+  homeMortgageOrRentCents: 0,
+  homeUtilitiesCents: 0,
+  homePropertyTaxMonthlyCents: 0,
+  homeInsuranceMonthlyCents: 0,
+  homeGroceriesCents: 0,
+  homeMaintenanceMonthlyCents: 0,
+  homeTransportCents: 0,
 
   contributors: makeContributors(2),
   splitMethod: 'equal',
@@ -181,6 +189,30 @@ function isHourly(careType: CareType): boolean {
 }
 
 /** The scenario the user is actually planning. */
+/**
+ * Map the planner's itemised home-cost fields onto `HousingCarryCost`
+ * (spec §11.12).
+ *
+ * Defined once because there are two scenario builders — the main planner path
+ * and the break-even comparison — and both previously hardcoded six of the
+ * seven lines to zero. Fixing one and not the other would have left the other
+ * silently dropping whatever the family typed (.agents/AGENTS.md §9.3).
+ */
+function housingCarryFrom(state: PlannerState): HousingCarryCost {
+  return {
+    mortgageOrRentCents: state.homeMortgageOrRentCents,
+    utilitiesCents: state.homeUtilitiesCents,
+    propertyTaxMonthlyCents: state.homePropertyTaxMonthlyCents,
+    insuranceMonthlyCents: state.homeInsuranceMonthlyCents,
+    groceriesCents: state.homeGroceriesCents,
+    maintenanceMonthlyCents: state.homeMaintenanceMonthlyCents,
+    transportCents: state.homeTransportCents,
+    // The pre-§11.12 single figure. Always meant "everything", and still does
+    // for a family that itemises nothing.
+    otherCents: state.housingCarryMonthlyCents,
+  };
+}
+
 export function primaryScenario(state: PlannerState): CareScenario {
   const enabledAddOns = state.addOns
     .filter((a) => a.enabled)
@@ -206,17 +238,7 @@ export function primaryScenario(state: PlannerState): CareScenario {
           addOns: enabledAddOns,
         }
       : undefined,
-    housingCarry: isHourly(state.careType)
-      ? {
-          mortgageOrRentCents: state.housingCarryMonthlyCents,
-          utilitiesCents: 0,
-          propertyTaxMonthlyCents: 0,
-          insuranceMonthlyCents: 0,
-          groceriesCents: 0,
-          maintenanceMonthlyCents: 0,
-          transportCents: 0,
-        }
-      : undefined,
+    housingCarry: isHourly(state.careType) ? housingCarryFrom(state) : undefined,
     ancillary:
       state.ancillaryMonthlyCents > 0
         ? [
@@ -323,15 +345,7 @@ export function breakEvenScenarios(state: PlannerState): {
     careType: 'in_home_health_aide',
     stateCode: state.stateCode,
     hoursPerWeek: state.compareHoursPerWeek,
-    housingCarry: {
-      mortgageOrRentCents: state.housingCarryMonthlyCents,
-      utilitiesCents: 0,
-      propertyTaxMonthlyCents: 0,
-      insuranceMonthlyCents: 0,
-      groceriesCents: 0,
-      maintenanceMonthlyCents: 0,
-      transportCents: 0,
-    },
+    housingCarry: housingCarryFrom(state),
     ancillary: [],
   };
 

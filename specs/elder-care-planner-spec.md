@@ -1519,21 +1519,81 @@ Given the user has no per-line figures for `HousingCarryCostSchema`, When they e
 - **Pre-fill, not result.** Numbers arrive labelled "Estimated (your state, …, confidence: …)" until the user confirms or overrides. The headline number never comes from a pre-fill alone; the derivation panel (per §6.10) lists exactly which lines came from the pre-fill and which the user replaced.
 - **No network call.** Per §1.2, the dataset ships in `src/lib/data/livingCost.ts`; no API, no telemetry of which figures were taken.
 
-### 11.8 PROPOSED — Year-boundary labels on the monthly comparison chart
+### 11.8 APPROVED — Year-boundary labels and a depletion marker on the monthly comparison chart
 
 Given any `independent_living` scenario is projected, When the comparison chart is shown, Then year boundaries (month 12, 24, …, N×12) carry a tick mark, an axis label, and a subtle vertical guideline, while the data resolution stays **monthly** per §6.5b.3.
 
 - **Data resolution is not changed.** The underlying `assetsEndByMonthCents` series is untouched — annual sampling is exactly the option §6.5b.3 records as rejected, and revisiting that decision would require a spec revision under §1.1's "reversing any of them requires revising this spec."
 - **Crossings stay truthful.** A year label landing on a non-zero crossing means the curve actually crossed there in a month inside the year; an interpolated landing is explicitly drawn as a faint marker.
 - **Reuses existing data.** No schema change. The chart component (`ILOverlayChart.tsx`) gains year tick rendering; the existing yearly table is unchanged.
+- **Depletion marker and readout (added on approval).** The feedback that motivated this section
+  was *"identify where the lines cross and easily see, oops out of funds after 6 years"* — year
+  labels alone do not answer that, because nothing on the chart marked the depletion event at all.
+  Each option therefore also carries a marker at the month its balance first reaches zero, and a
+  sentence beneath the chart naming that year and month. Three constraints on it:
+  - **Read, never recomputed.** The month is found by scanning the same `assetsEndByMonthCents`
+    series the chart plots (`engine/depletion.ts`), not derived again from plan inputs. A second
+    implementation drifts from the engine, and a marker at the wrong month on a visible curve is
+    worse than no marker (§6 "Explain the Arithmetic Without Re-implementing It").
+  - **Never snapped to a year label.** Savings exhausted in month 74 are reported as month 74 in
+    year 7. Rounding to the nearest boundary would place the marker where the curve never crossed —
+    the same truthfulness rule the bullet above states for year labels.
+  - **Silence is not an answer.** An option whose savings survive the projection says so explicitly;
+    an option with no sentence is indistinguishable from one the app failed to evaluate. And because
+    the chart is `role="img"`, the depletion year belongs in its accessible description too — a
+    marker only sighted readers can find is not the feature that was requested.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* a projection spanning whole years, *When* the chart is drawn, *Then* each completed year
+    carries its own label, and a partial trailing year carries none.
+  - *Given* savings that run out inside the projection, *When* the chart is drawn, *Then* a marker
+    sits at the month it happens and its year is the one containing that month.
+  - *Given* the marker is drawn, *When* the readout beneath the chart is read, *Then* it names the
+    same year and month the marker carries.
+  - *Given* an option whose savings never run out, *When* its readout is read, *Then* it says so.
+  - *Given* a screen reader, *When* the chart's description is read, *Then* it states the depletion
+    year as well.
 
-### 11.9 PROPOSED — Explicit "values shown are in today's dollars" label
+### 11.9 APPROVED — Explicit dollar-basis label on every chart
 
-Given any chart is displayed (runway, sensitivity, IL comparison, scenarios), When the chart is on screen, Then a small text label on the chart states which dollar basis the line is drawn in, and the §6.10 derivation panel for that figure names the basis in its `assumptions` array.
+> **Criterion corrected before implementation (Rev 13).** This section was titled *"values shown are
+> in today's dollars"*, and that phrase is false for two of the three charts. The runway simulation
+> compounds `annualEscalatorRate` on care and `colaRate` on income, and the IL overlay reads its
+> series *verbatim from the runway engine* — so both are drawn in the **nominal dollars of each
+> future month**, not in today's. Only the break-even comparison is in today's dollars, because
+> `engine/breakeven.ts` has no time dimension at all: it is a single-month snapshot at current
+> rates. Implementing the original wording would have printed a confident, incorrect statement on
+> the two charts that most need an accurate one — the §6 "Explain the Arithmetic Without
+> Re-implementing It" failure mode, where the transparency feature is itself the thing that misleads.
+> Per §2 the criterion is corrected here, in writing, before code is written against it. The
+> requirement is a label naming **the basis each chart is actually drawn in**, not a label asserting
+> one basis for all of them.
 
-- **Today's dollars, with growth rates surfaced.** The engine already applies `annualEscalatorRate` to care and `colaRate` to income (§6.3). A reader who doesn't know that the line ALREADY incorporates inflation is the failure mode the friend identified.
-- **A label, not a new math axis.** This proposal adds no second set of curves (that would double-derive the projection) — it labels the existing one and links to the derivation where the rates are listed.
-- **Required where unlabeled today.** Currently the chart axes say cents but say nothing about which year those cents represent. The friend is correct that this is a transparency gap, and §6.10 + the Cite Confidence lesson already establish the principle.
+Given any chart is displayed (runway, sensitivity, IL comparison, break-even), When the chart is on screen, Then a small text label on the chart states which dollar basis that chart's series are drawn in, and the §6.10 derivation panel for that figure names the same basis in its `assumptions` array.
+
+- **Two bases exist, and they must not be confused for one another.** *Nominal (future dollars)* for
+  anything the runway simulation produces — the runway chart, the IL overlay, and the sensitivity
+  sweep, which varies escalator rates over that same projection. *Today's dollars* for the break-even
+  comparison, which prices one month at current rates and applies no inflation. The defect this
+  closes is not that inflation is missing; it is that an inflation-loaded projection and a
+  today's-dollars comparison sit in adjacent panels with nothing on screen distinguishing them.
+- **One definition, consumed twice.** The basis strings live in a single logic module
+  (`src/lib/dollarBasis.ts`) that both the chart label and the derivation `assumptions` array read.
+  A chart labelled from one string and a derivation labelled from another is the drift the §6
+  "Explain the Arithmetic" lesson forbids, and it is exactly the kind that survives review.
+- **A label, not a new math axis.** This adds no second set of curves (that would double-derive the
+  projection) and changes no engine. It labels the existing series and points at the derivation
+  where the rates are listed.
+- **Deliberately out of scope:** deflating nominal figures to real terms (that is §11.3's
+  "show in today's dollars" toggle, still PROPOSED and unapproved) and making the break-even
+  comparison time-dependent (a new section, requiring a §9.2 walk of the ten `breakeven.ts`
+  references the Rev 12 banner locks).
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the runway chart or the IL overlay is on screen, *When* its basis label is read, *Then*
+    it names nominal/future dollars and does not claim the figures are in today's dollars.
+  - *Given* the break-even chart is on screen, *When* its basis label is read, *Then* it names
+    today's dollars and says no inflation is applied.
+  - *Given* any of those derivations is opened, *When* its `assumptions` are read, *Then* they carry
+    the same basis sentence the chart label carries, from the same source.
 
 ### 11.10 PROPOSED — NYT-style interactive break-even slider
 
@@ -1590,3 +1650,121 @@ the band.
     reads engine output from the *current slider position*, not from the saved default.
   - *Given* the panel is on screen, *When* the page is audited, *Then* `@axe-core/playwright` reports
     no violations and the slider is reachable by Tab order.
+
+### 11.11 APPROVED — Live headline sentence on the break-even panel
+
+Given the break-even slider is on screen, When its position changes, Then a single plain-language
+sentence above the chart restates the comparison at the selected hours, rebuilt from engine output
+on every change.
+
+This is the third of the NYT rent-vs-buy calculator's signature elements. The app already has the
+other two — the slider itself (§11.10) and fully-exposed editable assumptions (§6.10 derivations) —
+and what remained missing was the one line that says, in words, what the chart is showing.
+
+- **Built from engine output, never recomputed.** The sentence reads `BreakEvenResult` and the
+  §11.10 band. A second computation of the same comparison drifts from the engine the first time
+  either changes, and a headline contradicting the chart beneath it is the §6 "Explain the
+  Arithmetic Without Re-implementing It" failure at its most visible.
+- **A band, not a single hour** (§1.1, §5.3). The crossover is stated as the low–high range the
+  §11.10 band already computes. The rate is uncertain, so a single crossover hour is a false
+  precision the app refuses — the same correction §11.10's status line required.
+- **Neutral third-party voice** (§5.4). No second person, no "you should", no characterising a
+  family member. When the *app* states the comparison it is not a relative stating it, and that
+  reframing does real work at a family meeting. Enforced in a pure string-building module so the
+  constraint is unit-testable, exactly as `lib/recommendation.ts` already does for §5.2/§5.4.
+- **States which is cheaper, does not say which to choose** (§11.2). Reporting that one option costs
+  less at the selected hours is a fact about arithmetic. Naming a "best" option is a recommendation
+  this app declines to make, and the sentence must not drift into one.
+- **Names its dollar basis** (§11.9). The comparison is a single month at current rates, so the
+  headline must not be readable as a projection.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the slider at a known position, *When* the headline is read, *Then* it names the selected
+    hours, both monthly figures, and the difference between them.
+  - *Given* the slider is moved, *When* the headline is read again, *Then* it has followed the new
+    position rather than reporting the saved default.
+  - *Given* any slider position, *When* the headline states the crossover, *Then* it states a range
+    rather than a single hour.
+  - *Given* any slider position, *When* the headline is read, *Then* it contains no second-person
+    address and no recommendation to choose an option.
+  - *Given* residential care is cheaper before any paid help is added, *When* the headline is read,
+    *Then* it says so rather than reporting a crossover that does not exist.
+
+### 11.12 APPROVED — Itemised home-running costs, entered by the family
+
+Given the in-home / stay-at-home path, When the family has figures for individual living-cost
+categories, Then each category has its own optional input, and the monthly cost of running the home
+is the sum of whatever they entered.
+
+This completes a data model the app already had. `HousingCarryCostSchema` (§2.1) has carried
+per-line fields — mortgage or rent, utilities, property tax, insurance, groceries, maintenance,
+transport — since V1, and `housingCarryMonthlyCents` in `engine/cost.ts` already sums all of them.
+Only the UI was missing: it offered a single lump-sum box, and `plannerState.ts` hardcoded the other
+six lines to zero. A family with an itemised budget in front of them had nowhere to put it.
+
+- **Entered, never estimated.** No figure is supplied, suggested or pre-filled. Every line defaults
+  to zero and stays there until a person types something. Estimating these is §11.7's job and §11.7
+  remains PROPOSED and unbuilt, blocked on a citable source — this section is deliberately the half
+  that needs no dataset.
+- **Optional, and partial entry is normal.** A family that knows groceries and utilities but not
+  property tax enters two lines and leaves the rest at zero. Nothing is required and nothing is
+  inferred from what is present.
+- **The total is derived and shown, never typed twice.** The panel displays the sum of the lines so
+  the figure feeding the comparison is visible. Two boxes that must agree is a defect waiting to
+  happen (§6 "One Fact Stated Twice Will Eventually Be Stated Two Ways").
+- **Existing plans keep their meaning.** `PlannerState.housingCarryMonthlyCents` remains, as the
+  catch-all "anything else" line. A saved plan that put its whole home cost there still totals to
+  exactly the same number, because that box always meant "everything", and it still does for anyone
+  who itemises nothing. `HousingCarryCostSchema` gains `otherCents` to carry it honestly rather than
+  mislabelling a lump sum as mortgage or rent, which is what the mapping did before.
+- **Zero is still the wrong default, and still says so.** The existing warning stays: residential
+  care already includes room and board, so leaving these at zero flatters staying at home. Itemising
+  makes the omission more visible, not less.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* figures typed into several category lines, *When* the comparison is computed, *Then* the
+    home-running cost is their sum.
+  - *Given* only some lines are filled, *When* the total is computed, *Then* the untouched lines
+    contribute zero rather than blocking the calculation.
+  - *Given* a plan saved before this existed, *When* it is loaded, *Then* its total is unchanged.
+  - *Given* any set of entries, *When* the panel is read, *Then* the displayed total equals the sum
+    of the lines as rendered.
+
+### 11.13 APPROVED — "Where to start looking": process guidance and vetted resources
+
+Given a family at the start of a search, When the starting-guide section is opened, Then it presents
+the practical steps of finding care — in-home first, then touring communities, then legal, financial
+and moving help — with each named resource carrying an explicit funding label.
+
+The app already models the *money*. This section covers the part families get wrong before any
+number matters: who to call, what to look at on a tour, and which of the organisations offering to
+help are paid by the providers they recommend.
+
+- **Do not rebuild what exists.** Buy-in versus rental contracts and refund terms are §6.5b; the
+  waitlist field is on `FacilityNote`; "questions to ask before you sign" is its own panel; the
+  elder-law-attorney and Medicaid cautions are in `benefits.ts`. This section links to those rather
+  than restating them, and adds only what the app did not already say.
+- **Every named resource carries a funding label**, on the same principle as §6's Cite Confidence
+  rule for figures: `government`, `nonprofit`, `commercial_referral` or `commercial`. A directory
+  paid a commission by the communities it recommends is useful *and* conflicted, and a reader
+  deciding how much weight to give its checklist needs to know which. Any resource labelled
+  `commercial_referral` or `commercial` **must** carry a note naming the conflict — the same
+  structural rule as §11.10's derived band needing its own note, and enforced by a unit test rather
+  than left to whoever edits the list.
+- **No ranking, no "best".** Per §11.2 the app does not name a best option, and that extends to
+  resources: the list is categorised, never ordered by preference, and carries no recommendation
+  language.
+- **Touring guidance is process, not opinion.** Visit in person, at more than one time of day, speak
+  to care staff rather than only the sales representative, tour widely before narrowing, and match
+  to the specific need (memory care, mobility, a couple staying together). None of this is a claim
+  about any particular community.
+- **Static content, no network calls.** The list ships in `src/lib/data/startingGuide.ts`. Links are
+  ordinary anchors a reader may choose to follow; the app itself fetches nothing, so §1.2 holds and
+  the privacy specs continue to pass with all outbound requests blocked.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the section is open, *When* the in-home, touring, legal, moving and other groups are
+    read, *Then* each is present with at least one entry.
+  - *Given* any resource paid by the providers it recommends, *When* it is displayed, *Then* its
+    funding label and the note naming the conflict are both on screen next to it.
+  - *Given* the resource list, *When* it is read, *Then* no entry is described as best, top or
+    recommended.
+  - *Given* every outbound request is blocked, *When* the section is opened, *Then* it renders in
+    full, because nothing here is fetched.

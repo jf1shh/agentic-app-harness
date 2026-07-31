@@ -43,6 +43,7 @@ import { ANNUAL_ESCALATOR_BAND, FEE_RANGE_SOURCE, TYPICAL_FEE_RANGES } from '../
 import { EXPENSE_CATEGORY_LABELS } from '../data/expenseCategories';
 import { formatCents, formatCentsPrecise, formatMonths, formatPercent, formatRunwayBand } from '../format';
 import type { Explanation, ExplainStep, ExplanationSet } from './types';
+import { DOLLAR_BASIS_ASSUMPTION, basisForExplanation } from '../dollarBasis';
 
 const WEEKS_PER_YEAR = 52;
 const MONTHS_PER_YEAR = 12;
@@ -562,6 +563,9 @@ function explainRunway(
     `Savings earn ${formatPercent(liquid[0]?.annualReturnRate ?? 0, 1)} a year, credited monthly.`,
     `The projection runs ${plan.assumptions.projectionYears} years and then stops.`,
     'Savings are spent in a fixed order: cash first, then brokerage, then retirement accounts, then anything else.',
+    // Spec §11.9: the same sentence the chart label carries, from the same
+    // source, so the two cannot drift apart.
+    DOLLAR_BASIS_ASSUMPTION[basisForExplanation('runway')],
   ];
   if (excluded.length > 0) {
     assumptions.push(
@@ -679,6 +683,10 @@ function explainBreakEven(
     assumptions: [
       'Staying at home does not stop the mortgage, the utilities or the groceries. Those are counted on the home side, because residential care already includes them. Leaving them at zero flatters staying at home, often by thousands a month.',
       'Paid help is assumed to be bought at a single hourly rate. Overnight, weekend and live-in cover are commonly charged at different rates.',
+      // Spec §11.9. This one matters most: the runway panel next to it IS
+      // inflated, and a reader carrying that basis across to this comparison
+      // would misread it.
+      DOLLAR_BASIS_ASSUMPTION[basisForExplanation('break-even')],
     ],
     sources: [
       `Hourly rate: ${COST_DATA_SOURCE.name}, ${COST_DATA_SOURCE.surveyYear} survey, published median for non-medical care at home.`,
@@ -940,6 +948,9 @@ function explainSensitivity(sensitivity: SensitivityResult): Explanation {
       'impact of an assumption = |runway with it at its low bound − runway with it at its high bound|, everything else unchanged',
     steps,
     assumptions: [
+      // Spec §11.9: the sweep varies rates over the runway projection, so the
+      // figures it reports carry the same basis the runway chart does.
+      DOLLAR_BASIS_ASSUMPTION[basisForExplanation('sensitivity')],
       `Annual rate increases are moved between ${formatPercent(
         ANNUAL_ESCALATOR_BAND.low,
       )} and ${formatPercent(ANNUAL_ESCALATOR_BAND.high)} — a published range, not an invented one.`,

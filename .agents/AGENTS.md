@@ -331,6 +331,77 @@ As an AI agent operating within this repository, you must strictly adhere to the
   enough, and whether a given number is derived from another, are judgements no regex over a
   line can make.
 
+- **Two Bases On One Page Is a Defect Even When Both Are Right**: `elder-care-planner` drew an
+  inflation-loaded runway projection (the engine compounds `annualEscalatorRate` on care and
+  `colaRate` on income) and a today's-dollars break-even comparison (`engine/breakeven.ts` has no
+  time dimension at all — it prices one month at current rates) in adjacent panels, with nothing
+  on screen distinguishing them. Neither figure was wrong; the *page* was, because a reader who
+  carries one basis across to the other panel misreads it, and there was no way to tell. The
+  general rule: **where two figures on the same page are stated on different bases, naming the
+  basis is part of the figure**, not an optional annotation. Three things this taught. (1) *The
+  feedback that lands is usually already in the spec* — this arrived as a friend's suggestion to
+  "add inflation adjustment", and §11.9 had already recorded the same observation from an earlier
+  round, adjudicated and unbuilt; check `specs/` before treating relayed feedback as new work.
+  (2) *A spec's own wording can be the thing that is wrong.* §11.9 was titled "values shown are in
+  today's dollars", which is false for the runway and IL charts — implementing it verbatim would
+  have printed a confident, incorrect statement on precisely the charts that most needed an
+  accurate one, making the transparency feature the thing that misleads. Correct the criterion in
+  the spec, in writing, before building against it — the same move §6's facility-score bullet
+  already required for a weighted mean. (3) *One definition, consumed twice.* The basis strings
+  live in a single module that both the chart label and the §6.10 derivation `assumptions` array
+  read, because two copies of a sentence drift the first time one is edited, and a chart that
+  disagrees with its own derivation about which dollars it is drawing is worse than one that says
+  nothing. Prove it the way the §11.9 E2E does: assert each chart names its own basis **and does
+  not claim the other**, since a test that only checks "a label is present" passes on a page that
+  labels every chart identically — which is the original bug. Not tagged as a guardrail: whether
+  two figures on a page are on different bases is a semantic property of the engines behind them,
+  and no regex over a line can see it.
+
+- **An Axis Label Is Not the Feature; the Event On It Is** `elder-care-planner`'s IL comparison
+  chart carried two x-axis labels — "Month 1" and "Month N" — and the feedback that arrived was
+  "make the x-axis years." Implementing that literally would have satisfied the words and missed
+  the request: the stated goal was *"easily see, oops out of funds after 6 years"*, and **nothing
+  on the chart marked the depletion event at all**, so no axis relabelling would have answered it.
+  Read past the proposed mechanism to the thing the reader wanted to find, and check whether the
+  page can express it yet. Three rules the fix turned on, each a specialisation of an existing §6
+  lesson. (1) *Read the event off the series you plot* — the depletion month is found by scanning
+  the same `assetsEndByMonthCents` the chart draws, never re-derived from plan inputs, because a
+  marker at the wrong month **on a curve the reader can see** is the most falsifiable kind of wrong.
+  (2) *Never snap a real event to a label* — savings exhausted in month 74 are reported as month 74
+  in year 7; rounding to the nearest boundary puts the marker where the curve never crossed, and the
+  reader's eye catches the discrepancy immediately. (3) *Silence is not an answer* — an option whose
+  savings survive says so explicitly, because a blank is indistinguishable from a case the app
+  failed to evaluate, and the marker belongs in the `role="img"` accessible description too, since
+  a marker only sighted readers can find is not the feature that was asked for. Note also what the
+  spec's own adjudication got right and the feedback did not: switching the series to annual
+  resolution was already recorded as **rejected** (§6.5b.3), because the crossing usually happens
+  mid-year — so the admissible change was year *labels* on still-monthly data. Not tagged as a
+  guardrail: whether a chart surfaces the event its reader came for is a judgement about purpose,
+  and the missing marker is an absence no regex over a line can see.
+
+- **One Fact Stated Twice Will Eventually Be Stated Two Ways**: `elder-care-planner`'s break-even
+  card rendered the same crossover three times — a summary paragraph, a slider status line, and
+  (later) a headline sentence. The summary computed its own figure from `BreakEvenResult` and said
+  *"the two options cost the same at 38.5 hours a week"*; the other two read the §11.10 band and
+  said *"between 34.2 and 45.6 hours a week"*. A point estimate where §1.1 requires a range, sitting
+  directly above two correct statements, and it was the most prominent of the three. Nobody wrote
+  the contradiction deliberately: the band was resolved inside the slider component, so the panel
+  literally could not reach it and computed the only thing it could. **The structural fix is to
+  resolve a shared figure once, above every consumer, and pass it down** — here into
+  `lib/engine/citedBreakEvenBand.ts`, resolved in the panel and handed to both. Two call sites
+  computing "the same" value stay identical only until someone edits one, and the drift shows up as
+  two sentences in one card disagreeing in front of the reader. Three practical notes. (1) *Share
+  the phrase, not just the number*: both sentences now build from one `crossoverRangeText`, because
+  agreeing on 34.2 and then formatting it differently is the same defect wearing a hat. (2) *Assert
+  the agreement in E2E by parsing both rendered strings and comparing the captured groups* — a test
+  that checks each sentence separately against a regex passes on two sentences that disagree with
+  each other. (3) *Watch for the wording regressing on the way through*: the first draft of the
+  replacement summary said "the published data" about a band that is `derived`, reintroducing the
+  §6 Cite-Confidence laundering in a sentence written to fix a different problem — so there is now
+  a test asserting neither sentence ever calls the band published. Not tagged as a guardrail:
+  whether two strings in different components describe the same underlying fact is a semantic
+  judgement, and the two call sites are usually in different files.
+
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.
 - **Create Agent Handoff File**: Agents MUST create or update a dedicated handoff file (e.g., `HANDOFF.md` in the project root or relevant app directory) detailing current project state, key changes, open bugs/blockers, and exact next steps so any future AI agent can seamlessly take over the work without loss of context.

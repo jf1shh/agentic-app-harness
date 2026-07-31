@@ -3,14 +3,14 @@
 /**
  * Interactive break-even slider (spec §11.10).
  *
- * Reads an explicit rate band from `data/costOfCare.ts` (the
- * `in_home_health_aide` row's `lowHourlyCents` / `highHourlyCents` fields —
- * the same row `aideHourlyRateCents` resolves the thumb's rate from, so the
- * band and the cost line can never be sourced from different care types) and
- * exposes the corresponding break-even band via `computeBreakEvenBand` — a
- * pure helper that calls the existing `computeBreakEven` engine twice (Rev 12
- * banner locks the engine against change; the band is computed at this
- * UI-adjacent seam).
+ * Receives the rate band already resolved (`lib/engine/citedBreakEvenBand.ts`),
+ * from the `in_home_health_aide` row `aideHourlyRateCents` also resolves the
+ * thumb's rate from, so the band and the cost line can never be sourced from
+ * different care types. `BreakEvenPanel` resolves it ONCE and hands the same
+ * object to this slider and to its own summary paragraph — resolving it in
+ * each of them separately is how the summary came to state a single crossover
+ * hour while this component stated a range (Rev 12 banner locks the engine
+ * against change; the band is computed at this UI-adjacent seam).
  *
  * Four rules this surface holds to:
  *  - The thumb's initial position binds to whatever comparison hours the family
@@ -30,14 +30,27 @@
  *    per the §6 "Cite Confidence, Not Just Sources" rule.
  */
 
-import { useDeferredValue, useId, useMemo } from 'react';
-import { computeBreakEvenBand } from '@/lib/engine/breakevenBand';
-import { NATIONAL_MEDIANS } from '@/lib/data/costOfCare';
+import { useDeferredValue, useId } from 'react';
+import type { CitedBreakEvenBand } from '@/lib/engine/citedBreakEvenBand';
+import { DOLLAR_BASIS_LABEL } from '@/lib/dollarBasis';
+import { buildBreakEvenHeadline } from '@/lib/breakEvenHeadline';
+import type { BreakEvenResult } from '@/lib/engine/breakeven';
 
 const HOURS_PER_WEEK_MAX = 168;
 const WEEKS_PER_MONTH = 52 / 12;
 
 interface Props {
+  /**
+   * The engine's result at the CURRENT slider position. `page.tsx` recomputes
+   * it from the same state the slider writes, so the headline built from it
+   * tracks the drag rather than the saved default (spec §11.11).
+   */
+  result: BreakEvenResult;
+  /**
+   * The band, resolved once by `BreakEvenPanel` and shared with its summary
+   * paragraph so the two can never quote different crossovers.
+   */
+  cited: CitedBreakEvenBand;
   hoursPerWeek: number;
   onHoursChange: (n: number) => void;
   hourlyRateCents: number;
@@ -49,6 +62,8 @@ interface Props {
 }
 
 export function BreakEvenSlider({
+  result,
+  cited,
   hoursPerWeek,
   onHoursChange,
   hourlyRateCents,
@@ -58,49 +73,16 @@ export function BreakEvenSlider({
 }: Props) {
   const id = useId();
 
-  // Band source: the costOfCare row for in_home_health_aide (spec §11.10) —
-  // the same row `aideHourlyRateCents` resolves the rate from. Both hourly
-  // rows carry an identical band because the 2025 Genworth survey merges the
-  // two care types into one published hourly figure.
-  //
-  // There is deliberately NO synthesised fallback here. An earlier version
-  // fell back to a +/-20% spread when the fields were absent, which (a) could
-  // never run, because NATIONAL_MEDIANS is a compile-time constant that always
-  // carries them, and (b) would have invented a rate range on screen, which §7
-  // forbids. If the band is ever genuinely absent the slider degenerates to a
-  // single-point anchor at the plan's own rate and says so, rather than
-  // fabricating a spread.
-  const bandRow = NATIONAL_MEDIANS.find((e) => e.careType === 'in_home_health_aide');
-  const lowRateCents = bandRow?.lowHourlyCents;
-  const highRateCents = bandRow?.highHourlyCents;
-  const hasCitedBand =
-    typeof lowRateCents === 'number' && typeof highRateCents === 'number';
-  const bandConfidence = bandRow?.hourlyBandConfidence;
+  // The band arrives already resolved (spec §11.10). It is resolved once in
+  // BreakEvenPanel and handed to both this slider and the panel's summary
+  // paragraph, because resolving it separately in each is exactly how the
+  // summary came to state a single crossover hour while this component stated
+  // a range — the same fact, in one card, in contradictory shapes.
+  const { band, lowRateCents, highRateCents, hasCitedBand, confidence: bandConfidence } = cited;
 
-  const band = useMemo(() => {
-    return computeBreakEvenBand(
-      {
-        hourlyRateCents,
-        currentHoursPerWeek: hoursPerWeek,
-        housingCarryMonthlyCents,
-        inHomeAncillaryMonthlyCents: Math.max(0, inHomeFixedMonthlyCents - housingCarryMonthlyCents),
-        residentialAllInMonthlyCents: residentialMonthlyCents,
-      },
-      {
-        lowRateCents: hasCitedBand ? (lowRateCents as number) : hourlyRateCents,
-        highRateCents: hasCitedBand ? (highRateCents as number) : hourlyRateCents,
-      },
-    );
-  }, [
-    hourlyRateCents,
-    hoursPerWeek,
-    housingCarryMonthlyCents,
-    inHomeFixedMonthlyCents,
-    residentialMonthlyCents,
-    hasCitedBand,
-    lowRateCents,
-    highRateCents,
-  ]);
+  // Spec §11.11. Built from engine output and the band above, never recomputed
+  // here, so the sentence and the chart cannot disagree.
+  const headline = buildBreakEvenHeadline(result, band, hoursPerWeek);
 
   // SVG redraw deferred; thumb position updates on every input (spec §11.10).
   const deferredHours = useDeferredValue(hoursPerWeek);
@@ -171,6 +153,12 @@ export function BreakEvenSlider({
 
   return (
     <div className="break-even-slider" data-testid="break-even-slider">
+      {/* Spec §11.11: the NYT-calculator headline. Sits above the control it
+          describes, and is rebuilt from engine output on every slider change
+          so it can never disagree with the chart below it. */}
+      <p className="headline" data-testid="break-even-headline">
+        {headline}
+      </p>
       <p className="hint" data-testid="slider-description">
         Slide to compare options. The thumb sits at the family&apos;s saved plan, and the shaded
         band shows where the crossover lies across a range of hourly rates.
@@ -256,6 +244,13 @@ export function BreakEvenSlider({
       </p>
       <p className="hint" data-testid="slider-band-provenance">
         {bandProvenance}
+      </p>
+      {/* Spec §11.9: unlike the runway and IL charts, this comparison has no
+          time dimension — `engine/breakeven.ts` prices one month at current
+          rates. Saying so here is what stops a reader carrying the runway's
+          inflated basis across to this panel. */}
+      <p className="hint" data-testid="break-even-dollar-basis">
+        {DOLLAR_BASIS_LABEL.today}
       </p>
     </div>
   );
