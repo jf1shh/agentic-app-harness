@@ -245,40 +245,68 @@ describe('hourlyToMonthlyCents', () => {
 });
 
 describe("the hourly-rate band rows (spec §11.10)", () => {
-  // Mirrors the band-symmetry rule feeStructures.test.ts:72-77 already asserts
-  // on the residential add-on bands, applied at hourly-cents scale for the two
-  // hourly-care rows. The band is the same between in_home_homemaker and
-  // in_home_health_aide because the 2025 Genworth survey merged those two
+  // §11.10 requires the band to carry FOUR things: low cents, high cents, a
+  // `FigureConfidence` tag matching the §6 Cite Confidence rule, and a note
+  // naming the survey of origin. The band is shared between in_home_homemaker
+  // and in_home_health_aide because the 2025 Genworth survey merged those two
   // care types into a single published hourly figure (costOfCare.ts note).
-  it("Given an hourly-care row, When lowHourlyCents and highHourlyCents are read, Then low <= high and both are positive", () => {
-    const hourly = NATIONAL_MEDIANS.filter(
+  //
+  // These assertions pin the EXACT bounds rather than a containment property.
+  // An earlier version asserted only `low <= 3500 <= high` and `low <= high`,
+  // which a band of [1, 999999] satisfies — mutation-proven to pass the whole
+  // suite. A range test that any range passes is a claim about coverage, not
+  // coverage (.agents/AGENTS.md §9.4).
+  const hourlyRows = () =>
+    NATIONAL_MEDIANS.filter(
       (e) => e.careType === "in_home_homemaker" || e.careType === "in_home_health_aide",
     );
+
+  it("Given an hourly-care row, When its band bounds are read, Then they are exactly the derived $30.00-$40.00 spread", () => {
+    const hourly = hourlyRows();
     expect(hourly.length).toBe(2);
 
     for (const entry of hourly) {
-      expect(entry.lowHourlyCents, `${entry.careType} missing lowHourlyCents`).toBeDefined();
-      expect(entry.highHourlyCents, `${entry.careType} missing highHourlyCents`).toBeDefined();
-      expect(entry.lowHourlyCents as number, `${entry.careType} low <= 0`).toBeGreaterThan(0);
-      expect(entry.highHourlyCents as number, `${entry.careType} high <= 0`).toBeGreaterThan(0);
-      expect(entry.lowHourlyCents as number).toBeLessThanOrEqual(entry.highHourlyCents as number);
+      expect(entry.lowHourlyCents, `${entry.careType} lowHourlyCents drifted`).toBe(3000);
+      expect(entry.highHourlyCents, `${entry.careType} highHourlyCents drifted`).toBe(4000);
     }
   });
 
-  it("Given the published non-medical caregiver median, When it is checked against each band, Then it sits inside the band", () => {
-    // 3500 is the implicit midpoint of the band per §11.10 / Rev 12 banner.
-    // PlanState keeps using medianHourlyCents as the single user-side figure;
-    // the slider UI reads the band separately. Keeping the median inside the
-    // band here means the two cannot drift past one another unnoticed.
+  it("Given the published non-medical caregiver median, When it is checked against each band, Then it is the exact midpoint of the band", () => {
+    // The band is derived as a symmetric spread around the one published
+    // figure, so the median must be the midpoint — not merely somewhere
+    // inside it. This is what makes the band's provenance checkable.
     const MEDIAN = 3500;
-    const hourly = NATIONAL_MEDIANS.filter(
-      (e) => e.careType === "in_home_homemaker" || e.careType === "in_home_health_aide",
-    );
-    for (const entry of hourly) {
-      expect(entry.lowHourlyCents).toBeDefined();
-      expect(entry.highHourlyCents).toBeDefined();
-      expect(entry.lowHourlyCents as number, `${entry.careType} band lower than the published median`).toBeLessThanOrEqual(MEDIAN);
-      expect(entry.highHourlyCents as number, `${entry.careType} band higher than the published median`).toBeGreaterThanOrEqual(MEDIAN);
+    for (const entry of hourlyRows()) {
+      const low = entry.lowHourlyCents as number;
+      const high = entry.highHourlyCents as number;
+      expect(entry.medianHourlyCents, `${entry.careType} median drifted`).toBe(MEDIAN);
+      expect((low + high) / 2, `${entry.careType} band is not centred on the median`).toBe(MEDIAN);
+    }
+  });
+
+  it("Given the band is not a surveyed figure, When its confidence tag is read, Then it is 'derived' and never inherits the row's 'verified' tag", () => {
+    // The §6 "Cite Confidence, Not Just Sources" lesson, and the precedent in
+    // feeStructures.test.ts (FEE_RANGE_SOURCE.isAuthoritative === false):
+    // the survey publishes ONE merged hourly figure, so the +/- spread around
+    // it is computed, not surveyed. Letting the band ride on the row-level
+    // 'verified' tag is exactly the "laundering an uncertain figure" failure.
+    for (const entry of hourlyRows()) {
+      expect(entry.confidence, `${entry.careType} row median should stay verified`).toBe("verified");
+      expect(
+        entry.hourlyBandConfidence,
+        `${entry.careType} band must carry its own confidence tag`,
+      ).toBe("derived");
+      expect(entry.hourlyBandConfidence).not.toBe("verified");
+    }
+  });
+
+  it("Given the band carries a note, When it is read, Then it names the survey of origin and does not call the band published", () => {
+    for (const entry of hourlyRows()) {
+      const note = entry.hourlyBandNote;
+      expect(note, `${entry.careType} band must carry a note naming its origin`).toBeTruthy();
+      expect(note as string).toMatch(/Genworth/i);
+      // The single merged rate is published; the spread around it is not.
+      expect(note as string).not.toMatch(/published (?:range|band|spread)/i);
     }
   });
 });

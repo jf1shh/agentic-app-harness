@@ -4,16 +4,19 @@
  * Interactive break-even slider (spec §11.10).
  *
  * Reads an explicit rate band from `data/costOfCare.ts` (the
- * `in_home_homemaker` row's `lowHourlyCents` / `highHourlyCents` fields added
- * in the same change) and exposes the corresponding break-even band via
- * `computeBreakEvenBand` — a pure helper that calls the existing
- * `computeBreakEven` engine twice (Rev 12 banner locks the engine against
- * change; the band is computed at this UI-adjacent seam).
+ * `in_home_health_aide` row's `lowHourlyCents` / `highHourlyCents` fields —
+ * the same row `aideHourlyRateCents` resolves the thumb's rate from, so the
+ * band and the cost line can never be sourced from different care types) and
+ * exposes the corresponding break-even band via `computeBreakEvenBand` — a
+ * pure helper that calls the existing `computeBreakEven` engine twice (Rev 12
+ * banner locks the engine against change; the band is computed at this
+ * UI-adjacent seam).
  *
- * Three rules this surface holds to:
- *  - The thumb's initial position binds to whatever `PlanState.currentHoursPerWeek`
- *    the family has saved; never starts at zero or a default. Reopening the panel
- *    restores that saved value through the existing prop chain.
+ * Four rules this surface holds to:
+ *  - The thumb's initial position binds to whatever comparison hours the family
+ *    has saved (`PlannerState.compareHoursPerWeek`, passed in as `hoursPerWeek`;
+ *    it becomes `BreakEvenInput.currentHoursPerWeek` at the engine boundary).
+ *    It never starts at zero or a default.
  *  - The thumb position itself updates on every input event; the SVG chart redraws
  *    on a deferred tick (`useDeferredValue`), so a fast drag does not strobe.
  *    Deferred render is *not* animation, so §5.5 holds.
@@ -21,6 +24,10 @@
  *    engine returns a degenerate `Number.POSITIVE_INFINITY` (zero hourly rate
  *    case) or when the two band edges are equal. It never draws an unbounded
  *    axis range.
+ *  - The status line reports the crossover as a *band*, never as a single hour
+ *    (§11.10, §1.1, §5.3). The midpoint is available but is never the only
+ *    figure shown, and the band's `derived` confidence is surfaced beside it
+ *    per the §6 "Cite Confidence, Not Just Sources" rule.
  */
 
 import { useDeferredValue, useId, useMemo } from 'react';
@@ -51,15 +58,26 @@ export function BreakEvenSlider({
 }: Props) {
   const id = useId();
 
-  // Band source: costOfCare row for in_home_homemaker (per spec §11.10).
-  // The two hourly-care rows already share the same band on-disk because the
-  // 2025 Genworth survey merges those two care types into one hourly figure.
-  // If the row is read from older cache that pre-dates the band shape, fall
-  // back to a ±20% sensitivity band so the slider never degrades silently.
+  // Band source: the costOfCare row for in_home_health_aide (spec §11.10) —
+  // the same row `aideHourlyRateCents` resolves the rate from. Both hourly
+  // rows carry an identical band because the 2025 Genworth survey merges the
+  // two care types into one published hourly figure.
+  //
+  // There is deliberately NO synthesised fallback here. An earlier version
+  // fell back to a +/-20% spread when the fields were absent, which (a) could
+  // never run, because NATIONAL_MEDIANS is a compile-time constant that always
+  // carries them, and (b) would have invented a rate range on screen, which §7
+  // forbids. If the band is ever genuinely absent the slider degenerates to a
+  // single-point anchor at the plan's own rate and says so, rather than
+  // fabricating a spread.
+  const bandRow = NATIONAL_MEDIANS.find((e) => e.careType === 'in_home_health_aide');
+  const lowRateCents = bandRow?.lowHourlyCents;
+  const highRateCents = bandRow?.highHourlyCents;
+  const hasCitedBand =
+    typeof lowRateCents === 'number' && typeof highRateCents === 'number';
+  const bandConfidence = bandRow?.hourlyBandConfidence;
+
   const band = useMemo(() => {
-    const row = NATIONAL_MEDIANS.find((e) => e.careType === 'in_home_homemaker');
-    const lowRateCents = row?.lowHourlyCents ?? Math.max(1, Math.round(hourlyRateCents * 0.8));
-    const highRateCents = row?.highHourlyCents ?? Math.max(lowRateCents + 1, Math.round(hourlyRateCents * 1.2));
     return computeBreakEvenBand(
       {
         hourlyRateCents,
@@ -68,7 +86,10 @@ export function BreakEvenSlider({
         inHomeAncillaryMonthlyCents: Math.max(0, inHomeFixedMonthlyCents - housingCarryMonthlyCents),
         residentialAllInMonthlyCents: residentialMonthlyCents,
       },
-      { lowRateCents, highRateCents },
+      {
+        lowRateCents: hasCitedBand ? (lowRateCents as number) : hourlyRateCents,
+        highRateCents: hasCitedBand ? (highRateCents as number) : hourlyRateCents,
+      },
     );
   }, [
     hourlyRateCents,
@@ -76,6 +97,9 @@ export function BreakEvenSlider({
     housingCarryMonthlyCents,
     inHomeFixedMonthlyCents,
     residentialMonthlyCents,
+    hasCitedBand,
+    lowRateCents,
+    highRateCents,
   ]);
 
   // SVG redraw deferred; thumb position updates on every input (spec §11.10).
@@ -106,7 +130,14 @@ export function BreakEvenSlider({
   const inHomeLineX1 = hoursToX(0);
   const inHomeLineY1 = yToY(inHomeYAt(0));
   const inHomeLineX2 = hoursToX(HOURS_PER_WEEK_MAX);
-  const inHomeLineY2 = yToY(yMax);
+  // The in-home line must terminate at its OWN value at the axis maximum, not
+  // at the chart's y-scale maximum. Those coincide only while the in-home cost
+  // at 168 hrs/week is the tallest thing on the chart. When the residential
+  // baseline is higher (a low hourly rate, or the zero-rate degenerate case),
+  // `yToY(yMax)` pinned this endpoint to the top of the chart and drew the
+  // in-home line crossing a baseline it never actually reaches — a crossover
+  // the family does not have.
+  const inHomeLineY2 = yToY(inHomeYAt(HOURS_PER_WEEK_MAX));
 
   // Degenerate handling: the band collapses to a vertical anchor on the axis.
   const isDegenerateBand =
@@ -118,19 +149,31 @@ export function BreakEvenSlider({
   const bandXHigh = hoursToX(Number.isFinite(band.highHours) ? band.highHours : HOURS_PER_WEEK_MAX);
 
   // Neutral-voice status line: never addresses the reader in the second
-  // person, never ranks options, and reports the band as a band — never a
-  // single hour.
-  const statusMidpoint = Number.isFinite(band.midpointHours)
-    ? `Crossover roughly ${band.midpointHours.toFixed(1)} hrs/week.`
-    : isDegenerateBand
-      ? 'Band collapses to a single-point anchor at one edge of the axis.'
-      : 'Crossover band has not been computed.';
+  // person, never ranks options, and reports the crossover as a BAND — never
+  // as a single hour (§11.10, §1.1, §5.3). The midpoint is available but is
+  // never the only figure shown, which is why it trails the range rather than
+  // replacing it.
+  const bandLowEdge = Math.min(band.lowHours, band.highHours);
+  const bandHighEdge = Math.max(band.lowHours, band.highHours);
+  const statusBand =
+    !isDegenerateBand && Number.isFinite(bandLowEdge) && Number.isFinite(bandHighEdge)
+      ? `Crossover band: roughly ${bandLowEdge.toFixed(1)}–${bandHighEdge.toFixed(1)} hrs/week`
+        + `${Number.isFinite(band.midpointHours) ? ` (midpoint ${band.midpointHours.toFixed(1)})` : ''}.`
+      : 'Crossover band collapses to a single-point anchor at one edge of the axis.';
+
+  // §6 "Cite Confidence, Not Just Sources": the band is a computed spread
+  // around one published figure, so the tag travels with it on screen.
+  const bandProvenance = hasCitedBand
+    ? `Rate range $${((lowRateCents as number) / 100).toFixed(0)}–$${((highRateCents as number) / 100).toFixed(0)}/hr`
+      + `${bandConfidence ? ` (${bandConfidence}` : ''}`
+      + `${bandConfidence ? ', a symmetric spread around the one published $35/hr rate, not a surveyed range).' : '.'}`
+    : 'No cited rate range is available, so the crossover is shown at the plan’s own rate only.';
 
   return (
     <div className="break-even-slider" data-testid="break-even-slider">
       <p className="hint" data-testid="slider-description">
         Slide to compare options. The thumb sits at the family&apos;s saved plan, and the shaded
-        band shows where the crossover lies across the published hourly-rate range.
+        band shows where the crossover lies across a range of hourly rates.
       </p>
       <input
         id={id}
@@ -209,7 +252,10 @@ export function BreakEvenSlider({
         />
       </svg>
       <p className="hint section-status" data-testid="slider-status">
-        Selected hours: {hoursPerWeek}. {statusMidpoint}
+        Selected hours: {hoursPerWeek}. {statusBand}
+      </p>
+      <p className="hint" data-testid="slider-band-provenance">
+        {bandProvenance}
       </p>
     </div>
   );
