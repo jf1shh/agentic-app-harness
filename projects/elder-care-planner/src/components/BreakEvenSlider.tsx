@@ -34,11 +34,19 @@ import { useDeferredValue, useId, useMemo } from 'react';
 import { computeBreakEvenBand } from '@/lib/engine/breakevenBand';
 import { NATIONAL_MEDIANS } from '@/lib/data/costOfCare';
 import { DOLLAR_BASIS_LABEL } from '@/lib/dollarBasis';
+import { buildBreakEvenHeadline } from '@/lib/breakEvenHeadline';
+import type { BreakEvenResult } from '@/lib/engine/breakeven';
 
 const HOURS_PER_WEEK_MAX = 168;
 const WEEKS_PER_MONTH = 52 / 12;
 
 interface Props {
+  /**
+   * The engine's result at the CURRENT slider position. `page.tsx` recomputes
+   * it from the same state the slider writes, so the headline built from it
+   * tracks the drag rather than the saved default (spec §11.11).
+   */
+  result: BreakEvenResult;
   hoursPerWeek: number;
   onHoursChange: (n: number) => void;
   hourlyRateCents: number;
@@ -50,6 +58,7 @@ interface Props {
 }
 
 export function BreakEvenSlider({
+  result,
   hoursPerWeek,
   onHoursChange,
   hourlyRateCents,
@@ -102,6 +111,10 @@ export function BreakEvenSlider({
     lowRateCents,
     highRateCents,
   ]);
+
+  // Spec §11.11. Built from engine output and the band above, never recomputed
+  // here, so the sentence and the chart cannot disagree.
+  const headline = buildBreakEvenHeadline(result, band, hoursPerWeek);
 
   // SVG redraw deferred; thumb position updates on every input (spec §11.10).
   const deferredHours = useDeferredValue(hoursPerWeek);
@@ -172,6 +185,12 @@ export function BreakEvenSlider({
 
   return (
     <div className="break-even-slider" data-testid="break-even-slider">
+      {/* Spec §11.11: the NYT-calculator headline. Sits above the control it
+          describes, and is rebuilt from engine output on every slider change
+          so it can never disagree with the chart below it. */}
+      <p className="headline" data-testid="break-even-headline">
+        {headline}
+      </p>
       <p className="hint" data-testid="slider-description">
         Slide to compare options. The thumb sits at the family&apos;s saved plan, and the shaded
         band shows where the crossover lies across a range of hourly rates.

@@ -81,6 +81,7 @@ export function BreakEvenPanel({
       </div>
 
       <BreakEvenSlider
+        result={result}
         hoursPerWeek={hoursPerWeek}
         onHoursChange={onHoursChange}
         hourlyRateCents={hourlyRateCents}

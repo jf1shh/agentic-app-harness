@@ -1650,3 +1650,41 @@ the band.
     reads engine output from the *current slider position*, not from the saved default.
   - *Given* the panel is on screen, *When* the page is audited, *Then* `@axe-core/playwright` reports
     no violations and the slider is reachable by Tab order.
+
+### 11.11 APPROVED — Live headline sentence on the break-even panel
+
+Given the break-even slider is on screen, When its position changes, Then a single plain-language
+sentence above the chart restates the comparison at the selected hours, rebuilt from engine output
+on every change.
+
+This is the third of the NYT rent-vs-buy calculator's signature elements. The app already has the
+other two — the slider itself (§11.10) and fully-exposed editable assumptions (§6.10 derivations) —
+and what remained missing was the one line that says, in words, what the chart is showing.
+
+- **Built from engine output, never recomputed.** The sentence reads `BreakEvenResult` and the
+  §11.10 band. A second computation of the same comparison drifts from the engine the first time
+  either changes, and a headline contradicting the chart beneath it is the §6 "Explain the
+  Arithmetic Without Re-implementing It" failure at its most visible.
+- **A band, not a single hour** (§1.1, §5.3). The crossover is stated as the low–high range the
+  §11.10 band already computes. The rate is uncertain, so a single crossover hour is a false
+  precision the app refuses — the same correction §11.10's status line required.
+- **Neutral third-party voice** (§5.4). No second person, no "you should", no characterising a
+  family member. When the *app* states the comparison it is not a relative stating it, and that
+  reframing does real work at a family meeting. Enforced in a pure string-building module so the
+  constraint is unit-testable, exactly as `lib/recommendation.ts` already does for §5.2/§5.4.
+- **States which is cheaper, does not say which to choose** (§11.2). Reporting that one option costs
+  less at the selected hours is a fact about arithmetic. Naming a "best" option is a recommendation
+  this app declines to make, and the sentence must not drift into one.
+- **Names its dollar basis** (§11.9). The comparison is a single month at current rates, so the
+  headline must not be readable as a projection.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the slider at a known position, *When* the headline is read, *Then* it names the selected
+    hours, both monthly figures, and the difference between them.
+  - *Given* the slider is moved, *When* the headline is read again, *Then* it has followed the new
+    position rather than reporting the saved default.
+  - *Given* any slider position, *When* the headline states the crossover, *Then* it states a range
+    rather than a single hour.
+  - *Given* any slider position, *When* the headline is read, *Then* it contains no second-person
+    address and no recommendation to choose an option.
+  - *Given* residential care is cheaper before any paid help is added, *When* the headline is read,
+    *Then* it says so rather than reporting a crossover that does not exist.

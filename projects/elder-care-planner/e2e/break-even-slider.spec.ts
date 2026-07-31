@@ -199,6 +199,59 @@ test.describe('BDD Spec: The break-even slider follows the saved plan and the li
     expect(description).not.toMatch(/published hourly-rate range/i);
   });
 
+  test('Given the slider is moved, When the headline sentence is read, Then it follows the live position rather than the saved default', async ({
+    page,
+  }) => {
+    // Spec §11.11 acceptance rows 1 and 2. The headline is the NYT-calculator
+    // element the app was missing; the thing that makes it worth having is that
+    // it moves, so a headline frozen at the saved value is the failure mode.
+    await gotoPlanner(page);
+    await openSection(page, 'breakeven');
+
+    const headline = page.getByTestId('break-even-headline');
+    await expect(headline).toBeVisible();
+
+    const thumb = page.getByTestId('break-even-slider-thumb');
+    await thumb.fill('30');
+    await expect(thumb).toHaveValue('30');
+    await expect(headline).toContainText('30 hours a week');
+
+    await thumb.fill('60');
+    await expect(thumb).toHaveValue('60');
+    await expect(headline).toContainText('60 hours a week');
+  });
+
+  test('Given the headline states the crossover, When it is read, Then it gives a range and never a single hour', async ({
+    page,
+  }) => {
+    // §1.1 / §11.11: the hourly rate is uncertain, so one crossover hour is a
+    // precision the data does not support. Either a range, or an explicit
+    // statement that the two never cross.
+    await gotoPlanner(page);
+    await openSection(page, 'breakeven');
+
+    const text = (await page.getByTestId('break-even-headline').textContent()) ?? '';
+    const statesARange = /between \d+(?:\.\d+)? and \d+(?:\.\d+)? hours a week/.test(text);
+    const statesNoCrossing = /never cross|do not cross/.test(text);
+    expect(
+      statesARange || statesNoCrossing,
+      `headline gave neither a range nor a no-crossing statement: "${text}"`,
+    ).toBe(true);
+  });
+
+  test('Given the app’s neutral voice, When the headline is read, Then it neither addresses the reader nor recommends an option', async ({
+    page,
+  }) => {
+    // §5.4 and §11.2. Asserted on the rendered string rather than the module
+    // output, because the constraint is about what reaches the reader.
+    await gotoPlanner(page);
+    await openSection(page, 'breakeven');
+
+    const text = (await page.getByTestId('break-even-headline').textContent()) ?? '';
+    expect(text).not.toMatch(/\byour\b|\byou\b/i);
+    expect(text).not.toMatch(/\bshould\b|\brecommend|\bbest\b/i);
+  });
+
   test('Given the slider subtree is rendered, When axe-core audits it against WCAG 2.1 AA, Then there are no violations', async ({
     page,
   }) => {
