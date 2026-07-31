@@ -1727,3 +1727,44 @@ six lines to zero. A family with an itemised budget in front of them had nowhere
   - *Given* a plan saved before this existed, *When* it is loaded, *Then* its total is unchanged.
   - *Given* any set of entries, *When* the panel is read, *Then* the displayed total equals the sum
     of the lines as rendered.
+
+### 11.13 APPROVED — "Where to start looking": process guidance and vetted resources
+
+Given a family at the start of a search, When the starting-guide section is opened, Then it presents
+the practical steps of finding care — in-home first, then touring communities, then legal, financial
+and moving help — with each named resource carrying an explicit funding label.
+
+The app already models the *money*. This section covers the part families get wrong before any
+number matters: who to call, what to look at on a tour, and which of the organisations offering to
+help are paid by the providers they recommend.
+
+- **Do not rebuild what exists.** Buy-in versus rental contracts and refund terms are §6.5b; the
+  waitlist field is on `FacilityNote`; "questions to ask before you sign" is its own panel; the
+  elder-law-attorney and Medicaid cautions are in `benefits.ts`. This section links to those rather
+  than restating them, and adds only what the app did not already say.
+- **Every named resource carries a funding label**, on the same principle as §6's Cite Confidence
+  rule for figures: `government`, `nonprofit`, `commercial_referral` or `commercial`. A directory
+  paid a commission by the communities it recommends is useful *and* conflicted, and a reader
+  deciding how much weight to give its checklist needs to know which. Any resource labelled
+  `commercial_referral` or `commercial` **must** carry a note naming the conflict — the same
+  structural rule as §11.10's derived band needing its own note, and enforced by a unit test rather
+  than left to whoever edits the list.
+- **No ranking, no "best".** Per §11.2 the app does not name a best option, and that extends to
+  resources: the list is categorised, never ordered by preference, and carries no recommendation
+  language.
+- **Touring guidance is process, not opinion.** Visit in person, at more than one time of day, speak
+  to care staff rather than only the sales representative, tour widely before narrowing, and match
+  to the specific need (memory care, mobility, a couple staying together). None of this is a claim
+  about any particular community.
+- **Static content, no network calls.** The list ships in `src/lib/data/startingGuide.ts`. Links are
+  ordinary anchors a reader may choose to follow; the app itself fetches nothing, so §1.2 holds and
+  the privacy specs continue to pass with all outbound requests blocked.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* the section is open, *When* the in-home, touring, legal, moving and other groups are
+    read, *Then* each is present with at least one entry.
+  - *Given* any resource paid by the providers it recommends, *When* it is displayed, *Then* its
+    funding label and the note naming the conflict are both on screen next to it.
+  - *Given* the resource list, *When* it is read, *Then* no entry is described as best, top or
+    recommended.
+  - *Given* every outbound request is blocked, *When* the section is opened, *Then* it renders in
+    full, because nothing here is fetched.
