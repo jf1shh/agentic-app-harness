@@ -1688,3 +1688,42 @@ and what remained missing was the one line that says, in words, what the chart i
     address and no recommendation to choose an option.
   - *Given* residential care is cheaper before any paid help is added, *When* the headline is read,
     *Then* it says so rather than reporting a crossover that does not exist.
+
+### 11.12 APPROVED — Itemised home-running costs, entered by the family
+
+Given the in-home / stay-at-home path, When the family has figures for individual living-cost
+categories, Then each category has its own optional input, and the monthly cost of running the home
+is the sum of whatever they entered.
+
+This completes a data model the app already had. `HousingCarryCostSchema` (§2.1) has carried
+per-line fields — mortgage or rent, utilities, property tax, insurance, groceries, maintenance,
+transport — since V1, and `housingCarryMonthlyCents` in `engine/cost.ts` already sums all of them.
+Only the UI was missing: it offered a single lump-sum box, and `plannerState.ts` hardcoded the other
+six lines to zero. A family with an itemised budget in front of them had nowhere to put it.
+
+- **Entered, never estimated.** No figure is supplied, suggested or pre-filled. Every line defaults
+  to zero and stays there until a person types something. Estimating these is §11.7's job and §11.7
+  remains PROPOSED and unbuilt, blocked on a citable source — this section is deliberately the half
+  that needs no dataset.
+- **Optional, and partial entry is normal.** A family that knows groceries and utilities but not
+  property tax enters two lines and leaves the rest at zero. Nothing is required and nothing is
+  inferred from what is present.
+- **The total is derived and shown, never typed twice.** The panel displays the sum of the lines so
+  the figure feeding the comparison is visible. Two boxes that must agree is a defect waiting to
+  happen (§6 "One Fact Stated Twice Will Eventually Be Stated Two Ways").
+- **Existing plans keep their meaning.** `PlannerState.housingCarryMonthlyCents` remains, as the
+  catch-all "anything else" line. A saved plan that put its whole home cost there still totals to
+  exactly the same number, because that box always meant "everything", and it still does for anyone
+  who itemises nothing. `HousingCarryCostSchema` gains `otherCents` to carry it honestly rather than
+  mislabelling a lump sum as mortgage or rent, which is what the mapping did before.
+- **Zero is still the wrong default, and still says so.** The existing warning stays: residential
+  care already includes room and board, so leaving these at zero flatters staying at home. Itemising
+  makes the omission more visible, not less.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* figures typed into several category lines, *When* the comparison is computed, *Then* the
+    home-running cost is their sum.
+  - *Given* only some lines are filled, *When* the total is computed, *Then* the untouched lines
+    contribute zero rather than blocking the calculation.
+  - *Given* a plan saved before this existed, *When* it is loaded, *Then* its total is unchanged.
+  - *Given* any set of entries, *When* the panel is read, *Then* the displayed total equals the sum
+    of the lines as rendered.

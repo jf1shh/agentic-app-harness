@@ -194,7 +194,11 @@ export function housingCarryMonthlyCents(scenario: CareScenario): number {
     h.insuranceMonthlyCents +
     h.groceriesCents +
     h.maintenanceMonthlyCents +
-    h.transportCents
+    h.transportCents +
+    // Home costs the family did not itemise (spec §11.12). Omitting this term
+    // would silently drop the single-figure entry that predates per-line entry,
+    // zeroing the home side for every plan saved before it.
+    h.otherCents
   );
 }
 

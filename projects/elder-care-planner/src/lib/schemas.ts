@@ -121,6 +121,12 @@ export const HousingCarryCostSchema = z.object({
   groceriesCents: z.number().int().min(0).default(0),
   maintenanceMonthlyCents: z.number().int().min(0).default(0),
   transportCents: z.number().int().min(0).default(0),
+  /**
+   * Home costs the family has not itemised (spec §11.12). Carries the
+   * single-figure entry that predates per-line entry, rather than mislabelling
+   * a lump sum as mortgage or rent, which is what the mapping did before.
+   */
+  otherCents: z.number().int().min(0).default(0),
 });
 export type HousingCarryCost = z.infer<typeof HousingCarryCostSchema>;
 
@@ -418,7 +424,21 @@ export const PlannerStateSchema = z.object({
 
   // Break-even comparison
   compareHoursPerWeek: z.number().min(0).max(168),
+  /**
+   * The catch-all "anything else" home cost. Predates per-line entry, so a
+   * plan saved before §11.12 loads with its whole figure here and totals to
+   * exactly the same number.
+   */
   housingCarryMonthlyCents: z.number().int().min(0),
+  // Itemised home-running costs (spec §11.12). Optional with a zero default so
+  // plans saved before this existed still parse.
+  homeMortgageOrRentCents: z.number().int().min(0).default(0),
+  homeUtilitiesCents: z.number().int().min(0).default(0),
+  homePropertyTaxMonthlyCents: z.number().int().min(0).default(0),
+  homeInsuranceMonthlyCents: z.number().int().min(0).default(0),
+  homeGroceriesCents: z.number().int().min(0).default(0),
+  homeMaintenanceMonthlyCents: z.number().int().min(0).default(0),
+  homeTransportCents: z.number().int().min(0).default(0),
 
   // Sharing
   contributors: z.array(ContributorSchema),
