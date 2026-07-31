@@ -1519,13 +1519,39 @@ Given the user has no per-line figures for `HousingCarryCostSchema`, When they e
 - **Pre-fill, not result.** Numbers arrive labelled "Estimated (your state, …, confidence: …)" until the user confirms or overrides. The headline number never comes from a pre-fill alone; the derivation panel (per §6.10) lists exactly which lines came from the pre-fill and which the user replaced.
 - **No network call.** Per §1.2, the dataset ships in `src/lib/data/livingCost.ts`; no API, no telemetry of which figures were taken.
 
-### 11.8 PROPOSED — Year-boundary labels on the monthly comparison chart
+### 11.8 APPROVED — Year-boundary labels and a depletion marker on the monthly comparison chart
 
 Given any `independent_living` scenario is projected, When the comparison chart is shown, Then year boundaries (month 12, 24, …, N×12) carry a tick mark, an axis label, and a subtle vertical guideline, while the data resolution stays **monthly** per §6.5b.3.
 
 - **Data resolution is not changed.** The underlying `assetsEndByMonthCents` series is untouched — annual sampling is exactly the option §6.5b.3 records as rejected, and revisiting that decision would require a spec revision under §1.1's "reversing any of them requires revising this spec."
 - **Crossings stay truthful.** A year label landing on a non-zero crossing means the curve actually crossed there in a month inside the year; an interpolated landing is explicitly drawn as a faint marker.
 - **Reuses existing data.** No schema change. The chart component (`ILOverlayChart.tsx`) gains year tick rendering; the existing yearly table is unchanged.
+- **Depletion marker and readout (added on approval).** The feedback that motivated this section
+  was *"identify where the lines cross and easily see, oops out of funds after 6 years"* — year
+  labels alone do not answer that, because nothing on the chart marked the depletion event at all.
+  Each option therefore also carries a marker at the month its balance first reaches zero, and a
+  sentence beneath the chart naming that year and month. Three constraints on it:
+  - **Read, never recomputed.** The month is found by scanning the same `assetsEndByMonthCents`
+    series the chart plots (`engine/depletion.ts`), not derived again from plan inputs. A second
+    implementation drifts from the engine, and a marker at the wrong month on a visible curve is
+    worse than no marker (§6 "Explain the Arithmetic Without Re-implementing It").
+  - **Never snapped to a year label.** Savings exhausted in month 74 are reported as month 74 in
+    year 7. Rounding to the nearest boundary would place the marker where the curve never crossed —
+    the same truthfulness rule the bullet above states for year labels.
+  - **Silence is not an answer.** An option whose savings survive the projection says so explicitly;
+    an option with no sentence is indistinguishable from one the app failed to evaluate. And because
+    the chart is `role="img"`, the depletion year belongs in its accessible description too — a
+    marker only sighted readers can find is not the feature that was requested.
+- **Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+  - *Given* a projection spanning whole years, *When* the chart is drawn, *Then* each completed year
+    carries its own label, and a partial trailing year carries none.
+  - *Given* savings that run out inside the projection, *When* the chart is drawn, *Then* a marker
+    sits at the month it happens and its year is the one containing that month.
+  - *Given* the marker is drawn, *When* the readout beneath the chart is read, *Then* it names the
+    same year and month the marker carries.
+  - *Given* an option whose savings never run out, *When* its readout is read, *Then* it says so.
+  - *Given* a screen reader, *When* the chart's description is read, *Then* it states the depletion
+    year as well.
 
 ### 11.9 APPROVED — Explicit dollar-basis label on every chart
 

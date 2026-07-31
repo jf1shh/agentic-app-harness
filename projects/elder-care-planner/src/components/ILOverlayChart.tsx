@@ -3,6 +3,7 @@
 import type { ILVariantProjection } from '@/lib/engine/buyin';
 import { formatCents } from '@/lib/format';
 import { DOLLAR_BASIS_LABEL } from '@/lib/dollarBasis';
+import { findDepletion, yearBoundaries, type Depletion } from '@/lib/engine/depletion';
 
 /**
  * The Independent Living overlay chart (spec §6.5b.4).
@@ -52,9 +53,16 @@ function describe(projections: readonly ILVariantProjection[], months: number): 
     const affordability = p.isAffordable
       ? ''
       : ' This option cannot be afforded from the plan’s liquid assets.';
+    // §11.8: the depletion month is the thing the chart exists to surface, so
+    // it belongs in the accessible description too — a marker only sighted
+    // readers can find is not the feature being asked for.
+    const depletion = findDepletion(p.assetsEndByMonthCents);
+    const runsOut = depletion
+      ? ` Savings run out in year ${depletion.year}, at month ${depletion.month}.`
+      : ' Savings last the whole projection.';
     return `${p.label} starts at ${formatCents(first)} after its entry fee and ends at ${formatCents(
       last,
-    )}.${affordability}`;
+    )}.${runsOut}${affordability}`;
   });
   return `Savings remaining month by month over ${months} months, one line per independent living option. ${parts.join(
     ' ',
@@ -87,6 +95,20 @@ export function ILOverlayChart({
   const x = (monthIndex: number) =>
     PAD_L + (months <= 1 ? 0 : (monthIndex / (months - 1)) * plotW);
   const y = (cents: number) => PAD_T + plotH - (cents / maxValue) * plotH;
+
+  // Year ticks and depletion markers both read off the plotted series (§11.8),
+  // so neither can disagree with the curve the reader is looking at.
+  const boundaries = yearBoundaries(months);
+  const depletions = withCurves
+    .map((projection, styleIndex) => ({
+      projection,
+      styleIndex,
+      depletion: findDepletion(projection.assetsEndByMonthCents),
+    }))
+    .filter(
+      (d): d is { projection: ILVariantProjection; styleIndex: number; depletion: Depletion } =>
+        d.depletion !== null,
+    );
 
   const linePath = (series: readonly number[]) =>
     series.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
@@ -141,6 +163,43 @@ export function ILOverlayChart({
         aria-label={describe(withCurves, months)}
         data-testid="il-overlay-chart"
       >
+        {/* Year boundaries (spec §11.8): a subtle guideline plus a tick, drawn
+            UNDER the bands and lines so they never compete with the data. The
+            series stays monthly — annual sampling is the option §6.5b.3
+            records as rejected. */}
+        {boundaries.map((b) => (
+          <g key={`year-${b.year}`} data-testid={`il-year-${b.year}`}>
+            <line
+              x1={x(b.monthIndex)}
+              y1={PAD_T}
+              x2={x(b.monthIndex)}
+              y2={PAD_T + plotH}
+              stroke="#111827"
+              strokeWidth="1"
+              strokeOpacity="0.12"
+            />
+            <line
+              x1={x(b.monthIndex)}
+              y1={PAD_T + plotH}
+              x2={x(b.monthIndex)}
+              y2={PAD_T + plotH + 4}
+              stroke="#111827"
+              strokeWidth="1"
+              strokeOpacity="0.6"
+            />
+            <text
+              x={x(b.monthIndex)}
+              y={HEIGHT - 8}
+              fontSize="11"
+              fill="#111827"
+              fillOpacity="0.75"
+              textAnchor="middle"
+            >
+              {`Yr ${b.year}`}
+            </text>
+          </g>
+        ))}
+
         {/* Bands first, so the lines always read on top of them. An option that
             cannot be afforded gets no band — there is no refund to weigh when
             the entry fee cannot be paid in the first place. */}
@@ -173,6 +232,36 @@ export function ILOverlayChart({
           );
         })}
 
+        {/* Depletion markers (spec §11.8), on top of the lines because this is
+            the event the chart exists to make findable. Positioned at the month
+            the series actually reaches zero — never snapped to the nearest year
+            label, or the marker would contradict the curve beneath it. */}
+        {depletions.map(({ projection, depletion, styleIndex }) => (
+          <g
+            key={`depletion-${projection.scenarioId}`}
+            data-testid={`il-depletion-${projection.scenarioId}`}
+            data-month={depletion.month}
+            data-year={depletion.year}
+          >
+            <line
+              x1={x(depletion.monthIndex)}
+              y1={PAD_T}
+              x2={x(depletion.monthIndex)}
+              y2={PAD_T + plotH}
+              stroke={styleFor(styleIndex).stroke}
+              strokeWidth="1.5"
+              strokeDasharray="2 3"
+              strokeOpacity="0.8"
+            />
+            <circle
+              cx={x(depletion.monthIndex)}
+              cy={y(0)}
+              r={4}
+              fill={styleFor(styleIndex).stroke}
+            />
+          </g>
+        ))}
+
         <line
           x1={PAD_L}
           y1={PAD_T + plotH}
@@ -188,6 +277,22 @@ export function ILOverlayChart({
           Month {months}
         </text>
       </svg>
+
+      {/* The readout §11.8 exists for: "oops, out of funds after six years",
+          in words, for every option — including the ones that do not run out,
+          because a silent option is indistinguishable from an unanswered one. */}
+      <ul className="hint" data-testid="il-depletion-readout">
+        {withCurves.map((p) => {
+          const depletion = findDepletion(p.assetsEndByMonthCents);
+          return (
+            <li key={`readout-${p.scenarioId}`} data-testid={`il-readout-${p.scenarioId}`}>
+              {depletion
+                ? `${p.label}: savings run out in year ${depletion.year} (month ${depletion.month} of ${months}).`
+                : `${p.label}: savings last the full ${months} months projected.`}
+            </li>
+          );
+        })}
+      </ul>
 
       {/* Spec §11.9: this overlay reads its series verbatim from the runway
           engine, so it carries the same escalators and the same basis. */}
