@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { LedgerSummary } from '@/lib/engine/ledger';
-import type { Contributor, ExpenseCategory, LedgerEntry } from '@/lib/schemas';
+import type { Contributor, ExpenseCategory, PlannerLedgerEntry } from '@/lib/schemas';
 import {
   EXPENSE_CATEGORY_LABELS,
   LIKELY_DEDUCTIBLE_CATEGORIES,
@@ -12,15 +12,17 @@ import { makeId } from '@/lib/format';
 import { CurrencyInput, DateInput, NumberInput, SelectInput, TextInput, CheckboxInput } from './Inputs';
 import { WhyButton } from './WhyButton';
 import { CollapsibleCard } from './CollapsibleCard';
+import { LedgerReceipt } from './LedgerReceipt';
 
 interface Props {
   summary: LedgerSummary;
-  entries: readonly LedgerEntry[];
+  entries: readonly PlannerLedgerEntry[];
   contributors: readonly Contributor[];
   monthsElapsed: number;
   onMonthsElapsedChange: (months: number) => void;
-  onAddEntry: (entry: LedgerEntry) => void;
+  onAddEntry: (entry: PlannerLedgerEntry) => void;
   onRemoveEntry: (id: string) => void;
+  onEntryChange: (id: string, patch: Partial<PlannerLedgerEntry>) => void;
 }
 
 const CATEGORY_OPTIONS = (Object.keys(EXPENSE_CATEGORY_LABELS) as ExpenseCategory[]).map((c) => ({
@@ -37,8 +39,9 @@ const CATEGORY_OPTIONS = (Object.keys(EXPENSE_CATEGORY_LABELS) as ExpenseCategor
  * actually paid, kept by the app rather than by whichever sibling is keeping
  * score.
  *
- * Deliberately minimal, per spec §10.5: amount, date, category, who paid. No
- * receipts, no recurring entries.
+ * Deliberately minimal, per spec §10.5: amount, date, category, who paid, and
+ * (spec §11.14) an optional receipt photo the app holds but never reads — no
+ * OCR, no auto-filled fields from it. Still no recurring entries.
  */
 export function LedgerPanel({
   summary,
@@ -48,6 +51,7 @@ export function LedgerPanel({
   onMonthsElapsedChange,
   onAddEntry,
   onRemoveEntry,
+  onEntryChange,
 }: Props) {
   const [contributorId, setContributorId] = useState(contributors[0]?.id ?? '');
   const [date, setDate] = useState('');
@@ -90,6 +94,11 @@ export function LedgerPanel({
     .filter((r) => r.cents > 0);
 
   const orphaned = entries.filter((e) => !contributors.some((c) => c.id === e.contributorId));
+
+  // The cap in lib/receipts.ts is plan-wide, not per entry — an entry whose
+  // own receipt was removed does not free up room for a different entry
+  // until its own attach is what changes the count.
+  const receiptCount = entries.filter((e) => e.receiptPhotoId).length;
 
   // Closed, this section reports the one thing a family checks it for: whether
   // anyone is behind. Both figures come from the same `LedgerSummary` the tables
@@ -190,6 +199,7 @@ export function LedgerPanel({
                   <th scope="col">Who</th>
                   <th scope="col">What for</th>
                   <th scope="col" className="num">Amount</th>
+                  <th scope="col" className="no-print">Receipt</th>
                   <th scope="col" className="no-print">
                     <span className="visually-hidden">Remove</span>
                   </th>
@@ -207,6 +217,13 @@ export function LedgerPanel({
                         {entry.note ? <span className="hint">{entry.note}</span> : null}
                       </td>
                       <td className="num">{formatCentsPrecise(entry.amountCents)}</td>
+                      <td className="no-print">
+                        <LedgerReceipt
+                          entry={entry}
+                          totalReceipts={receiptCount}
+                          onChange={onEntryChange}
+                        />
+                      </td>
                       <td className="no-print">
                         <button
                           type="button"
@@ -228,6 +245,7 @@ export function LedgerPanel({
                   <td className="num" data-testid="ledger-total">
                     {formatCentsPrecise(summary.totalPaidCents)}
                   </td>
+                  <td className="no-print" />
                   <td className="no-print" />
                 </tr>
               </tfoot>

@@ -288,7 +288,13 @@ export function buildPlan(state: PlannerState): Plan {
           ]
         : [],
     contributors: [...state.contributors],
-    ledger: [...state.ledger],
+    // receiptPhotoId (spec §11.14) is a local IndexedDB key with no meaning
+    // outside this browser and does not exist on LedgerEntrySchema — dropped
+    // here the same way monthsElapsed and compareHoursPerWeek are, below.
+    ledger: state.ledger.map(({ receiptPhotoId, ...entry }) => {
+      void receiptPhotoId;
+      return entry;
+    }),
     caregiverImpacts: [],
     assumptions: {
       ...DEFAULT_ASSUMPTIONS,

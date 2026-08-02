@@ -219,6 +219,21 @@ export const LedgerEntrySchema = z.object({
 });
 export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
 
+/**
+ * A ledger entry as the form holds it, with the one field `Plan` cannot carry
+ * (spec §11.14). `receiptPhotoId` is a key into `lib/receipts.ts`'s IndexedDB
+ * store — a local reference that means nothing outside this browser — so it
+ * lives only here, never on `LedgerEntrySchema` itself. `buildPlan()` drops it
+ * on the `PlannerState -> Plan` projection, the same way it already drops
+ * `monthsElapsed` and `compareHoursPerWeek` (spec §4.1): without this split,
+ * the id would travel into every export and every shared family link (§11.6)
+ * as a dangling reference nothing on the receiving end can resolve.
+ */
+export const PlannerLedgerEntrySchema = LedgerEntrySchema.extend({
+  receiptPhotoId: z.string().min(1).optional(),
+});
+export type PlannerLedgerEntry = z.infer<typeof PlannerLedgerEntrySchema>;
+
 export const CaregiverImpactSchema = z.object({
   contributorId: z.string().min(1),
   currentAnnualSalaryCents: z.number().int().min(0),
@@ -464,7 +479,7 @@ export const PlannerStateSchema = z.object({
   splitMethod: SplitMethodSchema,
 
   // Contribution ledger
-  ledger: z.array(LedgerEntrySchema),
+  ledger: z.array(PlannerLedgerEntrySchema),
   monthsElapsed: z.number().int().min(0).max(360),
 
   // Independent living comparison (§6.5b.4). Defaulted so a plan stored before

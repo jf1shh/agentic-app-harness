@@ -98,6 +98,25 @@ the recipient without ever reaching a server.
   never carries `facilities`/`photoIds` (those live only on the browser-local `PlannerState`), so
   there is nothing to remember to strip from a shared link.
 
+### Receipt photo capture (`lib/receipts.ts`, `components/LedgerReceipt.tsx`, spec §11.14)
+A ledger entry can carry one attached receipt photo — resolving spec §10.5's long-open "ledger
+scope creep" question specifically for receipts. The boundary: the app never reads a receipt. No
+OCR, no auto-filled amount or category — attaching a photo changes nothing about what the ledger
+already asks a family to type; it only lets them keep the proof beside the entry.
+
+- **A separate IndexedDB store from facility photos, on purpose.** `lib/receipts.ts` mirrors
+  `lib/photos.ts`'s architecture (downscale to 1280px JPEG, typed failure results) but keeps its
+  own cap, independent of §11.2.4's facility-photo budget — a family logging many ledger entries
+  should never find a facility-tour photo refused because receipts used up a shared allowance.
+- **`receiptPhotoId` never reaches `Plan`.** It lives only on `PlannerLedgerEntrySchema`, a form-only
+  extension of the domain `LedgerEntrySchema`; `buildPlan()` strips it, so exports and shared family
+  links (§11.6) can never carry a dangling local reference.
+- **Removing an entry does not delete its receipt.** The receipt is orphaned in IndexedDB, not
+  destroyed — mirroring `onFacilityRemove`'s treatment of a removed facility's photos, and for the
+  same reason: an editing action a family may undo by re-adding the row should not carry an
+  unrecoverable side effect. A separate "Remove receipt" control on the entry itself deletes
+  immediately, which is a different, more deliberate action.
+
 ### Independent living comparison (`components/ILComparisonPanel.tsx`)
 Independent living contracts come in three shapes — a large entry fee that is partly refundable on
 a schedule shrinking with tenure, a smaller non-refundable entry fee, or no entry fee and a higher
@@ -233,9 +252,15 @@ For the latest counts, run `node scripts/test-app.mjs elder-care-planner` from t
 ## Status
 
 V1 complete, plus the independent living comparison (spec §6.5b), the facility shortlist
-(spec §11.2), and the §11.8–§11.13 batch: dollar-basis labels on every chart, year labels and a
+(spec §11.2), the §11.8–§11.13 batch (dollar-basis labels on every chart, year labels and a
 depletion marker on the comparison chart, a live headline sentence on the break-even panel,
-itemised home-running costs entered by the family, and the "Where to start looking" guide. The ledger is on screen and the plan persists between visits. JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate — state-specific rules that cause real harm when subtly wrong), a shared encrypted family link, a care-hours scheduler, reverse-mortgage modelling.
+itemised home-running costs entered by the family, and the "Where to start looking" guide), the
+shared family link (spec §11.6), and receipt photo capture attached to ledger entries
+(spec §11.14). The ledger is on screen and the plan persists between visits. JSON export/import is
+built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2
+backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate —
+state-specific rules that cause real harm when subtly wrong), a care-hours scheduler, and
+reverse-mortgage modelling.
 
 `independent_living` is deliberately absent from the triage care-type picker: it is priced from a
 community contract rather than a survey median, and the comparison panel is the only place such a
