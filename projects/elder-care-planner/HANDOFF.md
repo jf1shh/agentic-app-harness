@@ -2,9 +2,9 @@
 
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
 facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), the
-§11.8–§11.13 batch, and the shared family link (spec §11.6) — all described below.
-`node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only, lint,
-type-check, 443 Vitest, 124 Playwright + axe).
+§11.8–§11.13 batch, the shared family link (spec §11.6), and receipt photo capture (spec §11.14) —
+all described below. `node scripts/test-app.mjs elder-care-planner` passes all checks (security
+advisory-only, lint, type-check, 468 Vitest, 130 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
@@ -14,7 +14,29 @@ not from intuition.
 
 ## What was built
 
-**Shared family link (spec §11.6, most recent).** `lib/share.ts` encrypts a `Plan` (gzip-compressed,
+**Receipt photo capture (spec §11.14, most recent).** `lib/receipts.ts` mirrors `lib/photos.ts`'s
+architecture (IndexedDB, downscale to 1280px JPEG q0.7, typed failure results) as its own
+independent module and store — deliberately not a shared one, so a receipt-photo quota failure
+cannot cross-charge §11.2.4's facility-photo cap. `PlannerLedgerEntrySchema` extends the domain
+`LedgerEntrySchema` with an optional `receiptPhotoId`; `PlannerState.ledger` uses it, `Plan.ledger`
+does not, and `buildPlan()` strips the field on the way between them — the same split §4.1 already
+uses for `monthsElapsed`/`compareHoursPerWeek`, so a shared family link (§11.6) or an export can
+never carry a dangling local IndexedDB reference. `LedgerReceipt.tsx` (mirroring
+`FacilityPhotos.tsx`) is the attach/view/remove control, wired into `LedgerPanel`'s table as a new
+column. The app never reads a receipt — no OCR, no auto-filled fields — which is the boundary that
+resolves the long-open §10.5 question about ledger scope creep for receipts specifically (recurring
+entries, the other half of that deferral, remains unresolved).
+
+One correction worth flagging for whoever reads this next: the design note originally said removing
+a ledger entry deletes its receipt, "mirroring `onFacilityRemove`" — backwards.
+`onFacilityRemove` leaves a removed facility's photos in IndexedDB on purpose (an editing action a
+family may undo by re-adding the card should not carry an unrecoverable side effect), and
+`onRemoveLedgerEntry` follows the same real behaviour, corrected before implementation. A separate
+"Remove receipt" control on the entry itself does delete immediately, mirroring `FacilityPhotos`'
+own per-photo removal — the distinction is "delete this specific thing" vs. "delete the row it
+happens to be attached to."
+
+**Shared family link (spec §11.6).** `lib/share.ts` encrypts a `Plan` (gzip-compressed,
 AES-GCM, PBKDF2-derived key, fresh salt+IV per link) into a `#share=v1.<salt>.<iv>.<cipher>` URL
 fragment — never sent to a server. `SharePanel` generates a link from the current plan;
 `SharedPlanView` is a passphrase gate, then a read-only view of the decoded snapshot, reusing
@@ -182,22 +204,22 @@ now held up by a specific test.
    piece, and `Plan` is already the right shape for it.
 
 6. **The rest of the user feature batch is specified but unbuilt** — spec §11 records eight
-   user-supplied ideas, adjudicated. Approved and built: §11.2 and §11.6. Designed, compatible, and
-   awaiting a decision: §11.3 (financing the funding gap at an APR, plus a "today's dollars"
+   user-supplied ideas, adjudicated. Approved and built: §11.2, §11.6, §11.14. Designed, compatible,
+   and awaiting a decision: §11.3 (financing the funding gap at an APR, plus a "today's dollars"
    basis), §11.4 (two care recipients at once — the largest blast radius of the batch; read its
    §9.2 checklist before starting), §11.5 (a network-free plain-language decoder). **Recommended
    for rejection, with reasoning, in §11.1**: a facility directory with ratings, sponsorship by a
    referral company, RAG over user documents, and server-backed family sync — all four contradict
    the §1.1/§1.2 non-goals, and a human confirmed they stand. Do not quietly reopen them.
 
-7. **V2, explicitly deferred in the spec** (these are the 4 unchecked spec items the harness reports as
+7. **V2, explicitly deferred in the spec** (these are the 3 unchecked spec items the harness reports as
    drift — that finding is expected, not a defect): Medicaid eligibility modelling (deliberately —
    spend-down rules are state-specific and getting them subtly wrong causes real financial harm; a
    deferral to revisit only with explicit sign-off, not a routine backlog item), care-hours
    scheduler (no design anywhere in the spec beyond the one-line deferral), reverse-mortgage /
-   home-sale modelling (§10.3, no design), receipt capture attached to ledger entries (§10.5,
-   deliberately deferred to avoid ledger scope creep — the spec asks to "confirm that boundary"
-   before building it, not just build it).
+   home-sale modelling (§10.3, no design). Receipt capture, the other item §10.5 named, is built —
+   see §11.14 and the "What was built" entry above. Recurring entries, the remaining half of
+   §10.5's original deferral, is still unresolved and has no design.
 
 ## Things to not undo
 
@@ -311,6 +333,21 @@ now held up by a specific test.
   the plaintext differs between calls for an unrelated reason and the test stops actually isolating
   salt/IV freshness. See the AGENTS.md §6 lesson on tamper/freshness tests that can pass without
   testing what they claim.
+
+- **Removing a ledger entry does not delete its receipt.** `onRemoveLedgerEntry` leaves the
+  receipt orphaned in `lib/receipts.ts`'s store, mirroring `onFacilityRemove`'s treatment of a
+  removed facility's photos and for the same reason — an editing action a family may undo by
+  re-adding the row should not carry an unrecoverable side effect. Only "forget everything on this
+  device" (`clearReceipts()`) actually deletes. A separate, explicit "Remove receipt" button on the
+  entry itself *does* delete immediately — that is a different action with different intent, not an
+  inconsistency. (The design note in spec §11.14 originally had the entry-removal case backwards;
+  it is corrected there too.)
+
+- **`receiptPhotoId` lives only on `PlannerLedgerEntrySchema`, never on `LedgerEntrySchema`.**
+  Adding it to the schema `Plan.ledger` also uses would leak a local IndexedDB id — meaningless on
+  any other device — into every export and shared family link. `buildPlan()` strips it on the
+  `PlannerState -> Plan` projection; `e2e/receipts.spec.ts` proves the exclusion by decoding a real
+  generated share link with `share.ts`'s own `decodePlanFromShare`, not by re-implementing the check.
 
 ## Verify before pushing
 

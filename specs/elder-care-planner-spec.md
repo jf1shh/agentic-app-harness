@@ -214,7 +214,7 @@ combination plus **local-only, no-account privacy**.
 - [x] **Shared family link** (encrypted URL-fragment payload) — see §11.6.
 - [ ] Care-hours scheduler across family members.
 - [ ] Reverse mortgage / home-sale proceeds modeling.
-- [ ] Receipt photo capture attached to ledger entries.
+- [x] **Receipt photo capture** attached to ledger entries — see §11.14.
 - [x] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
 
 ---
@@ -287,6 +287,7 @@ src/
     explain/                # engine output -> checkable derivations (§6.10)
     storage.ts              # localStorage boundary, Zod-validated
     share.ts                # shared family link: encrypt/decrypt a Plan into a URL fragment (§11.6)
+    receipts.ts             # receipt photos attached to ledger entries: IndexedDB store (§11.14)
   app/                      # routes
   components/               # presentational components
 ```
@@ -1179,7 +1180,11 @@ human before V1 ships, and a failure blocks release as surely as a red test:
    refers out to an elder law attorney.
 5. **Ledger scope creep.** The contribution ledger (§6.6) edges toward being an expense-tracking
    app. V1 keeps it deliberately minimal — amount, date, category, who paid — with receipts and
-   recurring entries deferred. Confirm that boundary.
+   recurring entries deferred. **Boundary confirmed for receipts, in §11.14: a receipt is a
+   photograph the app holds and never reads (no OCR, no auto-fill) — that is what keeps this
+   bounded rather than a step toward expense tracking.** Recurring entries remain a separate,
+   unresolved question — a schedule and an implied future obligation are a materially bigger
+   feature than an attached photo, and nothing in §11.14 should be read as answering it.
 
 ---
 
@@ -1797,3 +1802,125 @@ help are paid by the providers they recommend.
     recommended.
   - *Given* every outbound request is blocked, *When* the section is opened, *Then* it renders in
     full, because nothing here is fetched.
+
+### 11.14 APPROVED AND IMPLEMENTED — Receipt photo capture attached to ledger entries (resolving the §10.5 boundary)
+
+§10.5 asked, and never answered: *"the contribution ledger edges toward being an expense-tracking
+app... receipts and recurring entries deferred. Confirm that boundary."* §6.6 accordingly shipped
+V1 with "no receipts, no recurring entries" stated flatly. This section proposes where the line
+actually goes for receipts specifically — recurring entries are a separate, larger question
+(a schedule, an implied future obligation) and stay out of scope here.
+
+**The boundary: a receipt is a photograph, not data.** The app never reads it. No OCR, no
+auto-filled amount or category, no parsing of any kind — attaching a photo changes nothing about
+what the ledger already asks a family to type. What it adds is narrow and specific: the ability to
+keep the proof beside the entry instead of in a shoebox or a separate phone album, for the one
+moment that matters — an audit, a Medicaid spend-down review, or a sibling asking "what was this
+$340 for?" six months later. This is the same boundary §11.2's facility shortlist already drew for
+photos ("a notebook, never a directory"): a photo a family already has, attached to a record they
+are already keeping, with the app doing no independent analysis of it. That is what keeps this a
+bounded feature rather than the expense-tracking app §10.5 warned against becoming — the test for
+any future proposal in this area is the same one: does it make the app *read* the receipt, or just
+*hold* it. The former is out of scope; this is the latter.
+
+**One photo per entry, not a gallery.** §11.2 allows up to six photos per facility because a tour
+produces several distinct views worth keeping. A receipt is one document. `LedgerEntry` gains a
+single optional `receiptPhotoId`, not an array — the simpler shape matches what the feature
+actually is, and forecloses a "receipts becoming its own attachment gallery" scope creep before it
+starts.
+
+**Storage: a new, separate IndexedDB store — not reusing `lib/photos.ts`'s.** Two reasons this is a
+new module (`lib/receipts.ts`) rather than a generalised photo store shared with facility photos.
+(1) *Caps must not cross-charge.* §11.2.4's `MAX_PHOTOS_TOTAL` (40) budgets facility tour photos,
+which are visited-once and finite over the life of a plan. A family logging ledger entries every
+week for a year could plausibly attach far more receipts than that, and a shared cap would mean
+photographing receipts quietly uses up the budget a later facility visit needs, with nothing on
+screen explaining why the facility panel suddenly refuses a photo. Separate stores mean separate,
+independently-sized caps (proposed: `MAX_RECEIPTS_TOTAL = 200`, no per-entry limit since it is
+already one-per-entry) — each feature's budget is its own. (2) *Independent erasure and independent
+failure.* `lib/photos.ts`'s central lesson (§6, "A Binary Attachment Must Not Share a Storage
+Budget With the Record It Annotates") is that a binary store must not share a write-failure surface
+with the record it annotates — a receipt-photo `QuotaExceededError` must not be able to fail the
+*ledger* write any more than a facility-photo one can fail the *plan* write, and that isolation is
+simplest to reason about, and to unit-test, as two independent stores rather than one store carrying
+two families of caller-supplied caps. The same downscaling (longest edge 1280px, JPEG q0.7),
+quota-error handling, and `PhotoResult<T>` failure-reporting shape as `lib/photos.ts` carry over
+unchanged — this is the same architecture applied to a second, independently-budgeted binary type,
+not a new one invented. A shared, parameterised attachment-store module is a reasonable refactor
+once a third use case for this pattern appears; two is not yet that pressure, and refactoring the
+existing, already-tested, already-AGENTS.md-referenced `lib/photos.ts` is unnecessary risk for this
+feature to take on.
+
+**`receiptPhotoId` lives on `PlannerState`'s ledger, not on `Plan`'s.** Today `LedgerEntrySchema` is
+the *same* schema for both — unlike `FacilityNote`, which exists only on `PlannerState` and never
+appears in `Plan` at all, so §11.2 photos are structurally excluded from export and the shared
+family link (§11.6) with nothing to remember to strip. Adding `receiptPhotoId` to the shared
+`LedgerEntrySchema` as-is would break that property by accident: the id would travel into every
+`Plan` export and every shared link, a dangling reference on any device but this one, and a future
+ledger view added to `SharedPlanView` would need to remember it cannot resolve it. The fix is the
+one the codebase already uses for exactly this shape of problem (§4.1: `Plan` and `PlannerState`
+are deliberately separate schemas because `buildPlan()` is a one-way projection that drops fields
+`Plan` cannot carry). Concretely: `LedgerEntrySchema` stays as the domain contract engines and
+`Plan` consume, unchanged; `PlannerStateSchema`'s `ledger` field is retyped to an array of a new
+`PlannerLedgerEntrySchema` (`LedgerEntrySchema.extend({ receiptPhotoId: z.string().min(1).optional()
+})`); and `buildPlan()` maps the (already-existing) `PlannerState -> Plan` conversion by dropping
+that one field, the same way it already drops `monthsElapsed` and `compareHoursPerWeek`. Every
+engine (`engine/ledger.ts`, `engine/tax.ts`) keeps consuming plain `LedgerEntry` and needs no
+change. **Removing an entry does not delete its receipt** — this corrects an earlier draft of this
+section, which had it backwards. `onFacilityRemove` deliberately leaves a removed facility's photos
+in IndexedDB rather than deleting them, because removing a card is an editing action a family may
+well undo by re-adding it, and destroying an image on the way past would be a surprise with no
+undo; the same reasoning applies at least as strongly to a ledger entry, which a family is more
+likely to remove and re-add while correcting a mistake. `onRemoveLedgerEntry` follows the same
+pattern: the receipt is orphaned in `lib/receipts.ts`'s store, unreferenced but not destroyed.
+"Forget everything on this device" calls a new `clearReceipts()` alongside `clearPhotos()` and
+`clearPlannerState()`, which is where deletion is promised and where it actually happens — the
+erase control's promise would otherwise be broken for exactly the data this feature adds.
+
+**UI.** `LedgerPanel`'s add-entry form gains an optional file input, "Attach a receipt (optional)."
+A logged entry with one shows a small thumbnail and a "View receipt" control that opens the stored
+image; a decode or quota failure surfaces `lib/receipts.ts`'s equivalent of
+`photoFailureMessage` inline on the entry rather than silently dropping the attachment.
+
+**Acceptance criteria (BDD, per `.agents/AGENTS.md` §5), for the implementation that follows this
+design.**
+- *Given* a ledger entry, *When* a receipt photo is attached, *Then* the plan payload in
+  `localStorage` grows by the size of an id, not the size of an image (mirroring §11.2.4's
+  existing quota test).
+- *Given* an entry with an attached receipt, *When* the entry is removed, *Then* the entry is gone
+  from the ledger but its receipt remains in `lib/receipts.ts`'s store, unreferenced but not
+  destroyed — mirroring `onFacilityRemove`'s treatment of a removed facility's photos, and for the
+  same reason: an editing action a family may undo should not carry an unrecoverable side effect.
+- *Given* a plan is exported or turned into a shared family link (§11.6), *When* the payload is
+  inspected, *Then* no `receiptPhotoId` is present — the domain contract structurally excludes it,
+  the same way it already excludes `facilities`/`photoIds`.
+- *Given* "forget everything on this device" is used, *When* it completes, *Then* every stored
+  receipt is gone, proven the same way §11.2.4's photo-erase spec proves it for facility photos.
+- *Given* the receipt store's cap is reached, *When* another attachment is attempted, *Then* the
+  family is told the cap and the count, not given a silently-failed write.
+
+**Implementation.** `lib/receipts.ts` mirrors `lib/photos.ts`'s architecture exactly (IndexedDB,
+downscale to 1280px JPEG q0.7, `ReceiptResult<T>` failure reporting) as its own independent module
+and store (`elder-care-planner:receipts`), with `MAX_RECEIPTS_TOTAL = 200` — no per-entry cap,
+since the schema already permits at most one receipt per entry. `PlannerLedgerEntrySchema`
+(`schemas.ts`) extends `LedgerEntrySchema` with the optional `receiptPhotoId`; `PlannerState.ledger`
+is retyped to it, `LedgerEntrySchema` and `Plan.ledger` are untouched, and `buildPlan()` strips the
+field on the `PlannerState -> Plan` projection. `LedgerReceipt.tsx` (mirroring `FacilityPhotos.tsx`)
+renders the attach/view/remove control per row, wired into `LedgerPanel`'s table as a new column and
+into `page.tsx` via a new `onLedgerEntryChange` handler; `eraseEverything()` calls `clearReceipts()`
+alongside `clearPhotos()`.
+
+One correction from the original design text above: it said removing a ledger entry deletes its
+receipt, "mirroring `onFacilityRemove`" — backwards. `onFacilityRemove` deliberately leaves a
+removed facility's photos in IndexedDB rather than deleting them, and `onRemoveLedgerEntry` follows
+the same actual behaviour: the receipt is orphaned, not destroyed, because removing a row is an
+editing action a family may undo by re-adding it. A separate, explicit "Remove receipt" control
+(distinct from removing the whole entry) does delete immediately, mirroring `FacilityPhotos`'
+per-photo removal.
+
+Verified: `node scripts/test-app.mjs elder-care-planner` passes in full — lint, tsc, 468 Vitest (25
+new: 23 in `receipts.test.ts`, 2 in `plannerState.test.ts`, each mutation-proven per §9.4), and
+`e2e/receipts.spec.ts` (6 new Playwright specs: quota margin proven by reload, orphaning proven on
+entry removal, explicit removal proven distinct from entry removal, erase reaching the receipt
+store, the shared-link exclusion decoded with the app's own `decodePlanFromShare` rather than
+re-implemented, and accessibility on both states of the control).

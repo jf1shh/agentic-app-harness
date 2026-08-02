@@ -261,3 +261,64 @@ describe('Given a family with itemised home-running costs (spec §11.12)', () =>
     expect(housingCarryMonthlyCents(scenario)).toBe(itemisedTotal);
   });
 });
+
+describe('Given a ledger entry with an attached receipt (spec §11.14)', () => {
+  it('When a plan is built from the planner state, Then receiptPhotoId does not survive into it', () => {
+    // Plan is the domain contract that export and the shared family link
+    // (spec §11.6) both speak. receiptPhotoId is a local IndexedDB key that
+    // means nothing outside this browser, and it must not travel into either
+    // — the same reason `facilities`/`photoIds` never appear on Plan at all.
+    const state: PlannerState = {
+      ...INITIAL_STATE,
+      contributors: makeContributors(1),
+      ledger: [
+        {
+          id: 'l1',
+          contributorId: 'c1',
+          date: '2026-02-01',
+          amountCents: 4_500,
+          category: 'medication',
+          taxDeductibleCandidate: true,
+          receiptPhotoId: 'receipt-abc123',
+        },
+      ],
+    };
+
+    const plan = buildPlan(state);
+
+    expect(plan.ledger).toHaveLength(1);
+    expect('receiptPhotoId' in plan.ledger[0]).toBe(false);
+    // Every other field on the entry still made it through untouched.
+    expect(plan.ledger[0]).toMatchObject({
+      id: 'l1',
+      contributorId: 'c1',
+      date: '2026-02-01',
+      amountCents: 4_500,
+      category: 'medication',
+      taxDeductibleCandidate: true,
+    });
+    expect(PlanSchema.safeParse(plan).success).toBe(true);
+  });
+
+  it('When a ledger entry has no attached receipt, Then the plan still builds and the field is simply absent', () => {
+    const state: PlannerState = {
+      ...INITIAL_STATE,
+      contributors: makeContributors(1),
+      ledger: [
+        {
+          id: 'l1',
+          contributorId: 'c1',
+          date: '2026-02-01',
+          amountCents: 4_500,
+          category: 'medication',
+          taxDeductibleCandidate: true,
+        },
+      ],
+    };
+
+    const plan = buildPlan(state);
+
+    expect('receiptPhotoId' in plan.ledger[0]).toBe(false);
+    expect(PlanSchema.safeParse(plan).success).toBe(true);
+  });
+});

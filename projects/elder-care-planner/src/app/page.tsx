@@ -23,6 +23,7 @@ import {
   type CostConsequence,
 } from '@/lib/engine/fit';
 import { clearPhotos } from '@/lib/photos';
+import { clearReceipts } from '@/lib/receipts';
 import { FacilityPanel } from '@/components/FacilityPanel';
 import { summariseLedger } from '@/lib/engine/ledger';
 import {
@@ -41,7 +42,7 @@ import type {
   FacilityDimension,
   FacilityNote,
   ILOption,
-  LedgerEntry,
+  PlannerLedgerEntry,
   SplitMethod,
 } from '@/lib/schemas';
 import type { ExplanationSet } from '@/lib/explain/types';
@@ -215,10 +216,12 @@ export default function Home() {
   const eraseEverything = () => {
     const storage = browserStorage();
     if (storage) clearPlannerState(storage);
-    // Tour photos live in IndexedDB rather than localStorage, so clearing the
-    // plan does not touch them. "Forget everything on this device" has to mean
-    // everything, or the control is a lie on a shared computer.
+    // Tour photos and receipt photos both live in IndexedDB rather than
+    // localStorage, so clearing the plan does not touch either. "Forget
+    // everything on this device" has to mean everything, or the control is a
+    // lie on a shared computer.
     void clearPhotos();
+    void clearReceipts();
     setState(INITIAL_STATE);
     setRestoreFailed(false);
     setConfirmingErase(false);
@@ -361,15 +364,27 @@ export default function Home() {
     update({ contributorCount: count, contributors: makeContributors(count, state.contributors) });
   };
 
-  const onAddLedgerEntry = (entry: LedgerEntry) => {
+  const onAddLedgerEntry = (entry: PlannerLedgerEntry) => {
     update({ ledger: [...state.ledger, entry] });
   };
 
   // Entries are kept when someone is removed from the list of contributors —
   // the payment was still made, and deleting a record of it is not the app's
   // call to make.
+  //
+  // A removed entry's receipt is deliberately left in lib/receipts.ts's
+  // store rather than deleted here (spec §11.14) — the same choice
+  // onFacilityRemove already makes for a removed facility's photos, and for
+  // the same reason: removing a row is an editing action a family may well
+  // undo by re-adding it, and destroying an image on the way past would be
+  // a surprise with no undo. Only "forget everything on this device" is
+  // where deletion is promised.
   const onRemoveLedgerEntry = (id: string) => {
     update({ ledger: state.ledger.filter((e) => e.id !== id) });
+  };
+
+  const onLedgerEntryChange = (id: string, patch: Partial<PlannerLedgerEntry>) => {
+    update({ ledger: state.ledger.map((e) => (e.id === id ? { ...e, ...patch } : e)) });
   };
 
   const onILOptionChange = (id: string, patch: Partial<ILOption>) => {
@@ -566,6 +581,7 @@ export default function Home() {
           onMonthsElapsedChange={(months) => update({ monthsElapsed: months })}
           onAddEntry={onAddLedgerEntry}
           onRemoveEntry={onRemoveLedgerEntry}
+          onEntryChange={onLedgerEntryChange}
         />
 
         <FacilityPanel
