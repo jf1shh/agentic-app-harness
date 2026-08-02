@@ -433,6 +433,44 @@ As an AI agent operating within this repository, you must strictly adhere to the
   a test asserting neither sentence ever calls the band published. Not tagged as a guardrail:
   whether two strings in different components describe the same underlying fact is a semantic
   judgement, and the two call sites are usually in different files.
+- **A Fragment-Only Navigation Does Not Remount, So a Mount Effect Alone Misses It**: The shared
+  family link (spec §11.6) checks `location.hash` in a `useEffect(() => {...}, [])` to detect a
+  `#share=...` link, following the same "read nothing from storage during render" pattern the
+  existing plan-restore effect already uses. It worked for a fresh page load and failed silently
+  for the case that matters most: a recipient who already has the app open in a tab and then opens
+  or pastes a share link. Per the URL spec, a navigation that differs only in its fragment is a
+  same-document navigation in every browser — no reload, no remount — so a mount-only effect simply
+  never runs again to see the new hash. The symptom in Playwright was a `page.goto('#share=...')`
+  that silently never rendered the passphrase gate, timing out on a locator that was correctly
+  written but for a screen that never appeared; nothing in the component itself looked broken. The
+  fix is to also listen for `hashchange` and re-run the same check, which is real behavior a
+  fragment-based deep link needs, not a test-only workaround — the identical case happens in
+  production the moment someone shares a link with a family member who already has the site open.
+  Any future feature that reads `location.hash`, a query string, or anything else the browser can
+  change without a full navigation needs the same two-part check: once on mount, and again on the
+  event that fires when only that part of the URL changes.
+- **A Tamper Test on Base64(url) Text Can Silently Tamper Nothing**: The shared-link decoder's
+  tamper-detection test (`share.test.ts`) originally flipped the last character of the ciphertext
+  segment and asserted decoding failed. It passed — and would have kept passing even if AES-GCM's
+  authentication had been silently disabled, because base64 packs 6-bit groups into the encoding
+  and a byte length that is not a multiple of 3 leaves the final character's low bits as padding
+  that never maps to a real byte. Flipping exactly those bits re-encodes to a different string that
+  decodes to the *identical* bytes, so "the fragment changed" and "the ciphertext changed" are not
+  the same claim, and a test that only checks the former can be vacuous without ever failing loudly
+  enough to notice. Caught only because the mutation-proof step (§9.4) mutated something unrelated
+  (fixed salt/IV instead of random) and the tamper test *should* have still failed on that run but
+  didn't — a mutation-proof step earns its keep by catching a defect in the test itself, not only in
+  the code under test. The fix is to tamper at the byte level — decode to bytes, flip one in the
+  middle, re-encode — which cannot land on a padding-only bit regardless of length. The same freshness
+  test had a second, independent confound: two calls to the encoder produced different ciphertexts
+  even with identical salt and IV, because a `createdAt` timestamp embedded in the plaintext differed
+  by a few milliseconds between calls, so the test could not actually isolate what it claimed to
+  test. Freezing the clock (`vi.setSystemTime`) before both calls removed that confound and let the
+  salt/IV mutation prove the test could fail for the right reason. General shape: when a test's pass
+  condition is "these two encoded outputs differ" or "this edited input now fails," check that the
+  edit or the inputs cannot differ for a reason unrelated to the property under test — the last
+  character of an encoding and a wall-clock timestamp are two ways that happens, and neither is
+  obvious from reading the assertion alone.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.

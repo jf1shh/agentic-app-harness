@@ -211,7 +211,7 @@ combination plus **local-only, no-account privacy**.
 
 ### Deferred to V2 (documented, not built)
 - [ ] Medicaid eligibility modeling with state-specific asset limits (see §9.4 — deliberate).
-- [ ] Shared family link (encrypted URL-fragment payload) so siblings see one live plan.
+- [x] **Shared family link** (encrypted URL-fragment payload) — see §11.6.
 - [ ] Care-hours scheduler across family members.
 - [ ] Reverse mortgage / home-sale proceeds modeling.
 - [ ] Receipt photo capture attached to ledger entries.
@@ -286,6 +286,7 @@ src/
     engine/tax.ts           # medical-expense deduction estimate
     explain/                # engine output -> checkable derivations (§6.10)
     storage.ts              # localStorage boundary, Zod-validated
+    share.ts                # shared family link: encrypt/decrypt a Plan into a URL fragment (§11.6)
   app/                      # routes
   components/               # presentational components
 ```
@@ -1494,7 +1495,7 @@ This is `data/questionsToAsk.ts`'s pattern applied to comprehension rather than 
 computation, zero network, and plausibly one of the highest-value-per-line screens in the app.
 Document *upload* and generated summaries stay out — that is `projects/legal-financial-rag`.
 
-### 11.6 PROPOSED — Shared family link (restating the §3 deferral, with a design)
+### 11.6 APPROVED AND IMPLEMENTED — Shared family link (restating the §3 deferral, with a design)
 
 The compatible answer to idea #8, and already listed in §3's V2 deferrals:
 
@@ -1509,6 +1510,34 @@ The compatible answer to idea #8, and already listed in §3's V2 deferrals:
 
 Anything beyond a snapshot — real merge, presence, live sync — requires a server and an account,
 and is the rejection in §11.1, not a bigger version of this.
+
+**Implementation.** `lib/share.ts` (`encodePlanForShare`, `decodePlanFromShare`): the `Plan` is
+JSON-serialised, gzip-compressed (`CompressionStream`), and encrypted with AES-GCM under a key
+PBKDF2-derived (100,000 iterations) from the passphrase, with a fresh random salt and IV on every
+encode. The fragment is `share=v1.<salt>.<iv>.<ciphertext>`, each segment base64url. `Plan`, not
+`PlannerState`, is what travels — the same domain contract export/import already speaks — so
+`facilities`/`photoIds` (§11.2) structurally cannot appear in a shared link; there is nothing to
+remember to strip. Every failure mode (wrong passphrase, a tampered fragment, malformed input)
+collapses to the same clean failure rather than a distinguishable error, since AES-GCM's
+authentication tag cannot tell "wrong key" from "corrupted ciphertext" apart in the first place and
+distinguishing them to the caller would only leak information to an attacker.
+
+`SharePanel` (generates a link from the current plan) and `SharedPlanView` (a passphrase gate,
+then a read-only view of the decoded snapshot) are the two sides. `SharedPlanView` reuses
+`ResultsPanel` under an `ExplainProvider` fed an all-null `ExplanationSet`, so every derivation
+control (spec §6.10) silently renders nothing instead of fabricating a derivation from fields a
+`Plan` does not carry (months elapsed, the state a break-even hourly rate came from) — an absent
+"why" is honest here in a way a guessed one would not be. There is deliberately no path from a
+decoded snapshot back into the viewer's own editable plan: `Plan -> PlannerState` is a lossy
+projection this spec has never designed (§4.1 documents the loss in the other direction), and
+inventing one to make "adopt this as my plan" possible would risk silently distorting the very
+numbers a family member has no way to check. A future revision could design that path explicitly;
+this one does not attempt it.
+
+A shared link is detected from `location.hash`, checked once on mount and again on every
+`hashchange` — a URL that differs only in its fragment is a same-document navigation in every
+browser, not a reload, so a recipient who already has the page open in a tab and then opens (or
+pastes) a share link would otherwise never trigger a fresh check.
 
 ### 11.7 PROPOSED — Coarse living-cost pre-fill (food + housing carry)
 

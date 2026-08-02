@@ -28,9 +28,14 @@ test.describe('BDD Spec: Triage produces an answer immediately', () => {
     await gotoPlanner(page);
 
     // When the page is inspected for data collection
-    // Then there is no email field, no password field and no sign-up
+    // Then there is no email field and no sign-up/login flow. The one
+    // type="password" input on the page is the shared-link passphrase (spec
+    // §11.6) — a key the family invents themselves to encrypt a link on this
+    // device, never sent anywhere and never paired with a username or email
+    // field, which is what an account system would actually look like.
     await expect(page.locator('input[type="email"]')).toHaveCount(0);
-    await expect(page.locator('input[type="password"]')).toHaveCount(0);
+    await expect(page.locator('input[type="password"]')).toHaveCount(1);
+    await expect(page.getByLabel('Passphrase')).toHaveAttribute('type', 'password');
     await expect(page.getByRole('button', { name: /sign ?up|log ?in|create account/i })).toHaveCount(
       0,
     );
