@@ -117,6 +117,26 @@ already asks a family to type; it only lets them keep the proof beside the entry
   unrecoverable side effect. A separate "Remove receipt" control on the entry itself deletes
   immediately, which is a different, more deliberate action.
 
+### Weekly care-coverage grid (`lib/careCoverage.ts`, `components/CareCoverageGrid.tsx`, spec §11.15)
+A 7×4 typical-week grid — not a calendar — showing who is around for each part of a usual week.
+Its purpose is narrow on purpose: a literal "care-hours scheduler" (dated shifts, reminders, shift
+trading) was considered and declined, on the grounds that it would compete in a different product
+category (caregiving coordination) than this app's actual mission (cost). What is built instead
+makes `Contributor.providesUnpaidHoursPerWeek` — a figure the split panel already values at the
+local aide rate — checkable rather than a number typed with no way to reconstruct where it came
+from, the same move already made for itemised home costs (§11.12).
+
+- **Feeds a suggestion, never overwrites silently.** Each contributor's covered-hours sum appears
+  as a "Use N hrs/week" prompt beside their typed figure, applied only on a click. A family whose
+  actual hours vary week to week may deliberately keep a different number; the panel shows both
+  rather than forcing agreement.
+- **Uncovered blocks are the headline, not an afterthought.** "16 hours a week have no one
+  assigned" is read directly off the grid — information worth surfacing in one place rather than
+  reconstructed by eye from everyone's individual pledges.
+- **Never travels through export or the shared family link.** `careCoverage` lives only on
+  `PlannerState`, like `facilities` — `buildPlan()` never copies it, so it cannot reach `Plan`
+  structurally, the same guarantee §11.2 and §11.14 hold for their own attachments.
+
 ### Independent living comparison (`components/ILComparisonPanel.tsx`)
 Independent living contracts come in three shapes — a large entry fee that is partly refundable on
 a schedule shrinking with tenure, a smaller non-refundable entry fee, or no entry fee and a higher

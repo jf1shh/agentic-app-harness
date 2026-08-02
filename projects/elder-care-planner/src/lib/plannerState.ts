@@ -173,6 +173,8 @@ export const INITIAL_STATE: PlannerState = {
 
   facilities: [],
   facilityWeights: [],
+
+  careCoverage: [],
 };
 
 function isResidential(careType: CareType): boolean {

@@ -196,6 +196,31 @@ export const CareTaskSchema = z.enum([
 ]);
 export type CareTask = z.infer<typeof CareTaskSchema>;
 
+/**
+ * A typical-week coverage pattern (spec §11.15) — never a calendar date. Every
+ * hours figure in this app already means "a typical week" (`hoursPerWeek`,
+ * `providesUnpaidHoursPerWeek`), and this stays in that paradigm on purpose:
+ * the literal "scheduler" of dated shifts and reminders was considered and
+ * declined in §11.15 as scope creep away from a cost planner.
+ */
+export const DayOfWeekSchema = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+export type DayOfWeek = z.infer<typeof DayOfWeekSchema>;
+
+export const CareTimeBlockSchema = z.enum(['morning', 'afternoon', 'evening', 'overnight']);
+export type CareTimeBlock = z.infer<typeof CareTimeBlockSchema>;
+
+/**
+ * One covered cell of the weekly grid. Only covered cells are stored — an
+ * absent (day, block) pair is uncovered, the same "list what exists" shape
+ * `facilityWeights` already uses rather than a fully-enumerated grid.
+ */
+export const CareCoverageSlotSchema = z.object({
+  day: DayOfWeekSchema,
+  block: CareTimeBlockSchema,
+  contributorId: z.string().min(1),
+});
+export type CareCoverageSlot = z.infer<typeof CareCoverageSlotSchema>;
+
 export const ContributorSchema = z.object({
   id: z.string().min(1),
   // A label. The UI explicitly discourages full legal names — see §8 privacy.
@@ -492,6 +517,12 @@ export const PlannerStateSchema = z.object({
   // so no migration and no silent data loss for a family coming back to it.
   facilities: z.array(FacilityNoteSchema).default([]),
   facilityWeights: z.array(FacilityWeightSchema).default([]),
+
+  // Weekly care-coverage grid (§11.15). PlannerState-only, like facilities —
+  // it is a UI mechanism for producing and checking providesUnpaidHoursPerWeek,
+  // not a figure any engine consumes, and it does not travel through export
+  // or the shared family link (§11.6).
+  careCoverage: z.array(CareCoverageSlotSchema).default([]),
 });
 export type PlannerState = z.infer<typeof PlannerStateSchema>;
 

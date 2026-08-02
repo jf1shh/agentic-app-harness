@@ -212,7 +212,9 @@ combination plus **local-only, no-account privacy**.
 ### Deferred to V2 (documented, not built)
 - [ ] Medicaid eligibility modeling with state-specific asset limits (see §9.4 — deliberate).
 - [x] **Shared family link** (encrypted URL-fragment payload) — see §11.6.
-- [ ] Care-hours scheduler across family members.
+- [x] **Weekly care-coverage grid** — see §11.15. The literal scheduler (dated shifts, reminders,
+      shift trading) was decided against and joins §11.1's rejections; what is built is narrower:
+      a typical-week pattern that makes `providesUnpaidHoursPerWeek` checkable.
 - [ ] Reverse mortgage / home-sale proceeds modeling.
 - [x] **Receipt photo capture** attached to ledger entries — see §11.14.
 - [x] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
@@ -288,6 +290,7 @@ src/
     storage.ts              # localStorage boundary, Zod-validated
     share.ts                # shared family link: encrypt/decrypt a Plan into a URL fragment (§11.6)
     receipts.ts             # receipt photos attached to ledger entries: IndexedDB store (§11.14)
+    careCoverage.ts          # weekly coverage-grid arithmetic feeding providesUnpaidHoursPerWeek (§11.15)
   app/                      # routes
   components/               # presentational components
 ```
@@ -1924,3 +1927,106 @@ new: 23 in `receipts.test.ts`, 2 in `plannerState.test.ts`, each mutation-proven
 entry removal, explicit removal proven distinct from entry removal, erase reaching the receipt
 store, the shared-link exclusion decoded with the app's own `decodePlanFromShare` rather than
 re-implemented, and accessibility on both states of the control).
+
+### 11.15 APPROVED AND IMPLEMENTED (narrow form) — Weekly care-coverage grid, not a scheduler
+
+**This item is different from every other entry in this backlog, and that has to be said before
+any design.** §11.6 and §11.14 both trace to something concrete — a §3 deferral with a written
+design already sketched, and a §10.5 open question naming exactly what to confirm. "Care-hours
+scheduler across family members" traces to neither. It has no research finding behind it in §2 (an
+evidence-based section §4's own revision note credits for deriving "scope... from user research,
+not from intuition"), and read literally — a roster of who covers which shift, on which day — it
+sits awkwardly against two things this spec is otherwise strict about. First, §1's mission
+statement is unambiguously about **money**: *"what will this really cost, how long can we afford
+it, and who pays for what"* — cost, runway, break-even, benefits, split. A duty roster answers a
+different question — *who shows up when* — that a cost planner does not need to answer to do its
+job. Second, §2.7's competitive positioning is against **cost calculators** (payingforseniorcare.com,
+CareScout, CareSplit); it says nothing about the caregiving-coordination category a literal
+scheduler would compete in (shared family calendars, Lotsa Helping Hands, CareZone). Building one
+would be the same shape of scope creep §11.1 already declined twice — the facility directory and
+the RAG document assistant were both real, useful ideas that belonged to a different product.
+
+**The real need underneath, and the compatible form of it.** The need a "scheduler" gestures at —
+coordinating who is actually covering care, so gaps and over-commitment are visible before they
+become a crisis — is real, and this spec already has half an answer to it that nothing here
+finishes. `ContributorSchema.providesUnpaidHoursPerWeek` (a single typed number) and `.ownsTasks`
+(a static list of task categories) already exist specifically to make unpaid contribution
+first-class in the split (spec §2.4, §6.6) — `engine/split.ts` values those hours at the local
+aide rate and displays them beside cash, "displayed, never silently netted." But a flat weekly
+number is exactly the kind of unchecked figure §6.10's "checkable arithmetic" principle and
+§11.12's "entered, never estimated" precedent both push back on elsewhere in this app: a family
+typing "12" has no way to reconstruct where that number came from, and no way to see that Tuesday
+mornings have no one covering them at all. The version of this feature that belongs in a *cost*
+planner is not a calendar — it is what makes that one number checkable, the same move §11.12 made
+for the home-cost lump sum it replaced with itemised lines.
+
+**Proposed shape: a typical-week coverage pattern, not a calendar.** A 7 (day) × 4 (time-of-day
+block: morning / afternoon / evening / overnight) grid, each cell assignable to at most one
+contributor or left uncovered. This is a *steady-state weekly pattern*, matching the paradigm every
+other hours figure in this app already uses (`hoursPerWeek`, `providesUnpaidHoursPerWeek` are both
+"a typical week," never a specific calendar date) — not a real calendar with dates, not a recurring
+series, and explicitly **not**: notifications or reminders (this app makes no background network or
+notification calls, and a reminder feature would be the first one to need either); shift trading or
+swapping between contributors; multi-week or rotating patterns; anything with a specific date
+attached. Any of those would be the literal scheduler this section already argued does not belong
+here — if a family needs that, it needs a different product, the same conclusion §11.1 reached for
+the facility directory and the RAG assistant.
+
+- **Feeds `providesUnpaidHoursPerWeek`, does not replace typing it.** The grid's covered-cell count
+  for a contributor (× the block length) produces a suggested hours figure the split panel offers
+  as a pre-fill the family can accept or override — never a silent overwrite of a value they may
+  have already typed, per §11.12's precedent. Disagreement between the grid and the typed figure is
+  not an error; a family whose actual hours vary week to week may deliberately type something the
+  grid does not reproduce, and the panel should say so rather than force agreement.
+- **Uncovered blocks are surfaced, not just covered ones.** The panel's headline is a count — "16
+  hours a week have no one assigned" — read directly off the grid, because an empty cell is
+  information a family benefits from seeing in one place rather than reconstructing by eye from
+  everyone's individual pledges.
+- **Storage: `PlannerState` only, like `facilities`.** The grid is a UI mechanism for producing and
+  checking `providesUnpaidHoursPerWeek`, not a figure any engine consumes directly, and it carries
+  more of a specific family's day-to-day logistics than a bare hours total does. Following the
+  precedent that keeps `facilities`/`photoIds` off `Plan` entirely (spec §11.2, §11.6), the grid
+  itself does not travel through export or the shared family link — only the derived
+  `providesUnpaidHoursPerWeek` figure it helped produce does, which is already the case today.
+- **No new engine.** The covered-hours sum is arithmetic simple enough to live beside the grid
+  component, mirroring how `housingCarryMonthlyCents` in `engine/cost.ts` already sums itemised
+  lines (§11.12) rather than warranting a new `engine/*.ts` module of its own.
+
+**Acceptance criteria (BDD, per `.agents/AGENTS.md` §5), for the implementation that follows this
+design.**
+- *Given* a contributor assigned to some cells of the weekly grid, *When* the split panel is read,
+  *Then* it offers their summed covered hours as a pre-fill for `providesUnpaidHoursPerWeek`, which
+  the family may accept or type over.
+- *Given* a cell with no contributor assigned, *When* the grid is read, *Then* it is counted as
+  uncovered and included in the headline uncovered-hours figure, not silently omitted.
+- *Given* a plan is exported or turned into a shared family link, *When* the payload is inspected,
+  *Then* the weekly grid itself is absent — only the derived hours figures contributors already
+  carry are present, the same boundary §11.2 and §11.14 already hold for their own attachments.
+- *Given* the family's typed `providesUnpaidHoursPerWeek` disagrees with the grid's sum, *When* the
+  panel is read, *Then* both figures are shown rather than one silently overwriting the other.
+
+**Decided.** A human confirmed the narrow form above — the coverage grid feeding
+`providesUnpaidHoursPerWeek` — and declined the literal scheduler (dated shifts, reminders, shift
+trading), which now joins §11.1's rejections on the same grounds: it would be a different product
+than a cost planner.
+
+**Implementation.** `lib/careCoverage.ts` is a small pure module (`DAYS`, `BLOCKS`, `BLOCK_HOURS =
+6`, `TOTAL_BLOCKS = 28`) with `coveredHoursForContributor`, `uncoveredBlockCount`/
+`uncoveredHoursPerWeek`, `slotAt`, and `setSlot` — no new `engine/*.ts` module, per the design's own
+reasoning. `CareCoverageSlotSchema` (`schemas.ts`) is a `{ day, block, contributorId }` triple;
+`PlannerStateSchema.careCoverage` is a sparse array of only the covered cells, `PlannerState`-only
+like `facilities` — `buildPlan()` never copies it, so it structurally cannot reach `Plan`, export,
+or a shared family link. `CareCoverageGrid.tsx` is a 7×4 table of `<select>`s, rendered inside
+`SplitPanel` above "Details for each family member"; each contributor's covered-hours sum appears
+as a "Use N hrs/week" suggestion beside their `providesUnpaidHoursPerWeek` field only when it would
+change something, and only applies on a click — never a silent overwrite, per §11.12's precedent. A
+cell assigned to a contributor no longer in the list counts as uncovered rather than falsely
+staffed, without deleting the underlying assignment.
+
+Verified: `node scripts/test-app.mjs elder-care-planner` passes in full — lint, tsc, 482 Vitest (14
+new in `careCoverage.test.ts`, mutation-proven on the orphaned-contributor filter), and
+`e2e/care-coverage.spec.ts` (6 new Playwright specs: uncovered-hours arithmetic proven by assigning
+cells, reassignment proven non-duplicating by inspecting the stored array directly, the suggestion
+proven non-silent by asserting the typed field is unchanged until the button is clicked, persistence
+across reload, the `Plan`/shared-link exclusion decoded with `share.ts`'s own `decodePlanFromShare`,
+and accessibility).

@@ -570,6 +570,8 @@ export default function Home() {
             method={state.splitMethod}
             onMethodChange={(m: SplitMethod) => update({ splitMethod: m })}
             onContributorChange={onContributorChange}
+            coverage={state.careCoverage}
+            onCoverageChange={(next) => update({ careCoverage: [...next] })}
           />
         ) : null}
 

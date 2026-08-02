@@ -310,6 +310,25 @@ th.num {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * The weekly care-coverage grid (spec §11.15) puts a <select> — not plain
+ * text — in every cell. `select { width: 100% }` (above) is a minimum in
+ * auto table layout, and a <select>'s intrinsic content width (its widest
+ * option, a contributor's name) can force the whole table wider than that
+ * 100%, wide enough that .table-wrap's overflow-x: auto no longer keeps it
+ * off the page at a narrow viewport. table-layout: fixed makes the column
+ * widths authoritative instead of content-driven, so width: 100% on the
+ * select is respected exactly rather than treated as a floor.
+ */
+.coverage-table {
+  table-layout: fixed;
+}
+
+.coverage-table select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 details {
   border: 1px solid var(--border);
   border-radius: var(--radius);
