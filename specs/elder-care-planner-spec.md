@@ -212,8 +212,9 @@ combination plus **local-only, no-account privacy**.
 ### Deferred to V2 (documented, not built)
 - [ ] Medicaid eligibility modeling with state-specific asset limits (see §9.4 — deliberate).
 - [x] **Shared family link** (encrypted URL-fragment payload) — see §11.6.
-- [ ] Care-hours scheduler across family members (design proposed in §11.15, not yet built — and
-      the design itself questions whether the literal feature belongs in this app; see §11.15).
+- [x] **Weekly care-coverage grid** — see §11.15. The literal scheduler (dated shifts, reminders,
+      shift trading) was decided against and joins §11.1's rejections; what is built is narrower:
+      a typical-week pattern that makes `providesUnpaidHoursPerWeek` checkable.
 - [ ] Reverse mortgage / home-sale proceeds modeling.
 - [x] **Receipt photo capture** attached to ledger entries — see §11.14.
 - [x] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
@@ -289,6 +290,7 @@ src/
     storage.ts              # localStorage boundary, Zod-validated
     share.ts                # shared family link: encrypt/decrypt a Plan into a URL fragment (§11.6)
     receipts.ts             # receipt photos attached to ledger entries: IndexedDB store (§11.14)
+    careCoverage.ts          # weekly coverage-grid arithmetic feeding providesUnpaidHoursPerWeek (§11.15)
   app/                      # routes
   components/               # presentational components
 ```
@@ -1926,7 +1928,7 @@ entry removal, explicit removal proven distinct from entry removal, erase reachi
 store, the shared-link exclusion decoded with the app's own `decodePlanFromShare` rather than
 re-implemented, and accessibility on both states of the control).
 
-### 11.15 PROPOSED — Care-hours scheduler across family members
+### 11.15 APPROVED AND IMPLEMENTED (narrow form) — Weekly care-coverage grid, not a scheduler
 
 **This item is different from every other entry in this backlog, and that has to be said before
 any design.** §11.6 and §11.14 both trace to something concrete — a §3 deferral with a written
@@ -2003,9 +2005,28 @@ design.**
 - *Given* the family's typed `providesUnpaidHoursPerWeek` disagrees with the grid's sum, *When* the
   panel is read, *Then* both figures are shown rather than one silently overwriting the other.
 
-**This section does not resolve whether the feature belongs in the app at all** — that is a
-decision for whoever approves it, the same as every other PROPOSED section in §11. The design above
-is the narrowest form compatible with §1's mission and §2.7's positioning; the literal reading of
-"scheduler" in the original §3 deferral is not that, and should be treated as declined on the same
-grounds as §11.1's four rejections unless a human decides otherwise. Nothing here is built until
-this section is marked APPROVED.
+**Decided.** A human confirmed the narrow form above — the coverage grid feeding
+`providesUnpaidHoursPerWeek` — and declined the literal scheduler (dated shifts, reminders, shift
+trading), which now joins §11.1's rejections on the same grounds: it would be a different product
+than a cost planner.
+
+**Implementation.** `lib/careCoverage.ts` is a small pure module (`DAYS`, `BLOCKS`, `BLOCK_HOURS =
+6`, `TOTAL_BLOCKS = 28`) with `coveredHoursForContributor`, `uncoveredBlockCount`/
+`uncoveredHoursPerWeek`, `slotAt`, and `setSlot` — no new `engine/*.ts` module, per the design's own
+reasoning. `CareCoverageSlotSchema` (`schemas.ts`) is a `{ day, block, contributorId }` triple;
+`PlannerStateSchema.careCoverage` is a sparse array of only the covered cells, `PlannerState`-only
+like `facilities` — `buildPlan()` never copies it, so it structurally cannot reach `Plan`, export,
+or a shared family link. `CareCoverageGrid.tsx` is a 7×4 table of `<select>`s, rendered inside
+`SplitPanel` above "Details for each family member"; each contributor's covered-hours sum appears
+as a "Use N hrs/week" suggestion beside their `providesUnpaidHoursPerWeek` field only when it would
+change something, and only applies on a click — never a silent overwrite, per §11.12's precedent. A
+cell assigned to a contributor no longer in the list counts as uncovered rather than falsely
+staffed, without deleting the underlying assignment.
+
+Verified: `node scripts/test-app.mjs elder-care-planner` passes in full — lint, tsc, 482 Vitest (14
+new in `careCoverage.test.ts`, mutation-proven on the orphaned-contributor filter), and
+`e2e/care-coverage.spec.ts` (6 new Playwright specs: uncovered-hours arithmetic proven by assigning
+cells, reassignment proven non-duplicating by inspecting the stored array directly, the suggestion
+proven non-silent by asserting the typed field is unchanged until the button is clicked, persistence
+across reload, the `Plan`/shared-link exclusion decoded with `share.ts`'s own `decodePlanFromShare`,
+and accessibility).

@@ -1,11 +1,13 @@
 'use client';
 
 import type { SplitResult } from '@/lib/engine/split';
-import type { Contributor, SplitMethod } from '@/lib/schemas';
+import type { CareCoverageSlot, Contributor, SplitMethod } from '@/lib/schemas';
 import { formatCents, formatCentsPrecise } from '@/lib/format';
+import { coveredHoursForContributor } from '@/lib/careCoverage';
 import { SelectInput, CurrencyInput, NumberInput } from './Inputs';
 import { WhyButton } from './WhyButton';
 import { CollapsibleCard } from './CollapsibleCard';
+import { CareCoverageGrid } from './CareCoverageGrid';
 
 const METHOD_LABELS: Record<SplitMethod, string> = {
   equal: 'Equally',
@@ -19,6 +21,8 @@ interface Props {
   method: SplitMethod;
   onMethodChange: (method: SplitMethod) => void;
   onContributorChange: (index: number, next: Contributor) => void;
+  coverage: readonly CareCoverageSlot[];
+  onCoverageChange: (next: readonly CareCoverageSlot[]) => void;
 }
 
 export function SplitPanel({
@@ -27,6 +31,8 @@ export function SplitPanel({
   method,
   onMethodChange,
   onContributorChange,
+  coverage,
+  onCoverageChange,
 }: Props) {
   // Read off the same `SplitResult` the table below renders, so the closed
   // section and the open one cannot state different figures (spec §5.1a).
@@ -103,6 +109,15 @@ export function SplitPanel({
         a decision for the family, not for this app.
       </p>
 
+      <h3>Weekly coverage pattern (optional)</h3>
+      <p className="hint">
+        Lay out who is typically around for each part of a usual week. This is a pattern, not a
+        calendar — no dates, no reminders. It offers a starting figure for each person&rsquo;s
+        unpaid care hours below, so that number is something a family can check rather than a
+        guess typed once and never revisited.
+      </p>
+      <CareCoverageGrid coverage={coverage} contributors={contributors} onChange={onCoverageChange} />
+
       <h3>Details for each family member</h3>
       <div className="grid">
         {contributors.map((c, i) => (
@@ -151,6 +166,26 @@ export function SplitPanel({
               max={168}
               onChange={(v) => onContributorChange(i, { ...c, providesUnpaidHoursPerWeek: v })}
             />
+            {(() => {
+              const suggested = coveredHoursForContributor(coverage, c.id);
+              // Never a silent overwrite (spec §11.12's precedent): shown only
+              // when it would change something, and only applied on request.
+              if (suggested === 0 || suggested === c.providesUnpaidHoursPerWeek) return null;
+              return (
+                <p className="hint" data-testid={`coverage-suggestion-${c.id}`}>
+                  The coverage pattern above adds up to {suggested} hrs/week for {c.name}.{' '}
+                  <button
+                    type="button"
+                    className="secondary small"
+                    onClick={() =>
+                      onContributorChange(i, { ...c, providesUnpaidHoursPerWeek: suggested })
+                    }
+                  >
+                    Use {suggested} hrs/week
+                  </button>
+                </p>
+              );
+            })()}
           </div>
         ))}
       </div>

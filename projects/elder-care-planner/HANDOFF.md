@@ -2,9 +2,10 @@
 
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
 facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), the
-§11.8–§11.13 batch, the shared family link (spec §11.6), and receipt photo capture (spec §11.14) —
-all described below. `node scripts/test-app.mjs elder-care-planner` passes all checks (security
-advisory-only, lint, type-check, 468 Vitest, 130 Playwright + axe).
+§11.8–§11.13 batch, the shared family link (spec §11.6), receipt photo capture (spec §11.14), and
+the weekly care-coverage grid (spec §11.15) — all described below. `node scripts/test-app.mjs
+elder-care-planner` passes all checks (security advisory-only, lint, type-check, 482 Vitest, 136
+Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
@@ -14,7 +15,22 @@ not from intuition.
 
 ## What was built
 
-**Receipt photo capture (spec §11.14, most recent).** `lib/receipts.ts` mirrors `lib/photos.ts`'s
+**Weekly care-coverage grid (spec §11.15, most recent).** Worth reading in full before touching
+this feature, because most of the value is in what it deliberately is *not*: a literal "care-hours
+scheduler" was the original §3 deferral, and §11.15's design note flagged — before proposing
+anything — that a real scheduler (dated shifts, reminders, shift trading) has no research citation
+anywhere in §2 and sits awkwardly against §1's money-only mission and §2.7's cost-calculator
+competitive positioning. A human agreed; the literal scheduler now joins §11.1's rejections. What
+is built instead is narrow: a 7×4 typical-week grid (`lib/careCoverage.ts`, `BLOCK_HOURS = 6`,
+`TOTAL_BLOCKS = 28`) that exists to make `Contributor.providesUnpaidHoursPerWeek` — previously a
+number typed with no way to check it — derivable from a pattern the family can see, the same move
+§11.12 made for the home-cost lump sum. `CareCoverageGrid.tsx` renders inside `SplitPanel`; each
+contributor's covered-hours sum appears as a "Use N hrs/week" suggestion beside their hours field,
+applied only on click, never silently. `careCoverage` is `PlannerState`-only, like `facilities` —
+`buildPlan()` never copies it, so it cannot reach `Plan`, export, or a shared family link (§11.6)
+structurally, not by remembering to strip it.
+
+**Receipt photo capture (spec §11.14).** `lib/receipts.ts` mirrors `lib/photos.ts`'s
 architecture (IndexedDB, downscale to 1280px JPEG q0.7, typed failure results) as its own
 independent module and store — deliberately not a shared one, so a receipt-photo quota failure
 cannot cross-charge §11.2.4's facility-photo cap. `PlannerLedgerEntrySchema` extends the domain
@@ -204,22 +220,25 @@ now held up by a specific test.
    piece, and `Plan` is already the right shape for it.
 
 6. **The rest of the user feature batch is specified but unbuilt** — spec §11 records eight
-   user-supplied ideas, adjudicated. Approved and built: §11.2, §11.6, §11.14. Designed, compatible,
-   and awaiting a decision: §11.3 (financing the funding gap at an APR, plus a "today's dollars"
-   basis), §11.4 (two care recipients at once — the largest blast radius of the batch; read its
-   §9.2 checklist before starting), §11.5 (a network-free plain-language decoder). **Recommended
-   for rejection, with reasoning, in §11.1**: a facility directory with ratings, sponsorship by a
-   referral company, RAG over user documents, and server-backed family sync — all four contradict
-   the §1.1/§1.2 non-goals, and a human confirmed they stand. Do not quietly reopen them.
+   user-supplied ideas, adjudicated. Approved and built: §11.2, §11.6, §11.14, §11.15 (narrow
+   form). Designed, compatible, and awaiting a decision: §11.3 (financing the funding gap at an
+   APR, plus a "today's dollars" basis), §11.4 (two care recipients at once — the largest blast
+   radius of the batch; read its §9.2 checklist before starting), §11.5 (a network-free
+   plain-language decoder). **Recommended for rejection, with reasoning, in §11.1**: a facility
+   directory with ratings, sponsorship by a referral company, RAG over user documents, and
+   server-backed family sync. **Declined during design and now also rejected on the same
+   grounds**: the literal care-hours scheduler (§11.15) — dated shifts, reminders, shift trading.
+   Do not quietly reopen any of these.
 
-7. **V2, explicitly deferred in the spec** (these are the 3 unchecked spec items the harness reports as
-   drift — that finding is expected, not a defect): Medicaid eligibility modelling (deliberately —
-   spend-down rules are state-specific and getting them subtly wrong causes real financial harm; a
-   deferral to revisit only with explicit sign-off, not a routine backlog item), care-hours
-   scheduler (no design anywhere in the spec beyond the one-line deferral), reverse-mortgage /
-   home-sale modelling (§10.3, no design). Receipt capture, the other item §10.5 named, is built —
-   see §11.14 and the "What was built" entry above. Recurring entries, the remaining half of
-   §10.5's original deferral, is still unresolved and has no design.
+7. **V2, explicitly deferred in the spec** (these are the 2 unchecked spec items the harness
+   reports as drift — that finding is expected, not a defect): Medicaid eligibility modelling
+   (deliberately — spend-down rules are state-specific and getting them subtly wrong causes real
+   financial harm; a deferral to revisit only with explicit sign-off, not a routine backlog item),
+   reverse-mortgage / home-sale modelling (§10.3, no design). The care-hours scheduler and receipt
+   capture, the other two items §3 originally named, are resolved — see §11.14/§11.15 and the
+   "What was built" entries above (the scheduler's *literal* form is declined, not built; its
+   narrow form is). Recurring ledger entries, the remaining half of §10.5's original deferral, is
+   still unresolved and has no design.
 
 ## Things to not undo
 
@@ -348,6 +367,25 @@ now held up by a specific test.
   any other device — into every export and shared family link. `buildPlan()` strips it on the
   `PlannerState -> Plan` projection; `e2e/receipts.spec.ts` proves the exclusion by decoding a real
   generated share link with `share.ts`'s own `decodePlanFromShare`, not by re-implementing the check.
+
+- **The care-coverage grid is a typical week, never a calendar.** No dates, no notifications, no
+  shift trading, no multi-week patterns — all deliberately declined in §11.15 as the literal
+  "scheduler" this app's mission (§1) and competitive positioning (§2.7) do not support. If a
+  future request asks for any of those, the answer is the same one §11.15 already gave: it belongs
+  to a different product. Extending the *narrow* grid (more blocks per day, say) is fine; adding a
+  date to a cell is the line.
+
+- **A coverage suggestion is never applied silently.** `SplitPanel` shows "Use N hrs/week" only
+  when the grid's sum would change something, and only writes it to
+  `providesUnpaidHoursPerWeek` on a click — mirroring §11.12's "entered, never estimated"
+  precedent. Auto-applying it on every render would make the typed figure impossible to
+  deliberately override.
+
+- **`careCoverage` is `PlannerState`-only, like `facilities`.** `buildPlan()` never copies it, so
+  it cannot reach `Plan`, export, or the shared family link (§11.6) structurally — not by a strip
+  step someone has to remember. `e2e/care-coverage.spec.ts` proves the exclusion the same way
+  `e2e/receipts.spec.ts` does: decoding a real generated share link with `share.ts`'s own
+  `decodePlanFromShare`.
 
 ## Verify before pushing
 
