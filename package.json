@@ -1,0 +1,8 @@
+{
+  "name": "agentic-app-harness",
+  "private": true,
+  "description": "Monorepo root — hoists shared dependencies for the apps under projects/*. Each app keeps its own package.json and version ranges; this file adds no dependencies of its own.",
+  "workspaces": [
+    "projects/*"
+  ]
+}

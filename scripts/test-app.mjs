@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, rmSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -111,11 +112,27 @@ console.log(`${C.cyan}=========================================${C.reset}`);
 
 clean('pre-build');
 
-// Check the actual test-runner binary, not just node_modules: a top-level install
-// can leave node_modules present while the app's devDependencies are missing.
-if (!existsSync(join(appPath, 'node_modules', '@playwright', 'test'))) {
+// Check the actual test-runner binary resolves from the app, not just that
+// node_modules exists: the repo root is an npm workspace (root package.json,
+// projects/*), so a shared devDependency like @playwright/test is commonly
+// hoisted to the root node_modules rather than nested under appPath — a plain
+// `existsSync(appPath/node_modules/...)` check would always miss it and
+// re-run `npm install` on every invocation. Resolve it the way Node actually
+// would from inside the app.
+function resolvesFromApp(specifier) {
+  try {
+    createRequire(join(appPath, 'package.json')).resolve(specifier);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+if (!resolvesFromApp('@playwright/test/package.json')) {
   // `npm install`, not `npm ci`: with the vite 8 / rolldown toolchain `npm ci`
   // can skip a platform's optional native binary, which then fails at build time.
+  // Run from the app dir — npm 7+ detects the workspace root (repo-root
+  // package.json) and manages the single root lockfile regardless of cwd.
   step('Install dependencies', 'npm install');
 }
 

@@ -33,7 +33,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: projects/${{ matrix.app }}/package-lock.json
+          # Root lockfile: the repo is an npm workspace (root package.json,
+          # projects/*) so there is one lockfile for all 6 apps' shared deps.
+          cache-dependency-path: package-lock.json
 
       # test-app.mjs is self-contained: it installs the app's deps and Playwright
       # browsers on demand, then runs security audit, lint, type-check, Vitest, and
