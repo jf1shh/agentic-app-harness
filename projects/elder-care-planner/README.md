@@ -79,6 +79,25 @@ tidy: `localStorage` holds ~5MB per origin, so a base64 photo stored beside the 
 `QuotaExceededError` on the *plan* write, and a family loses their ledger because they attached a
 picture of a dining room.
 
+### Shared family link (`lib/share.ts`, `components/SharePanel.tsx`, `components/SharedPlanView.tsx`, spec §11.6)
+A "share this plan" button generates a link a sender copies and sends to a sibling out of band. The
+plan is JSON-serialised, gzip-compressed, and encrypted with AES-GCM under a key derived (PBKDF2)
+from a passphrase the sender shares separately — never in the same message as the link. Everything
+lives in the URL **fragment**, which browsers never send in an HTTP request, so the payload reaches
+the recipient without ever reaching a server.
+
+- **A snapshot, not sync.** The recipient's screen states plainly who made it and when, and that
+  editing either side afterward does not update the other. There is no merge, no live sync, no
+  account — that would need a server, and is the rejection in spec §11.1, not a bigger version of
+  this.
+- **Read-only, with every derivation control silently absent rather than guessed at.** The view
+  reuses `ResultsPanel`, but every "why" control (spec §6.10) renders nothing: a `Plan` doesn't
+  carry the fields (months elapsed, the state a break-even hourly rate came from) a derivation would
+  need, and a fabricated default would be a wrong explanation dressed up as a real one.
+- **Structurally excludes tour photos.** `Plan` — the same contract export/import already speaks —
+  never carries `facilities`/`photoIds` (those live only on the browser-local `PlannerState`), so
+  there is nothing to remember to strip from a shared link.
+
 ### Independent living comparison (`components/ILComparisonPanel.tsx`)
 Independent living contracts come in three shapes — a large entry fee that is partly refundable on
 a schedule shrinking with tenure, a smaller non-refundable entry fee, or no entry fee and a higher

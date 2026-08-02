@@ -255,6 +255,25 @@ export const PlanSchema = z.object({
 });
 export type Plan = z.infer<typeof PlanSchema>;
 
+/**
+ * What travels inside an encrypted shared-plan link (spec §11.6).
+ *
+ * A `Plan`, not a `PlannerState`: the same domain contract export/import
+ * already speaks, so the shared link carries no field the recipient's browser
+ * cannot also validate. `facilities`/`photoIds` (spec §11.2) live only on
+ * `PlannerState` and never on `Plan`, so a shared link structurally cannot
+ * carry tour photos or facility notes — nothing here has to remember to strip
+ * them. `createdAt`/`createdBy` are the label the spec requires the link to
+ * carry: "the link says when it was made and by whom."
+ */
+export const SharedPlanPayloadSchema = z.object({
+  schemaVersion: z.literal(1),
+  createdAt: z.string().min(1),
+  createdBy: z.string().max(80).optional(),
+  plan: PlanSchema,
+});
+export type SharedPlanPayload = z.infer<typeof SharedPlanPayloadSchema>;
+
 /** One of the optional billed-separately services, with its toggle state. */
 export const AddOnToggleSchema = z.object({
   id: z.string().min(1),

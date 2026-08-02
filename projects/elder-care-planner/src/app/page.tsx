@@ -60,6 +60,9 @@ import { MethodologyPanel } from '@/components/MethodologyPanel';
 import { SectionNav, type NavSection } from '@/components/SectionNav';
 import { StartingGuidePanel } from '@/components/StartingGuidePanel';
 import { listenForPrint, openForPrint, restoreAfterPrint } from '@/lib/printExpansion';
+import { SharePanel } from '@/components/SharePanel';
+import { SharedPlanView } from '@/components/SharedPlanView';
+import { extractShareFragment } from '@/lib/share';
 
 const RESIDENTIAL: readonly CareType[] = [
   'assisted_living',
@@ -92,6 +95,12 @@ export default function Home() {
   const [restored, setRestored] = useState(false);
   const [restoreFailed, setRestoreFailed] = useState(false);
   const [confirmingErase, setConfirmingErase] = useState(false);
+  // A shared family link (spec §11.6) is read from location.hash, not from
+  // storage — but the same rule applies: nothing that depends on the browser
+  // may be read during render on a static export, or the server-rendered
+  // markup disagrees with the first client render. null on first render,
+  // everywhere, server and client alike; the mount effect below fills it in.
+  const [shareFragment, setShareFragment] = useState<string | null>(null);
   // Which community's weighted score the "?" would explain. One
   // `ExplanationId` covers all of them, so the click that opens the drawer sets
   // this first (see WhyButton's `onActivate`).
@@ -121,6 +130,22 @@ export default function Home() {
       if (result.status === 'invalid') setRestoreFailed(true);
     }
     setRestored(true);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // A shared link opens straight to the sender's snapshot rather than this
+  // device's own plan. Checked on mount for the same SSR-safety reason the
+  // restore above is, and again on every `hashchange`: navigating to a URL
+  // that differs only in its fragment is a same-document navigation, not a
+  // reload, so a recipient who already has this page open in a tab and then
+  // opens (or pastes) a share link would otherwise never have this effect
+  // re-run at all.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const readHash = () => setShareFragment(extractShareFragment(window.location.hash));
+    readHash();
+    window.addEventListener('hashchange', readHash);
+    return () => window.removeEventListener('hashchange', readHash);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -399,6 +424,21 @@ export default function Home() {
     update({ contributors });
   };
 
+  // A shared family link replaces the whole page with a read-only snapshot —
+  // it is not merged into this device's own plan (spec §11.6: "a snapshot,
+  // not sync"). "Use my own plan instead" clears the hash and returns here.
+  if (shareFragment) {
+    return (
+      <SharedPlanView
+        fragment={shareFragment}
+        onDiscard={() => {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          setShareFragment(null);
+        }}
+      />
+    );
+  }
+
   return (
     <ExplainProvider explanations={explanations}>
       <header className="site">
@@ -567,6 +607,8 @@ export default function Home() {
             state={state}
           />
         ) : null}
+
+        <SharePanel plan={plan} />
 
         <div className="no-print">
           <button type="button" onClick={printSummary}>

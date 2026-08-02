@@ -1,9 +1,10 @@
 # Agent Handoff — Elder Care Cost Planner
 
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
-facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), and the
-§11.8–§11.13 batch described below. `node scripts/test-app.mjs elder-care-planner` passes all
-checks (security advisory-only, lint, type-check, 437 Vitest, 119 Playwright + axe).
+facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), the
+§11.8–§11.13 batch, and the shared family link (spec §11.6) — all described below.
+`node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only, lint,
+type-check, 443 Vitest, 124 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
@@ -13,7 +14,22 @@ not from intuition.
 
 ## What was built
 
-**Most recent batch (§11.8–§11.13).** Seven commits, all spec-first:
+**Shared family link (spec §11.6, most recent).** `lib/share.ts` encrypts a `Plan` (gzip-compressed,
+AES-GCM, PBKDF2-derived key, fresh salt+IV per link) into a `#share=v1.<salt>.<iv>.<cipher>` URL
+fragment — never sent to a server. `SharePanel` generates a link from the current plan;
+`SharedPlanView` is a passphrase gate, then a read-only view of the decoded snapshot, reusing
+`ResultsPanel` under an `ExplainProvider` fed an all-null `ExplanationSet` so every "why" control
+renders nothing instead of fabricating a derivation from fields a `Plan` doesn't carry. There is no
+path from a decoded snapshot into the viewer's own editable plan — `Plan -> PlannerState` is a lossy
+projection this spec has never designed (see §4.1's note on the reverse direction), and building
+one to make "adopt this plan" possible was explicitly left undone rather than guessed at. `Plan`
+already excludes `facilities`/`photoIds` (§11.2), so a shared link structurally cannot carry tour
+photos — nothing has to remember to strip them. See the two lessons added to `.agents/AGENTS.md` §6
+about this change: `location.hash` needs a `hashchange` listener, not just a mount check, because a
+fragment-only navigation never remounts the page; and a tamper test on base64(url) text can pass
+without actually tampering anything if it edits the wrong character.
+
+**Most recent batch before that (§11.8–§11.13).** Seven commits, all spec-first:
 
 - **§11.10 correction.** The hourly rate band shipped as `$30–$40` on a row tagged
   `confidence: 'verified'` and described in the UI as "the published hourly-rate range". The survey
@@ -166,18 +182,22 @@ now held up by a specific test.
    piece, and `Plan` is already the right shape for it.
 
 6. **The rest of the user feature batch is specified but unbuilt** — spec §11 records eight
-   user-supplied ideas, adjudicated. Approved and built: §11.2 only. Designed, compatible, and
+   user-supplied ideas, adjudicated. Approved and built: §11.2 and §11.6. Designed, compatible, and
    awaiting a decision: §11.3 (financing the funding gap at an APR, plus a "today's dollars"
    basis), §11.4 (two care recipients at once — the largest blast radius of the batch; read its
-   §9.2 checklist before starting), §11.5 (a network-free plain-language decoder), §11.6 (the
-   encrypted share link, already a V2 deferral). **Recommended for rejection, with reasoning, in
-   §11.1**: a facility directory with ratings, sponsorship by a referral company, RAG over user
-   documents, and server-backed family sync — all four contradict the §1.1/§1.2 non-goals, and a
-   human confirmed they stand. Do not quietly reopen them.
+   §9.2 checklist before starting), §11.5 (a network-free plain-language decoder). **Recommended
+   for rejection, with reasoning, in §11.1**: a facility directory with ratings, sponsorship by a
+   referral company, RAG over user documents, and server-backed family sync — all four contradict
+   the §1.1/§1.2 non-goals, and a human confirmed they stand. Do not quietly reopen them.
 
-7. **V2, explicitly deferred in the spec** (these are the 5 unchecked spec items the harness reports as
-   drift — that finding is expected, not a defect): Medicaid eligibility modelling, encrypted shared
-   family link, care-hours scheduler, reverse-mortgage modelling, receipt capture.
+7. **V2, explicitly deferred in the spec** (these are the 4 unchecked spec items the harness reports as
+   drift — that finding is expected, not a defect): Medicaid eligibility modelling (deliberately —
+   spend-down rules are state-specific and getting them subtly wrong causes real financial harm; a
+   deferral to revisit only with explicit sign-off, not a routine backlog item), care-hours
+   scheduler (no design anywhere in the spec beyond the one-line deferral), reverse-mortgage /
+   home-sale modelling (§10.3, no design), receipt capture attached to ledger entries (§10.5,
+   deliberately deferred to avoid ledger scope creep — the spec asks to "confirm that boundary"
+   before building it, not just build it).
 
 ## Things to not undo
 
@@ -272,6 +292,25 @@ now held up by a specific test.
   so a controlled `open={false}` would slam a section shut while someone was typing in it. Leaving
   the attribute out of props entirely means React never touches it and the DOM keeps whatever the
   user, the jump bar or the print handler last set — no state required.
+
+- **The shared-link fragment is checked on mount *and* on `hashchange`.** A URL that differs only in
+  its fragment is a same-document navigation in every browser — no reload, no remount — so a
+  recipient who already has the app open and then opens or pastes a share link would never be
+  detected by a mount-only effect. This is real behaviour a fragment-based deep link needs, not a
+  test convenience; see the AGENTS.md §6 lesson.
+
+- **`SharedPlanView` never merges a decoded snapshot into the viewer's own plan.** `Plan ->
+  PlannerState` is a lossy projection this spec has never designed (§4.1 documents the loss in the
+  other direction only), and inventing one to enable "adopt this as my plan" risks silently
+  distorting numbers the recipient has no way to check. If that path gets built, design it in the
+  spec first — do not add it as a quick button.
+
+- **`share.ts`'s salt and IV are freshly random on every encode, never reused.** The unit test that
+  proves this (`share.test.ts`, "the two links differ") freezes the clock with `vi.setSystemTime`
+  before comparing two encodes of the same plan — without that, a `createdAt` timestamp embedded in
+  the plaintext differs between calls for an unrelated reason and the test stops actually isolating
+  salt/IV freshness. See the AGENTS.md §6 lesson on tamper/freshness tests that can pass without
+  testing what they claim.
 
 ## Verify before pushing
 
