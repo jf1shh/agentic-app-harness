@@ -48,7 +48,10 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: projects/mood-diner/package-lock.json
+          # Root lockfile: the repo is an npm workspace (root package.json,
+          # projects/*), so mood-diner's `npm install` below resolves against
+          # the single root lockfile regardless of its working directory.
+          cache-dependency-path: package-lock.json
 
       - name: Setup JDK
         uses: actions/setup-java@v5

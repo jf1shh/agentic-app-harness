@@ -21,7 +21,7 @@ It hosts six real, deployed applications and holds every one of them to the same
 
 ## Directory Structure
 
-- `projects/`: Monorepo workspace containing all web & mobile applications.
+- `projects/`: npm workspace (`projects/*` in the root `package.json`) containing all web & mobile applications. Shared devDependencies (`react`, `typescript`, `vitest`, `@playwright/test`, `eslint`, …) dedupe into a single root `node_modules` via one root `package-lock.json`; each app keeps its own `package.json` and independent version ranges — run `npm install` once at the repo root rather than per app.
   - `projects/portfolio-hub`: Master Showcase Web Portal (Port 3009).
   - `projects/mood-diner`: Smart Restaurant Recommender & Table Booking Engine (Port 5173).
   - `projects/travel-packing-app`: Smart Wardrobe Packing Assistant (Port 3000).

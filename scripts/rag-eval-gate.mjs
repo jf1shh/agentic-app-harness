@@ -12,10 +12,11 @@
 // regression does. Zero-dependency Node ESM — no PowerShell required.
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_DIR = join(__dirname, '..', 'projects', 'legal-financial-rag');
@@ -49,11 +50,24 @@ function header(title) {
 // silently broke this gate on the windows-latest CI runner. Invoking the JS with
 // process.execPath is uniform across Windows/macOS/Linux.
 function resolvePromptfooEntry() {
-  const pkgPath = join(APP_DIR, 'node_modules', 'promptfoo', 'package.json');
+  // Resolve the way Node actually would from APP_DIR, not a hardcoded nested
+  // path: the repo root is an npm workspace (root package.json, projects/*),
+  // so a devDependency declared only by this app — like promptfoo — commonly
+  // hoists to the root node_modules rather than nesting under APP_DIR.
+  //
+  // `require.resolve('promptfoo/package.json')` won't work here: promptfoo's
+  // own package.json declares an `exports` map that doesn't whitelist
+  // `./package.json`, so subpath resolution fails even though the package
+  // itself resolves fine. Walk the same lookup path Node's resolver would
+  // (require.resolve.paths) and find the package directory directly instead.
+  const req = createRequire(join(APP_DIR, 'package.json'));
+  const searchPaths = req.resolve.paths('promptfoo') || [];
+  const pkgPath = searchPaths.map((p) => join(p, 'promptfoo', 'package.json')).find((p) => existsSync(p));
+  if (!pkgPath) throw new Error('promptfoo is not resolvable from ' + APP_DIR);
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
   const rel = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.promptfoo;
   if (!rel) throw new Error('promptfoo package.json has no bin entry');
-  return join(APP_DIR, 'node_modules', 'promptfoo', rel);
+  return join(dirname(pkgPath), rel);
 }
 
 // promptfoo's output JSON shape has shifted across versions; find the per-case
