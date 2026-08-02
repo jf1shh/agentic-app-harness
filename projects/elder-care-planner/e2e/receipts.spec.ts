@@ -197,6 +197,14 @@ test.describe('BDD Spec: Receipt photos attached to ledger entries', () => {
     });
     await expect(page.getByRole('link', { name: 'View receipt' })).toBeVisible();
 
+    // Writes are debounced (spec §4.1), so the baseline has to be taken
+    // after the receipt id has actually landed in storage rather than
+    // immediately after attaching it — the same reason facilities.spec.ts
+    // polls before its own quota-margin measurement.
+    const stored = () =>
+      page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
+    await expect.poll(stored).toContain('receiptPhotoId');
+
     // When the shared family link is generated (spec §11.6) from the current plan
     await page.getByLabel('Passphrase').fill('correct horse battery staple');
     await page.getByTestId('sharelink-generate').click();
@@ -204,18 +212,13 @@ test.describe('BDD Spec: Receipt photos attached to ledger entries', () => {
 
     // Then decoding the fragment with the app's own decoder — the real
     // round trip, not a re-implementation of it — shows no receiptPhotoId
-    // anywhere in the shared Plan, while confirming this device's own
-    // stored state does carry it (so the absence is the schema boundary
-    // doing its job, not an empty test that would pass on either plan)
+    // anywhere in the shared Plan, even though this device's own stored
+    // state does carry it (so the absence is the schema boundary doing its
+    // job, not an empty test that would pass on either plan)
     const fragment = link.slice(link.indexOf('#') + 1);
     const result = await decodePlanFromShare(fragment, 'correct horse battery staple');
     expect(result.ok).toBe(true);
     expect(result.ok && JSON.stringify(result.payload.plan)).not.toContain('receiptPhotoId');
-
-    const stored = await page.evaluate(
-      () => localStorage.getItem('elder-care-planner:state:v1') ?? '',
-    );
-    expect(stored).toContain('receiptPhotoId');
   });
 
   test('Given the ledger and an attached receipt, When each is audited, Then there are no accessibility violations', async ({
