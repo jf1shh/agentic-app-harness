@@ -137,6 +137,24 @@ from, the same move already made for itemised home costs (§11.12).
   `PlannerState`, like `facilities` — `buildPlan()` never copies it, so it cannot reach `Plan`
   structurally, the same guarantee §11.2 and §11.14 hold for their own attachments.
 
+### Home-sale proceeds (`engine/runway.ts`, `components/RefineCostPanel.tsx`, spec §11.16)
+A family selling the home once nobody lives there can enter the expected net proceeds and the
+month the sale is expected to close. The runway simulation adds that figure, once, as a one-time
+injection in the month entered — the same "value effective from a specific month" shape as a
+care-level increase, on the income side rather than the cost side.
+
+- **Entered, never estimated.** There is no real-estate dataset in this app, and none is planned —
+  the family types the number their realtor or their own estimate gives them.
+- **Not built on the existing `Asset.kind: 'home_equity'`.** That models a static asset present
+  from day one; a home sale is a timed transition, so it lands in a dedicated zero-balance pot
+  (`'home-sale-proceeds'`, kind `'other'`) that is spent down like any other liquid asset once the
+  sale month arrives, without assuming a cash asset already exists to add into.
+- **Shown as its own step in the runway derivation.** A family checking the arithmetic by hand sees
+  the injection, not just a balance that jumped.
+- Deliberately split from reverse-mortgage loan modeling, which spec §11.16 proposes declining on
+  the same grounds as Medicaid (§10.4): a HECM's available draw depends on federal actuarial tables
+  this app has no sourced path to, unlike a family-entered sale figure.
+
 ### Independent living comparison (`components/ILComparisonPanel.tsx`)
 Independent living contracts come in three shapes — a large entry fee that is partly refundable on
 a schedule shrinking with tenure, a smaller non-refundable entry fee, or no entry fee and a higher
@@ -275,12 +293,13 @@ V1 complete, plus the independent living comparison (spec §6.5b), the facility 
 (spec §11.2), the §11.8–§11.13 batch (dollar-basis labels on every chart, year labels and a
 depletion marker on the comparison chart, a live headline sentence on the break-even panel,
 itemised home-running costs entered by the family, and the "Where to start looking" guide), the
-shared family link (spec §11.6), and receipt photo capture attached to ledger entries
-(spec §11.14). The ledger is on screen and the plan persists between visits. JSON export/import is
-built in `storage.ts` but the surface is operating-budget-only; richer export UI is on the V2
-backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling (deliberate —
-state-specific rules that cause real harm when subtly wrong), a care-hours scheduler, and
-reverse-mortgage modelling.
+shared family link (spec §11.6), receipt photo capture attached to ledger entries (spec §11.14),
+the weekly care-coverage grid (spec §11.15), and home-sale proceeds as a timed liquidity event in
+the runway projection (spec §11.16). The ledger is on screen and the plan persists between visits.
+JSON export/import is built in `storage.ts` but the surface is operating-budget-only; richer export
+UI is on the V2 backlog. Deferred to V2 and documented in the spec: Medicaid eligibility modelling
+(deliberate — state-specific rules that cause real harm when subtly wrong) and reverse-mortgage
+loan modelling (proposed for decline on the same grounds, spec §11.16).
 
 `independent_living` is deliberately absent from the triage care-type picker: it is priced from a
 community contract rather than a survey median, and the comparison panel is the only place such a

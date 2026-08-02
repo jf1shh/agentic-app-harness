@@ -322,3 +322,30 @@ describe('Given a ledger entry with an attached receipt (spec §11.14)', () => {
     expect(PlanSchema.safeParse(plan).success).toBe(true);
   });
 });
+
+describe('Given home sale proceeds entered in the planner state (spec §11.16)', () => {
+  it('When a positive amount is entered, Then the plan carries a homeSaleProceeds figure', () => {
+    const state: PlannerState = {
+      ...INITIAL_STATE,
+      homeSaleProceedsCents: 45_000_00,
+      homeSaleAtMonth: 6,
+    };
+
+    const plan = buildPlan(state);
+
+    expect(plan.homeSaleProceeds).toEqual({ atMonth: 6, netCents: 45_000_00 });
+    expect(PlanSchema.safeParse(plan).success).toBe(true);
+  });
+
+  it('When the amount is left at zero, Then homeSaleProceeds is absent rather than a zero-value figure', () => {
+    // Zero is this form's "not modeled" convention (same as liquidAssetsCents,
+    // monthlyIncomeCents, etc.) — a family that never opens the home-sale
+    // section must not get a stray $0 injection at month 1.
+    const state: PlannerState = { ...INITIAL_STATE, homeSaleProceedsCents: 0 };
+
+    const plan = buildPlan(state);
+
+    expect(plan.homeSaleProceeds).toBeUndefined();
+    expect(PlanSchema.safeParse(plan).success).toBe(true);
+  });
+});

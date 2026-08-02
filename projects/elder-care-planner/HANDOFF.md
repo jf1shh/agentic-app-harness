@@ -2,10 +2,11 @@
 
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
 facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), the
-§11.8–§11.13 batch, the shared family link (spec §11.6), receipt photo capture (spec §11.14), and
-the weekly care-coverage grid (spec §11.15) — all described below. `node scripts/test-app.mjs
-elder-care-planner` passes all checks (security advisory-only, lint, type-check, 482 Vitest, 136
-Playwright + axe).
+§11.8–§11.13 batch, the shared family link (spec §11.6), receipt photo capture (spec §11.14), the
+weekly care-coverage grid (spec §11.15), and home-sale proceeds as a timed liquidity event (spec
+§11.16, home-sale half only — reverse-mortgage loan modeling stays declined) — all described
+below. `node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only,
+lint, type-check, 493 Vitest, 141 Playwright + axe).
 
 **Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
 marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
@@ -15,7 +16,27 @@ not from intuition.
 
 ## What was built
 
-**Weekly care-coverage grid (spec §11.15, most recent).** Worth reading in full before touching
+**Home-sale proceeds (spec §11.16, most recent).** §10.3 named one deferred item —
+"reverse-mortgage and home-sale modeling" — that was actually two features of very different
+shapes and risk profiles. This split it: a home sale is one net figure landing on one month, no
+different in kind from `oneTimeCents`; a reverse mortgage is a regulated loan with FHA actuarial
+tables this app has no sourced path to, closer to Medicaid than to anything else here. Only the
+home-sale half is built; the reverse-mortgage half stays declined, per the same reasoning §10.4
+already gives for Medicaid, with the bar for revisiting it spelled out in §11.16 if that changes.
+
+Implementation: `RunwayInput.homeSaleProceeds?: { atMonth, netCents }` in `engine/runway.ts`,
+entered via two flat `PlannerState` fields (`homeSaleProceedsCents`, `homeSaleAtMonth`) in a new
+"Home sale" block in `RefineCostPanel.tsx`, conditionally built onto `Plan.homeSaleProceeds` in
+`buildPlan()` (zero cents means "not modeled," the same convention every other optional currency
+field in this form already uses), and passed through `buildRunwayInput` in `engine/plan.ts`. The
+design proposed injecting straight into "the cash pot"; the actual implementation instead pushes a
+dedicated zero-balance `'home-sale-proceeds'` pot (kind `'other'`, so `DRAWDOWN_ORDER` spends it
+after cash/brokerage/retirement) and injects into that — a family with no cash asset entered has
+nothing to add straight into, and a dedicated pot handles that case for free. The runway derivation
+(`explain/build.ts`) shows the injection as its own `reference` step, in the sale month, with an
+assumption line stating the figure is entered by the family, not estimated.
+
+**Weekly care-coverage grid (spec §11.15).** Worth reading in full before touching
 this feature, because most of the value is in what it deliberately is *not*: a literal "care-hours
 scheduler" was the original §3 deferral, and §11.15's design note flagged — before proposing
 anything — that a real scheduler (dated shifts, reminders, shift trading) has no research citation
@@ -221,24 +242,26 @@ now held up by a specific test.
 
 6. **The rest of the user feature batch is specified but unbuilt** — spec §11 records eight
    user-supplied ideas, adjudicated. Approved and built: §11.2, §11.6, §11.14, §11.15 (narrow
-   form). Designed, compatible, and awaiting a decision: §11.3 (financing the funding gap at an
-   APR, plus a "today's dollars" basis), §11.4 (two care recipients at once — the largest blast
-   radius of the batch; read its §9.2 checklist before starting), §11.5 (a network-free
-   plain-language decoder). **Recommended for rejection, with reasoning, in §11.1**: a facility
-   directory with ratings, sponsorship by a referral company, RAG over user documents, and
+   form), §11.16 (home-sale half). Designed, compatible, and awaiting a decision: §11.3 (financing
+   the funding gap at an APR, plus a "today's dollars" basis), §11.4 (two care recipients at once —
+   the largest blast radius of the batch; read its §9.2 checklist before starting), §11.5 (a
+   network-free plain-language decoder). **Recommended for rejection, with reasoning, in §11.1**: a
+   facility directory with ratings, sponsorship by a referral company, RAG over user documents, and
    server-backed family sync. **Declined during design and now also rejected on the same
-   grounds**: the literal care-hours scheduler (§11.15) — dated shifts, reminders, shift trading.
-   Do not quietly reopen any of these.
+   grounds**: the literal care-hours scheduler (§11.15) — dated shifts, reminders, shift trading —
+   and reverse-mortgage loan modeling (§11.16), on the same grounds as Medicaid. Do not quietly
+   reopen any of these.
 
-7. **V2, explicitly deferred in the spec** (these are the 2 unchecked spec items the harness
-   reports as drift — that finding is expected, not a defect): Medicaid eligibility modelling
-   (deliberately — spend-down rules are state-specific and getting them subtly wrong causes real
-   financial harm; a deferral to revisit only with explicit sign-off, not a routine backlog item),
-   reverse-mortgage / home-sale modelling (§10.3, no design). The care-hours scheduler and receipt
-   capture, the other two items §3 originally named, are resolved — see §11.14/§11.15 and the
-   "What was built" entries above (the scheduler's *literal* form is declined, not built; its
-   narrow form is). Recurring ledger entries, the remaining half of §10.5's original deferral, is
-   still unresolved and has no design.
+7. **V2, explicitly deferred in the spec** (Medicaid eligibility modelling and reverse-mortgage
+   loan modelling — check `harness-status.mjs` output for the current unchecked-spec-item count,
+   since it changes as items resolve): Medicaid (deliberately — spend-down rules are state-specific
+   and getting them subtly wrong causes real financial harm; a deferral to revisit only with
+   explicit sign-off, not a routine backlog item), and reverse-mortgage loan modelling (§11.16 —
+   informed via a starting-guide entry naming HUD counseling is the proposed path, not yet built).
+   The care-hours scheduler, receipt capture, and home-sale proceeds, the other items §3
+   originally named, are resolved — see §11.14/§11.15/§11.16 and the "What was built" entries above
+   (the scheduler's *literal* form is declined, not built; its narrow form is). Recurring ledger
+   entries, the remaining half of §10.5's original deferral, is still unresolved and has no design.
 
 ## Things to not undo
 
@@ -386,6 +409,24 @@ now held up by a specific test.
   step someone has to remember. `e2e/care-coverage.spec.ts` proves the exclusion the same way
   `e2e/receipts.spec.ts` does: decoding a real generated share link with `share.ts`'s own
   `decodePlanFromShare`.
+
+- **`homeSaleProceedsCents` of zero means "not modeled," never a $0 injection.** `buildPlan()`
+  builds `Plan.homeSaleProceeds` only when the entered cents figure is positive — the same
+  convention `liquidAssetsCents`/`monthlyIncomeCents` already use. Dropping the `> 0` guard would
+  give every plan saved before this feature existed a stray month-1 injection of nothing, and would
+  make "not modeled" and "modeled at exactly $0" indistinguishable on screen.
+
+- **The home-sale injection lands in its own synthetic pot, not the family's cash pot.** A family
+  with `liquidAssetsCents === 0` still needs somewhere for the sale proceeds to land; injecting
+  into "the cash pot" (as the original design note proposed) assumes one exists. The
+  `'home-sale-proceeds'` pot is pushed unconditionally whenever `homeSaleProceeds` is present, at
+  zero balance, so its position in `DRAWDOWN_ORDER` has no effect before the sale month.
+
+- **The injection is a one-time event (`month === atMonth`), not a permanent step
+  (`month >= atMonth`).** `careLevelIncrease` uses `>=` because a tier increase, once it happens,
+  stays in effect every month after. A home sale happens once; using `>=` here would sell the same
+  house again every subsequent month. `runway.test.ts` is mutation-proven on exactly this
+  distinction.
 
 ## Verify before pushing
 

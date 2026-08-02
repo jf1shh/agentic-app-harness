@@ -215,9 +215,9 @@ combination plus **local-only, no-account privacy**.
 - [x] **Weekly care-coverage grid** — see §11.15. The literal scheduler (dated shifts, reminders,
       shift trading) was decided against and joins §11.1's rejections; what is built is narrower:
       a typical-week pattern that makes `providesUnpaidHoursPerWeek` checkable.
-- [ ] Reverse mortgage / home-sale proceeds modeling (design proposed in §11.16, not yet built —
-      the design splits this into two: home-sale proceeds is proposed for building, reverse-mortgage
-      loan modeling is proposed for decline on the same grounds as Medicaid; see §11.16).
+- [x] **Home-sale proceeds** as a timed liquidity event in the runway projection — see §11.16.
+- [ ] Reverse-mortgage loan modeling (design proposed for decline in §11.16, on the same grounds as
+      Medicaid — not built; informed via a starting-guide entry instead, see §11.16).
 - [x] **Receipt photo capture** attached to ledger entries — see §11.14.
 - [x] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
 
@@ -1178,10 +1178,10 @@ human before V1 ships, and a failure blocks release as surely as a red test:
    consumer-guidance journalism rather than a single primary dataset. They must ship as clearly
    labeled *typical ranges for checking a contract*, with per-range citations — never as
    authoritative prices. Confirm this framing is acceptable.
-3. **Home equity.** V1 excludes home equity from runway unless explicitly marked liquid. Full
-   reverse-mortgage and home-sale modeling is deferred to V2. **§11.16 splits this into two and
-   proposes a resolution**: home-sale proceeds as a small, additive runway change; reverse-mortgage
-   loan modeling declined on the same grounds as Medicaid below.
+3. **Home equity.** V1 excludes home equity from runway unless explicitly marked liquid.
+   **§11.16 splits the deferred "reverse-mortgage and home-sale modeling" item in two**: home-sale
+   proceeds is now built, as a small, additive runway change; reverse-mortgage loan modeling stays
+   declined on the same grounds as Medicaid below.
 4. **Medicaid modeling.** Deliberately deferred. Spend-down rules are state-specific and getting
    them subtly wrong causes real financial harm. V1 informs, surfaces the lookback clock, and
    refers out to an elder law attorney.
@@ -2035,7 +2035,7 @@ proven non-silent by asserting the typed field is unchanged until the button is 
 across reload, the `Plan`/shared-link exclusion decoded with `share.ts`'s own `decodePlanFromShare`,
 and accessibility).
 
-### 11.16 PROPOSED — Home-sale proceeds as a timed liquidity event; reverse-mortgage loan modeling declined
+### 11.16 Home-sale proceeds: APPROVED AND IMPLEMENTED. Reverse-mortgage loan modeling: PROPOSED (declined)
 
 **§10.3 is one deferral naming two different features, and they are not the same shape.** "Full
 reverse-mortgage and home-sale modeling" reads as one item, but a home sale and a reverse mortgage
@@ -2062,9 +2062,19 @@ net figure the family enters directly, effective from a month the family enters 
   neither is reachable from any UI today, and forcing them to also carry a *time-dependent*
   transition would mean moving the once-only `input.assets.filter(a => a.liquid)` into the
   per-month loop, restructuring code that is currently correct and tested. A new, additive
-  `RunwayInput.homeSaleProceeds?: { atMonth: number; netCents: number }` field, injected into the
-  cash pot in the month it takes effect — mirroring `careLevelIncrease` exactly — is a smaller,
-  lower-risk change that touches none of the existing asset-drawdown logic.
+  `RunwayInput.homeSaleProceeds?: { atMonth: number; netCents: number }` field — mirroring
+  `careLevelIncrease` exactly — is a smaller, lower-risk change that touches none of the existing
+  asset-drawdown logic.
+- **As built: injected into a dedicated synthetic pot, not the family's existing cash pot.** The
+  design above proposed adding straight into "the cash pot," which does not hold for a family with
+  no cash asset entered at all — there may be nothing to add to. `computeRunway` instead pushes a
+  zero-balance `home-sale-proceeds` pot (kind `'other'`, so it sits in `DRAWDOWN_ORDER` after cash,
+  brokerage and retirement but before untouched `home_equity`) whenever `homeSaleProceeds` is
+  present, and injects `netCents` into that pot's balance in the sale month. Before the sale month
+  its balance is zero, so its position in the drawdown order has no effect; after, it is spent down
+  like any other liquid asset. This is the same outcome the design intended (proceeds become
+  spendable savings, in order, from the sale month on) without assuming a cash asset exists to
+  inject into.
 - **`netCents` is entered, never estimated**, per the precedent already set for the home-running
   costs in §11.12 and the coarse living-cost pre-fill in §11.7: this app has no real-estate dataset
   and no citable source for selling-cost percentages, which vary by market far more than the
@@ -2107,20 +2117,28 @@ carry.
   referral that survives the estimate rather than replacing it. Nothing here should be read as "not
   possible," only as "not sourced," which is a different and reversible reason.
 
-**Acceptance criteria (BDD, per `.agents/AGENTS.md` §5), for the implementation that follows this
-design.**
-- *Given* a home-sale month and net proceeds figure are entered, *When* the runway is computed,
-  *Then* the projection's cash pot increases by exactly that figure in exactly that month, and not
-  before it.
-- *Given* no home-sale figures are entered, *When* the runway is computed, *Then* the projection is
-  unchanged from today — this is strictly additive, the same guarantee `careLevelIncreaseAtMonth`
-  already gives for a plan stored before the field existed.
-- *Given* the runway derivation is opened, *When* a home-sale injection is present, *Then* it
-  appears as its own line, and the parts still sum to the total as rendered (§6.10).
-- *Given* the starting-guide section, *When* it is read, *Then* a reverse-mortgage entry is present,
-  labelled `government` for its HUD counseling requirement, and states plainly that this app does
-  not estimate loan proceeds.
-- *Given* the reverse-mortgage entry, *When* the funding-label sweep (§11.13) runs, *Then* it is
+**Acceptance criteria (BDD, per `.agents/AGENTS.md` §5).**
+
+Home-sale proceeds — built:
+- [x] *Given* a home-sale month and net proceeds figure are entered, *When* the runway is computed,
+  *Then* the projection's spendable savings increase by exactly that figure in exactly that month,
+  and not before it (`runway.test.ts`).
+- [x] *Given* no home-sale figures are entered, *When* the runway is computed, *Then* the projection
+  is unchanged from today — this is strictly additive, the same guarantee `careLevelIncreaseAtMonth`
+  already gives for a plan stored before the field existed (`runway.test.ts`,
+  `plannerState.test.ts`).
+- [x] *Given* the runway derivation is opened, *When* a home-sale injection is present, *Then* it
+  appears as its own line, and the parts still sum to the total as rendered (§6.10) — vacuously true
+  here, since the runway derivation states no sum (`explain/build.test.ts`,
+  `e2e/home-sale.spec.ts`).
+- [x] *Given* a home sale is entered, *When* the page is reloaded, *Then* the figure and its month
+  are both still there and still applied (`e2e/home-sale.spec.ts`).
+
+Reverse-mortgage informing — not yet built (remains proposed):
+- [ ] *Given* the starting-guide section, *When* it is read, *Then* a reverse-mortgage entry is
+  present, labelled `government` for its HUD counseling requirement, and states plainly that this
+  app does not estimate loan proceeds.
+- [ ] *Given* the reverse-mortgage entry, *When* the funding-label sweep (§11.13) runs, *Then* it is
   included and passes the same conflict-disclosure check every other resource does.
 
 This section is a design, not an implementation — nothing here is built until a human approves it,
