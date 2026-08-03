@@ -174,6 +174,28 @@ export function RefineCostPanel({ state, isResidential, isHourly, onChange }: Pr
           onChange={(v) => onChange({ incomeColaRate: v / 100 })}
         />
       </div>
+
+      <h3>Home sale (spec §11.16)</h3>
+      <p>
+        If selling the home is part of the plan, enter the expected net proceeds and the month
+        the sale is expected to close. This is a figure the family enters, not one this app can
+        estimate — leave it at $0 if a sale isn&rsquo;t planned.
+      </p>
+      <div className="grid">
+        <CurrencyInput
+          label="Expected net proceeds from the sale"
+          hint="After paying off any mortgage, agent fees, and closing costs."
+          valueCents={state.homeSaleProceedsCents}
+          onChangeCents={(cents) => onChange({ homeSaleProceedsCents: Math.max(0, cents) })}
+        />
+        <NumberInput
+          label="Month the sale is expected to close"
+          value={state.homeSaleAtMonth}
+          min={1}
+          max={360}
+          onChange={(v) => onChange({ homeSaleAtMonth: v })}
+        />
+      </div>
     </CollapsibleCard>
   );
 }

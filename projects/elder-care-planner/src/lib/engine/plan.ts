@@ -54,6 +54,7 @@ export function buildRunwayInput(plan: Plan, scenario: CareScenario): RunwayInpu
             cents: scenario.fees.careLevelIncreaseCents,
           }
         : undefined,
+    homeSaleProceeds: plan.homeSaleProceeds,
     income: plan.income,
     assets: plan.assets,
     projectionYears: plan.assumptions.projectionYears,

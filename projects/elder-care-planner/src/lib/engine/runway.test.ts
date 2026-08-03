@@ -211,6 +211,47 @@ describe('Given wealth that is tied up in the family home', () => {
   });
 });
 
+describe('Given a home sale expected to complete in month 3 (spec §11.16)', () => {
+  it('When the month arrives, Then the net proceeds land in that month and fund the shortfall from then on', () => {
+    const result = computeRunway(
+      baseInput({
+        income: [],
+        assets: [],
+        homeSaleProceeds: { atMonth: 3, netCents: 2_000_000 }, // $20,000
+        projectionYears: 1,
+      }),
+    );
+    // Months 1-2: $5,000/mo shortfall, nothing to draw from yet.
+    expect(result.monthlyBreakdown[0].assetsEndCents).toBe(0);
+    expect(result.monthlyBreakdown[1].assetsEndCents).toBe(0);
+    expect(result.depletionMonth).toBe(1);
+
+    // Month 3: 2,000,000 arrives, 500,000 is drawn for that month's cost ->
+    // 1,500,000 left.
+    expect(result.monthlyBreakdown[2].assetsEndCents).toBe(1_500_000);
+    // Month 4: 1,500,000 - 500,000 = 1,000,000.
+    expect(result.monthlyBreakdown[3].assetsEndCents).toBe(1_000_000);
+  });
+
+  it('When no home sale is entered, Then the projection is unaffected — this is strictly additive', () => {
+    const withField = computeRunway(baseInput({ homeSaleProceeds: undefined }));
+    const withoutField = computeRunway(baseInput());
+    expect(withField).toEqual(withoutField);
+  });
+
+  it('When the sale month is beyond the projection horizon, Then it has no effect rather than throwing', () => {
+    const result = computeRunway(
+      baseInput({
+        assets: [],
+        homeSaleProceeds: { atMonth: 200, netCents: 2_000_000 },
+        projectionYears: 1, // only 12 months are simulated
+      }),
+    );
+    expect(result.monthlyBreakdown).toHaveLength(12);
+    expect(result.monthlyBreakdown[11].assetsEndCents).toBe(0);
+  });
+});
+
 describe('Given contributors who have stated what they can afford', () => {
   it('When the required contribution exceeds capacity, Then borrowing is flagged', () => {
     const result = computeRunway(

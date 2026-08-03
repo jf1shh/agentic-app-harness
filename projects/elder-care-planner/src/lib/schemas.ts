@@ -280,6 +280,19 @@ export const AssumptionsSchema = z.object({
 });
 export type Assumptions = z.infer<typeof AssumptionsSchema>;
 
+/**
+ * Net proceeds from selling the home, landing as a one-time injection in a
+ * family-entered month (spec §11.16). Entered, never estimated — this app
+ * has no real-estate dataset to derive either figure from. The same
+ * "value effective from a specific month" shape as
+ * `FacilityFees.careLevelIncreaseAtMonth`/`Cents`, on the income side.
+ */
+export const HomeSaleProceedsSchema = z.object({
+  atMonth: z.number().int().min(1).max(360),
+  netCents: z.number().int().min(0),
+});
+export type HomeSaleProceeds = z.infer<typeof HomeSaleProceedsSchema>;
+
 export const PlanSchema = z.object({
   schemaVersion: z.literal(1),
   careRecipientLabel: z.string().min(1).max(80).default('Mom'),
@@ -290,6 +303,7 @@ export const PlanSchema = z.object({
   contributors: z.array(ContributorSchema).default([]),
   ledger: z.array(LedgerEntrySchema).default([]),
   caregiverImpacts: z.array(CaregiverImpactSchema).default([]),
+  homeSaleProceeds: HomeSaleProceedsSchema.optional(),
   assumptions: AssumptionsSchema,
   updatedAt: z.string().min(1),
 });
@@ -480,6 +494,14 @@ export const PlannerStateSchema = z.object({
   projectionYears: z.number().int().min(1).max(30),
   assetReturnRate: z.number().min(-0.5).max(0.5),
   incomeColaRate: z.number().min(0).max(0.2),
+
+  // Home sale proceeds (spec §11.16). Flat fields, matching this form's
+  // convention elsewhere (e.g. income/assets are also built from flat
+  // triage fields in buildPlan()) — homeSaleProceedsCents === 0 means "not
+  // modeled," the same "zero is the unset state" convention every other
+  // optional currency figure in this form already uses.
+  homeSaleProceedsCents: z.number().int().min(0).default(0),
+  homeSaleAtMonth: z.number().int().min(1).max(360).default(1),
 
   // Break-even comparison
   compareHoursPerWeek: z.number().min(0).max(168),

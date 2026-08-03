@@ -517,6 +517,17 @@ function explainRunway(
     });
   }
 
+  // A one-time injection, entered by the family rather than estimated (spec
+  // §11.16) — shown as its own step, in the month it lands, the same way a
+  // care-level increase gets its own step in the monthly-gap derivation.
+  if (input.homeSaleProceeds) {
+    steps.push({
+      kind: 'reference',
+      label: `Home sale proceeds added to savings in month ${input.homeSaleProceeds.atMonth}`,
+      valueCents: input.homeSaleProceeds.netCents,
+    });
+  }
+
   steps.push({
     kind: 'reference',
     label: `Total funded from savings and family over ${runway.projectionMonths / MONTHS_PER_YEAR} years`,
@@ -570,6 +581,11 @@ function explainRunway(
   if (excluded.length > 0) {
     assumptions.push(
       'Home equity is excluded from the money available. Selling a home is a decision for the family to make, not an assumption a planner gets to make for them.',
+    );
+  }
+  if (input.homeSaleProceeds) {
+    assumptions.push(
+      'The home sale proceeds figure is entered by the family, not estimated by this app — there is no dataset here for real-estate values or closing costs.',
     );
   }
 

@@ -33,6 +33,14 @@ export interface RunwayInput {
   readonly generalInflationRate: number;
   /** A planned or feared move up the care-level tiers. */
   readonly careLevelIncrease?: { readonly atMonth: number; readonly cents: number };
+  /**
+   * Net proceeds from selling the home, landing as a one-time injection in a
+   * family-entered month (spec §11.16) — the same "value effective from a
+   * specific month" shape as `careLevelIncrease`, on the income side instead
+   * of the cost side. Both figures are entered, never estimated: this app has
+   * no real-estate dataset to derive either from.
+   */
+  readonly homeSaleProceeds?: { readonly atMonth: number; readonly netCents: number };
   readonly income: readonly IncomeSource[];
   readonly assets: readonly RunwayAsset[];
   readonly projectionYears: number;
@@ -123,6 +131,26 @@ export function computeRunway(input: RunwayInput): RunwayResult {
     )
     .map((a) => ({ ...a, balance: a.balanceCents }));
 
+  // A dedicated pot for home-sale proceeds (spec §11.16), present from the
+  // start with a zero balance so there is somewhere to inject into even when
+  // the family has no other assets at all. Its balance is zero until the
+  // sale month, so its position in DRAWDOWN_ORDER — 'other', spent after
+  // cash/brokerage/retirement — has no effect before then. It is not the
+  // existing 'home_equity' asset kind: this money has already been converted
+  // to cash by a completed sale, not tied up in an unsold house.
+  const HOME_SALE_POT_ID = 'home-sale-proceeds';
+  if (input.homeSaleProceeds) {
+    pots.push({
+      id: HOME_SALE_POT_ID,
+      label: 'Home sale proceeds',
+      kind: 'other',
+      balanceCents: 0,
+      annualReturnRate: 0,
+      liquid: true,
+      balance: 0,
+    });
+  }
+
   let depletionMonth: number | null = null;
   let contributorBurdenStartMonth: number | null = null;
   let borrowingStartMonth: number | null = null;
@@ -160,6 +188,14 @@ export function computeRunway(input: RunwayInput): RunwayResult {
     if (month === 1) {
       monthlyShortfallCents = Math.max(0, careCost + ancillary - monthIncome);
       firstMonthTotalCents = monthCost;
+    }
+
+    // The sale is a one-time event landing exactly in its month, not a
+    // permanent step like careLevelIncrease's `>=` — a second injection every
+    // month afterward would sell the same house twice.
+    if (input.homeSaleProceeds && month === input.homeSaleProceeds.atMonth) {
+      const salePot = pots.find((p) => p.id === HOME_SALE_POT_ID);
+      if (salePot) salePot.balance += input.homeSaleProceeds.netCents;
     }
 
     // Grow the pots, then draw this month's shortfall from them in order.

@@ -152,6 +152,8 @@ export const INITIAL_STATE: PlannerState = {
   projectionYears: 10,
   assetReturnRate: 0.04,
   incomeColaRate: 0.02,
+  homeSaleProceedsCents: 0,
+  homeSaleAtMonth: 1,
 
   compareHoursPerWeek: 40,
   housingCarryMonthlyCents: 0,
@@ -298,6 +300,10 @@ export function buildPlan(state: PlannerState): Plan {
       return entry;
     }),
     caregiverImpacts: [],
+    homeSaleProceeds:
+      state.homeSaleProceedsCents > 0
+        ? { atMonth: state.homeSaleAtMonth, netCents: state.homeSaleProceedsCents }
+        : undefined,
     assumptions: {
       ...DEFAULT_ASSUMPTIONS,
       projectionYears: state.projectionYears,

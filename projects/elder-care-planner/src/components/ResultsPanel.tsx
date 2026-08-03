@@ -73,7 +73,9 @@ export function ResultsPanel({ result, breakEven, split, careRecipientLabel }: P
           </span>
         </div>
         <div className="stat">
-          <span className="value">{formatMonths(runway.depletionMonth)}</span>
+          <span className="value" data-testid="depletion-months">
+            {formatMonths(runway.depletionMonth)}
+          </span>
           <span className="label">
             {runway.depletionMonth === null
               ? 'Savings are not projected to run out'

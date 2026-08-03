@@ -223,6 +223,17 @@ const CASES: readonly { name: string; state: PlannerState }[] = [
     },
   },
   {
+    // The new case kind, added to the sweep in the same change that
+    // introduced it (.agents/AGENTS.md §9.3): spec §11.16's home-sale
+    // proceeds, a one-time injection into the runway simulation.
+    name: 'a plan with home sale proceeds landing partway through the projection',
+    state: {
+      ...INITIAL_STATE,
+      homeSaleProceedsCents: 45_000_00,
+      homeSaleAtMonth: 6,
+    },
+  },
+  {
     name: 'a ledger holding a payment by someone no longer listed',
     state: {
       ...INITIAL_STATE,
@@ -893,5 +904,29 @@ describe('Given the charts and their derivations must agree on which dollars are
       const hasToday = explanation.assumptions.includes(DOLLAR_BASIS_ASSUMPTION.today);
       expect(hasNominal && hasToday, `${id} claims both dollar bases at once`).toBe(false);
     }
+  });
+});
+
+describe('Given home sale proceeds entered for the runway projection (spec §11.16)', () => {
+  it('When the runway derivation is read, Then it shows the injection as its own step in the sale month', () => {
+    const { set } = explanationsFor({
+      ...INITIAL_STATE,
+      homeSaleProceedsCents: 45_000_00,
+      homeSaleAtMonth: 6,
+    });
+    const runway = set.runway as Explanation;
+
+    const step = runway.steps.find((s) => s.label.includes('Home sale proceeds'));
+    expect(step).toBeDefined();
+    expect(step?.valueCents).toBe(45_000_00);
+    expect(step?.label).toContain('month 6');
+    expect(runway.assumptions.join(' ')).toMatch(/entered by the family, not estimated/i);
+  });
+
+  it('When no home sale is entered, Then the runway derivation carries no such step', () => {
+    const { set } = explanationsFor(INITIAL_STATE);
+    const runway = set.runway as Explanation;
+
+    expect(runway.steps.some((s) => s.label.includes('Home sale proceeds'))).toBe(false);
   });
 });
