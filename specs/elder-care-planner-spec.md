@@ -210,14 +210,20 @@ combination plus **local-only, no-account privacy**.
 - [x] **Accessibility-first UI** — WCAG 2.1 AA, large-type mode, plain language, full keyboard use.
 
 ### Deferred to V2 (documented, not built)
-- [ ] Medicaid eligibility modeling with state-specific asset limits (see §9.4 — deliberate).
+- [x] Medicaid eligibility modeling with state-specific asset limits — declined, per §10.4: a
+      state-by-state actuarial spend-down model that gets it subtly wrong causes real financial
+      harm, and this app has no citable, dated source for the figures it would need. What's built
+      instead is the Medicaid 5-year lookback clock, spend-down and spousal-impoverishment
+      framing, and an elder-law-attorney referral — part of **Benefit Reality Check** above. This
+      is a final decision, not a pending proposal.
 - [x] **Shared family link** (encrypted URL-fragment payload) — see §11.6.
 - [x] **Weekly care-coverage grid** — see §11.15. The literal scheduler (dated shifts, reminders,
       shift trading) was decided against and joins §11.1's rejections; what is built is narrower:
       a typical-week pattern that makes `providesUnpaidHoursPerWeek` checkable.
 - [x] **Home-sale proceeds** as a timed liquidity event in the runway projection — see §11.16.
-- [ ] Reverse-mortgage loan modeling (design proposed for decline in §11.16, on the same grounds as
-      Medicaid — not built; informed via a starting-guide entry instead, see §11.16).
+- [x] Reverse-mortgage loan modeling — declined, on the same grounds as Medicaid (no citable,
+      dated source for FHA principal-limit tables); informed instead via a HUD-counseling entry in
+      the starting guide, see §11.16.
 - [x] **Receipt photo capture** attached to ledger entries — see §11.14.
 - [x] **Independent Living Community Comparison (`independent_living` care type + `BuyInContract`).** When a scenario's `careType` is `independent_living` and it carries a `facilityFees.buyInContract`, the app overlays the option — alongside up to three sibling IL scenarios — on a single asset-depletion chart, with year-boundary annotations for the buy-in's refund schedule (`tenureMonths → refundPercent`). All four options share the same `Plan` income, assets, and assumptions so the comparison is genuine. A buy-in whose `entryCents > liquidAssetsCents` is **hard-blocked** with an on-screen explainer that names the shortfall to the cent and tells the family to either reduce the option's `entryCents`, raise liquid assets, or remove the option. Engine lives at `engine/buyin.ts` (`resolveRefundAtTenure`, `buyInAffordability`, `projectILVariants`). Derivation panels must sum their parts to the cent (see §6 lesson "Format a Total and Its Parts at the Same Precision").
 
@@ -2035,7 +2041,7 @@ proven non-silent by asserting the typed field is unchanged until the button is 
 across reload, the `Plan`/shared-link exclusion decoded with `share.ts`'s own `decodePlanFromShare`,
 and accessibility).
 
-### 11.16 Home-sale proceeds: APPROVED AND IMPLEMENTED. Reverse-mortgage loan modeling: PROPOSED (declined)
+### 11.16 Home-sale proceeds: APPROVED AND IMPLEMENTED. Reverse-mortgage loan modeling: APPROVED (declined) — informational entry APPROVED AND IMPLEMENTED
 
 **§10.3 is one deferral naming two different features, and they are not the same shape.** "Full
 reverse-mortgage and home-sale modeling" reads as one item, but a home sale and a reverse mortgage
@@ -2091,7 +2097,7 @@ net figure the family enters directly, effective from a month the family enters 
   add-on fee is never allowed to change a total silently — a family checking the arithmetic by hand
   needs to see the injection, not just notice the balance jumped.
 
-**Reverse-mortgage loan modeling: propose declining it, on the same grounds as Medicaid (§10.4).**
+**Reverse-mortgage loan modeling: declined, on the same grounds as Medicaid (§10.4).**
 A HECM's available draw is not a fact this app can look up — it is computed from FHA principal
 limit factor tables keyed to the youngest borrower's age and the current expected interest rate,
 republished periodically, plus an origination fee schedule and ongoing mortgage insurance premiums
@@ -2134,14 +2140,16 @@ Home-sale proceeds — built:
 - [x] *Given* a home sale is entered, *When* the page is reloaded, *Then* the figure and its month
   are both still there and still applied (`e2e/home-sale.spec.ts`).
 
-Reverse-mortgage informing — not yet built (remains proposed):
-- [ ] *Given* the starting-guide section, *When* it is read, *Then* a reverse-mortgage entry is
+Reverse-mortgage informing — built:
+- [x] *Given* the starting-guide section, *When* it is read, *Then* a reverse-mortgage entry is
   present, labelled `government` for its HUD counseling requirement, and states plainly that this
-  app does not estimate loan proceeds.
-- [ ] *Given* the reverse-mortgage entry, *When* the funding-label sweep (§11.13) runs, *Then* it is
-  included and passes the same conflict-disclosure check every other resource does.
+  app does not estimate loan proceeds (`data/startingGuide.ts`, `startingGuide.test.ts`).
+- [x] *Given* the reverse-mortgage entry, *When* the funding-label sweep (§11.13) runs, *Then* it is
+  included and passes the same conflict-disclosure check every other resource does
+  (`startingGuide.test.ts`).
 
-This section is a design, not an implementation — nothing here is built until a human approves it,
-and the two halves may be approved separately: home-sale proceeds is a small, additive engine
-change with a clear precedent; declining the reverse-mortgage half is a recommendation, not a
-foregone conclusion, and a human may instead choose to scope a sourced version of it later.
+Both halves of this section are now approved: home-sale proceeds as a small, additive engine
+change, and declining full reverse-mortgage loan modeling in favor of the informational entry
+above. Full HECM loan modeling itself remains declined, not built — if it is ever revisited, the
+bar stated above still applies (a citable, dated primary source, a `FigureConfidence` tag, and a
+professional referral that survives the estimate).

@@ -177,6 +177,19 @@ export const STARTING_GUIDE_GROUPS: readonly GuideGroup[] = [
         funding: 'commercial_referral',
         fundingNote: REFERRAL_NOTE,
       },
+      {
+        id: 'reverse_mortgage_hecm_counseling',
+        name: 'HUD-approved reverse mortgage (HECM) counseling',
+        url: 'https://www.hud.gov/program_offices/housing/sfh/hecm/hecmhome',
+        what:
+          'Independent counseling with a HUD-approved agency is mandatory before applying for a '
+          + 'Home Equity Conversion Mortgage (HECM), the FHA-insured reverse mortgage program. '
+          + 'This app does not estimate reverse-mortgage loan proceeds: the available draw is '
+          + "computed from FHA principal-limit tables keyed to the youngest borrower's age and "
+          + 'the current interest rate, republished periodically, plus origination fees and '
+          + 'ongoing mortgage insurance premiums that also change (see §11.16).',
+        funding: 'government',
+      },
     ],
   },
   {
