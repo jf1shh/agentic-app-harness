@@ -63,6 +63,20 @@ export async function verifyAuditChain(
         details: `Hash chain broken between entry #${current.id} and #${nextInChain.id}!`,
       };
     }
+
+    // `logs` is ordered most-recent-first, so the oldest entry sits at the
+    // last index — the first one this loop visits. It must anchor to the
+    // real genesis block: without this check, a self-consistent but
+    // fabricated sub-chain (e.g. spliced in by an attacker who can edit the
+    // client-side store directly) would verify as valid even though it never
+    // traces back to genesis.
+    if (i === logs.length - 1 && current.previousHash !== GENESIS_HASH) {
+      return {
+        isValid: false,
+        brokenIndex: i,
+        details: `Entry #${current.id} does not anchor to the genesis block — the chain is not rooted.`,
+      };
+    }
   }
 
   return { isValid: true, details: 'Cryptographic hash chain 100% verified.' };

@@ -57,7 +57,7 @@ export function detectAndRedactPII(text: string): RedactionResult {
   }
 
   // 3. Detect Bank Routing / Account Numbers
-  const bankRegex = /\b(?:Routing|Account|IBAN)\s*(?:#|No|Number)?[\s:]*([A-Z0-9]{8,18})\b/gi;
+  const bankRegex = /\b(?:Routing|Account|IBAN)\s*(?:#|No|Number)?\s*(?:is|:)?[\s:]*([A-Z0-9]{8,18})\b/gi;
   while ((match = bankRegex.exec(text)) !== null) {
     const originalText = match[0];
     const placeholder = `[REDACTED_BANK_ACCT_${bankCounter++}]`;
