@@ -1,0 +1,111 @@
+name: Android Release Bundle (legal-financial-rag)
+
+# Builds the Android artifact so a broken native build cannot reach a release
+# unnoticed — the web-only Harness Testing Suite never touches the Capacitor
+# container, which is how a bundle that boots to a blank screen in the WebView
+# once passed every gate on mood-diner.
+#
+# Runs without secrets: when the signing credentials are absent the AAB is built
+# UNSIGNED and is still uploaded as a build artifact, so the native build is
+# verified on every push even on forks. With the ANDROID_KEYSTORE_* secrets set,
+# the same job produces an upload-ready, signed bundle.
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'projects/legal-financial-rag/**'
+      - '.github/workflows/android-release-legal-financial-rag.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'projects/legal-financial-rag/**'
+      - '.github/workflows/android-release-legal-financial-rag.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    name: Build AAB
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/legal-financial-rag
+    env:
+      # Lifted to env because the `secrets` context is NOT available in a step
+      # `if:` condition — only github/env/steps/... are. Checking `secrets.X`
+      # directly there silently never matches.
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64_LEGAL_FINANCIAL_RAG }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+          # Root lockfile: the repo is an npm workspace (root package.json,
+          # projects/*), so legal-financial-rag's `npm install` below resolves
+          # against the single root lockfile regardless of its working directory.
+          cache-dependency-path: package-lock.json
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web bundle
+        run: npx vite build
+
+      - name: Sync web bundle into the Android container
+        run: npx cap sync android
+
+      # Present only when the repository defines them; absent on forks and on PRs
+      # from forks, in which case the build below produces an unsigned bundle.
+      - name: Decode upload keystore
+        id: keystore
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+          echo "path=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_OUTPUT"
+
+      - name: Build release bundle
+        working-directory: projects/legal-financial-rag/android
+        env:
+          # versionCode must strictly increase per upload; the run number does that.
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ANDROID_KEYSTORE_FILE: ${{ steps.keystore.outputs.path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD_LEGAL_FINANCIAL_RAG }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS_LEGAL_FINANCIAL_RAG }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD_LEGAL_FINANCIAL_RAG }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Report signing status
+        working-directory: projects/legal-financial-rag/android
+        run: |
+          if [ -n "${{ steps.keystore.outputs.path }}" ]; then
+            echo "Built a SIGNED release bundle." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Built an UNSIGNED release bundle — no ANDROID_KEYSTORE_BASE64_LEGAL_FINANCIAL_RAG secret is set." >> "$GITHUB_STEP_SUMMARY"
+            echo "The native build is verified, but this artifact cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: legal-financial-rag-release-aab
+          path: projects/legal-financial-rag/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error

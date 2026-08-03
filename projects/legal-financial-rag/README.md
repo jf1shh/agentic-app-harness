@@ -1,6 +1,6 @@
 # LexiVault Financial RAG (`legal-financial-rag`)
 
-A 100% client-side, zero-telemetry financial RAG (Retrieval-Augmented Generation) and legal compliance engine for lawyers, law firms, corporate counsel, and financial auditors. Documents stay on the device; the work happens in WebCrypto and IndexedDB.
+A 100% client-side, zero-telemetry financial RAG (Retrieval-Augmented Generation) and legal compliance engine for lawyers, law firms, corporate counsel, and financial auditors. Documents stay on the device; the work happens in WebCrypto and IndexedDB. Ships as a static web app and as a Capacitor Android WebView wrapper.
 
 > Spec: [`specs/legal-financial-rag-spec.md`](../../specs/legal-financial-rag-spec.md) — the single source of truth.
 >
@@ -61,12 +61,35 @@ src/
     export/auditExporter.ts            # PDF/JSON/Markdown export of the chain
     schemas.ts                         # Zod contracts for every domain object
     unit.test.ts                       # Vitest unit coverage
-public/shield.svg                      # brand mark
+public/
+  shield.svg                           # brand mark
+  privacy.html                         # Play Store privacy policy
+android/                               # Capacitor-generated native container
+capacitor.config.ts
 ```
 
 ## Tech stack
 
 Vite + React 18 + TypeScript + Zod 3, vanilla CSS obsidian dark palette + glassmorphism. WebCrypto + IndexedDB. BM25 text ranker + cosine vector similarity are implemented in pure TS — **no model download, no telemetry, no third-party API.**
+
+## Privacy and Android release signing
+
+Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.** This app persists nothing to disk at all (no `localStorage`, no `sessionStorage`, no IndexedDB writes in production code, despite the "WebCrypto and IndexedDB" framing above describing the app's architecture in general terms) — every document, query, and audit-log entry lives only in React state for the session and is gone on reload.
+
+Play only accepts an App Bundle signed with an upload key. `android/app/build.gradle` reads credentials from environment first, then from a git-ignored `android/keystore.properties`. **Neither the keystore nor its passwords are ever committed** — `*.jks`, `*.keystore`, and `keystore.properties` are in `android/.gitignore`.
+
+### Required env vars (native only — not needed for web preview)
+
+| Variable | Meaning |
+|---|---|
+| `ANDROID_KEYSTORE_FILE` | Absolute path to the decoded keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias (`upload` by convention) |
+| `ANDROID_KEY_PASSWORD` | Key password |
+
+Missing any of the four leaves the build **unsigned** (warning) rather than failing, so `assembleRelease` still works for local smoke checks — but an unsigned artifact cannot be uploaded to Play.
+
+Unlike the Next.js apps in this repo, this app ships **one** bundle to both origins — Vite's `base: './'` (relative, in `vite.config.ts`) resolves correctly whether the bundle is served under the GitHub Pages subpath or at the WebView's `https://localhost/` root, so there is no dual-export split here.
 
 ## Development
 
@@ -80,6 +103,7 @@ npm run test             # Vitest unit (encryption, PII redaction, chunking,
                          # RAG retrieval, privilege filtering, hash chain, sanitizer)
 npm run test:e2e         # Playwright BDD + axe a11y
 npm run eval             # promptfoo eval against docs in eval/
+npx cap sync android      # after npm run build, sync dist/ into the native project
 ```
 
 ## Verification
