@@ -78,6 +78,32 @@ describe('Given resources that are paid by the providers they recommend', () => 
   });
 });
 
+describe('Given reverse-mortgage loan modeling is declined (§11.16)', () => {
+  // §11.16 declines to model HECM loan proceeds (no citable, dated source for
+  // FHA principal-limit tables) but informs rather than staying silent, the
+  // same register as the Medicare correction and the Medicaid lookback clock.
+  // These lock the two acceptance criteria the spec states for that entry.
+  it('When the legal/financial group is read, Then a reverse-mortgage entry is present, labelled government, and states plainly the app does not estimate loan proceeds', () => {
+    const legalFinancial = STARTING_GUIDE_GROUPS.find((g) => g.id === 'legal_financial');
+    const entry = legalFinancial?.resources.find((r) => /reverse.mortgage|hecm/i.test(r.id));
+
+    expect(entry, 'a reverse-mortgage entry must exist in legal_financial').toBeTruthy();
+    expect(entry?.funding).toBe('government');
+    expect(entry?.what).toMatch(/does not estimate|does not model/i);
+    expect(entry?.what.toLowerCase()).toContain('loan proceeds');
+  });
+
+  it('When the reverse-mortgage entry runs through the funding-label sweep, Then it passes the same conflict-disclosure check every other resource does', () => {
+    const entry = allGuideResources().find((r) => /reverse.mortgage|hecm/i.test(r.id));
+    expect(entry).toBeTruthy();
+    // government resources are not flagged as needing disclosure — this is
+    // the same generic check every resource in the list is already subject
+    // to (see "Given resources that are paid by the providers they
+    // recommend" above), applied specifically to the new entry.
+    expect(needsFundingDisclosure(entry!.funding)).toBe(false);
+  });
+});
+
 describe('Given the app declines to name a best option (§11.2)', () => {
   it('When any resource or touring step is read, Then none is described as best, top or recommended', () => {
     const text = [
