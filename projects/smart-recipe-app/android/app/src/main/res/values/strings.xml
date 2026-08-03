@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Smart Recipe</string>
+    <string name="title_activity_main">Smart Recipe</string>
+    <string name="package_name">com.harness.smartrecipe</string>
+    <string name="custom_url_scheme">com.harness.smartrecipe</string>
+</resources>
