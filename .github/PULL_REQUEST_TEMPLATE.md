@@ -1,54 +1,91 @@
 # Spec-Driven Pull Request
 
-Full rationale for every section below lives in `.agents/AGENTS.md` §9 — this template is the
-fill-in-the-blanks version, not the explanation. If a rule here seems arbitrary, that's where to look
-before skipping it.
-
 ## 📌 Summary
-What changed and why (1–3 sentences). Link the spec section if one exists.
+Provide a clear description of the feature, fix, or enhancement introduced in this PR.
 
-## ✅ Verification — paste output, don't self-certify (§9.1)
-Run and paste the **final summary block**, verbatim, including any FAIL:
+## ✅ Verification — paste output, do not self-certify
+
+**Do not describe verification you ran. Paste what the command printed.**
+
+This section used to be a checkbox reading "Passed the harness suite." PR #41 ticked it, and
+included a section headed "Verification (CI-clean)" reporting 0 blocking findings — while CI was
+red on that commit with a failing type-check and a dead E2E stage. Only `npx vitest run` had
+actually been run. A confident false claim is worse than no claim: it invites a rubber-stamp
+merge, and it costs the reviewer the time it takes to discover the body cannot be trusted.
+
+Paste the final summary block of:
+
 ```
 node scripts/test-app.mjs <AppName>
 ```
+
 <details>
 <summary>Harness output</summary>
 
 ```
-(paste here)
+(paste the last ~12 lines here — the PASS/FAIL summary block, verbatim, including any FAIL)
 ```
 
 </details>
 
-Couldn't run it, or it's red? Say so and why the PR is open anyway — an honest "not run: …" or a
-reported failure is fine. A green claim that wasn't actually run is the one thing this section
-exists to prevent.
+If the suite does not pass, say so here and explain why the PR is open anyway. **A red suite
+honestly reported is fine. A green suite claimed but not run is not.** Where you could not run it
+at all, write "not run" and the reason — CI is then the only record, and reviewers will read it
+that way.
 
-## 📋 Compliance checklist
-- [ ] Matches an existing spec in `specs/` (or this PR updates the spec alongside the code)
-- [ ] Data-model changes are `zod` schemas with `z.infer<typeof X>` types — none if N/A
-- [ ] New/changed unit + E2E tests are `Given → When → Then`
-- [ ] 0 axe WCAG AA violations (per the harness output above)
-- [ ] `README.md` / `HANDOFF.md` updated if this changes the app's state or feature set
+## 📋 Spec-Driven Development (SDD) Compliance Checklist
+- [ ] **Specification Verified**: Changes correspond to an existing specification in `specs/` (or a spec update was included in this PR).
+- [ ] **Contract-First Schema Validation**: All data model changes are defined using runtime Zod schemas (`zod`) with inferred TypeScript types (`z.infer<typeof Schema>`).
+- [ ] **BDD Test Standard**: New unit and E2E tests follow `Given [Context] -> When [User Action] -> Then [Expected Outcome]` scenario formatting.
+- [ ] **Accessibility (a11y)**: Zero WCAG 2.0 AA violations detected via `@axe-core/playwright`.
+- [ ] **Documentation**: Updated project `README.md` and `HANDOFF.md` to reflect latest feature state.
 
-## 🎯 Blast radius — only if a `z.enum`/union/exported type gained a member (§9.2)
-Skip this whole section otherwise. Per widened type, run both:
+## 🎯 Blast radius — required when a type gained a member
+
+Skip this section only if no union, `z.enum`, or exported type gained a member.
+
+Adding one member to `CareTypeSchema` in PR #41 broke a `Record<CareType, string>` (failing
+type-check and taking the whole E2E stage down with the build), crashed the methodology panel at
+runtime, and silently exposed an unpriced option in a dropdown. The type had **7 consumers; the PR
+opened 2**, and three of the five it skipped were where the failures lived.
+
+For each type you widened, run **both** of these:
+
 ```
-grep -rln "<TypeName>" projects/<app>/src/     # finds annotations
-grep -rln "<fieldName>" projects/<app>/src/    # finds the code that actually reads the data
+grep -rln "<TypeName>" projects/<app>/src/          # names the type
+grep -rln "<fieldName>" projects/<app>/src/          # touches the data
 ```
-List every file either returns. A `Record<Type, …>`, `switch`, or `Object.keys()` over the type is a
-mandatory edit; naming a file here as needing no change is a legitimate, reviewable answer — this
-table is what `check-enum-blast-radius.mjs` reads to know a consumer was considered.
 
-| File | Found by (type / field) | Handles the new member how? |
+List every file they return, and for each say how it handles the new member or why it needs no
+change. A `Record<Type, …>`, a `switch`, or an `Object.keys()` over that type is a mandatory edit.
+
+**The second grep is not optional, and here is what it costs to skip.** PR #68 added `otherCents` to
+`HousingCarryCostSchema`. The type-name grep returned three files and **none of them was where the
+bug was**: `engine/cost.ts` destructures `scenario.housingCarry` and never writes the type's name,
+yet it holds the only *sum* of those fields. Omitting the new term there would have zeroed the home
+side of the comparison for every plan saved before the change — a silent wrong answer, not a
+compiler error, because adding a field to an object type breaks no existing read. The unit tests
+caught it; the type-name grep alone would not have. Widening the search to the **field** name
+returned 17 files and did include it.
+
+The general rule: a *type-name* grep finds annotations, and a *field-name* grep finds the code that
+actually reads the data. Aggregations — sums, averages, serialisers, `Object.values()` — are exactly
+the consumers that use the fields without naming the type, and exactly the ones a new member breaks.
+
+| File | Found by (type / field grep) | Handles the new member how? |
 |---|---|---|
 | | | |
 
-## 🧪 Mutation proof — for every behavior this PR claims to protect (§9.4 / §5.4)
-Break the code once, confirm the test(s) go red, restore. State each one:
+## 🧪 Proof the new tests can fail
+
+For each behaviour this PR claims to protect, break the code and confirm the test goes red. State
+the mutation and the result. A test that passes against broken code is worse than no test — PR #41
+shipped one that was tautologically true and described it as a regression tripwire.
+
 - Mutation: … → Result: …
 
-## Left undone
-Anything a reader would reasonably expect this PR to cover but doesn't, and why.
+## Anything deliberately left undone
+
+Scope claims must be achievable. "Engine only, no UI changes" was not true of PR #41 once the enum
+landed, because the care-type dropdown enumerates that type. If a change forces a user-visible
+surface, say so rather than asserting it does not.
