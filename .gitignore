@@ -8,6 +8,7 @@ build/
 coverage/
 .next/
 .next-prod/
+.next-capacitor/
 out/
 __pycache__/
 *.pyc

@@ -1,6 +1,6 @@
 # Smart Recipe App (`smart-recipe-app`)
 
-A local-first, privacy-focused kitchen assistant. Track your fridge and pantry, get recipe recommendations from what you already have, save markdown recipes from a public recipe search, and plan meals by day. All user data persists in `localStorage` (validated against the contract-first Zod schemas on every read). The only outbound request is the user-initiated recipe search.
+A local-first, privacy-focused kitchen assistant. Track your fridge and pantry, get recipe recommendations from what you already have, save markdown recipes from a public recipe search, and plan meals by day. All user data persists in `localStorage` (validated against the contract-first Zod schemas on every read). The only outbound request is the user-initiated recipe search. Ships as a static web app and as a Capacitor Android WebView wrapper.
 
 > Spec: [`specs/smart-recipe-app.md`](../../specs/smart-recipe-app.md) — the single source of truth.
 >
@@ -72,26 +72,54 @@ src/
     data.test.ts, recommend.test.ts  # Vitest unit coverage
 public/
   rag-index.json                   # public mirror of the embedded corpus
-  manifest.json, *.svg icons
+  privacy.html                     # Play Store privacy policy
 embed-corpus.mjs                   # offline embedding script
+android/                           # Capacitor-generated native container
+capacitor.config.ts
+deploy.config.ts                   # GitHub Pages basePath, kept out of next.config.ts
+                                    # so it never appears as a literal there — see
+                                    # [guardrail: capacitor-absolute-base]
 ```
 
 ## Tech stack
 
 Next.js (App Router) + React 19 + TypeScript, vanilla CSS (glassmorphism, micro-animations), Zod 4. The static export (`output: 'export'`) means no Node-only paths are taken at render time — the app was deliberately refactored off Node filesystem / `'use server'` boundaries (per the Next.js static-export server-action scoping lesson in `.agents/AGENTS.md` §6).
 
+## Privacy and Android release signing
+
+Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.**
+
+Play only accepts an App Bundle signed with an upload key. `android/app/build.gradle` reads credentials from environment first, then from a git-ignored `android/keystore.properties`. **Neither the keystore nor its passwords are ever committed** — `*.jks`, `*.keystore`, and `keystore.properties` are in `android/.gitignore`.
+
+### Required env vars (native only — not needed for web preview)
+
+| Variable | Meaning |
+|---|---|
+| `ANDROID_KEYSTORE_FILE` | Absolute path to the decoded keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias (`upload` by convention) |
+| `ANDROID_KEY_PASSWORD` | Key password |
+
+Missing any of the four leaves the build **unsigned** (warning) rather than failing, so `assembleRelease` still works for local smoke checks — but an unsigned artifact cannot be uploaded to Play.
+
+### Two separate exports, not one
+
+Next's `basePath` (unlike Vite's `base`) cannot be a relative value, so this app cannot ship one universal bundle to both origins. `npm run build` produces the GitHub Pages export (`basePath` set to the Pages subpath, from `deploy.config.ts`); `npm run build:capacitor` produces a second export at `.next-capacitor` with an empty (root) `basePath`, because Capacitor serves the bundle from `https://localhost/` inside the Android WebView. `capacitor.config.ts` points `webDir` at `.next-capacitor`, so `npx cap sync android` always syncs the Capacitor-target build, never the Pages one.
+
 ## Development
 
 ```bash
 cd projects/smart-recipe-app
 npm install
-npm run dev           # next dev (port 3001)
-npm run build         # clean + next build → out/
-npm run start         # next start (production-preview only)
+npm run dev              # next dev (port 3001)
+npm run build            # clean + next build → GitHub Pages export (.next, basePath set)
+npm run build:capacitor  # clean + next build → Capacitor export (.next-capacitor, basePath empty)
+npm run start              # next start (production-preview only)
 npm run lint
-npm run embed         # rebuild the embedded RAG corpus from src/lib/rag/corpus.json
-npm run test          # Vitest unit
-npm run test:e2e      # Playwright + axe a11y
+npm run embed               # rebuild the embedded RAG corpus from src/lib/rag/corpus.json
+npm run test                # Vitest unit
+npm run test:e2e            # Playwright + axe a11y
+npx cap sync android        # after build:capacitor, sync the web bundle into the native project
 ```
 
 ## Verification

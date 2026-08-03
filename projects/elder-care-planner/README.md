@@ -1,6 +1,6 @@
 # Elder Care Cost Planner
 
-What care really costs, how long the money lasts, and how a family can share it. A private, offline-first planner that takes five inputs and produces an answer in under a minute, then refines with fee detail, break-even analysis, benefit timing, and a sibling contribution ledger. Nothing is sent over the network. There is no account.
+What care really costs, how long the money lasts, and how a family can share it. A private, offline-first planner that takes five inputs and produces an answer in under a minute, then refines with fee detail, break-even analysis, benefit timing, and a sibling contribution ledger. Nothing is sent over the network. There is no account. Ships as a static web app and as a Capacitor Android WebView wrapper.
 
 > Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single source of truth (currently rev 10).
 >
@@ -230,6 +230,13 @@ src/
                                      # apart from the plan so a photo quota
                                      # failure can never fail a plan write
     format.ts                        # money + percentage formatters
+public/
+  privacy.html                     # Play Store privacy policy
+android/                           # Capacitor-generated native container
+capacitor.config.ts
+deploy.config.ts                   # GitHub Pages basePath, kept out of next.config.ts
+                                    # so it never appears as a literal there — see
+                                    # [guardrail: capacitor-absolute-base]
 ```
 
 Next.js App Router, `output: 'export'`, vanilla CSS. **No charting library** — the runway chart is inline SVG paired with an equivalent data table, so the bundle stays small and every chart has an accessible narrative.
@@ -248,6 +255,27 @@ A confirmed **"Forget everything on this device"** control clears every key the 
 empties the IndexedDB photo store** — a separate store needs a separate erase, or the promise is
 broken on exactly the shared computer it was made for. Nothing else leaves the browser.
 
+Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.**
+
+## Android release signing
+
+Play only accepts an App Bundle signed with an upload key. `android/app/build.gradle` reads credentials from environment first, then from a git-ignored `android/keystore.properties`. **Neither the keystore nor its passwords are ever committed** — `*.jks`, `*.keystore`, and `keystore.properties` are in `android/.gitignore`.
+
+### Required env vars (native only — not needed for web preview)
+
+| Variable | Meaning |
+|---|---|
+| `ANDROID_KEYSTORE_FILE` | Absolute path to the decoded keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias (`upload` by convention) |
+| `ANDROID_KEY_PASSWORD` | Key password |
+
+Missing any of the four leaves the build **unsigned** (warning) rather than failing, so `assembleRelease` still works for local smoke checks — but an unsigned artifact cannot be uploaded to Play.
+
+### Two separate exports, not one
+
+Next's `basePath` (unlike Vite's `base`) cannot be a relative value, so this app cannot ship one universal bundle to both origins. `npm run build` produces the GitHub Pages export (`basePath` set to the Pages subpath, from `deploy.config.ts`); `npm run build:capacitor` produces a second export at `.next-capacitor` with an empty (root) `basePath`, because Capacitor serves the bundle from `https://localhost/` inside the Android WebView. `capacitor.config.ts` points `webDir` at `.next-capacitor`, so `npx cap sync android` always syncs the Capacitor-target build, never the Pages one.
+
 ## Accessibility
 
 WCAG 2.1 AA, zero axe violations. 17px base type with a larger-text toggle (scales the root to 20px) for users reading on a phone in a hospital corridor. All colour pairs verified ≥ 4.5:1. No animation on results — the context is stressful; numbers should appear, not perform.
@@ -264,8 +292,11 @@ table, select and form the suite was written for.
 node scripts/test-app.mjs elder-care-planner     # security + lint + tsc + Vitest + Playwright + a11y
 
 # Per-domain shortcuts:
-npm test           # Vitest unit
+npm test              # Vitest unit
 npx playwright test   # E2E + axe a11y
+
+# Native build:
+npm run build:capacitor && npx cap sync android   # Capacitor export → sync into android/
 ```
 
 Coverage bullets (per projectData.ts and the per-file Vitest suite):

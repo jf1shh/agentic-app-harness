@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "clean": "node -e \"const fs=require('fs'); ['dist','.next','.next-prod','playwright-report','test-results','tsconfig.tsbuildinfo','.vite'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}})\"",
+    "clean": "node -e \"const fs=require('fs'); ['dist','.next','.next-prod','.next-capacitor','playwright-report','test-results','tsconfig.tsbuildinfo','.vite'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}})\"",
     "build": "npm run clean && next telemetry disable && next build",
+    "build:capacitor": "npm run clean && node -e \"require('child_process').execSync('npx next build',{stdio:'inherit',env:{...process.env,NODE_ENV:'production',CAPACITOR_BUILD:'1',NEXT_BUILD_DIR:'.next-capacitor'}})\"",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -13,6 +14,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.0",
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.4",
@@ -20,6 +22,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
     "@playwright/test": "^1.61.1",
     "@types/node": "^20",
     "@types/react": "^19",

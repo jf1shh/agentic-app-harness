@@ -1,6 +1,6 @@
 # PackRight V4 — Travel Packing App (`travel-packing-app`)
 
-A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forecast for the trip dates, generates daily warmth targets, schedules non-repeating outfits across the trip, then weighs and dimensions the resulting wardrobe against a real suitcase model and a specific airline's carry-on limits.
+A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forecast for the trip dates, generates daily warmth targets, schedules non-repeating outfits across the trip, then weighs and dimensions the resulting wardrobe against a real suitcase model and a specific airline's carry-on limits. Ships as a static web app and as a Capacitor Android WebView wrapper.
 
 > Spec: [`specs/travel-packing-app-spec.md`](../../specs/travel-packing-app-spec.md) — the single source of truth.
 >
@@ -65,6 +65,13 @@ src/
   types.ts
 __tests__/                         # Vitest coverage for engines
 e2e/                               # Playwright + axe BDD specs
+public/
+  privacy.html                     # Play Store privacy policy
+android/                           # Capacitor-generated native container
+capacitor.config.ts
+deploy.config.ts                   # GitHub Pages basePath, kept out of next.config.ts
+                                    # so it never appears as a literal there — see
+                                    # [guardrail: capacitor-absolute-base]
 ```
 
 The packing checklist is persisted in `localStorage`; the wardrobe *media library* (background-removed garment images) is stored in **IndexedDB** (`src/services/db.ts`). The wardrobe list itself is supplied per-run by the archetype generator or a parsed file upload.
@@ -73,17 +80,44 @@ The packing checklist is persisted in `localStorage`; the wardrobe *media librar
 
 Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast), Zod 4. Heavy compute lives client-side. **`@imgly/background-removal`** runs client-side AI for removing backgrounds from uploaded garment photos, and **`onnxruntime-web`** is wired up for any future local model. Open-Meteo is the only remote dependency, and only for geocoding + forecast.
 
+## Persistence and privacy
+
+- Storage: IndexedDB (`src/services/db.ts`) for wardrobe photos and packing/trip data; `localStorage` for the theme choice and checklist state.
+- Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.**
+- The only remote calls are to `nominatim.openstreetmap.org` and `geocoding-api.open-meteo.com`, for the destination text and dates you enter — no wardrobe photos or packing data ever leave the device.
+
+## Android release signing
+
+Play only accepts an App Bundle signed with an upload key. `android/app/build.gradle` reads credentials from environment first, then from a git-ignored `android/keystore.properties`. **Neither the keystore nor its passwords are ever committed** — `*.jks`, `*.keystore`, and `keystore.properties` are in `android/.gitignore`.
+
+### Required env vars (native only — not needed for web preview)
+
+| Variable | Meaning |
+|---|---|
+| `ANDROID_KEYSTORE_FILE` | Absolute path to the decoded keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias (`upload` by convention) |
+| `ANDROID_KEY_PASSWORD` | Key password |
+
+Missing any of the four leaves the build **unsigned** (warning) rather than failing, so `assembleRelease` still works for local smoke checks — but an unsigned artifact cannot be uploaded to Play.
+
+### Two separate exports, not one
+
+Next's `basePath` (unlike Vite's `base`) cannot be a relative value, so — unlike a Vite app — this app cannot ship one universal bundle to both origins. `npm run build` produces the GitHub Pages export (`basePath` set to the Pages subpath, from `deploy.config.ts`); `npm run build:capacitor` produces a second export at `.next-capacitor` with an empty (root) `basePath`, because Capacitor serves the bundle from `https://localhost/` inside the Android WebView. `capacitor.config.ts` points `webDir` at `.next-capacitor`, so `npx cap sync android` always syncs the Capacitor-target build, never the Pages one.
+
 ## Development
 
 ```bash
 cd projects/travel-packing-app
 npm install
-npm run dev           # next dev (port 3000)
-npm run build         # clean + next telemetry disable + next build → out/
-npm run start         # next start  (production-preview only; static export is via out/)
-npm run lint          # eslint
-npm run test          # Vitest unit
-npm run test:e2e      # Playwright + axe a11y
+npm run dev              # next dev (port 3000)
+npm run build            # clean + next build → GitHub Pages export (.next, basePath set)
+npm run build:capacitor  # clean + next build → Capacitor export (.next-capacitor, basePath empty)
+npm run start             # next start  (production-preview only; static export is via next build)
+npm run lint              # eslint
+npm run test               # Vitest unit
+npm run test:e2e           # Playwright + axe a11y
+npx cap sync android        # after build:capacitor, sync the web bundle into the native project
 ```
 
 ## Verification

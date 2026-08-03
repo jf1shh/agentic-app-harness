@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Capacitor-specific build output and the native Android project — the
+    // latter contains a copy of the built web bundle under
+    // android/app/src/main/assets/public, which is minified/generated JS, not
+    // source ESLint should ever see.
+    ".next-prod/**",
+    ".next-capacitor/**",
+    "android/**",
   ]),
 ]);
 
