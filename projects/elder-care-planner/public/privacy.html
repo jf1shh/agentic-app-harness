@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Privacy Policy — Elder Care Planner</title>
+    <meta name="description" content="Privacy policy for the Elder Care Planner cost and runway planning app." />
+    <style>
+      :root { color-scheme: light dark; --bg: #ffffff; --fg: #1f2933; --muted: #52606d; --line: #d9e2ec; --accent: #0f766e; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #0f172a; --fg: #e6edf5; --muted: #a6b3c2; --line: #27364b; --accent: #5eead4; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 1.5rem; background: var(--bg); color: var(--fg);
+             font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      main { max-width: 44rem; margin: 0 auto; }
+      h1 { font-size: 1.75rem; line-height: 1.25; margin: 0 0 .25rem; }
+      h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+      .updated { color: var(--muted); margin: 0 0 1.5rem; font-size: .9rem; }
+      .summary { border-left: 3px solid var(--accent); padding: .75rem 1rem; background: rgba(127,127,127,.08); border-radius: 0 6px 6px 0; }
+      table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: .95rem; }
+      th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { font-weight: 600; }
+      .scroll { overflow-x: auto; }
+      code { background: rgba(127,127,127,.15); padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+      a { color: var(--accent); }
+      footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+      .todo { background: #fff3cd; color: #533f03; padding: .75rem 1rem; border-radius: 6px; border: 1px solid #e0c56e; }
+      @media (prefers-color-scheme: dark) { .todo { background: #3d3413; color: #ffe9a8; border-color: #6b5a1f; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Elder Care Planner Privacy Policy</h1>
+      <p class="updated">Last updated: 3 August 2026</p>
+
+      <p class="todo">
+        <strong>Before publishing:</strong> replace <code>[DEVELOPER NAME]</code> and
+        <code>[CONTACT EMAIL]</code> below, and confirm the "Last updated" date. This
+        document describes the app's behaviour as implemented; if the app changes, this
+        must be updated to match, and the Play Data safety form must agree with it.
+      </p>
+
+      <div class="summary">
+        <p style="margin:0">
+          <strong>In short:</strong> Elder Care Planner makes no network requests at all.
+          There are no accounts, no analytics, and no advertising. Everything you enter —
+          your plan, facility photos, and receipts — stays on your device and is never
+          transmitted anywhere, including to us.
+        </p>
+      </div>
+
+      <h2>Who this policy is for</h2>
+      <p>
+        This policy covers the Elder Care Planner mobile and web application, published by
+        <strong>[DEVELOPER NAME]</strong> ("we", "us"). It explains what the app does with
+        information on your device.
+      </p>
+
+      <h2>Information we collect</h2>
+      <p>
+        <strong>We do not collect any personal information, and cannot.</strong> The app has
+        no user accounts, no sign-in, no analytics or crash-reporting SDK, no advertising SDK,
+        and makes no outbound network requests of any kind — care costs, savings, income, and
+        family details you enter are financially and medically sensitive, and the app is built
+        so none of it can leave your device even by accident.
+      </p>
+
+      <h2>Information stored on your device</h2>
+      <p>
+        The app saves the following in your browser's or the app's local storage. It stays
+        on your device and is not readable by us.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr><th>Stored item</th><th>What it contains</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>elder-care-planner:plan:v1</code> (localStorage)</td>
+              <td>
+                Your full plan: care costs, savings, income, benefit timing, the sibling
+                contribution ledger, and any notes you add. This can include sensitive
+                financial and medical detail you choose to enter.
+              </td>
+            </tr>
+            <tr>
+              <td>Facility photos (IndexedDB)</td>
+              <td>Photos you attach to a facility in your shortlist, stored separately from the plan so a large photo library cannot crowd out your plan data.</td>
+            </tr>
+            <tr>
+              <td>Receipts (IndexedDB)</td>
+              <td>Photos of receipts you attach to a ledger entry, stored the same way.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Third-party connections</h2>
+      <p>
+        None. The app has no analytics, no ad networks, and makes no network requests of any
+        kind — every calculation runs on your device using data you typed in or figures built
+        into the app itself.
+      </p>
+
+      <h2>Permissions</h2>
+      <p>
+        The Android build requests no permissions beyond the bare minimum Android itself
+        requires. Attaching a facility photo or receipt uses the system photo picker, which
+        does not require a storage or camera permission from the app.
+      </p>
+
+      <h2>Children</h2>
+      <p>
+        Elder Care Planner is not directed at children and does not knowingly collect
+        information from anyone. Because the app collects no personal data at all, it holds
+        no children's data.
+      </p>
+
+      <h2>Keeping and deleting your data</h2>
+      <p>
+        Your data stays on your device until you remove it. Because we never receive it, there
+        is nothing for us to delete and no data-deletion request to make. To erase everything
+        the app has stored:
+      </p>
+      <ul>
+        <li><strong>Android:</strong> Settings → Apps → Elder Care Planner → Storage → Clear data, or uninstall the app.</li>
+        <li><strong>Web:</strong> clear site data for the page in your browser's settings.</li>
+      </ul>
+
+      <h2>Security</h2>
+      <p>
+        Because the app stores data only on your device and transmits none of it, the main
+        protection is your device's own security — its lock screen and app sandboxing. Data
+        stored locally is not encrypted separately by the app, so anyone with access to an
+        unlocked device could open the app and view your plan, photos, and receipts.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If the app's data handling changes, this policy will be updated and the date at the
+        top revised. Material changes will be reflected in the app's store listing.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this policy: <strong>[CONTACT EMAIL]</strong>.
+      </p>
+
+      <footer>
+        Elder Care Planner — built and maintained under the
+        <a href="https://github.com/jf1shh/agentic-app-harness" rel="noopener noreferrer">Agentic App Harness</a>.
+      </footer>
+    </main>
+  </body>
+</html>

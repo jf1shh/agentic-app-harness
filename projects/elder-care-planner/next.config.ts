@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
+import { pagesBasePath } from "./deploy.config";
 
 const isProd = process.env.NODE_ENV === "production";
+const isCapacitor = process.env.CAPACITOR_BUILD === "1";
 
 const nextConfig: NextConfig = {
   // `next dev` and `next build` both default to .next/. Playwright starts the
@@ -9,10 +11,16 @@ const nextConfig: NextConfig = {
   // NEXT_BUILD_DIR so the two never collide.
   distDir: process.env.NEXT_BUILD_DIR || ".next",
   output: "export",
-  // Web-only app (no Capacitor container), so an absolute Pages subpath is the
-  // correct base here — see the `capacitor-absolute-base` guardrail, which is
-  // scoped to apps that ship a native container.
-  basePath: isProd ? "/agentic-app-harness/elder-care-planner" : "",
+  // Now ships a Capacitor container too (android/), so the web-only rationale
+  // that used to justify a bare absolute Pages base no longer applies: that
+  // base would 404 every asset inside the Android WebView, which serves from
+  // https://localhost/, not the Pages subpath. Next's `basePath` (unlike
+  // Vite's `base`) cannot be a relative value, so this ships as two separate
+  // exports instead of one: the Capacitor build forces an empty (root) base
+  // via CAPACITOR_BUILD, and the Pages subpath itself lives in
+  // deploy.config.ts so it never appears as a literal on this line. See
+  // [guardrail: capacitor-absolute-base].
+  basePath: isCapacitor ? "" : (isProd ? pagesBasePath : ""),
   images: {
     unoptimized: true,
   },

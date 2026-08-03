@@ -8,9 +8,14 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
     ".next-prod/**",
+    ".next-capacitor/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The native Android project contains a copy of the built web bundle
+    // under android/app/src/main/assets/public, which is minified/generated
+    // JS, not source ESLint should ever see.
+    "android/**",
   ]),
 ]);
 
