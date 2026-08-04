@@ -90,3 +90,162 @@ body {
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.12);
 }
+
+/* Interactive project cards */
+.project-card-interactive {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.project-card-interactive:hover,
+.project-card-interactive:focus-within {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.35);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Code snippet disclosure inside a project card */
+.snippet-details {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.snippet-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  cursor: pointer;
+  list-style: none;
+}
+
+.snippet-summary::-webkit-details-marker {
+  display: none;
+}
+
+.snippet-chevron {
+  transition: transform 0.2s ease;
+  color: var(--accent-indigo);
+}
+
+details[open] > .snippet-summary .snippet-chevron {
+  transform: rotate(180deg);
+}
+
+.code-block {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.85rem;
+}
+
+.code-block-path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  color: var(--accent-amber);
+  margin-bottom: 0.5rem;
+  word-break: break-all;
+}
+
+.code-block pre {
+  margin: 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+  white-space: pre;
+}
+
+/* Skills showcase grid */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 1rem;
+}
+
+.skill-card {
+  padding: 1.25rem;
+}
+
+.skill-card-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.skill-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.skill-card-title {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.skill-card-summary-text {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.skill-card-chevron {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-indigo);
+  transition: transform 0.2s ease;
+}
+
+details[open] > .skill-card-summary .skill-card-chevron {
+  transform: rotate(180deg);
+}
+
+.skill-card-evidence {
+  list-style: none;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.skill-card-evidence li {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.skill-card-evidence li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-card-interactive,
+  .skill-card-chevron,
+  .snippet-chevron {
+    transition: none !important;
+  }
+
+  .project-card-interactive:hover,
+  .project-card-interactive:focus-within {
+    transform: none;
+  }
+}

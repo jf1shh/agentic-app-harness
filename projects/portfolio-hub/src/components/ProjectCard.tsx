@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, FileText, DollarSign } from 'lucide-react';
+import { ExternalLink, FileText, DollarSign, Code2, ChevronDown } from 'lucide-react';
 import { ProjectItem } from '../data/projectsData';
 
 interface ProjectCardProps {
@@ -9,7 +9,7 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec }) => {
   return (
-    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="glass-panel project-card-interactive" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Category & Badges Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
         <span className="badge badge-indigo">{project.category}</span>
@@ -49,6 +49,20 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
           </span>
         ))}
       </div>
+
+      {/* Real Code Snippet */}
+      <details className="snippet-details" id={`snippet-details-${project.id}`} style={{ marginBottom: '1.25rem' }}>
+        <summary className="snippet-summary">
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Code2 size={15} /> View Code Snippet
+          </span>
+          <ChevronDown size={14} className="snippet-chevron" aria-hidden="true" />
+        </summary>
+        <div className="code-block">
+          <div className="code-block-path">{project.snippet.sourcePath}</div>
+          <pre tabIndex={0}><code>{project.snippet.code}</code></pre>
+        </div>
+      </details>
 
       {/* Card Actions */}
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>

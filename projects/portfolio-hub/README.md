@@ -10,10 +10,12 @@ The central web portal for the **Agentic App Harness** monorepo — a master cat
 
 ## What this app actually ships
 
-- **A live, filterable catalog** of the 5 web apps in the monorepo, sourced from a single Zod-validated data file (`src/data/projectsData.ts`). Each card renders a tagline, full description, tech stack chip list, metrics (unit tests, E2E tests, a11y score, security audit), and badges for `pwaReady`, `capacitorAndroid`, and `monetized`.
+- **A live, filterable catalog** of the 5 web apps in the monorepo, sourced from a single Zod-validated data file (`src/data/projectsData.ts`). Each card renders a tagline, full description, tech stack chip list, metrics (unit tests, E2E tests, a11y score, security audit), and badges for `pwaReady`, `capacitorAndroid`, and `monetized`. Cards lift on hover/focus with a glow shadow (`.project-card-interactive`), disabled under `prefers-reduced-motion`.
+- **A real code snippet per card** — an expandable "View Code Snippet" disclosure showing a short excerpt pulled directly from that app's own shipped source, captioned with its exact `projects/<app>/...` path. Not a mockup: `portfolioData.test.ts` asserts every snippet's cited path actually lives inside that project's directory.
+- **An Engineering Skills showcase** (`SkillsGrid`, sourced from `src/data/skillsData.ts`) — expandable cards naming cross-cutting engineering skills demonstrated across the monorepo, each backed by evidence that is either grep-able in this repo or computed live from `PROJECTS_DATA`.
 - **6 category filter tabs** (`All`, `Legal`, `Dining`, `Utility`, `Kitchen`, `Family Finance`) driven by `useState` in `App.tsx`.
 - **Inline spec viewer** — clicking the "View Spec" action on a card opens `SpecModal`, which renders the app's markdown specification (`specs/<id>-spec.md`) inside the app. No navigation away.
-- **Hero metrics card** with monorepo-wide totals (active apps count, cumulative test pass rate surfacing, accessibility rate, Capacitor Android readiness).
+- **Animated hero metrics** with monorepo-wide totals (active apps count, cumulative unit + E2E test count, accessibility rate, Capacitor Android readiness) — numbers count up from 0 via `useCountUp`, computed live from `PROJECTS_DATA` rather than hand-typed, and jump straight to their final value under `prefers-reduced-motion`.
 - **GitHub repo link** in the header so a reader can jump directly to source.
 
 ## Apps surfaced in the catalog
@@ -32,15 +34,21 @@ The catalog data is contract-first — `ProjectItemSchema` (in `src/schemas.ts`)
 
 ```
 src/
-  App.tsx                 # hero, filter tabs, project grid, SpecModal mount
+  App.tsx                  # hero (animated stats), filter tabs, project grid, SkillsGrid, SpecModal mount
   components/
-    ProjectCard.tsx       # one card per project; emits onOpenSpec callback
-    SpecModal.tsx         # markdown spec viewer (loads from /specs/*.md)
+    ProjectCard.tsx        # one card per project; emits onOpenSpec callback; code snippet disclosure
+    SkillsGrid.tsx          # expandable Engineering Skills showcase, sourced from skillsData.ts
+    SpecModal.tsx           # markdown spec viewer (loads from /specs/*.md)
   data/
-    projectsData.ts       # RAW_PROJECTS array, Zod-validated on export
-  schemas.ts              # ProjectItemSchema + inferred type
-  utils/__tests__/
-    portfolioData.test.ts # Vitest coverage of the data file
+    projectsData.ts        # RAW_PROJECTS array (incl. per-app code snippet), Zod-validated on export
+    skillsData.ts           # SKILLS_DATA array, evidence derived live from PROJECTS_DATA
+  hooks/
+    useCountUp.ts           # animated 0→target number, skipped under prefers-reduced-motion
+  schemas.ts               # ProjectItemSchema / SkillSchema + inferred types
+  utils/
+    countUp.ts               # pure count-up progress math (unit-tested in isolation)
+    __tests__/
+      portfolioData.test.ts # Vitest coverage of the data file
 public/favicon.svg
 ```
 
