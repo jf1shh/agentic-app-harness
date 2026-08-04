@@ -13,7 +13,7 @@ permissions:
 jobs:
   sdd-agent-review:
     name: SDD Spec & Quality Sentinel Audit
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
@@ -48,11 +48,11 @@ jobs:
 
       - name: Harness Guardrail Self-Test (verify the verifier)
         shell: pwsh
-        run: node .\scripts\harness-status.test.mjs
+        run: node ./scripts/harness-status.test.mjs
 
       - name: Blast-Radius Self-Test (verify the verifier)
         shell: pwsh
-        run: node .\scripts\check-enum-blast-radius.test.mjs
+        run: node ./scripts/check-enum-blast-radius.test.mjs
 
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
@@ -63,23 +63,23 @@ jobs:
         shell: pwsh
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node .\scripts\check-enum-blast-radius.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-enum-blast-radius.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh
-        run: node .\scripts\harness-learn.mjs
+        run: node ./scripts/harness-learn.mjs
 
       - name: Harness Verify Gate (blocks on guardrail regressions & missing specs)
         shell: pwsh
-        run: node .\scripts\harness-status.mjs --gate
+        run: node ./scripts/harness-status.mjs --gate
 
       - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
         shell: pwsh
-        run: node .\scripts\rag-eval-gate.mjs
+        run: node ./scripts/rag-eval-gate.mjs
 
       - name: Run Spec & Schema Coverage Audit
         shell: pwsh
-        run: .\scripts\validate-specs.ps1 -Strict
+        run: ./scripts/validate-specs.ps1 -Strict
 
       - name: Post SDD Sentinel PR Review Comment
         if: success() && github.event_name == 'pull_request'
