@@ -20,6 +20,27 @@ const RAW_PROJECTS: ProjectItem[] = [
     specPath: 'specs/legal-financial-rag-spec.md',
     demoUrl: 'https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/legal-financial-rag',
+    snippet: {
+      language: 'typescript',
+      sourcePath: 'projects/legal-financial-rag/src/lib/security/encryption.ts',
+      code: `export async function deriveKeyFromPassphrase(
+  passphrase: string,
+  saltHex?: string
+): Promise<{ key: CryptoKey; saltHex: string }> {
+  const passphraseKey = await window.crypto.subtle.importKey(
+    'raw', encoder.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+
+  // Node 20 WebCrypto rejects a TypedArray's raw .buffer as BufferSource —
+  // a fresh Uint8Array copy is required for cross-runtime compatibility.
+  const saltBuffer = new Uint8Array(saltBytes);
+
+  return window.crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: saltBuffer, iterations: 100000, hash: 'SHA-256' },
+    passphraseKey, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+  );
+}`,
+    },
   },
   {
     id: 'mood-diner',
@@ -40,6 +61,31 @@ const RAW_PROJECTS: ProjectItem[] = [
     specPath: 'specs/mood-diner-spec.md',
     demoUrl: 'https://jf1shh.github.io/agentic-app-harness/mood-diner/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/mood-diner',
+    snippet: {
+      language: 'typescript',
+      sourcePath: 'projects/mood-diner/src/utils/weatherEngine.ts',
+      code: `export function evaluateWeatherSuitability(
+  restaurant: Restaurant,
+  weather: WeatherCondition
+): WeatherRecommendationResult {
+  let score = 80; // Baseline match
+  const isHot = weather.temperatureF >= 80 || weather.condition === 'Hot';
+
+  const hotDishes = restaurant.menu.filter((item) => item.isHotDish);
+  const hotDishRatio = hotDishes.length / (restaurant.menu.length || 1);
+
+  if (isHot) {
+    if (hotDishRatio >= 0.5) {
+      score -= 35; // Hot soups/stews discouraged in summer heat
+      isWeatherDiscouraged = true;
+    } else if (coldDishes.length > 0) {
+      score += 15;
+    }
+  }
+  // ...cold/rainy adjustments follow the same shape
+  return { weatherMatchScore: score, weatherNote, isWeatherDiscouraged, suggestedMenuItems };
+}`,
+    },
   },
   {
     id: 'travel-packing-app',
@@ -60,6 +106,30 @@ const RAW_PROJECTS: ProjectItem[] = [
     specPath: 'specs/travel-packing-app-spec.md',
     demoUrl: 'https://jf1shh.github.io/agentic-app-harness/travel-packing-app/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/travel-packing-app',
+    snippet: {
+      language: 'typescript',
+      sourcePath: 'projects/travel-packing-app/src/utils/knapsackEngine.ts',
+      code: `export function calculateKnapsackPhysics(
+  report: WearabilityReport,
+  garments: Garment[],
+  suitcase: SuitcaseModel,
+  airlineCode: string
+): PackingPhysicsReport {
+  // Only the garments actually scheduled into an outfit count toward weight
+  const packedGarmentIds = new Set<string>();
+  report.scheduledOutfits.forEach(({ outfit }) => {
+    packedGarmentIds.add(outfit.top.id);
+    packedGarmentIds.add(outfit.bottom.id);
+  });
+  const packedGarments = garments.filter((g) => packedGarmentIds.has(g.id));
+
+  const totalWeightKg = packedGarments.reduce((sum, g) => sum + (g.weightGrams || 0), 0) / 1000;
+  const suitcaseCapacityLiters = (suitcase.l * suitcase.w * suitcase.h) / 1000;
+  const volumeUsedPercent = (totalVolumeLiters / suitcaseCapacityLiters) * 100;
+
+  return checkBaggageCompliance({ totalWeightKg, volumeUsedPercent, ... }, lookupAirline(airlineCode));
+}`,
+    },
   },
   {
     id: 'smart-recipe-app',
@@ -80,6 +150,29 @@ const RAW_PROJECTS: ProjectItem[] = [
     specPath: 'specs/smart-recipe-app.md',
     demoUrl: 'https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/smart-recipe-app',
+    snippet: {
+      language: 'typescript',
+      sourcePath: 'projects/smart-recipe-app/src/lib/recommend.ts',
+      code: `/**
+ * Rank recipes by how many of their ingredients the current inventory covers.
+ * Ties break toward the quicker recipe, then alphabetically for stability.
+ * Recipes with zero matches are omitted — a recommendation you can't cook for
+ * isn't a recommendation.
+ */
+export function recommendRecipes(inventory: InventoryItem[], recipes: RecipeEntry[]): RecipeRecommendation[] {
+  const pantryTokens = new Set(inventory.flatMap((i) => tokenize(i.name)));
+
+  const recs = recipes.map((recipe) => {
+    const ingredients = parseIngredients(recipe.content);
+    const matched = ingredients.filter((ing) => tokenize(ing).some((t) => pantryTokens.has(t)));
+    return { title: titleOf(recipe), matchCount: matched.length, matchRatio: matched.length / (ingredients.length || 1) };
+  });
+
+  return recs
+    .filter((r) => r.matchCount > 0)
+    .sort((a, b) => b.matchCount - a.matchCount || a.title.localeCompare(b.title));
+}`,
+    },
   },
   {
     id: 'elder-care-planner',
@@ -100,6 +193,30 @@ const RAW_PROJECTS: ProjectItem[] = [
     specPath: 'specs/elder-care-planner-spec.md',
     demoUrl: 'https://jf1shh.github.io/agentic-app-harness/elder-care-planner/',
     githubUrl: 'https://github.com/jf1shh/agentic-app-harness/tree/master/projects/elder-care-planner',
+    snippet: {
+      language: 'typescript',
+      sourcePath: 'projects/elder-care-planner/src/lib/engine/breakeven.ts',
+      code: `export function computeBreakEven(input: BreakEvenInput): BreakEvenResult {
+  const fixed = input.housingCarryMonthlyCents + input.inHomeAncillaryMonthlyCents;
+  const residentialMonthly = input.residentialAllInMonthlyCents;
+  const costPerHourPerMonth = input.hourlyRateCents * WEEKS_PER_MONTH;
+
+  // Residential is cheaper even at zero paid hours: the crossover is 0, not
+  // a negative hour count.
+  const residentialAlwaysCheaper = residentialMonthly <= fixed;
+
+  let breakEvenHoursPerWeek: number;
+  if (costPerHourPerMonth <= 0) {
+    // Free help never crosses over — reported as unbounded, never divided by zero.
+    breakEvenHoursPerWeek = residentialAlwaysCheaper ? 0 : Number.POSITIVE_INFINITY;
+  } else if (residentialAlwaysCheaper) {
+    breakEvenHoursPerWeek = 0;
+  } else {
+    breakEvenHoursPerWeek = (residentialMonthly - fixed) / costPerHourPerMonth;
+  }
+  return { breakEvenHoursPerWeek, residentialAlwaysCheaper, /* ... */ };
+}`,
+    },
   },
 ];
 

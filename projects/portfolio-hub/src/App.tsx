@@ -2,7 +2,29 @@ import React, { useState } from 'react';
 import { PROJECTS_DATA, ProjectItem } from './data/projectsData';
 import { ProjectCard } from './components/ProjectCard';
 import { SpecModal } from './components/SpecModal';
+import { SkillsGrid } from './components/SkillsGrid';
+import { useCountUp } from './hooks/useCountUp';
 import { ShieldCheck, Layers, Github } from 'lucide-react';
+
+const TOTAL_UNIT_TESTS = PROJECTS_DATA.reduce((sum, p) => sum + p.metrics.unitTests, 0);
+const TOTAL_E2E_TESTS = PROJECTS_DATA.reduce((sum, p) => sum + p.metrics.e2eTests, 0);
+
+interface AnimatedStatProps {
+  label: string;
+  value: number;
+  suffix?: string;
+  color: string;
+}
+
+const AnimatedStat: React.FC<AnimatedStatProps> = ({ label, value, suffix = '', color }) => {
+  const animated = useCountUp(value);
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '1rem' }}>
+      <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{label}</div>
+      <div style={{ fontSize: '1.5rem', fontWeight: 800, color }}>{animated}{suffix}</div>
+    </div>
+  );
+};
 
 export const App: React.FC = () => {
   const [selectedSpecProject, setSelectedSpecProject] = useState<ProjectItem | null>(null);
@@ -60,14 +82,13 @@ export const App: React.FC = () => {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Active Monorepo Apps</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{PROJECTS_DATA.length} Apps</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Cumulative Test Suite</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>26 Tests Passed</div>
-          </div>
+          <AnimatedStat label="Active Monorepo Apps" value={PROJECTS_DATA.length} suffix=" Apps" color="#f59e0b" />
+          <AnimatedStat
+            label="Cumulative Test Suite"
+            value={TOTAL_UNIT_TESTS + TOTAL_E2E_TESTS}
+            suffix={` Tests (${TOTAL_UNIT_TESTS} Unit / ${TOTAL_E2E_TESTS} E2E)`}
+            color="#10b981"
+          />
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '1rem' }}>
             <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Accessibility Rate</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>100% WCAG AA</div>
@@ -113,6 +134,8 @@ export const App: React.FC = () => {
           />
         ))}
       </div>
+
+      <SkillsGrid />
 
       {/* Footer */}
       <footer style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: '#64748b' }}>

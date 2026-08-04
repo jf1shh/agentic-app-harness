@@ -15,4 +15,13 @@ describe('Portfolio Data Integrity', () => {
       expect(proj.specPath).toBeTruthy();
     });
   });
+
+  it('Given the shipped portfolio dataset, When each project is inspected, Then its snippet cites a real path inside that app\'s own project directory', () => {
+    // A snippet that doesn't point back into projects/<id>/ would be a
+    // fabricated example passed off as real shipped code.
+    PROJECTS_DATA.forEach((proj) => {
+      expect(proj.snippet.code.trim().length).toBeGreaterThan(0);
+      expect(proj.snippet.sourcePath.startsWith(`projects/${proj.id}/`)).toBe(true);
+    });
+  });
 });

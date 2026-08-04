@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { ProjectItemSchema, ProjectMetricsSchema } from './schemas';
+import { ProjectItemSchema, ProjectMetricsSchema, ProjectSnippetSchema, SkillSchema } from './schemas';
 import { PROJECTS_DATA } from './data/projectsData';
+import { SKILLS_DATA } from './data/skillsData';
 
 // Contract-first mandate (.agents/AGENTS.md §1): the Zod schema is the runtime
 // contract, so it has to be exercised as one. `portfolioData.test.ts` hand-rolls
@@ -17,6 +18,12 @@ const validMetrics = {
   securityAudit: 'passing',
 };
 
+const validSnippet = {
+  language: 'typescript',
+  sourcePath: 'src/utils/weatherEngine.ts',
+  code: 'export function evaluateWeatherSuitability(restaurant, weather) {\n  return score;\n}',
+};
+
 const validProject = {
   id: 'mood-diner',
   name: 'MoodDiner',
@@ -31,6 +38,7 @@ const validProject = {
   specPath: 'specs/mood-diner-spec.md',
   demoUrl: 'https://jf1shh.github.io/agentic-app-harness/mood-diner/',
   githubUrl: 'https://github.com/jf1shh/agentic-app-harness',
+  snippet: validSnippet,
 };
 
 // Omit a key without leaving an unused binding behind: the usual
@@ -101,6 +109,66 @@ describe('ProjectItemSchema', () => {
   it('Given a boolean flag supplied as a string, When it is parsed, Then it is rejected rather than coerced', () => {
     // "false" is truthy, so a coerced flag would light up the PWA badge wrongly.
     expect(() => ProjectItemSchema.parse({ ...validProject, pwaReady: 'false' })).toThrow();
+  });
+
+  it('Given a project missing its code snippet, When it is parsed, Then the contract rejects it', () => {
+    // Every card promises a real snippet; a card silently missing one is the
+    // §9 "scope claim" failure applied to data instead of prose.
+    expect(() => ProjectItemSchema.parse(without(validProject, 'snippet'))).toThrow();
+  });
+
+  it('Given a snippet with an empty code body, When it is parsed, Then the contract rejects it', () => {
+    expect(() => ProjectItemSchema.parse({ ...validProject, snippet: { ...validSnippet, code: '' } })).toThrow();
+  });
+});
+
+describe('ProjectSnippetSchema', () => {
+  it('Given a complete snippet, When it is parsed, Then it is accepted unchanged', () => {
+    expect(ProjectSnippetSchema.parse(validSnippet)).toEqual(validSnippet);
+  });
+
+  it('Given a snippet missing its source path, When it is parsed, Then the contract rejects it', () => {
+    // The source path is what makes the snippet a citation rather than a
+    // decorative code block; dropping it silently would launder a made-up
+    // example as if it were read from the shipped app.
+    expect(() => ProjectSnippetSchema.parse(without(validSnippet, 'sourcePath'))).toThrow();
+  });
+});
+
+describe('SkillSchema', () => {
+  const validSkill = {
+    id: 'contract-first-schemas',
+    title: 'Contract-First Data Modelling',
+    summary: 'Runtime Zod schemas as the single source of truth for every data model.',
+    evidence: ['Every app validates untrusted input at its storage/import boundary via z.infer<typeof Schema>.'],
+  };
+
+  it('Given a complete skill, When it is parsed, Then it is accepted unchanged', () => {
+    expect(SkillSchema.parse(validSkill)).toEqual(validSkill);
+  });
+
+  it('Given a skill with no evidence entries, When it is parsed, Then the contract rejects it', () => {
+    // An unsubstantiated skill claim is exactly what §6 "Cite Confidence, Not
+    // Just Sources" warns against — every claim here must point at something real.
+    expect(() => SkillSchema.parse({ ...validSkill, evidence: [] })).toThrow();
+  });
+
+  it('Given a skill missing its id, When it is parsed, Then the contract rejects it', () => {
+    expect(() => SkillSchema.parse(without(validSkill, 'id'))).toThrow();
+  });
+});
+
+describe('the shipped skills dataset', () => {
+  it('Given the real SKILLS_DATA, When every row is parsed through the contract, Then all of them conform', () => {
+    expect(SKILLS_DATA.length).toBeGreaterThan(0);
+    for (const skill of SKILLS_DATA) {
+      expect(() => SkillSchema.parse(skill)).not.toThrow();
+    }
+  });
+
+  it('Given the real SKILLS_DATA, When ids are collected, Then each skill has a unique id', () => {
+    const ids = SKILLS_DATA.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 
