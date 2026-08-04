@@ -30,18 +30,30 @@ const flag = (n) => argv.includes(`--${n}`);
 const valueOf = (n) => { const i = argv.indexOf(`--${n}`); return i !== -1 ? argv[i + 1] : null; };
 const appName = valueOf('app') || argv.find((a) => !a.startsWith('--'));
 
+const availableApps = readdirSync(projectsDir, { withFileTypes: true })
+  .filter((e) => e.isDirectory()).map((e) => e.name);
+
 if (!appName) {
   console.error('Usage: node scripts/test-app.mjs <AppName>');
-  console.error(`Available: ${readdirSync(projectsDir, { withFileTypes: true })
-    .filter((e) => e.isDirectory()).map((e) => e.name).join(', ')}`);
+  console.error(`Available: ${availableApps.join(', ')}`);
   process.exit(2);
 }
 
-const appPath = join(projectsDir, appName);
-if (!existsSync(appPath)) {
-  console.error(`${C.red}Error: project '${appName}' does not exist at ${appPath}${C.reset}`);
+// Resolve the app by exact membership in projects/, NOT by testing whether
+// join(projectsDir, appName) happens to exist. `existsSync` is true for a
+// traversal too: `--app ../..` resolves above the repo, passes an existence
+// check, and then clean() runs `rmSync(<that dir>/dist, { recursive: true,
+// force: true })` — deleting dist/, build/, coverage/ and .next/ OUTSIDE the
+// repo before `npm install` and the test commands run there under `shell: true`.
+// An allow-list drawn from the real directory listing makes traversal, absolute
+// paths and shell metacharacters unrepresentable rather than merely unlikely.
+if (!availableApps.includes(appName)) {
+  console.error(`${C.red}Error: '${appName}' is not a project in projects/.${C.reset}`);
+  console.error(`Available: ${availableApps.join(', ')}`);
   process.exit(1);
 }
+
+const appPath = join(projectsDir, appName);
 
 // --- cleanup (mirrors clean-app.ps1) ---------------------------------------
 const CLEAN_TARGETS = ['.next', '.next-prod', 'dist', 'build', '.vite', 'playwright-report', 'test-results', 'coverage', 'tsconfig.tsbuildinfo'];
