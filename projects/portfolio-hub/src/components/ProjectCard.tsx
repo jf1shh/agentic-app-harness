@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, FileText, DollarSign, Code2, ChevronDown } from 'lucide-react';
+import { ExternalLink, FileText, DollarSign, Code2, ChevronDown, BrainCircuit } from 'lucide-react';
 import { ProjectItem } from '../data/projectsData';
 
 interface ProjectCardProps {
@@ -63,6 +63,36 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
           <pre tabIndex={0}><code>{project.snippet.code}</code></pre>
         </div>
       </details>
+
+      {/* Applied ML / Retrieval Architecture */}
+      {project.mlArchitecture && (
+        <details className="snippet-details" id={`ml-architecture-details-${project.id}`} style={{ marginBottom: '1.25rem' }}>
+          <summary className="snippet-summary">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <BrainCircuit size={15} /> View Retrieval / ML Architecture
+            </span>
+            <ChevronDown size={14} className="snippet-chevron" aria-hidden="true" />
+          </summary>
+          <div className="code-block" style={{ padding: '0.9rem' }}>
+            <p style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+              {project.mlArchitecture.approach}
+            </p>
+            <ol style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {project.mlArchitecture.pipeline.map((step, idx) => (
+                <li key={idx} style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                  {step.label}
+                  <div className="code-block-path" style={{ marginTop: '2px' }}>{step.sourcePath}</div>
+                </li>
+              ))}
+            </ol>
+            {project.mlArchitecture.evalMethod && (
+              <p style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '0.75rem', lineHeight: 1.5 }}>
+                <strong>Eval methodology:</strong> {project.mlArchitecture.evalMethod}
+              </p>
+            )}
+          </div>
+        </details>
+      )}
 
       {/* Card Actions */}
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
