@@ -79,6 +79,62 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
     await expect(skillCard.locator('.skill-card-evidence li').first()).not.toBeEmpty();
   });
 
+  test('Given the LexiVault project card, When expanding its retrieval/ML architecture disclosure, Then reveal the real pipeline steps and eval methodology', async ({ page }) => {
+    // Given visitor on Portfolio Hub page
+    await page.goto('/');
+    const mlDetails = page.locator('#ml-architecture-details-legal-financial-rag');
+
+    // Then the architecture body starts collapsed
+    await expect(mlDetails.locator('.code-block')).toBeHidden();
+
+    // When expanding the "View Retrieval / ML Architecture" disclosure
+    await mlDetails.locator('summary').click();
+
+    // Then it reveals the real pipeline steps (each citing a real source path) and the eval methodology
+    await expect(mlDetails.locator('.code-block')).toBeVisible();
+    await expect(mlDetails.locator('.code-block-path').first()).toContainText('projects/legal-financial-rag/');
+    await expect(mlDetails.locator('.code-block')).toContainText('promptfoo');
+  });
+
+  test('Given the Case Studies section, When expanding a guardrail-backed case study, Then reveal its root cause, fix, and the real guardrail that enforces it', async ({ page }) => {
+    // Given visitor on Portfolio Hub page
+    await page.goto('/');
+    const caseStudy = page.locator('#case-study-no-op-assertion');
+
+    // Then the case study body starts collapsed
+    await expect(caseStudy.locator('.case-study-body')).toBeHidden();
+
+    // When expanding the case study card
+    await caseStudy.locator('summary').click();
+
+    // Then its root cause, fix, and real enforcement mechanism are all visible
+    await expect(caseStudy.locator('.case-study-body')).toBeVisible();
+    await expect(caseStudy.locator('.case-study-body')).toContainText('tautology');
+    await expect(caseStudy.locator('.case-study-body')).toContainText('no-op-assertion');
+  });
+
+  test('Given the Loop Dashboard, When the page loads, Then it shows non-zero guardrail, lesson, and app counts derived from the real harness', async ({ page }) => {
+    // Skip the count-up animation so the final values are readable immediately.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    await expect(page.locator('#loop-dashboard-heading')).toBeVisible();
+    await expect(page.getByText('Guardrails Enforced in CI')).toBeVisible();
+    await expect(page.getByText(/\d+ Guardrails/)).toBeVisible();
+    await expect(page.getByText(/\d+ Lessons/)).toBeVisible();
+    await expect(page.getByText(/\d+ Apps/).first()).toBeVisible();
+  });
+
+  test('Given the footer, When the page loads, Then it credits the author by name and links a real GitHub profile and contact email', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.getByText('Jared Fisher')).toBeVisible();
+    const githubLink = page.locator('footer a[href="https://github.com/jf1shh"]');
+    await expect(githubLink).toBeVisible();
+    const mailLink = page.locator('footer a[href="mailto:xjaredfisher@gmail.com"]');
+    await expect(mailLink).toBeVisible();
+  });
+
   test('Given Portfolio Hub UI portal, When audited by axe accessibility scanner, Then pass zero WCAG 2.0 AA violations', async ({ page }) => {
     // Given visitor on Portfolio Hub
     await page.goto('/');
@@ -99,6 +155,8 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
     await page.goto('/');
     await page.locator('#snippet-details-mood-diner summary').click();
     await page.locator('#skill-card-accessibility-engineering summary').click();
+    await page.locator('#ml-architecture-details-legal-financial-rag summary').click();
+    await page.locator('#case-study-no-op-assertion summary').click();
 
     // When running the audit against the expanded state
     const accessibilityScanResults = await new AxeBuilder({ page })

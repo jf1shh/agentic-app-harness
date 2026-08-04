@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { ProjectItemSchema, ProjectMetricsSchema, ProjectSnippetSchema, SkillSchema } from './schemas';
+import {
+  ProjectItemSchema,
+  ProjectMetricsSchema,
+  ProjectSnippetSchema,
+  SkillSchema,
+  MLArchitectureSchema,
+  CaseStudySchema,
+  LoopStatsSchema,
+} from './schemas';
 import { PROJECTS_DATA } from './data/projectsData';
 import { SKILLS_DATA } from './data/skillsData';
+import { CASE_STUDIES } from './data/caseStudiesData';
 
 // Contract-first mandate (.agents/AGENTS.md §1): the Zod schema is the runtime
 // contract, so it has to be exercised as one. `portfolioData.test.ts` hand-rolls
@@ -169,6 +178,86 @@ describe('the shipped skills dataset', () => {
   it('Given the real SKILLS_DATA, When ids are collected, Then each skill has a unique id', () => {
     const ids = SKILLS_DATA.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('MLArchitectureSchema', () => {
+  const validMl = {
+    approach: 'Hybrid BM25 + cosine similarity retrieval, 100% client-side',
+    pipeline: [
+      { label: 'Clause-preserving chunker', sourcePath: 'projects/legal-financial-rag/src/lib/rag/chunker.ts' },
+    ],
+  };
+
+  it('Given a complete ML architecture with no eval method, When it is parsed, Then it is accepted unchanged', () => {
+    expect(MLArchitectureSchema.parse(validMl)).toEqual(validMl);
+  });
+
+  it('Given an ML architecture with an empty pipeline, When it is parsed, Then the contract rejects it', () => {
+    // A pipeline claim with zero steps is an unsubstantiated claim, same
+    // failure shape as a skill with no evidence.
+    expect(() => MLArchitectureSchema.parse({ ...validMl, pipeline: [] })).toThrow();
+  });
+
+  it('Given a pipeline step missing its source path, When it is parsed, Then the contract rejects it', () => {
+    expect(() => MLArchitectureSchema.parse({
+      ...validMl,
+      pipeline: [{ label: 'Some step' }],
+    })).toThrow();
+  });
+
+  it('Given a project without mlArchitecture, When it is parsed through ProjectItemSchema, Then it is still accepted', () => {
+    expect(() => ProjectItemSchema.parse(validProject)).not.toThrow();
+  });
+
+  it('Given a project with mlArchitecture attached, When it is parsed through ProjectItemSchema, Then the nested contract applies', () => {
+    expect(() => ProjectItemSchema.parse({ ...validProject, mlArchitecture: { ...validMl, pipeline: [] } })).toThrow();
+    expect(ProjectItemSchema.parse({ ...validProject, mlArchitecture: validMl }).mlArchitecture).toEqual(validMl);
+  });
+});
+
+describe('CaseStudySchema', () => {
+  const validCaseStudy = {
+    id: 'enum-blast-radius',
+    title: 'A widened enum silently broke three files nobody opened',
+    problem: 'Adding a member to a shared type left several consumers unhandled.',
+    rootCause: 'A type union was widened without visiting every consumer.',
+    fix: 'Every consumer of the type was opened and updated to handle the new member.',
+    enforcedBy: 'scripts/check-enum-blast-radius.mjs',
+    sourceRef: '.agents/AGENTS.md §9.2',
+  };
+
+  it('Given a complete case study with no guardrailId, When it is parsed, Then it is accepted unchanged', () => {
+    expect(CaseStudySchema.parse(validCaseStudy)).toEqual(validCaseStudy);
+  });
+
+  it('Given a case study with neither a guardrailId nor an enforcedBy mechanism, When it is parsed, Then the contract rejects it', () => {
+    // A "lesson learned" with nothing that actually enforces it is prose, not
+    // a guardrail, and this dataset claims the latter.
+    expect(() => CaseStudySchema.parse(without(validCaseStudy, 'enforcedBy'))).toThrow();
+  });
+
+  it('Given a case study whose guardrailId stands in for an enforcedBy mechanism, When it is parsed, Then it is accepted without an enforcedBy field', () => {
+    const guardrailBacked = { ...without(validCaseStudy, 'enforcedBy'), guardrailId: 'no-op-assertion' };
+    expect(() => CaseStudySchema.parse(guardrailBacked)).not.toThrow();
+  });
+
+  it('Given the real CASE_STUDIES dataset, When every row is parsed through the contract, Then all of them conform', () => {
+    expect(CASE_STUDIES.length).toBeGreaterThan(0);
+    for (const study of CASE_STUDIES) {
+      expect(() => CaseStudySchema.parse(study)).not.toThrow();
+    }
+  });
+});
+
+describe('LoopStatsSchema', () => {
+  it('Given a complete loop stats record, When it is parsed, Then it is accepted unchanged', () => {
+    const stats = { guardrailCount: 7, lessonCount: 20, appCount: 6 };
+    expect(LoopStatsSchema.parse(stats)).toEqual(stats);
+  });
+
+  it('Given a negative count, When it is parsed, Then the contract rejects it', () => {
+    expect(() => LoopStatsSchema.parse({ guardrailCount: -1, lessonCount: 20, appCount: 6 })).toThrow();
   });
 });
 

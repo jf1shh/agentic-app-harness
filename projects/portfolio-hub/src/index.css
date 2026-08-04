@@ -242,6 +242,31 @@ details[open] > .skill-card-summary .skill-card-chevron {
   background: var(--accent-emerald);
 }
 
+/* Case study definition list (root cause / fix / enforcement mechanism) */
+.case-study-body {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.case-study-body dt {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-indigo);
+}
+
+.case-study-body dd {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .project-card-interactive,
   .skill-card-chevron,

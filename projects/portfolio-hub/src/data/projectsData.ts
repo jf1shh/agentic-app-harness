@@ -41,6 +41,15 @@ const RAW_PROJECTS: ProjectItem[] = [
   );
 }`,
     },
+    mlArchitecture: {
+      approach: 'Hybrid BM25 lexical + cosine-similarity vector retrieval, 100% client-side and fully offline — no inference server, no network call',
+      pipeline: [
+        { label: 'Clause-preserving chunker splits documents into retrievable units without cutting a legal clause mid-sentence', sourcePath: 'projects/legal-financial-rag/src/lib/rag/chunker.ts' },
+        { label: 'BM25 (k1=1.5, b=0.75) blended with cosine similarity over local embeddings via a tunable hybridWeight', sourcePath: 'projects/legal-financial-rag/src/lib/rag/vectorEngine.ts' },
+        { label: 'Query processor resolves top-K citations, synthesizes a grounded answer, and stamps the result with a SHA-256 audit hash', sourcePath: 'projects/legal-financial-rag/src/lib/rag/queryProcessor.ts' },
+      ],
+      evalMethod: 'promptfoo retrieval-precision eval against a golden query set — gates CI on precision@K ≥ 90% and MRR ≥ 0.75, deterministic and LLM-free',
+    },
   },
   {
     id: 'mood-diner',
@@ -172,6 +181,14 @@ export function recommendRecipes(inventory: InventoryItem[], recipes: RecipeEntr
     .filter((r) => r.matchCount > 0)
     .sort((a, b) => b.matchCount - a.matchCount || a.title.localeCompare(b.title));
 }`,
+    },
+    mlArchitecture: {
+      approach: 'Build-time local sentence-embedding index over the recipe corpus using a real transformer model, no inference server in the loop',
+      pipeline: [
+        { label: 'Corpus embedded offline with Xenova/all-MiniLM-L6-v2 via @huggingface/transformers, vectors L2-normalized', sourcePath: 'projects/smart-recipe-app/embed-corpus.mjs' },
+        { label: 'Precomputed index shipped as a static asset and re-derived any time the corpus changes (npm run embed)', sourcePath: 'projects/smart-recipe-app/src/lib/rag/corpus.json' },
+        { label: 'Shipped index and corpus are both validated against a Zod contract at test time so the artifact can never silently drift from its source', sourcePath: 'projects/smart-recipe-app/src/lib/rag/schemas.ts' },
+      ],
     },
   },
   {
