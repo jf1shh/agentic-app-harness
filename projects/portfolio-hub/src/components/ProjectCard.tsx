@@ -11,9 +11,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
   return (
     <div className="glass-panel project-card-interactive" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Category & Badges Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginBottom: '0.75rem' }}>
         <span className="badge badge-indigo">{project.category}</span>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {project.pwaReady && <span className="badge badge-emerald" title="Installable PWA Web App">PWA</span>}
           {project.capacitorAndroid && <span className="badge badge-amber" title="Native Android Play Store Container">Android APK</span>}
           {project.monetized && <span className="badge badge-indigo" title="Freemium Subscription Enabled"><DollarSign size={12} /> Monetized</span>}

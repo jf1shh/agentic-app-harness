@@ -113,3 +113,18 @@ body {
   color: var(--text);
   margin-bottom: 8px;
 }
+
+/* On narrow viewports the centered <h1> is wide enough to run underneath the
+   absolutely-positioned theme-toggle button in the header's top-right
+   corner. Reserve vertical space above the title so the two stack instead
+   of overlapping, rather than fighting the title's horizontal centering. */
+@media (max-width: 480px) {
+  .page-header {
+    padding-top: 44px;
+  }
+
+  .theme-toggle-btn {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+  }
+}

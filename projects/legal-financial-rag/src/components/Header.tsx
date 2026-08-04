@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
         <div className="role-selector-group">
           <label htmlFor="user-role-select" style={{ fontWeight: 500 }}>
             Counsel Role:

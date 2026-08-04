@@ -93,6 +93,11 @@ body {
 
 /* Interactive project cards */
 .project-card-interactive {
+  /* A CSS grid item's default min-width is `auto`, which lets an unwrapped
+     child (the code snippet's <pre>, white-space: pre) dictate the card's —
+     and therefore the whole grid track's — minimum width, overflowing the
+     page instead of scrolling inside the snippet's own overflow-x wrapper. */
+  min-width: 0;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 

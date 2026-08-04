@@ -71,14 +71,14 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
 
   return (
     <div className="view-card" id="query-workbench-view">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
         <div>
           <h2 className="section-title">Natural Language Legal Financial RAG Workbench</h2>
           <p className="section-desc">
             Execute high-precision grounded vector & BM25 queries across private financial filings and legal contracts.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Privilege Filter:</span>
           {allPrivileges.map((lvl) => (
             <button
@@ -121,7 +121,7 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
 
       {/* Query Controls Grid */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
           <input
             id="rag-query-input"
             type="text"
@@ -175,17 +175,18 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
-            gap: '2rem',
+            gap: '1rem',
             background: 'var(--bg-sidebar)',
             padding: '1rem',
             borderRadius: 'var(--radius-md)',
             border: '1px solid var(--border-color)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', flex: '1 1 260px' }}>
             <Sliders size={16} color="var(--accent-amber)" aria-hidden="true" />
-            <label htmlFor="hybrid-slider" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', minWidth: '160px' }}>
+            <label htmlFor="hybrid-slider" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Hybrid Weight (Vector vs BM25):
             </label>
             <input
@@ -196,15 +197,15 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
               step="0.1"
               value={hybridWeight}
               onChange={(e) => setHybridWeight(parseFloat(e.target.value))}
-              style={{ flex: 1, cursor: 'pointer' }}
+              style={{ flex: '1 1 120px', cursor: 'pointer' }}
               aria-label="Hybrid Search Weight Slider"
             />
-            <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)', minWidth: '90px' }}>
+            <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>
               {Math.round((1 - hybridWeight) * 100)}% Vec / {Math.round(hybridWeight * 100)}% BM25
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
             <label htmlFor="select-top-k" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Top K Citations:
             </label>
@@ -234,12 +235,12 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
               marginBottom: '1.5rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <CheckCircle size={20} color="#34d399" aria-hidden="true" />
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Grounded Legal Synthesis Answer</h3>
               </div>
-              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <Clock size={14} aria-hidden="true" /> {ragResponse.executionTimeMs} ms
                 </span>
@@ -282,8 +283,8 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
                   padding: '1rem 1.25rem',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontWeight: 700, color: 'var(--accent-amber)', fontSize: '0.9rem' }}>
                       [{idx + 1}] {citation.documentTitle}
                     </span>

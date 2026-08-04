@@ -103,4 +103,29 @@ test.describe('LexiVault Financial RAG - Hardened BDD E2E & Accessibility Test S
 
     expect(accessibilityScanResults.violations).toEqual([]);
   });
+
+  test('Given a narrow phone viewport -> When the workbench loads and a query runs -> Then the page never scrolls sideways', async ({ page }) => {
+    // Three independent causes previously overflowed a 320-375px viewport:
+    // the un-wrapped privilege-filter/lock-vault header rows, the hybrid
+    // search hyperparameters row, and — least obviously — WatermarkOverlay's
+    // rotated (-25deg) full-bleed label, whose CSS-transformed *rendered*
+    // bounding box (not its layout box) contributed to scrollable overflow
+    // despite being nearly invisible at opacity 0.04.
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+
+    let overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, 'overflow before running a query').toBeLessThanOrEqual(1);
+
+    // Then after the citations/results panel renders too
+    await page.locator('#chip-prompt-0').click();
+    await expect(page.locator('#rag-response-container')).toBeVisible({ timeout: 10000 });
+
+    overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, 'overflow after a query with citations rendered').toBeLessThanOrEqual(1);
+  });
 });
