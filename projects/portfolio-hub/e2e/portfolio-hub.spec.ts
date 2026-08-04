@@ -26,6 +26,25 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
     await expect(page.locator('h2', { hasText: 'Architecture Specification' })).toBeVisible();
   });
 
+  test('Given a narrow phone viewport, When every card and skill is expanded, Then the page never scrolls sideways', async ({ page }) => {
+    // The category filter tabs, a card's badge header, and the code-snippet
+    // <pre> block each independently overflowed a 320-375px viewport before
+    // gaining flexWrap / min-width: 0 — expand everything and measure at the
+    // narrowest viewport this app is expected to run at.
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+    const summaries = page.locator('details summary');
+    const count = await summaries.count();
+    for (let i = 0; i < count; i++) {
+      await summaries.nth(i).click();
+    }
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
   test('Given a project card on Portfolio Hub, When expanding its code snippet, Then reveal real source code attributed to a path inside that app', async ({ page }) => {
     // Given visitor on Portfolio Hub page
     await page.goto('/');

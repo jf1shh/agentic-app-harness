@@ -101,7 +101,7 @@ export const App: React.FC = () => {
       </section>
 
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '1.5rem' }}>
         {categories.map((cat) => (
           <button
             key={cat}

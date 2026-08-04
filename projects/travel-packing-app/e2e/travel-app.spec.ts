@@ -14,6 +14,28 @@ test.describe('Travel Packing App V3', () => {
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 
+  test('Given a narrow phone viewport, When the trip-details form loads, Then the theme-toggle button does not overlap the title', async ({ page }) => {
+    // The theme-toggle button is absolutely positioned in the header's
+    // top-right corner over a centered <h1>; below ~480px the title ran
+    // underneath it because the header reserved no vertical space above it.
+    // This is a visual collision, not a page-width overflow, so it has to be
+    // asserted as a bounding-box check rather than a scrollWidth check.
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+
+    const title = page.locator('h1:has-text("PackRight V4")');
+    const toggle = page.getByRole('button', { name: /Dark Mode|Light Mode/ });
+    await expect(title).toBeVisible();
+    await expect(toggle).toBeVisible();
+
+    const titleBox = await title.boundingBox();
+    const toggleBox = await toggle.boundingBox();
+    if (!titleBox || !toggleBox) throw new Error('expected both elements to have a layout box');
+
+    const verticallyOverlaps = titleBox.y < toggleBox.y + toggleBox.height;
+    expect(verticallyOverlaps).toBe(false);
+  });
+
   test('Given the default wardrobe, When the user runs Analyze, Then a wearability report and dead weight are shown', async ({ page }) => {
     // Given the app is loaded with its default wardrobe source
     await page.goto('/');

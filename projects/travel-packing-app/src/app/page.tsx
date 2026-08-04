@@ -113,10 +113,10 @@ export default function Home() {
 
   return (
     <main className="container" style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
-      <header style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
-        <button 
-          onClick={toggleTheme} 
-          className="btn-secondary" 
+      <header className="page-header" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
+        <button
+          onClick={toggleTheme}
+          className="btn-secondary theme-toggle-btn"
           style={{ position: 'absolute', right: 0, top: 0, fontSize: '0.9rem', padding: '6px 12px' }}
         >
           {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}

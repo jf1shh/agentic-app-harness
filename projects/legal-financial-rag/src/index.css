@@ -65,6 +65,12 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* WatermarkOverlay is an absolutely-positioned, rotated (-25deg) full-bleed
+     label. A CSS transform's *rendered* bounding box (not its layout box) is
+     what contributes to scrollable overflow, so the rotated text — wider
+     than the viewport on any narrow screen — silently made the whole page
+     horizontally scrollable despite being ~invisible at opacity 0.04. */
+  overflow-x: hidden;
 }
 
 /* Header Navbar */
