@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Upload AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: legal-financial-rag-release-aab
           path: projects/legal-financial-rag/android/app/build/outputs/bundle/release/*.aab
