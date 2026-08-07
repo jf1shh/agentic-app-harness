@@ -16,7 +16,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3009',
+    baseURL: 'http://localhost:3010',
     trace: 'on-first-retry',
   },
   projects: [
@@ -28,8 +28,8 @@ export default defineConfig({
   webServer: [
     // Dev server — used by the feature/a11y specs.
     {
-      command: 'npm run dev -- --port 3009',
-      url: 'http://localhost:3009',
+      command: 'npm run dev -- --port 3010',
+      url: 'http://localhost:3010',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
     },

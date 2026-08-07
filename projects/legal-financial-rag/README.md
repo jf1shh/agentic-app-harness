@@ -1,6 +1,6 @@
 # LexiVault Financial RAG (`legal-financial-rag`)
 
-A 100% client-side, zero-telemetry financial RAG (Retrieval-Augmented Generation) and legal compliance engine for lawyers, law firms, corporate counsel, and financial auditors. Documents stay on the device; the work happens in WebCrypto and IndexedDB. Ships as a static web app and as a Capacitor Android WebView wrapper.
+A 100% client-side, zero-exfiltration financial RAG (Retrieval-Augmented Generation) and legal compliance engine for lawyers, law firms, corporate counsel, and financial auditors. Documents, queries, and audit logs never leave the device — the CSP's `connect-src 'self' data: blob:` makes that a browser-enforced guarantee, not just a design intent. The work happens in WebCrypto and IndexedDB. Ships as a static web app and as a Capacitor Android WebView wrapper. (The UI does load Google Fonts over the network for typography — no document or query content is in that request, but it means the page isn't fully offline-first on a fresh visit; see `index.html`.)
 
 > Spec: [`specs/legal-financial-rag-spec.md`](../../specs/legal-financial-rag-spec.md) — the single source of truth.
 >
@@ -74,7 +74,7 @@ Vite + React 18 + TypeScript + Zod 3, vanilla CSS obsidian dark palette + glassm
 
 ## Privacy and Android release signing
 
-Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.** This app persists nothing to disk at all (no `localStorage`, no `sessionStorage`, no IndexedDB writes in production code, despite the "WebCrypto and IndexedDB" framing above describing the app's architecture in general terms) — every document, query, and audit-log entry lives only in React state for the session and is gone on reload.
+Privacy policy at `public/privacy.html` — published at the Pages URL once built. This app persists nothing to disk at all (no `localStorage`, no `sessionStorage`, no IndexedDB writes in production code, despite the "WebCrypto and IndexedDB" framing above describing the app's architecture in general terms) — every document, query, and audit-log entry lives only in React state for the session and is gone on reload.
 
 Play only accepts an App Bundle signed with an upload key. `android/app/build.gradle` reads credentials from environment first, then from a git-ignored `android/keystore.properties`. **Neither the keystore nor its passwords are ever committed** — `*.jks`, `*.keystore`, and `keystore.properties` are in `android/.gitignore`.
 

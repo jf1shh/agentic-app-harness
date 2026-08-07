@@ -12,6 +12,7 @@ import { chunkDocument } from './lib/rag/chunker';
 import { createChainedAuditEntry } from './lib/security/hashChain';
 import { useAutoLock } from './lib/hooks/useAutoLock';
 import { wipeSensitiveState } from './lib/security/memoryZeroizer';
+import { VaultPassphraseRecord, registerVaultPassphrase, verifyVaultPassphrase } from './lib/security/vaultAuth';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'query' | 'documents' | 'redaction' | 'audit'>('query');
@@ -29,6 +30,10 @@ export const App: React.FC = () => {
   const [lastResponse, setLastResponse] = useState<RAGResponse | null>(null);
 
   const [isLocked, setIsLocked] = useState(false);
+  // Set the first time the vault is unlocked; every unlock after that must
+  // reproduce this same passphrase, or VaultLockModal rejects it. Session-only
+  // by design — it resets on reload along with everything else in state.
+  const [vaultPassphraseRecord, setVaultPassphraseRecord] = useState<VaultPassphraseRecord | null>(null);
 
   // Inactivity Auto-Lock (5 Minutes)
   useAutoLock(isLocked, () => {
@@ -72,6 +77,15 @@ export const App: React.FC = () => {
       details: 'Vault auto-locked due to inactivity / manual trigger. In-memory keys zeroized.',
     });
     setAuditLogs((prev) => [lockLog, ...prev]);
+  };
+
+  const handleAttemptUnlock = async (passphrase: string): Promise<CryptoKey | null> => {
+    if (!vaultPassphraseRecord) {
+      const record = await registerVaultPassphrase(passphrase);
+      setVaultPassphraseRecord(record);
+      return verifyVaultPassphrase(passphrase, record);
+    }
+    return verifyVaultPassphrase(passphrase, vaultPassphraseRecord);
   };
 
   const handleUnlockSuccess = async (_key: CryptoKey, _passphrase: string) => {
@@ -165,7 +179,12 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <VaultLockModal isLocked={isLocked} onUnlockSuccess={handleUnlockSuccess} />
+      <VaultLockModal
+        isLocked={isLocked}
+        isFirstUnlock={vaultPassphraseRecord === null}
+        onUnlockSuccess={handleUnlockSuccess}
+        onAttemptUnlock={handleAttemptUnlock}
+      />
     </div>
   );
 };

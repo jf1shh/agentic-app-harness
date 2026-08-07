@@ -2,6 +2,12 @@
   "name": "agentic-app-harness",
   "private": true,
   "description": "Monorepo root — hoists shared dependencies for the apps under projects/*. Each app keeps its own package.json and version ranges; this file adds no dependencies of its own.",
+  "author": "Jared Fisher <xjaredfisher@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jf1shh/agentic-app-harness.git"
+  },
   "workspaces": [
     "projects/*"
   ]

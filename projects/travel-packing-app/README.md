@@ -83,7 +83,7 @@ Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast),
 ## Persistence and privacy
 
 - Storage: IndexedDB (`src/services/db.ts`) for wardrobe photos and packing/trip data; `localStorage` for the theme choice and checklist state.
-- Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.**
+- Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 - The only remote calls are to `nominatim.openstreetmap.org` and `geocoding-api.open-meteo.com`, for the destination text and dates you enter — no wardrobe photos or packing data ever leave the device.
 
 ## Android release signing

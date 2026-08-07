@@ -41,11 +41,36 @@ test.describe('LexiVault Financial RAG - Hardened BDD E2E & Accessibility Test S
     // Assert Vault Lock Modal appears
     await expect(page.locator('#vault-lock-backdrop')).toBeVisible();
 
-    // Unlock with Passphrase
+    // First unlock of the session sets the Vault Passphrase
     await page.fill('#input-vault-passphrase', 'SecretCounselPIN2026');
     await page.click('#btn-unlock-vault');
 
     // Modal should disappear
+    await expect(page.locator('#vault-lock-backdrop')).not.toBeVisible();
+  });
+
+  test('Given a Vault Passphrase already set -> When re-locking and entering the wrong passphrase -> Then unlock is rejected, and the correct passphrase still unlocks', async ({ page }) => {
+    await page.goto('/');
+
+    // Establish the Vault Passphrase on the first lock/unlock of the session
+    await page.click('#btn-lock-vault-header');
+    await page.fill('#input-vault-passphrase', 'SecretCounselPIN2026');
+    await page.click('#btn-unlock-vault');
+    await expect(page.locator('#vault-lock-backdrop')).not.toBeVisible();
+
+    // Lock again and try an incorrect passphrase
+    await page.click('#btn-lock-vault-header');
+    await expect(page.locator('#vault-lock-backdrop')).toBeVisible();
+    await page.fill('#input-vault-passphrase', 'AnIncorrectGuess!');
+    await page.click('#btn-unlock-vault');
+
+    // Rejected: modal stays open with an error, vault remains locked
+    await expect(page.locator('#vault-lock-backdrop')).toBeVisible();
+    await expect(page.locator('#vault-lock-backdrop')).toContainText('Incorrect passphrase');
+
+    // The correct passphrase still unlocks it
+    await page.fill('#input-vault-passphrase', 'SecretCounselPIN2026');
+    await page.click('#btn-unlock-vault');
     await expect(page.locator('#vault-lock-backdrop')).not.toBeVisible();
   });
 

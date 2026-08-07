@@ -2,6 +2,13 @@
   "name": "smart-recipe-app",
   "version": "0.1.0",
   "private": true,
+  "author": "Jared Fisher <xjaredfisher@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jf1shh/agentic-app-harness.git",
+    "directory": "projects/smart-recipe-app"
+  },
   "scripts": {
     "dev": "next dev",
     "clean": "node -e \"const fs=require('fs'); ['dist','.next','.next-prod','.next-capacitor','playwright-report','test-results','tsconfig.tsbuildinfo','.vite'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}})\"",

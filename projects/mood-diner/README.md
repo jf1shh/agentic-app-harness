@@ -75,7 +75,7 @@ capacitor.config.ts
 ## Persistence and privacy
 
 - Storage keys: `mood_diner_reservations`, `mood_diner_custom_restaurants`, and plans/credit counters.
-- Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing** (`projects/mood-diner/README.md`).
+- Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 - The privacy audit confirmed: **no `fetch()` anywhere in `src/`**, no analytics SDK, no accounts, no payments. The only genuine third-party request is the Unsplash image CDN for restaurant photos.
 
 ## Android release signing
