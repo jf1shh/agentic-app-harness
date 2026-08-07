@@ -1,10 +1,17 @@
 {
   "name": "legal-financial-rag",
   "private": true,
+  "author": "Jared Fisher <xjaredfisher@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jf1shh/agentic-app-harness.git",
+    "directory": "projects/legal-financial-rag"
+  },
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3010",
     "clean": "node -e \"const fs=require('fs'); ['dist','.next','playwright-report','test-results','tsconfig.tsbuildinfo','.vite'].forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}})\"",
     "build": "npm run clean && tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

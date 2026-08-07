@@ -1,6 +1,13 @@
 {
   "name": "mood-diner",
   "private": true,
+  "author": "Jared Fisher <xjaredfisher@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jf1shh/agentic-app-harness.git",
+    "directory": "projects/mood-diner"
+  },
   "version": "1.0.0",
   "type": "module",
   "scripts": {

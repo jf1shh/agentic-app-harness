@@ -23,10 +23,10 @@ It hosts six real, deployed applications and holds every one of them to the same
 
 - `projects/`: npm workspace (`projects/*` in the root `package.json`) containing all web & mobile applications. Shared devDependencies (`react`, `typescript`, `vitest`, `@playwright/test`, `eslint`, …) dedupe into a single root `node_modules` via one root `package-lock.json`; each app keeps its own `package.json` and independent version ranges — run `npm install` once at the repo root rather than per app.
   - `projects/portfolio-hub`: Master Showcase Web Portal (Port 3009).
-  - `projects/mood-diner`: Smart Restaurant Recommender & Table Booking Engine (Port 5173).
+  - `projects/mood-diner`: Smart Restaurant Recommender & Table Booking Engine (Port 5178).
   - `projects/travel-packing-app`: Smart Wardrobe Packing Assistant (Port 3000).
-  - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3001).
-  - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3009).
+  - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3005).
+  - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3010).
   - `projects/elder-care-planner`: Offline-first elder care cost, runway and family cost-sharing planner, with cited cost data, per-figure confidence tags and a "how was this calculated?" derivation behind every headline number (Port 3011).
 - `specs/`: Markdown specifications for every application. These are the **single source of truth**.
 - `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).

@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { Lock, KeyRound, ShieldAlert } from 'lucide-react';
-import { deriveKeyFromPassphrase } from '../lib/security/encryption';
 
 interface VaultLockModalProps {
   isLocked: boolean;
+  /** True until a passphrase has ever been registered this session — the modal is asking the user to set one, not to prove they already know it. */
+  isFirstUnlock: boolean;
   onUnlockSuccess: (key: CryptoKey, passphrase: string) => void;
+  /** Returns false when the passphrase doesn't match the one registered earlier this session. */
+  onAttemptUnlock: (passphrase: string) => Promise<CryptoKey | null>;
 }
 
 export const VaultLockModal: React.FC<VaultLockModalProps> = ({
   isLocked,
+  isFirstUnlock,
   onUnlockSuccess,
+  onAttemptUnlock,
 }) => {
   const [passphrase, setPassphrase] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -28,8 +33,11 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
     setErrorMsg('');
 
     try {
-      // Derive 256-bit AES-GCM Key using PBKDF2 with 100,000 iterations
-      const { key } = await deriveKeyFromPassphrase(passphrase);
+      const key = await onAttemptUnlock(passphrase);
+      if (!key) {
+        setErrorMsg('Incorrect passphrase. Check your Vault Passphrase / PIN and try again.');
+        return;
+      }
       onUnlockSuccess(key, passphrase);
       setPassphrase('');
     } catch (err) {
@@ -91,7 +99,9 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
           LexiVault is Locked
         </h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.75rem' }}>
-          Workstation auto-locked due to inactivity. Enter your Vault Passphrase to derive your AES-256 decryption key.
+          {isFirstUnlock
+            ? 'Workstation auto-locked due to inactivity. Set a Vault Passphrase now — you will need to enter this exact passphrase to unlock for the rest of this session.'
+            : 'Workstation auto-locked due to inactivity. Enter your Vault Passphrase to derive your AES-256 decryption key.'}
         </p>
 
         <form onSubmit={handleUnlock} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -99,7 +109,7 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
             <input
               id="input-vault-passphrase"
               type="password"
-              placeholder="Vault Passphrase / PIN..."
+              placeholder={isFirstUnlock ? 'Set Vault Passphrase / PIN...' : 'Vault Passphrase / PIN...'}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               style={{
@@ -140,7 +150,8 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
             disabled={isUnlocking}
             style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
           >
-            <KeyRound size={18} aria-hidden="true" /> {isUnlocking ? 'Deriving PBKDF2 Key...' : 'Unlock Legal Vault'}
+            <KeyRound size={18} aria-hidden="true" />{' '}
+            {isUnlocking ? 'Deriving PBKDF2 Key...' : isFirstUnlock ? 'Set Vault Passphrase' : 'Unlock Legal Vault'}
           </button>
         </form>
       </div>

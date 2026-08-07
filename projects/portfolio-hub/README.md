@@ -16,6 +16,8 @@ The central web portal for the **Agentic App Harness** monorepo — a master cat
 - **6 category filter tabs** (`All`, `Legal`, `Dining`, `Utility`, `Kitchen`, `Family Finance`) driven by `useState` in `App.tsx`.
 - **Inline spec viewer** — clicking the "View Spec" action on a card opens `SpecModal`, which renders the app's markdown specification (`specs/<id>-spec.md`) inside the app. No navigation away.
 - **Animated hero metrics** with monorepo-wide totals (active apps count, cumulative unit + E2E test count, accessibility rate, Capacitor Android readiness) — numbers count up from 0 via `useCountUp`, computed live from `PROJECTS_DATA` rather than hand-typed, and jump straight to their final value under `prefers-reduced-motion`.
+- **Case Studies** (`CaseStudySection`, sourced from `src/data/caseStudiesData.ts`) — four real incidents from this repo's history, each citing a real guardrail id or script rather than a generic claim; `caseStudiesData.test.ts` verifies each citation against `scripts/harness-status.mjs` and the filesystem.
+- **Loop Dashboard** stats panel (`src/data/loopStats.generated.ts`) generated from `.agents/AGENTS.md` and `scripts/harness-status.mjs` rather than hand-typed — `loopStats.generated.test.ts` recomputes it and fails the build on drift.
 - **GitHub repo link** in the header so a reader can jump directly to source.
 
 ## Apps surfaced in the catalog
@@ -34,21 +36,24 @@ The catalog data is contract-first — `ProjectItemSchema` (in `src/schemas.ts`)
 
 ```
 src/
-  App.tsx                  # hero (animated stats), filter tabs, project grid, SkillsGrid, SpecModal mount
+  App.tsx                        # hero (animated stats), filter tabs, project grid, SkillsGrid, CaseStudySection, SpecModal mount
   components/
-    ProjectCard.tsx        # one card per project; emits onOpenSpec callback; code snippet disclosure
-    SkillsGrid.tsx          # expandable Engineering Skills showcase, sourced from skillsData.ts
-    SpecModal.tsx           # markdown spec viewer (loads from /specs/*.md)
+    CaseStudySection.tsx         # four real incidents, each citing a real guardrail id / script
+    ProjectCard.tsx              # one card per project; emits onOpenSpec callback; code snippet disclosure
+    SkillsGrid.tsx               # expandable Engineering Skills showcase, sourced from skillsData.ts
+    SpecModal.tsx                # markdown spec viewer (loads from /specs/*.md)
   data/
-    projectsData.ts        # RAW_PROJECTS array (incl. per-app code snippet), Zod-validated on export
-    skillsData.ts           # SKILLS_DATA array, evidence derived live from PROJECTS_DATA
+    caseStudiesData.ts           # CASE_STUDIES array (+ caseStudiesData.test.ts verifying each citation)
+    loopStats.generated.ts       # Loop Dashboard stats, generated from AGENTS.md + harness-status.mjs (+ .test.ts drift check)
+    projectsData.ts              # RAW_PROJECTS array (incl. per-app code snippet), Zod-validated on export
+    skillsData.ts                # SKILLS_DATA array, evidence derived live from PROJECTS_DATA
   hooks/
-    useCountUp.ts           # animated 0→target number, skipped under prefers-reduced-motion
-  schemas.ts               # ProjectItemSchema / SkillSchema + inferred types
+    useCountUp.ts                # animated 0→target number, skipped under prefers-reduced-motion (+ .test.ts)
+  schemas.ts                     # ProjectItemSchema / SkillSchema + inferred types (+ schemas.test.ts)
   utils/
-    countUp.ts               # pure count-up progress math (unit-tested in isolation)
+    countUp.ts                   # pure count-up progress math (+ countUp.test.ts, unit-tested in isolation)
     __tests__/
-      portfolioData.test.ts # Vitest coverage of the data file
+      portfolioData.test.ts      # Vitest coverage of the data file
 public/favicon.svg
 ```
 

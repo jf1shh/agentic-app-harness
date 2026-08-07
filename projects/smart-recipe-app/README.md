@@ -87,7 +87,7 @@ Next.js (App Router) + React 19 + TypeScript, vanilla CSS (glassmorphism, micro-
 
 ## Privacy and Android release signing
 
-Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.**
+Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 
 Play only accepts an App Bundle signed with an upload key. `android/app/build.gradle` reads credentials from environment first, then from a git-ignored `android/keystore.properties`. **Neither the keystore nor its passwords are ever committed** — `*.jks`, `*.keystore`, and `keystore.properties` are in `android/.gitignore`.
 

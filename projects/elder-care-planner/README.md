@@ -255,7 +255,7 @@ A confirmed **"Forget everything on this device"** control clears every key the 
 empties the IndexedDB photo store** — a separate store needs a separate erase, or the promise is
 broken on exactly the shared computer it was made for. Nothing else leaves the browser.
 
-Privacy policy at `public/privacy.html` — published at the Pages URL once built. **It still contains `[DEVELOPER NAME]` and `[CONTACT EMAIL]` placeholders that must be filled in before publishing.**
+Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 
 ## Android release signing
 
