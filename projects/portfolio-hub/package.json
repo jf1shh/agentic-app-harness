@@ -39,7 +39,7 @@
     "@vitejs/plugin-react": "^6.0.4",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.5",
+    "eslint-plugin-react-refresh": "^0.5.3",
     "eslint-plugin-security": "^4.0.1",
     "jsdom": "^29.1.1",
     "typescript": "^5.3.3",
