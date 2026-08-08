@@ -6,7 +6,7 @@ export const CaseStudySection: React.FC = () => {
   return (
     <section aria-labelledby="case-studies-heading" style={{ marginBottom: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-        <Bug size={20} color="var(--accent-primary)" />
+        <Bug size={20} color="var(--text-muted)" />
         <h2 id="case-studies-heading" className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>
           Case Studies: Real Bugs, Real Fixes, Real Guardrails
         </h2>
