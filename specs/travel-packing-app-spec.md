@@ -55,11 +55,27 @@ interface DayItinerary {
 - **Color Palette:** Clean, vibrant travel theme. Primary: #0369a1 (Dark Blue for high a11y contrast), Secondary: #f59e0b (Amber).
 - **Typography:** Inter (Google Fonts).
 - **Micro-interactions:** Smooth checkboxes, slide-in animations for reports.
+- **Light/dark toggle — decided, not spread:** this is the only app in the monorepo with a live
+  light/dark theme toggle (`data-theme`, persisted to `localStorage`, defaulting to
+  `prefers-color-scheme`). Per the per-app-domain-appropriate design philosophy this repo already
+  commits to (see `elder-care-planner` spec §5 and `mood-diner` spec §4.1), the toggle stays contained
+  to this app rather than becoming a monorepo-wide pattern — a packing/travel planner is
+  light-appropriate content in either theme, unlike `elder-care-planner`'s deliberately-fixed calm
+  palette or `mood-diner`'s fixed dark identity, and there's no user need driving the other apps toward
+  a toggle they don't currently have. This closes the open question, it isn't a default to revisit per
+  app.
 
 ## 6. Testing & Compliance (Security, Privacy, Optimization)
 - **Unit Tests:** Core Logic Engine must have Vitest coverage proving multi-role and consecutive repeat rules.
 - **Security & Privacy:** Ensure no PII is logged. Audit dependencies.
 - **Accessibility (A11y):** Playwright + Axe-core must pass without violations.
+- **E2E network determinism:** `handleAnalyze()` calls the real Open-Meteo geocoding/forecast APIs (with
+  a Nominatim fallback). The main "runs Analyze" E2E scenario stubs both endpoints via `page.route()`
+  with fixture data — per the "live third-party API" lesson in `.agents/AGENTS.md` §6, the deterministic
+  gate must not depend on a third party's uptime or a network-restricted environment's ability to reach
+  it. A separate, clearly-labelled opt-in spec (`e2e/live-weather-integration.spec.ts`, skipped unless
+  `RUN_LIVE_E2E=1`) covers the real, un-stubbed integration as an independent signal that can fail
+  without blocking a merge.
 
 ## 7. Acceptance Criteria (V4)
 1. The engine successfully filters out combinations based on exclusion tags, color logic, and material heat.
