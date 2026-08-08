@@ -6,12 +6,12 @@ export const CaseStudySection: React.FC = () => {
   return (
     <section aria-labelledby="case-studies-heading" style={{ marginBottom: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-        <Bug size={20} color="#f59e0b" />
-        <h2 id="case-studies-heading" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff' }}>
+        <Bug size={20} color="var(--accent-primary)" />
+        <h2 id="case-studies-heading" className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>
           Case Studies: Real Bugs, Real Fixes, Real Guardrails
         </h2>
       </div>
-      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '760px' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '760px' }}>
         Incidents from this monorepo's own history — what broke, why, how it was fixed, and the exact
         mechanism that now blocks a recurrence. Expand a card for the enforcement path.
       </p>

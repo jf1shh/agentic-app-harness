@@ -6,12 +6,12 @@ export const SkillsGrid: React.FC = () => {
   return (
     <section aria-labelledby="skills-heading" style={{ marginBottom: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-        <Sparkles size={20} color="#f59e0b" />
-        <h2 id="skills-heading" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff' }}>
+        <Sparkles size={20} color="var(--accent-primary)" />
+        <h2 id="skills-heading" className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>
           Engineering Skills Demonstrated
         </h2>
       </div>
-      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '760px' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '760px' }}>
         Every claim below is backed by something real in this repository, not a résumé bullet — expand a card for the proof.
       </p>
 
