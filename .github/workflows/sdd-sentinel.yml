@@ -62,6 +62,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-guardrail-integrity.test.mjs
 
+      - name: Harness History Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/harness-history.test.mjs
+
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
       # naming a file in the blast-radius table counts as handling it — "no
@@ -88,6 +92,15 @@ jobs:
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh
         run: node ./scripts/harness-learn.mjs
+
+      # Read-only and non-blocking: prints promotion candidates / never-fired
+      # guardrails from harness-history.json into the PR's CI log for
+      # visibility. Recording a new snapshot (--record) is a separate, opt-in
+      # step a human or agent runs and commits deliberately — see
+      # .agents/AGENTS.md §8, "Making Learn data-driven".
+      - name: Harness History Report (informational — promotion candidates / never-fired guardrails)
+        shell: pwsh
+        run: node ./scripts/harness-history.mjs
 
       - name: Harness Verify Gate (blocks on guardrail regressions & missing specs)
         shell: pwsh

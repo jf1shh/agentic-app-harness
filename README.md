@@ -29,7 +29,7 @@ It hosts six real, deployed applications and holds every one of them to the same
   - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3010).
   - `projects/elder-care-planner`: Offline-first elder care cost, runway and family cost-sharing planner, with cited cost data, per-figure confidence tags and a "how was this calculated?" derivation behind every headline number (Port 3011).
 - `specs/`: Markdown specifications for every application. These are the **single source of truth**.
-- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).
+- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `harness-history.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).
 - `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).
 - `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo.
 
@@ -71,3 +71,10 @@ LEARN      node scripts/harness-learn.mjs         → CI fails unless new guardr
 | **Learn** | `harness.ps1 learn` | Enforces a closed **Lesson ⇄ Guardrail ⇄ Self-test** loop: a guardrail can't exist without a documented lesson, and a lesson can't claim enforcement without a working, tested guardrail — so the harness provably gets **stricter over time**. |
 
 All four stages run in CI via [`.github/workflows/sdd-sentinel.yml`](.github/workflows/sdd-sentinel.yml) on every pull request. The loop is self-documented for agents in [`.agents/AGENTS.md`](.agents/AGENTS.md) §8, including the protocol for adding a new learned lesson.
+
+**Making Learn data-driven**: `harness.ps1 history` (`scripts/harness-history.mjs`) records each
+commit's per-rule finding counts into the git-tracked `harness-history.json`, then reports which
+non-blocking sensors have gone quiet for long enough to be a **promotion candidate** and which
+guardrails have **never once fired** — the same judgment call that promoted `unit-test-coverage`
+in §8, now surfaced by a command instead of a memory. It decides nothing on its own; `isBlocking()`
+still only changes by a human-reviewed PR.

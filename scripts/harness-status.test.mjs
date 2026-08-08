@@ -5,7 +5,7 @@
 // so the thing that gates merges is itself gated. Zero dependencies; run with:
 //   node scripts/harness-status.test.mjs
 
-import { GUARDRAILS, senseMobileRelease, senseProductionBundleTest, senseUnitTests, isBlocking } from './harness-status.mjs';
+import { GUARDRAILS, senseApp, senseMobileRelease, senseProductionBundleTest, senseUnitTests, isBlocking, allRuleMeta } from './harness-status.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -398,6 +398,63 @@ describe('run', () => {
   if (!failures) console.log('✓ unit-test sensor (fires on untested logic, credits imported-from tests, scoped off UI, blocking)');
 } finally {
   rmSync(tmp3, { recursive: true, force: true });
+}
+
+// Rule-registry cross-check: harness-history.mjs trusts allRuleMeta() to know
+// every ruleId a finding can carry, so it can record a zero for a rule that
+// stayed quiet in a given run. This must run against a deliberately-bad
+// fixture, not the real repo tree — the repo is (at the time of writing)
+// fully clean, so a live-repo pass would produce zero findings and "pass"
+// without checking anything, the exact no-op-assertion shape guardrailed
+// above. senseApp's projPath/specPath overrides exist so this fixture never
+// touches the real projects/ or specs/ directories.
+{
+  const registry = allRuleMeta();
+  const tmp4 = mkdtempSync(join(tmpdir(), 'harness-rule-registry-'));
+  try {
+    const projPath = join(tmp4, 'proj');
+    mkdirSync(join(projPath, 'src'), { recursive: true });
+    mkdirSync(join(projPath, 'e2e'), { recursive: true });
+    // No README -> missing-readme. No zod import -> no-zod-schema. `any` ->
+    // the explicit-any guardrail. One e2e spec with no Given/When/Then ->
+    // e2e-bdd-noncompliant (not e2e-missing, since one exists).
+    writeFileSync(join(projPath, 'src', 'index.ts'), 'export const x = 1;\nconst y: any = 2;\n');
+    writeFileSync(join(projPath, 'e2e', 'app.spec.ts'), "test('does a thing', () => {});");
+    // A fabricated spec, outside specs/, with one unchecked item -> spec-drift.
+    const specPath = join(tmp4, 'fixture-app-spec.md');
+    writeFileSync(specPath, '# Fixture Spec\n\n- [ ] an unimplemented feature\n');
+
+    const findings = senseApp('fixture-app', projPath, specPath);
+    const ruleIds = findings.map((f) => f.ruleId);
+    for (const expected of ['missing-readme', 'no-zod-schema', 'e2e-bdd-noncompliant', 'spec-drift', 'guardrail:explicit-any']) {
+      if (!ruleIds.includes(expected)) {
+        console.error(`✗ rule-registry fixture: expected ruleId '${expected}' was not produced — the fixture or the sensor drifted`); failures++;
+      }
+    }
+    for (const f of findings) {
+      if (!f.ruleId) { console.error(`✗ rule-registry: finding '${f.id}' (type ${f.type}) carries no ruleId`); failures++; }
+      else if (!registry[f.ruleId]) {
+        console.error(`✗ rule-registry: ruleId '${f.ruleId}' (finding '${f.id}') is not in allRuleMeta() — add it to SENSOR_RULES in harness-status.mjs or history silently stops tracking it`);
+        failures++;
+      }
+    }
+
+    // missing-spec and e2e-missing are mutually exclusive with the fixture
+    // above (it has both a spec and an e2e spec), so each gets its own case.
+    if (!senseApp('fixture-app', projPath, null).some((f) => f.ruleId === 'missing-spec')) {
+      console.error('✗ rule-registry fixture: expected ruleId "missing-spec" when no spec is given'); failures++;
+    }
+    const noE2EDir = join(tmp4, 'proj-no-e2e');
+    mkdirSync(join(noE2EDir, 'src'), { recursive: true });
+    writeFileSync(join(noE2EDir, 'src', 'index.ts'), 'export const x = 1;\n');
+    if (!senseApp('fixture-app-2', noE2EDir, specPath).some((f) => f.ruleId === 'e2e-missing')) {
+      console.error('✗ rule-registry fixture: expected ruleId "e2e-missing" when no e2e specs exist'); failures++;
+    }
+
+    if (!failures) console.log('✓ rule registry (missing-spec/readme/zod/e2e/drift + a guardrail all resolve in allRuleMeta())');
+  } finally {
+    rmSync(tmp4, { recursive: true, force: true });
+  }
 }
 
 if (failures) {

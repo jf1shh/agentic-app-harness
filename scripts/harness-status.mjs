@@ -222,7 +222,7 @@ export function senseMobileRelease(app, projPath, workflowsDir,
   if (!hasNativeContainer(projPath)) return findings;
 
   const add = (id, severity, title, detail) => findings.push({
-    id: `${app}-mobile-${id}`, type: 'mobile-readiness', severity,
+    id: `${app}-mobile-${id}`, ruleId: `mobile-readiness:${id}`, type: 'mobile-readiness', severity,
     gate: 'manual-review', title, detail,
   });
 
@@ -349,6 +349,7 @@ export function senseProductionBundleTest(app, projPath) {
 
   findings.push({
     id: `${app}-no-production-bundle-test`,
+    ruleId: 'production-bundle-test-missing',
     type: 'test-coverage',
     severity: 'high',
     gate: 'manual-review',
@@ -430,7 +431,7 @@ export function senseUnitTests(app, projPath) {
   if (!existsSync(srcDir)) return findings;
 
   const add = (id, severity, title, detail, evidence) => findings.push({
-    id: `${app}-unit-${id}`, type: 'unit-test-coverage', severity,
+    id: `${app}-unit-${id}`, ruleId: `unit-test-coverage:${id}`, type: 'unit-test-coverage', severity,
     gate: 'validate-specs --strict', title, detail,
     ...(evidence?.length ? { evidence } : {}),
   });
@@ -556,22 +557,26 @@ function rel(p) { return relative(repoRoot, p).split('\\').join('/'); }
 // ---------------------------------------------------------------------------
 // Sensors — each returns zero or more findings for an app.
 // ---------------------------------------------------------------------------
-function senseApp(app) {
-  const projPath = join(projectsDir, app);
+// projPathOverride/specPathOverride exist for the self-test: senseApp's real
+// callers (collectStatus) always resolve both from the real repo tree, but
+// the rule-registry cross-check needs a fixture app that cannot collide with
+// (or write into) the actual projects/ or specs/ directories.
+function senseApp(app, projPathOverride, specPathOverride) {
+  const projPath = projPathOverride || join(projectsDir, app);
   const findings = [];
   const add = (f) => findings.push({ app, ...f });
 
   // 1. Spec presence (hard mandate).
-  const specPath = findSpec(app);
+  const specPath = specPathOverride !== undefined ? specPathOverride : findSpec(app);
   if (!specPath) {
-    add({ id: `${app}-missing-spec`, type: 'missing-artifact', severity: 'high', gate: 'validate-specs',
+    add({ id: `${app}-missing-spec`, ruleId: 'missing-spec', type: 'missing-artifact', severity: 'high', gate: 'validate-specs',
       title: `Missing spec for '${app}'`,
       detail: `No file in specs/ matches '${app}'. The spec is the single source of truth and is a hard CI gate.` });
   }
 
   // 2. README presence.
   if (!existsSync(join(projPath, 'README.md'))) {
-    add({ id: `${app}-missing-readme`, type: 'missing-artifact', severity: 'low', gate: 'validate-specs',
+    add({ id: `${app}-missing-readme`, ruleId: 'missing-readme', type: 'missing-artifact', severity: 'low', gate: 'validate-specs',
       title: `Missing README in projects/${app}`,
       detail: `Add a projects/${app}/README.md describing the app and pointing to its spec.` });
   }
@@ -584,7 +589,7 @@ function senseApp(app) {
     return /from\s+['"]zod['"]/.test(c) || /\bz\.(object|infer|string|number|boolean|enum|array)\b/.test(c);
   });
   if (srcFiles.length && !usesZod) {
-    add({ id: `${app}-no-zod`, type: 'contract', severity: 'medium', gate: 'validate-specs --strict',
+    add({ id: `${app}-no-zod`, ruleId: 'no-zod-schema', type: 'contract', severity: 'medium', gate: 'validate-specs --strict',
       title: `No Zod runtime schemas in projects/${app}/src`,
       detail: `Contract-first mandate: define data models as Zod schemas and infer types via z.infer<typeof Schema>.` });
   }
@@ -592,7 +597,7 @@ function senseApp(app) {
   // 4. BDD spec presence + Given/When/Then compliance.
   const specTests = walk(projPath, ['.ts']).filter((f) => f.endsWith('.spec.ts'));
   if (specTests.length === 0) {
-    add({ id: `${app}-no-bdd`, type: 'test-coverage', severity: 'medium', gate: 'validate-specs --strict',
+    add({ id: `${app}-no-bdd`, ruleId: 'e2e-missing', type: 'test-coverage', severity: 'medium', gate: 'validate-specs --strict',
       title: `No E2E *.spec.ts tests in projects/${app}`,
       detail: `Add Playwright E2E specs following Given -> When -> Then.` });
   } else {
@@ -601,7 +606,7 @@ function senseApp(app) {
       return !(/given/i.test(c) && /when/i.test(c) && /then/i.test(c));
     });
     if (nonCompliant.length) {
-      add({ id: `${app}-bdd-noncompliant`, type: 'test-coverage', severity: 'medium', gate: 'validate-specs --strict',
+      add({ id: `${app}-bdd-noncompliant`, ruleId: 'e2e-bdd-noncompliant', type: 'test-coverage', severity: 'medium', gate: 'validate-specs --strict',
         title: `${nonCompliant.length}/${specTests.length} spec file(s) not BDD-formatted in projects/${app}`,
         detail: `Reformat to Given -> When -> Then: ${nonCompliant.map(rel).join(', ')}` });
     }
@@ -612,7 +617,7 @@ function senseApp(app) {
     const specText = readSafe(specPath);
     const unchecked = [...specText.matchAll(/^\s*-\s*\[ \]\s*(.+)$/gm)].map((m) => m[1].trim());
     if (unchecked.length) {
-      add({ id: `${app}-spec-drift`, type: 'drift', severity: 'medium', gate: 'manual-review',
+      add({ id: `${app}-spec-drift`, ruleId: 'spec-drift', type: 'drift', severity: 'medium', gate: 'manual-review',
         title: `${unchecked.length} spec feature(s) not marked complete for ${app}`,
         detail: `Implement (or explicitly defer) these unchecked spec items:\n${unchecked.map((u) => `  - ${u}`).join('\n')}`,
         specRef: rel(specPath) });
@@ -633,7 +638,7 @@ function senseApp(app) {
       }
     }
     if (evidence.length) {
-      add({ id: `${app}-guardrail-${g.id}`, type: 'guardrail', severity: g.severity, gate: g.gate,
+      add({ id: `${app}-guardrail-${g.id}`, ruleId: `guardrail:${g.id}`, type: 'guardrail', severity: g.severity, gate: g.gate,
         title: `Guardrail '${g.label}' violated in projects/${app} (${evidence.length} hit${evidence.length > 1 ? 's' : ''})`,
         detail: g.why,
         evidence: evidence.slice(0, 25) });
@@ -768,5 +773,51 @@ function main() {
 
 const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (invokedDirectly) main();
+
+// ---------------------------------------------------------------------------
+// Rule registry — every ruleId a finding can carry, independent of which app
+// it fires in. harness-history.mjs needs this to tell "clean because nothing
+// to report" apart from "clean because nobody was watching": a rule only
+// contributes a zero-hit data point to a run's history if the run knew to
+// look for it. Guardrail entries are derived from GUARDRAILS itself so the
+// two lists cannot drift apart; every other ruleId is a static id assigned at
+// its `add(...)` call site above. Mirrored here the same way GUARDRAILS
+// mirrors AGENTS.md's lesson bullets — add the id here when you add the call
+// site, or history silently stops tracking it. harness-status.test.mjs
+// cross-checks this list against a live senseApp() run so an unregistered
+// ruleId fails the self-test rather than fading out of history unnoticed.
+// ---------------------------------------------------------------------------
+const SENSOR_RULES = [
+  { ruleId: 'missing-spec', type: 'missing-artifact', severity: 'high' },
+  { ruleId: 'missing-readme', type: 'missing-artifact', severity: 'low' },
+  { ruleId: 'no-zod-schema', type: 'contract', severity: 'medium' },
+  { ruleId: 'e2e-missing', type: 'test-coverage', severity: 'medium' },
+  { ruleId: 'e2e-bdd-noncompliant', type: 'test-coverage', severity: 'medium' },
+  { ruleId: 'spec-drift', type: 'drift', severity: 'medium' },
+  { ruleId: 'production-bundle-test-missing', type: 'test-coverage', severity: 'high' },
+  { ruleId: 'mobile-readiness:no-signing-config', type: 'mobile-readiness', severity: 'high' },
+  { ruleId: 'mobile-readiness:default-version-code', type: 'mobile-readiness', severity: 'medium' },
+  { ruleId: 'mobile-readiness:default-launcher-icon', type: 'mobile-readiness', severity: 'high' },
+  { ruleId: 'mobile-readiness:slug-app-name', type: 'mobile-readiness', severity: 'medium' },
+  { ruleId: 'mobile-readiness:manifest-icons-missing', type: 'mobile-readiness', severity: 'high' },
+  { ruleId: 'mobile-readiness:no-privacy-policy', type: 'mobile-readiness', severity: 'high' },
+  { ruleId: 'mobile-readiness:no-android-ci', type: 'mobile-readiness', severity: 'medium' },
+  { ruleId: 'unit-test-coverage:vitest-unscoped', type: 'unit-test-coverage', severity: 'medium' },
+  { ruleId: 'unit-test-coverage:no-unit-tests', type: 'unit-test-coverage', severity: 'high' },
+  { ruleId: 'unit-test-coverage:untested-modules', type: 'unit-test-coverage', severity: 'medium' },
+  { ruleId: 'unit-test-coverage:bdd-noncompliant', type: 'unit-test-coverage', severity: 'medium' },
+];
+
+// Map of every known ruleId -> { type, severity, blocking }, blocking computed
+// through the same isBlocking() the gate itself uses so the two can never say
+// different things about the same rule.
+export function allRuleMeta() {
+  const guardrailRules = GUARDRAILS.map((g) => ({ ruleId: `guardrail:${g.id}`, type: 'guardrail', severity: g.severity }));
+  const byId = {};
+  for (const r of [...guardrailRules, ...SENSOR_RULES]) {
+    byId[r.ruleId] = { type: r.type, severity: r.severity, blocking: isBlocking(r) };
+  }
+  return byId;
+}
 
 export { GUARDRAILS, senseApp };

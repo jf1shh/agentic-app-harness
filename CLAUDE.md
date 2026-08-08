@@ -75,6 +75,9 @@ node scripts/emit-tasks.mjs               # propose: turn findings into tasks/<i
 node scripts/emit-tasks.mjs --prune       # retire work orders whose findings are resolved
 node scripts/harness-learn.mjs            # learn: enforce Lesson ⇄ Guardrail ⇄ Self-test traceability
 node scripts/harness-status.test.mjs      # self-test the guardrails themselves
+node scripts/harness-history.mjs --record # learn: snapshot this commit's per-rule finding counts
+node scripts/harness-history.mjs          # learn: report promotion candidates / never-fired guardrails
+node scripts/harness-history.test.mjs     # self-test the history analysis (streaks, candidates)
 node scripts/check-enum-blast-radius.mjs  # diff-shaped: widened enum/union has an unvisited consumer
 node scripts/check-doc-claims.mjs --gate  # verify: checked-in docs (this file included) match what they claim
 node scripts/check-guardrail-integrity.mjs --base origin/master --head HEAD
@@ -82,7 +85,9 @@ node scripts/check-guardrail-integrity.mjs --base origin/master --head HEAD
                                            # guardrail or shrunk gate self-test, silent on additions
 ```
 
-`.\scripts\harness.ps1 {status|tasks|verify|learn}` wraps the same four in one entry point.
+`.\scripts\harness.ps1 {status|tasks|verify|learn|history}` wraps the same five in one entry point.
+`harness-history.json` (git-tracked, unlike the gitignored `harness-status.json` snapshot) is the
+per-commit ledger `harness-history.mjs` reads and appends to — see `.agents/AGENTS.md` §8.
 `.\scripts\validate-specs.ps1 -Strict` (PowerShell only, no Node port) checks every app has a spec,
 README, Zod usage, and BDD-formatted specs — non-strict mode only fails on a missing spec.
 `.\scripts\scaffold-app.ps1` scaffolds a new `projects/<app>` with the expected skeleton.
