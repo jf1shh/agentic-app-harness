@@ -6,7 +6,7 @@ export const SkillsGrid: React.FC = () => {
   return (
     <section aria-labelledby="skills-heading" style={{ marginBottom: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
-        <Sparkles size={20} color="var(--accent-primary)" />
+        <Sparkles size={20} color="var(--text-muted)" />
         <h2 id="skills-heading" className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)' }}>
           Engineering Skills Demonstrated
         </h2>

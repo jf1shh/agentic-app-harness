@@ -33,26 +33,42 @@ neutral trust in sensitive data (`legal-financial-rag`). An expressive, opiniona
 appropriate here in a way §5's design systems for those two apps deliberately are not — the per-app
 divergence this repo already commits to (see `elder-care-planner` spec §5) cuts both ways.
 
-### 4.2 Color palette
+### 4.2 Color palette — revised: mostly black, red as a highlight
+The first pass of this identity used neon red as the *primary* accent — taglines, every badge, every
+label, every border, the whole grid/scanline texture — which reads as "a red site" rather than "a black
+site with red highlights." Direct follow-up from the site's author corrected this: **black/neutral
+carries the page; red is spent only on a short, deliberate list of moments that earn it.** This is the
+same discipline as the "spend your boldness in one place" design principle — a highlight stops being one
+the moment it's everywhere.
+
+Red is used **only** for: primary-action buttons (`.btn-primary`), the active/selected state (the
+selected category filter pill, `.tab`-style active indicators), the hover/focus glow on interactive
+cards, the header logo mark, the hero `<h1>`'s gradient, and exactly **one** flagship stat ("Active
+Monorepo Apps"). Every other previously-red surface — taglines, category/feature badges, disclosure
+chevrons, case-study labels, code-block paths, stat numbers other than the one flagship, panel borders,
+button *resting* states, the background grid/scanlines, the SpecModal's icon/heading/chip — moves to a
+neutral gray/white scale. Cyan is untouched: it remains the sole "verified/passed" signal (test counts,
+a11y compliance, guardrail counts) and was never part of the "too much red" problem.
+
 All pairs below are verified against the actual `@axe-core/playwright` sweep (not eyeballed), per the
 a11y lesson in `.agents/AGENTS.md` §6 — every color used as *text* on the void/card background clears
 4.5:1, computed before implementation and confirmed by the harness run at the end.
-- **Void background** `#0a0505` (black with a whisper of red undertone), **surface** `#150a0c`, **glass
-  card** `rgba(21, 10, 12, 0.72)`.
-- **Neon red** `#ff2b46` — the primary accent: headline glow, primary buttons, the main "verified"
-  badge, taglines, icons. Contrast ≥ 5.4:1 against the void background, so it is safe even as small
-  text, not just large display type.
-- **Deep red** `#7a0c1e` and **mid red** `#b3273f` — decorative only (gradients, borders, translucent
-  backgrounds). Mid red fails the 4.5:1 floor as a *text* color on the void background (≈3.2:1), so it
-  never carries text directly — badges that want a muted/neutral read use it as a background tint with
-  light text instead (§4.4).
-- **Soft neon pink-red** `#ff6b81` — a tertiary accent for a third stat/data color, keeping the palette
-  inside the red family instead of reaching for an unrelated hue.
-- **Terminal cyan** `#4dfff0` — the one deliberate cold counter-accent, reserved for "passed/verified"
-  signals (test counts, a11y compliance, guardrail counts) — the classic red-alert / green-terminal-
-  readout pairing, used sparingly (numbers, small icons, bullet dots) and never as a background.
-- **Text**: warm near-white `#f6e9ea` (primary), light rose `#e3c9cc` (body), dusty rose `#c2a0a5`
-  (muted), `#97767c` (dim — the darkest text tone in use, still ≥5:1 against the void background).
+- **Void background** `#0a0a0c` (neutral near-black — the red undertone from the first pass is gone,
+  since even the background contributed to the "too red" read), **surface** `#131316`, **glass card**
+  `rgba(19, 19, 22, 0.72)`.
+- **Neon red** `#ff2b46` — reserved for the moments listed above. Contrast ≥ 5.4:1 against the void
+  background where it does carry text (the flagship stat).
+- **Deep red** `#7a0c1e` — decorative only (the button/logo gradient's dark stop, the hover-glow color).
+  Mid red (`#b3273f`) from the first pass is retired along with the badge it colored (§4.4) — nothing in
+  the revised palette needs a red that can't carry text.
+- **Terminal cyan** `#4dfff0` — unchanged: the one deliberate cold counter-accent, reserved for
+  "passed/verified" signals, used sparingly (numbers, small icons, bullet dots) and never as a
+  background.
+- **Neutral grays** (replacing the previous warm-red-tinted text scale and the retired soft-pink
+  tertiary accent): near-white `#f5f5f7` (primary text), light gray `#d4d4d8` (body — taglines and
+  descriptions now live here instead of on red), mid gray `#9a9aa5` (muted), dark gray `#6c6c76` (dim).
+  Borders default to `rgba(255,255,255,0.08)`; only the hover/active highlight moments switch to a red
+  border.
 
 ### 4.3 Typography
 - **Headings**: monospace (`ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas,
@@ -70,15 +86,19 @@ a11y lesson in `.agents/AGENTS.md` §6 — every color used as *text* on the voi
   corner (top-left and bottom-right), the single biggest silhouette change from "generic dark
   dashboard" to "terminal/HUD panel."
 - **Scanlines + grid**, both static (not animated): the page background layers a fine repeating-line
-  scanline texture and a faint grid pattern under a soft red glow at the top of the page, replacing the
-  indigo/amber radial blobs. Being static rather than animated, this motif needs no
+  scanline texture and a faint grid pattern — both neutral gray now, not red-tinted, per §4.2 — under a
+  faint red glow at the very top of the page, the one atmospheric red touch that survives as ambient
+  rather than structural. Being static rather than animated, this motif needs no
   `prefers-reduced-motion` gate — the existing motion the page already disables under that preference
   (hover lift, count-up) is untouched.
-- **Neon glow borders** on hover/focus (red box-shadow bloom) replace the indigo glow.
-- **Three-tier badge system** for contrast safety: the primary badge is red text on a red-tinted
-  background (bright, ≥5:1); the verified badge is cyan text on a cyan-tinted background (≥16:1); the
-  neutral/category badge is light body text (`#e3c9cc`) on a mid-red-tinted background, since mid red
-  itself cannot carry text at this contrast floor (§4.2).
+- **Neon glow borders on hover/focus only** (red box-shadow bloom): the *resting* state of every
+  interactive element (buttons, filter pills, cards) is neutral; red appears only once a pointer or
+  focus ring lands on it, which is what makes it read as a highlight rather than a base color.
+- **Two-tier badge system**: the "verified" badge (PWA capability) is cyan text on a cyan-tinted
+  background (≥16:1) — unchanged. Every other badge (the hero "SDD Verified" badge, category tags,
+  "Android APK," "Monetized") is now a single neutral treatment — light text on a faint white-tinted
+  background — since none of them are the kind of moment §4.2 reserves red for, and coloring all of them
+  red was the single biggest contributor to the "too much red" read the badges appeared on every card.
 
 ### 4.5 What doesn't change
 Layout, information architecture, and every existing responsive-grid pattern stay as-is — this is a
