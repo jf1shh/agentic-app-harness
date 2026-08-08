@@ -20,31 +20,31 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
         </div>
       </div>
 
-      <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.25rem', color: '#ffffff' }}>
+      <h3 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-main)' }}>
         {project.name}
       </h3>
 
-      <p style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600, marginBottom: '0.75rem' }}>
+      <p style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: 600, marginBottom: '0.75rem' }}>
         {project.tagline}
       </p>
 
-      <p style={{ fontSize: '0.88rem', color: '#94a3b8', marginBottom: '1.25rem', flexGrow: 1, lineHeight: 1.5 }}>
+      <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '1.25rem', flexGrow: 1, lineHeight: 1.5 }}>
         {project.description}
       </p>
 
       {/* Metrics Row */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.25rem' }}>
-        <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verification Metrics</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
-          <span>Vitest: <strong style={{ color: '#10b981' }}>{project.metrics.unitTests} Unit Tests</strong></span>
-          <span>A11y: <strong style={{ color: '#10b981' }}>WCAG 2.0 AA</strong></span>
+      <div style={{ background: 'rgba(255,43,70,0.04)', border: '1px solid rgba(255,43,70,0.1)', borderRadius: '2px', padding: '0.75rem', marginBottom: '1.25rem' }}>
+        <div className="font-display" style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Verification Metrics</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-body)' }}>
+          <span>Vitest: <strong style={{ color: 'var(--accent-verified)' }}>{project.metrics.unitTests} Unit Tests</strong></span>
+          <span>A11y: <strong style={{ color: 'var(--accent-verified)' }}>WCAG 2.0 AA</strong></span>
         </div>
       </div>
 
       {/* Tech Stack Pills */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '1.25rem' }}>
         {project.techStack.map((tech, idx) => (
-          <span key={idx} style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#cbd5e1', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px' }}>
+          <span key={idx} className="font-display" style={{ background: 'rgba(255,43,70,0.06)', color: 'var(--text-body)', fontSize: '0.68rem', padding: '2px 8px', borderRadius: '2px' }}>
             {tech}
           </span>
         ))}
@@ -74,19 +74,19 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
             <ChevronDown size={14} className="snippet-chevron" aria-hidden="true" />
           </summary>
           <div className="code-block" style={{ padding: '0.9rem' }}>
-            <p style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
               {project.mlArchitecture.approach}
             </p>
             <ol style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {project.mlArchitecture.pipeline.map((step, idx) => (
-                <li key={idx} style={{ fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                <li key={idx} style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                   {step.label}
                   <div className="code-block-path" style={{ marginTop: '2px' }}>{step.sourcePath}</div>
                 </li>
               ))}
             </ol>
             {project.mlArchitecture.evalMethod && (
-              <p style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '0.75rem', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--accent-verified)', marginTop: '0.75rem', lineHeight: 1.5 }}>
                 <strong>Eval methodology:</strong> {project.mlArchitecture.evalMethod}
               </p>
             )}

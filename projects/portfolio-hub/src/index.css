@@ -1,14 +1,23 @@
 :root {
-  --bg-primary: #090d16;
-  --bg-surface: #111827;
-  --bg-card: rgba(17, 24, 39, 0.7);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --accent-amber: #f59e0b;
-  --accent-emerald: #10b981;
-  --accent-indigo: #6366f1;
-  --accent-rose: #f43f5e;
+  --bg-void: #0a0505;
+  --bg-surface: #150a0c;
+  --bg-card: rgba(21, 10, 12, 0.72);
+  --border-color: rgba(255, 43, 70, 0.16);
+  --border-strong: rgba(255, 43, 70, 0.4);
+
+  --text-main: #f6e9ea;
+  --text-body: #e3c9cc;
+  --text-muted: #c2a0a5;
+  --text-dim: #97767c;
+
+  --accent-primary: #ff2b46;
+  --accent-primary-dim: #7a0c1e;
+  --accent-secondary: #b3273f;
+  --accent-tertiary: #ff6b81;
+  --accent-verified: #4dfff0;
+
+  --glow-primary: rgba(255, 43, 70, 0.45);
+  --corner-cut: 16px;
 }
 
 * {
@@ -19,21 +28,40 @@
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-void);
   color: var(--text-main);
   min-height: 100vh;
   line-height: 1.5;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.1) 0px, transparent 50%);
+  /* Scanlines + HUD grid + a soft glow at the top of the page — all static,
+     so this motif needs no prefers-reduced-motion gate. */
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 43, 70, 0.03) 0px, rgba(255, 43, 70, 0.03) 1px, transparent 1px, transparent 3px),
+    linear-gradient(rgba(255, 43, 70, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 43, 70, 0.05) 1px, transparent 1px),
+    radial-gradient(at 50% 0%, rgba(255, 43, 70, 0.12) 0px, transparent 55%);
+  background-size: auto, 48px 48px, 48px 48px, auto;
 }
 
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  border-radius: 0;
+  clip-path: polygon(
+    var(--corner-cut) 0,
+    100% 0,
+    100% calc(100% - var(--corner-cut)),
+    calc(100% - var(--corner-cut)) 100%,
+    0 100%,
+    0 var(--corner-cut)
+  );
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}
+
+.font-display {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .badge {
@@ -41,14 +69,18 @@ body {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 2px;
   font-size: 0.75rem;
   font-weight: 600;
 }
 
-.badge-amber { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-.badge-emerald { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
-.badge-indigo { background: rgba(99, 102, 241, 0.15); color: var(--accent-indigo); border: 1px solid rgba(99, 102, 241, 0.3); }
+/* Primary — bright red text on a red-tinted background, ≥5:1 against the void bg. */
+.badge-amber { background: rgba(255, 43, 70, 0.14); color: var(--accent-primary); border: 1px solid rgba(255, 43, 70, 0.4); }
+/* Verified/success — terminal cyan, ≥16:1. */
+.badge-emerald { background: rgba(77, 255, 240, 0.1); color: var(--accent-verified); border: 1px solid rgba(77, 255, 240, 0.35); }
+/* Neutral/category — mid red can't carry text at 4.5:1 (~3.2:1), so this badge
+   uses it only as a tint and borrows the safe light body-text color instead. */
+.badge-indigo { background: rgba(179, 39, 63, 0.2); color: var(--text-body); border: 1px solid rgba(179, 39, 63, 0.45); }
 
 .project-grid {
   display: grid;
@@ -62,33 +94,47 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-dim) 100%);
   color: #ffffff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 18px var(--glow-primary);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 43, 70, 0.05);
   color: var(--text-main);
   border: 1px solid var(--border-color);
-  padding: 8px 16px;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 43, 70, 0.12);
+  border-color: var(--border-strong);
 }
 
 /* Interactive project cards */
@@ -104,15 +150,15 @@ body {
 .project-card-interactive:hover,
 .project-card-interactive:focus-within {
   transform: translateY(-4px);
-  box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.35);
-  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 20px 40px -15px var(--glow-primary);
+  border-color: var(--border-strong);
 }
 
 /* Code snippet disclosure inside a project card */
 .snippet-details {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 43, 70, 0.1);
+  border-radius: 2px;
+  background: rgba(255, 43, 70, 0.02);
 }
 
 .snippet-summary {
@@ -122,7 +168,7 @@ body {
   padding: 0.6rem 0.85rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--text-body);
   cursor: pointer;
   list-style: none;
 }
@@ -133,7 +179,7 @@ body {
 
 .snippet-chevron {
   transition: transform 0.2s ease;
-  color: var(--accent-indigo);
+  color: var(--accent-primary);
 }
 
 details[open] > .snippet-summary .snippet-chevron {
@@ -141,14 +187,14 @@ details[open] > .snippet-summary .snippet-chevron {
 }
 
 .code-block {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 43, 70, 0.1);
   padding: 0.85rem;
 }
 
 .code-block-path {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.7rem;
-  color: var(--accent-amber);
+  color: var(--accent-primary);
   margin-bottom: 0.5rem;
   word-break: break-all;
 }
@@ -159,7 +205,7 @@ details[open] > .snippet-summary .snippet-chevron {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.75rem;
   line-height: 1.5;
-  color: #e2e8f0;
+  color: var(--text-body);
   white-space: pre;
 }
 
@@ -205,7 +251,7 @@ details[open] > .snippet-summary .snippet-chevron {
 .skill-card-chevron {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--accent-indigo);
+  color: var(--accent-primary);
   transition: transform 0.2s ease;
 }
 
@@ -217,7 +263,7 @@ details[open] > .skill-card-summary .skill-card-chevron {
   list-style: none;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 43, 70, 0.14);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -225,7 +271,7 @@ details[open] > .skill-card-summary .skill-card-chevron {
 
 .skill-card-evidence li {
   font-size: 0.82rem;
-  color: #cbd5e1;
+  color: var(--text-body);
   line-height: 1.5;
   padding-left: 1rem;
   position: relative;
@@ -239,14 +285,14 @@ details[open] > .skill-card-summary .skill-card-chevron {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent-emerald);
+  background: var(--accent-verified);
 }
 
 /* Case study definition list (root cause / fix / enforcement mechanism) */
 .case-study-body {
   margin: 1rem 0 0;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 43, 70, 0.14);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -257,25 +303,30 @@ details[open] > .skill-card-summary .skill-card-chevron {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--accent-indigo);
+  color: var(--accent-primary);
 }
 
 .case-study-body dd {
   margin: 0 0 0.6rem;
   font-size: 0.82rem;
-  color: #cbd5e1;
+  color: var(--text-body);
   line-height: 1.5;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .project-card-interactive,
   .skill-card-chevron,
-  .snippet-chevron {
+  .snippet-chevron,
+  .btn-primary {
     transition: none !important;
   }
 
   .project-card-interactive:hover,
   .project-card-interactive:focus-within {
+    transform: none;
+  }
+
+  .btn-primary:hover {
     transform: none;
   }
 }
