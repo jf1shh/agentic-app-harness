@@ -53,13 +53,13 @@ export default function InventoryClient({ initialInventory }: { initialInventory
         ) : (
           <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {inventory.map((item) => (
-              <li key={item.id} className="flex justify-between items-center" style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
-                <div>
-                  <strong>{item.name}</strong> 
+              <li key={item.id} className="flex justify-between items-center" style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', gap: '0.75rem' }}>
+                <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                  <strong>{item.name}</strong>
                   <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({item.category})</span>
                   {item.quantity && <div style={{ fontSize: '0.9rem', color: 'var(--primary-color)' }}>Qty: {item.quantity}</div>}
                 </div>
-                <button onClick={() => handleDelete(item.id)} className="btn btn-danger" style={{ padding: '0.5rem 1rem' }}>Remove</button>
+                <button onClick={() => handleDelete(item.id)} className="btn btn-danger" style={{ padding: '0.5rem 1rem', flexShrink: 0 }}>Remove</button>
               </li>
             ))}
           </ul>

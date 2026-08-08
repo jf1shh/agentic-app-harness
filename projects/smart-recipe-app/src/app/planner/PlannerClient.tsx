@@ -78,12 +78,12 @@ export default function PlannerClient({ initialPlan, recipes }: { initialPlan: M
                 </h3>
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {groupedPlan[d].map(entry => (
-                    <li key={entry.id} className="flex justify-between items-center" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem 1rem', borderRadius: '8px' }}>
-                      <div>
+                    <li key={entry.id} className="flex justify-between items-center" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem 1rem', borderRadius: '8px', gap: '0.75rem' }}>
+                      <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                         <strong style={{ color: 'var(--secondary-color)', marginRight: '0.5rem' }}>{entry.mealType}:</strong>
                         <span style={{ textTransform: 'capitalize' }}>{entry.recipeId.replace('.md', '').replace(/_/g, ' ')}</span>
                       </div>
-                      <button onClick={() => handleDelete(entry.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Remove</button>
+                      <button onClick={() => handleDelete(entry.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', flexShrink: 0 }}>Remove</button>
                     </li>
                   ))}
                 </ul>
