@@ -587,6 +587,45 @@ imports it answers "is this reached?", not "is this well tested". Depth is a
 line-coverage question and wants a line-coverage tool; a zero-dependency scan should
 report only what it can actually see.
 
+### Making Learn data-driven: `harness-history.mjs`
+
+The promotion criterion above — "a check is promoted once it stops describing history and
+starts describing a regression" — has so far been applied from memory: `senseUnitTests` was
+promoted because someone tracked its backlog to zero and remembered to flip `isBlocking()`.
+Nothing in the harness *noticed* that on its own, and nothing flags the mirror-image case: a
+guardrail that has never once fired since it was added, which is either working exactly as
+intended (prevention, not detection) or scoped too narrowly to ever match — a distinction only
+a human can make, but one nobody is prompted to look at.
+
+`scripts/harness-history.mjs` closes that gap without adding a second enforcement layer. Every
+finding `harness-status.mjs` can produce now carries a stable `ruleId` (independent of which app
+it fired in — `guardrail:no-op-assertion`, `unit-test-coverage:untested-modules`, and so on),
+mirrored in an `allRuleMeta()` registry that `harness-status.test.mjs` cross-checks against a
+live fixture run, so an `add(...)` call site with no registered `ruleId` fails the self-test
+instead of quietly falling out of history. `node scripts/harness-history.mjs --record` snapshots
+the current per-`ruleId` finding counts, keyed by commit sha, into `harness-history.json` — this
+file **is committed to the repo**, unlike the gitignored `harness-status.json` snapshot, because
+its value is the trend across commits, not any single run. `node scripts/harness-history.mjs`
+(no flags) reads that ledger and reports:
+
+- **Promotion candidates** — a non-blocking rule with zero hits for its entire streak of the
+  last N (default 10, `--threshold=N`) recorded commits, i.e. the same signal that justified
+  promoting `unit-test-coverage`, now surfaced by a command instead of a memory.
+- **Never-fired guardrails** — a blocking guardrail with zero hits across its whole tracked
+  history, an explicit invitation for a human to check whether it is prevention or dead weight.
+- **Chronically firing** — a blocking rule still showing hits on the latest recorded commit,
+  which should not happen (the gate should have stopped the merge) and is worth investigating
+  as a possible bypass.
+
+Two things this deliberately does **not** do. First, it does not decide anything: promotion is
+still a human-or-agent action through the same `isBlocking()` edit and PR this section always
+described: this script only makes "has this been quiet long enough?" answerable by a command.
+Second, recording is opt-in (`--record`), never a side effect of the report — a file meant to
+accumulate the team's shared trend must not be silently rewritten by whoever happens to run a
+read-only check locally. Run `--record` at the same point in a change set where you already run
+`harness-learn.mjs`, and commit the updated `harness-history.json` alongside the rest of the PR,
+the same discipline this repo already applies to other generated-but-tracked files.
+
 ### Protocol: adding a learned lesson
 When you discover a reusable lesson, decide whether it is **mechanically detectable**:
 1. **Mechanical** (a pattern a regex can catch): (a) add a guardrail object to `GUARDRAILS` in `scripts/harness-status.mjs` with a `lesson` field; (b) add a known-bad + known-good case to `scripts/harness-status.test.mjs`; (c) add the lesson bullet to section 6 below and tag it `` `[guardrail: <id>]` ``. Run `.\scripts\harness.ps1 verify` — self-test, learn, and gate must all pass.

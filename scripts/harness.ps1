@@ -27,6 +27,7 @@ function Show-Help {
   Write-Host "  tasks             - Propose layer: generate agent work orders under tasks/ from findings" -ForegroundColor Gray
   Write-Host "  verify            - Verify gate: guardrail self-test + lesson traceability + blocking findings" -ForegroundColor Gray
   Write-Host "  learn             - Learn gate: enforce Lesson <-> Guardrail traceability in AGENTS.md" -ForegroundColor Gray
+  Write-Host "  history [record]  - Learn signal: report promotion candidates / never-fired guardrails, or --record this commit's snapshot" -ForegroundColor Gray
   Write-Host "  rag-eval          - RAG gate: deterministic retrieval-precision eval (promptfoo) for LexiVault" -ForegroundColor Gray
   Write-Host "  clean             - Clean build caches and test reports across all projects" -ForegroundColor Gray
   Write-Host "  scaffold <name>   - Scaffold a new app specification and project boilerplate" -ForegroundColor Gray
@@ -81,6 +82,14 @@ switch ($Command.ToLower()) {
   "learn" {
     Write-Host "Running Harness Learn Gate (Lesson <-> Guardrail traceability)..." -ForegroundColor Cyan
     & node "$PSScriptRoot\harness-learn.mjs"
+    exit $LASTEXITCODE
+  }
+
+  "history" {
+    Write-Host "Running Harness History (Learn signal: promotion candidates & never-fired guardrails)..." -ForegroundColor Cyan
+    $historyArgs = @("$PSScriptRoot\harness-history.mjs")
+    if ($Target -eq "-Record" -or $Target -eq "record") { $historyArgs += "--record" }
+    & node @historyArgs
     exit $LASTEXITCODE
   }
 
