@@ -5,6 +5,8 @@ interface VaultLockModalProps {
   isLocked: boolean;
   /** True until a passphrase has ever been registered this session — the modal is asking the user to set one, not to prove they already know it. */
   isFirstUnlock: boolean;
+  /** Which trigger actually locked the vault, so the copy below doesn't blame inactivity for a lock the user chose themselves. */
+  lockReason: 'idle' | 'manual';
   onUnlockSuccess: (key: CryptoKey, passphrase: string) => void;
   /** Returns false when the passphrase doesn't match the one registered earlier this session. */
   onAttemptUnlock: (passphrase: string) => Promise<CryptoKey | null>;
@@ -13,6 +15,7 @@ interface VaultLockModalProps {
 export const VaultLockModal: React.FC<VaultLockModalProps> = ({
   isLocked,
   isFirstUnlock,
+  lockReason,
   onUnlockSuccess,
   onAttemptUnlock,
 }) => {
@@ -99,9 +102,12 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
           LexiVault is Locked
         </h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.75rem' }}>
+          {lockReason === 'idle'
+            ? 'Workstation auto-locked after 5 minutes of inactivity. '
+            : 'You locked the vault. '}
           {isFirstUnlock
-            ? 'Workstation auto-locked due to inactivity. Set a Vault Passphrase now — you will need to enter this exact passphrase to unlock for the rest of this session.'
-            : 'Workstation auto-locked due to inactivity. Enter your Vault Passphrase to derive your AES-256 decryption key.'}
+            ? 'Set a Vault Passphrase now — you will need to enter this exact passphrase to unlock for the rest of this session.'
+            : 'Enter your Vault Passphrase to derive your AES-256 decryption key.'}
         </p>
 
         <form onSubmit={handleUnlock} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

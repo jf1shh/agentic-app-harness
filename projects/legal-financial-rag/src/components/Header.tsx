@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ShieldCheck, Search, FileText, EyeOff, FileSpreadsheet, Lock } from 'lucide-react';
 
+type TabId = 'query' | 'documents' | 'redaction' | 'audit';
+
 interface HeaderProps {
-  activeTab: 'query' | 'documents' | 'redaction' | 'audit';
-  setActiveTab: (tab: 'query' | 'documents' | 'redaction' | 'audit') => void;
+  activeTab: TabId;
+  setActiveTab: (tab: TabId) => void;
   userRole: 'MANAGING_PARTNER' | 'LEGAL_COUNSEL' | 'FINANCIAL_AUDITOR' | 'PARALEGAL';
   setUserRole: (role: 'MANAGING_PARTNER' | 'LEGAL_COUNSEL' | 'FINANCIAL_AUDITOR' | 'PARALEGAL') => void;
   onLockVault: () => void;
 }
+
+const TABS: { id: TabId; label: string; icon: typeof Search; panelId: string }[] = [
+  { id: 'query', label: 'Query Workbench', icon: Search, panelId: 'panel-query-workbench' },
+  { id: 'documents', label: 'Documents & Chunks', icon: FileText, panelId: 'panel-document-library' },
+  { id: 'redaction', label: 'PII Masking', icon: EyeOff, panelId: 'panel-pii-redaction' },
+  { id: 'audit', label: 'Audit Ledger', icon: FileSpreadsheet, panelId: 'panel-audit-ledger' },
+];
+
+const TAB_DOM_ID: Record<TabId, string> = {
+  query: 'tab-query-workbench',
+  documents: 'tab-document-library',
+  redaction: 'tab-pii-redaction',
+  audit: 'tab-audit-ledger',
+};
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
@@ -16,6 +32,18 @@ export const Header: React.FC<HeaderProps> = ({
   setUserRole,
   onLockVault,
 }) => {
+  const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
+
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const currentIndex = TABS.findIndex((t) => t.id === activeTab);
+    const delta = e.key === 'ArrowRight' ? 1 : -1;
+    const nextTab = TABS[(currentIndex + delta + TABS.length) % TABS.length].id;
+    setActiveTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
+  };
+
   return (
     <header className="header-nav" role="banner">
       <div className="logo-group">
@@ -28,43 +56,26 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div className="nav-tabs" role="tablist" aria-label="Main Navigation">
-        <button
-          id="tab-query-workbench"
-          className={`tab-btn ${activeTab === 'query' ? 'active' : ''}`}
-          onClick={() => setActiveTab('query')}
-          aria-selected={activeTab === 'query'}
-          role="tab"
-        >
-          <Search size={16} aria-hidden="true" /> Query Workbench
-        </button>
-        <button
-          id="tab-document-library"
-          className={`tab-btn ${activeTab === 'documents' ? 'active' : ''}`}
-          onClick={() => setActiveTab('documents')}
-          aria-selected={activeTab === 'documents'}
-          role="tab"
-        >
-          <FileText size={16} aria-hidden="true" /> Documents & Chunks
-        </button>
-        <button
-          id="tab-pii-redaction"
-          className={`tab-btn ${activeTab === 'redaction' ? 'active' : ''}`}
-          onClick={() => setActiveTab('redaction')}
-          aria-selected={activeTab === 'redaction'}
-          role="tab"
-        >
-          <EyeOff size={16} aria-hidden="true" /> PII Masking
-        </button>
-        <button
-          id="tab-audit-ledger"
-          className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
-          onClick={() => setActiveTab('audit')}
-          aria-selected={activeTab === 'audit'}
-          role="tab"
-        >
-          <FileSpreadsheet size={16} aria-hidden="true" /> Audit Ledger
-        </button>
+      <div className="nav-tabs" role="tablist" aria-label="Main Navigation" onKeyDown={handleTabKeyDown}>
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              id={TAB_DOM_ID[tab.id]}
+              ref={(el) => { tabRefs.current[tab.id] = el; }}
+              className={`tab-btn ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+              aria-selected={isActive}
+              aria-controls={tab.panelId}
+              tabIndex={isActive ? 0 : -1}
+              role="tab"
+            >
+              <Icon size={16} aria-hidden="true" /> {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>

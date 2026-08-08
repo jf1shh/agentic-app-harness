@@ -43,6 +43,54 @@ All data structures are defined as runtime Zod schemas in `src/lib/schemas.ts`:
 - **Typography:** Modern clean sans-serif (`Inter`, system fallback) with crisp monospace for legal clause codes (`JetBrains Mono`, `Consolas`)
 - **Micro-interactions:** Smooth tab transitions, card hover glows, interactive privilege badge toggles, copy-to-clipboard feedback, redaction hover reveals.
 
+### 5.1 Main tab navigation — full ARIA, not just tablist/tab
+The header's four-tab navigation (`role="tablist"` in `Header.tsx`) already carried `role="tab"` and
+`aria-selected` — ahead of where `mood-diner`'s detail-view tabs started (see that app's spec §4.3). What
+was still missing, brought up to the same standard:
+- Each tab carries `aria-controls` pointing at the `id` of the panel it governs; each of the four content
+  regions in `App.tsx` (`QueryWorkbench`, `DocumentManager`, `PIIRedactionPanel`, `AuditLogView`) is wrapped
+  in `role="tabpanel"` with a matching `id` and `aria-labelledby` pointing back at its tab.
+- Arrow-key roving `tabindex` between tabs — only the active tab sits in the natural tab order at any time,
+  per the standard tabs pattern.
+
+**Acceptance criteria (BDD).**
+- *Given* a tab has focus, *When* the right or left arrow key is pressed, *Then* focus moves to the next or
+  previous tab and that tab activates.
+- *Given* any tab is active, *When* the page is audited, *Then* `@axe-core/playwright` reports no violations
+  on the tab region.
+
+### 5.2 Vault-lock copy must say why it locked, not just that it locked
+`handleLockVault` in `App.tsx` is invoked from two different triggers — the idle-timeout fired by
+`useAutoLock` after 5 minutes, and the user clicking "Lock Vault" in the header — and until this revision
+both paths produced the identical modal copy: *"Workstation auto-locked due to inactivity."* That sentence
+is simply false on the manual path, and every existing E2E scenario exercises only the manual button, so
+the mismatch had no test surface catching it. The app now threads a `lockReason: 'idle' | 'manual'` from
+the trigger site through to `VaultLockModal`, and both the modal copy and the audit-log entry's `details`
+text say which one actually happened.
+
+Testing the idle path surfaced a second, more consequential bug in the same wiring: `useAutoLock` was
+given an inline arrow function every render (`() => { handleLockVault('idle'); }`), and `useAutoLock`
+resets its idle timer whenever the callback identity it receives changes. An inline arrow is a new
+identity on every render, so **any** App re-render — switching tabs, ingesting a document, running a
+query — silently reset the 5-minute countdown regardless of whether the user had touched the mouse or
+keyboard, undermining the auto-lock guarantee §8.3 advertises. Fixed by giving `useAutoLock` a
+referentially stable callback (a `useRef`-backed wrapper) so only real activity events — the ones
+`useAutoLock` itself already listens for — reset the timer.
+
+**Acceptance criteria (BDD).**
+- *Given* the vault is locked by clicking "Lock Vault," *When* the modal appears, *Then* its copy attributes
+  the lock to the user's action, not to inactivity.
+- *Given* the vault auto-locks after 5 minutes of inactivity, *When* the modal appears, *Then* its copy
+  attributes the lock to inactivity.
+
+### 5.3 Watermark overflow — already fixed, recorded here so it isn't rediscovered
+`WatermarkOverlay` is an absolutely-positioned, `rotate(-25deg)` full-bleed label at `opacity: 0.04` — its
+*rendered* (post-transform) bounding box is wider than any narrow viewport, which silently made the whole
+page horizontally scrollable despite being nearly invisible (the mechanism is documented in
+`.agents/AGENTS.md` §6, "A Sweep for 'Mobile Formatting Is Weird'..."). `.app-container` already carries
+`overflow-x: hidden` with a comment explaining why — this section exists so a future pass doesn't spend
+time rediscovering a bug that's already fixed.
+
 ## 6. Testing & Compliance
 - **Unit Tests (Vitest):** Core algorithms in `src/lib/unit.test.ts` (Encryption, PII Redaction, Document Chunking, Hybrid Vector RAG Retrieval, Privilege Filtering, Zod Validation, Hash Chaining, ReDoS Sanitization).
 - **E2E & Accessibility Tests (Playwright):** Standard BDD scenarios in `e2e/rag-flow.spec.ts` evaluating Document Ingestion, Natural Language RAG Queries, PII Masking, Hash Chain Verification, Vault Lock/Unlock, and `@axe-core/playwright` WCAG AA checks.
