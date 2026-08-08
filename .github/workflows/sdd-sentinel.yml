@@ -54,6 +54,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-enum-blast-radius.test.mjs
 
+      - name: Doc-Claims Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-doc-claims.test.mjs
+
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
       # naming a file in the blast-radius table counts as handling it — "no
@@ -73,6 +77,13 @@ jobs:
         shell: pwsh
         run: node ./scripts/harness-status.mjs --gate
 
+      # §9.1 says "never self-certify verification" for PR bodies; this is the same
+      # rule applied to the docs themselves — a checked-in claim like "7 guardrails"
+      # must match what the code it describes actually contains.
+      - name: Doc-Claims Gate (checked-in docs must match what they claim)
+        shell: pwsh
+        run: node ./scripts/check-doc-claims.mjs --gate
+
       - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
         shell: pwsh
         run: node ./scripts/rag-eval-gate.mjs
@@ -90,7 +101,7 @@ jobs:
 
             ✅ **All required spec & quality gates passed on this PR.**
             - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
-            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), and the blocking \`verify\` gate all passed.
+            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, and the doc-claims gate (checked-in docs match what they claim) all passed.
             - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 
             *The full per-app suite (lint, type-check, Vitest, Playwright + \`@axe-core\`) runs in parallel in the Harness Testing Suite workflow.*

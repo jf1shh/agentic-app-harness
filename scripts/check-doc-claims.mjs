@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Doc-claims gate — prototype (not yet wired into any gate or CI workflow).
+ * Doc-claims gate — wired into .github/workflows/sdd-sentinel.yml (self-test,
+ * then --gate) so a checked-in doc that drifts from the thing it claims fails
+ * the same PR that caused the drift, not a later one nobody re-reads the docs on.
  *
  * §9.1 of .agents/AGENTS.md already says "never self-certify verification":
  * write only what a command actually printed. That rule protects PR bodies,
