@@ -48,4 +48,32 @@ test.describe('Smart Recipe App', () => {
       await removeButton.click();
     }
   });
+
+  test('Given a narrow phone viewport, When an item with one long unbroken name is added, Then the page never scrolls sideways', async ({ page }) => {
+    // Item names are free text (a grocery brand name, a hyphenated SKU, ...),
+    // so a name with no spaces to wrap on is a real input, not a contrived
+    // one. The list row is a flex row with no flex-wrap, and its text child
+    // had no min-width: 0 / overflow-wrap, so one long word forced the row
+    // wider than the viewport.
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/inventory');
+
+    const longName = 'Supercalifragilisticexpialidocious-OrganicHeirloomTomatoes2026Edition';
+    await page.fill('input[name="name"]', longName);
+    await page.selectOption('select[name="category"]', 'pantry');
+    await page.click('button[type="submit"]');
+    await expect(page.locator(`text=${longName}`)).toBeVisible();
+
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+
+    // (cleanup) remove the item so the test is repeatable
+    const removeButton = page.locator(`text=${longName}`).locator('..').locator('..').locator('button', { hasText: 'Remove' }).first();
+    if (await removeButton.isVisible()) {
+      await removeButton.click();
+    }
+  });
 });

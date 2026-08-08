@@ -58,6 +58,19 @@ interface MealPlan {
   - Text: Off-white (`#f8fafc`) for primary text, `#cbd5e1` for secondary.
 - **Typography:** Inter or Outfit for clean, modern readability.
 - **Micro-interactions:** Smooth hover scaling for cards (`transform: translateY(-2px)`), subtle glowing box-shadows on active states.
+- **Navbar and grid layouts are already responsive** (`.navbar`/`.nav-links` wrap under 768px; `.grid-cols-2/3/4` use
+  `repeat(auto-fit, minmax(min(N,100%),1fr))`; `.grid-sidebar` collapses to one column under 768px) — a full sweep
+  of every page at 320px/375px against the app's real seed data found no horizontal overflow anywhere in that
+  structural layer.
+- **List rows need `min-width: 0` + `overflow-wrap: anywhere` on their text, not just `flex-wrap`:** the inventory
+  and meal-plan list rows (`InventoryClient.tsx`, `PlannerClient.tsx`) are a `flex justify-between` row with a text
+  child and a "Remove" button. Item names and recipe titles are free text with no guaranteed spaces to wrap on —
+  the sweep above used the app's short seed names and missed this, but a single long unbroken word (a brand name,
+  a hyphenated SKU) forced the row 538px wide in a 320px viewport, because a flex item's default `min-width: auto`
+  refuses to shrink it below its own unbreakable content. `flex-wrap` alone would not have fixed this: it moves
+  the text to its own line but doesn't let a single long word break. The text wrapper needs both `min-width: 0`
+  (so the flex item can shrink past its intrinsic content width) and `overflow-wrap: anywhere` (so a word that
+  doesn't fit gets broken instead of overflowing); the button gets `flex-shrink: 0` so it never gets squeezed.
 
 ## 6. Testing & Compliance (Security, Privacy, Optimization)
 - **Unit Tests:** Core logic (recommendation matching, time estimation) must have test coverage (Vitest).
