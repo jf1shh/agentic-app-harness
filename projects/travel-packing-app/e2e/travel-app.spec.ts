@@ -37,6 +37,34 @@ test.describe('Travel Packing App V3', () => {
   });
 
   test('Given the default wardrobe, When the user runs Analyze, Then a wearability report and dead weight are shown', async ({ page }) => {
+    // handleAnalyze() calls geocodeLocation() and fetchWeather(), which hit
+    // real third-party APIs (Open-Meteo, and Nominatim as a fallback). A
+    // deterministic gate can't depend on those being reachable or fast — see
+    // the "live third-party API" lesson in .agents/AGENTS.md §6 — so the
+    // network is stubbed here with fixture data. The un-stubbed flow is
+    // covered separately by the opt-in live-weather-integration.spec.ts.
+    await page.route('https://geocoding-api.open-meteo.com/v1/search**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [{ latitude: 21.3069, longitude: -157.8583, name: 'Hawaii' }],
+        }),
+      })
+    );
+    await page.route('https://api.open-meteo.com/v1/forecast**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          daily: {
+            time: ['2026-08-01', '2026-08-02', '2026-08-03', '2026-08-04', '2026-08-05'],
+            temperature_2m_max: [30, 31, 29, 30, 31],
+            temperature_2m_min: [24, 25, 23, 24, 25],
+            precipitation_sum: [0, 0, 2, 0, 0],
+          },
+        }),
+      })
+    );
+
     // Given the app is loaded with its default wardrobe source
     await page.goto('/');
     await expect(page.locator('h1:has-text("PackRight V4")')).toBeVisible();
