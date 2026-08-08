@@ -76,6 +76,7 @@ node scripts/emit-tasks.mjs --prune       # retire work orders whose findings ar
 node scripts/harness-learn.mjs            # learn: enforce Lesson ⇄ Guardrail ⇄ Self-test traceability
 node scripts/harness-status.test.mjs      # self-test the guardrails themselves
 node scripts/check-enum-blast-radius.mjs  # diff-shaped: widened enum/union has an unvisited consumer
+node scripts/check-doc-claims.mjs --gate  # verify: checked-in docs (this file included) match what they claim
 ```
 
 `.\scripts\harness.ps1 {status|tasks|verify|learn}` wraps the same four in one entry point.

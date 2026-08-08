@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Self-test for the doc-claims prototype (see check-doc-claims.mjs header).
+// Self-test for the doc-claims gate (see check-doc-claims.mjs header).
 //
 // The fixtures below are lifted from a real drift found while writing this
 // script: CLAUDE.md's "What this repo is" section says "~20 line-level
