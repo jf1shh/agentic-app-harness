@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Upload AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smart-recipe-app-release-aab
           path: projects/smart-recipe-app/android/app/build/outputs/bundle/release/*.aab
