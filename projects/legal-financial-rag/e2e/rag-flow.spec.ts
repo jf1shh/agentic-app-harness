@@ -74,6 +74,61 @@ test.describe('LexiVault Financial RAG - Hardened BDD E2E & Accessibility Test S
     await expect(page.locator('#vault-lock-backdrop')).not.toBeVisible();
   });
 
+  test('Given the user clicks Lock Vault, When the modal appears, Then it attributes the lock to the user, not to inactivity', async ({ page }) => {
+    await page.goto('/');
+
+    await page.click('#btn-lock-vault-header');
+
+    await expect(page.locator('#vault-lock-backdrop')).toContainText('You locked the vault.');
+    await expect(page.locator('#vault-lock-backdrop')).not.toContainText('inactivity');
+  });
+
+  test('Given 5 minutes pass with no user activity, When the auto-lock fires, Then the modal attributes the lock to inactivity', async ({ page }) => {
+    // Clock must be installed before navigation so useAutoLock's timer runs on the fake clock
+    await page.clock.install();
+    await page.goto('/');
+
+    // No mouse/keyboard activity is dispatched between goto and the fast-forward,
+    // so useAutoLock's 5-minute idle timer is the only thing that can fire.
+    await page.clock.fastForward('05:01');
+
+    await expect(page.locator('#vault-lock-backdrop')).toBeVisible();
+    await expect(page.locator('#vault-lock-backdrop')).toContainText('inactivity');
+  });
+
+  test('Given an unrelated state change with no real mouse/keyboard/touch activity, When the original 5-minute idle window still elapses, Then the vault still auto-locks on schedule', async ({ page }) => {
+    // Regression test for a bug the previous test can't see: useAutoLock resets
+    // its idle timer whenever the callback identity it receives changes, so an
+    // inline arrow recreated on every App re-render silently treated *any*
+    // re-render as activity, not just the mousemove/keydown/mousedown/touchstart
+    // events useAutoLock actually listens for. page.selectOption() changes React
+    // state (and re-renders App) without dispatching any of those four event
+    // types, so it's a re-render that must NOT reset the countdown.
+    await page.clock.install();
+    await page.goto('/');
+
+    await page.clock.fastForward('04:00');
+    await page.selectOption('#user-role-select', 'FINANCIAL_AUDITOR');
+
+    // Only 1:01 more has passed since page load (5:01 total) — if the role
+    // change had reset the timer, the vault would still be unlocked here.
+    await page.clock.fastForward('01:01');
+    await expect(page.locator('#vault-lock-backdrop')).toBeVisible();
+  });
+
+  test('Given the main tab list is focused, When arrow keys are pressed, Then focus moves between tabs and the panel activates', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('#tab-query-workbench')).toHaveAttribute('aria-selected', 'true');
+    await page.locator('#tab-query-workbench').focus();
+
+    await page.keyboard.press('ArrowRight');
+
+    await expect(page.locator('#tab-document-library')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tab-document-library')).toBeFocused();
+    await expect(page.locator('#panel-document-library')).toBeVisible();
+  });
+
   test('Given Audit Ledger -> When viewing Hash Chain -> Then tamper-evident blockchain-style hash chain status is 100% verified', async ({ page }) => {
     await page.goto('/');
 

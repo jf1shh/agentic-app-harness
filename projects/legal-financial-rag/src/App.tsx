@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
 import { QueryWorkbench } from './components/QueryWorkbench';
 import { DocumentManager } from './components/DocumentManager';
@@ -30,15 +30,14 @@ export const App: React.FC = () => {
   const [lastResponse, setLastResponse] = useState<RAGResponse | null>(null);
 
   const [isLocked, setIsLocked] = useState(false);
+  // Which of the two lock triggers actually fired — threaded through to
+  // VaultLockModal so its copy says why the vault locked instead of always
+  // blaming inactivity, even when the user clicked "Lock Vault" on purpose.
+  const [lockReason, setLockReason] = useState<'idle' | 'manual'>('manual');
   // Set the first time the vault is unlocked; every unlock after that must
   // reproduce this same passphrase, or VaultLockModal rejects it. Session-only
   // by design — it resets on reload along with everything else in state.
   const [vaultPassphraseRecord, setVaultPassphraseRecord] = useState<VaultPassphraseRecord | null>(null);
-
-  // Inactivity Auto-Lock (5 Minutes)
-  useAutoLock(isLocked, () => {
-    handleLockVault();
-  }, 300000);
 
   // Initialize sample document chunks and chained audit ledger
   useEffect(() => {
@@ -67,17 +66,36 @@ export const App: React.FC = () => {
     initVault();
   }, []);
 
-  const handleLockVault = async () => {
+  const handleLockVault = async (reason: 'idle' | 'manual') => {
     setIsLocked(true);
+    setLockReason(reason);
 
     const prevLog = auditLogs[0] || null;
     const lockLog = await createChainedAuditEntry(prevLog, {
       action: 'VAULT_LOCKED',
       userRole,
-      details: 'Vault auto-locked due to inactivity / manual trigger. In-memory keys zeroized.',
+      details:
+        reason === 'idle'
+          ? 'Vault auto-locked after 5 minutes of inactivity. In-memory keys zeroized.'
+          : 'Vault manually locked by user. In-memory keys zeroized.',
     });
     setAuditLogs((prev) => [lockLog, ...prev]);
   };
+
+  // useAutoLock resets its idle timer whenever the callback identity it's
+  // given changes — an inline arrow here would be recreated on every App
+  // re-render (e.g. switching tabs), silently treating unrelated re-renders
+  // as user activity and extending the idle window past 5 real minutes. The
+  // ref keeps the callback identity stable across renders while still
+  // calling the latest handleLockVault (which closes over current state).
+  const handleLockVaultRef = useRef(handleLockVault);
+  handleLockVaultRef.current = handleLockVault;
+  const handleIdleLock = useCallback(() => {
+    handleLockVaultRef.current('idle');
+  }, []);
+
+  // Inactivity Auto-Lock (5 Minutes)
+  useAutoLock(isLocked, handleIdleLock, 300000);
 
   const handleAttemptUnlock = async (passphrase: string): Promise<CryptoKey | null> => {
     if (!vaultPassphraseRecord) {
@@ -151,37 +169,48 @@ export const App: React.FC = () => {
         setActiveTab={setActiveTab}
         userRole={userRole}
         setUserRole={setUserRole}
-        onLockVault={handleLockVault}
+        onLockVault={() => handleLockVault('manual')}
       />
 
       <main className="main-wrapper" id="main-content">
         {activeTab === 'query' && (
-          <QueryWorkbench
-            chunks={chunks}
-            selectedPrivileges={selectedPrivileges}
-            togglePrivilege={togglePrivilege}
-            onQueryProcessed={handleQueryProcessed}
-          />
+          <div role="tabpanel" id="panel-query-workbench" aria-labelledby="tab-query-workbench" tabIndex={0}>
+            <QueryWorkbench
+              chunks={chunks}
+              selectedPrivileges={selectedPrivileges}
+              togglePrivilege={togglePrivilege}
+              onQueryProcessed={handleQueryProcessed}
+            />
+          </div>
         )}
 
         {activeTab === 'documents' && (
-          <DocumentManager
-            documents={documents}
-            chunks={chunks}
-            onDocumentAdded={handleDocumentAdded}
-          />
+          <div role="tabpanel" id="panel-document-library" aria-labelledby="tab-document-library" tabIndex={0}>
+            <DocumentManager
+              documents={documents}
+              chunks={chunks}
+              onDocumentAdded={handleDocumentAdded}
+            />
+          </div>
         )}
 
-        {activeTab === 'redaction' && <PIIRedactionPanel chunks={chunks} />}
+        {activeTab === 'redaction' && (
+          <div role="tabpanel" id="panel-pii-redaction" aria-labelledby="tab-pii-redaction" tabIndex={0}>
+            <PIIRedactionPanel chunks={chunks} />
+          </div>
+        )}
 
         {activeTab === 'audit' && (
-          <AuditLogView auditLogs={auditLogs} lastResponse={lastResponse} />
+          <div role="tabpanel" id="panel-audit-ledger" aria-labelledby="tab-audit-ledger" tabIndex={0}>
+            <AuditLogView auditLogs={auditLogs} lastResponse={lastResponse} />
+          </div>
         )}
       </main>
 
       <VaultLockModal
         isLocked={isLocked}
         isFirstUnlock={vaultPassphraseRecord === null}
+        lockReason={lockReason}
         onUnlockSuccess={handleUnlockSuccess}
         onAttemptUnlock={handleAttemptUnlock}
       />
