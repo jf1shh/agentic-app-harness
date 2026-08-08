@@ -39,15 +39,16 @@ test.describe('BDD Spec: MoodDiner Recommendation & Reservation Engine', () => {
     await expect(page.locator('#weather-toggle-btn')).toContainText('Winter');
   });
 
-  test('Given a selected restaurant card, When opening details modal and submitting booking form, Then confirm reservation', async ({ page }) => {
+  test('Given a selected restaurant card, When opening details modal and stepping through the booking flow, Then confirm reservation', async ({ page }) => {
     // Given user clicks Book Table on restaurant card
     await page.goto('/');
     const firstBookBtn = page.locator('[id^="btn-book-"]').first();
     await firstBookBtn.click();
 
-    // Then open details modal with Reserve Table active
+    // Then open details modal with Reserve Table active, starting on step 1 of 4
     await expect(page.locator('#tab-book')).toBeVisible();
-    await expect(page.locator('#submit-reservation-btn')).toBeVisible();
+    await expect(page.locator('#booking-step-datetime')).toBeVisible();
+    await expect(page.locator('#submit-reservation-btn')).toHaveCount(0);
 
     // When inspecting Menu and Busy Times tabs
     await page.click('#tab-menu');
@@ -56,12 +57,54 @@ test.describe('BDD Spec: MoodDiner Recommendation & Reservation Engine', () => {
     await page.click('#tab-busy');
     await expect(page.locator('h4:has-text("Hourly Popularity & Busy Heatmap")')).toBeVisible();
 
-    // When returning to Reserve Table tab & submitting booking form
+    // When returning to Reserve Table tab and stepping through date/time, party/occasion,
+    // and seating/notes to the review step
     await page.click('#tab-book');
+    await expect(page.locator('#booking-step-datetime')).toBeVisible();
+    await page.click('#booking-next-btn');
+    await expect(page.locator('#booking-step-party')).toBeVisible();
+    await page.click('#booking-next-btn');
+    await expect(page.locator('#booking-step-seating')).toBeVisible();
+    await page.click('#booking-next-btn');
+    await expect(page.locator('#booking-step-review')).toBeVisible();
     await page.click('#submit-reservation-btn');
 
     // Then display reservation confirmation dialog
     await expect(page.locator('h3:has-text("Reservation Confirmed!")')).toBeVisible();
+  });
+
+  test('Given a value entered on an earlier booking step, When the user advances and returns to it, Then the value is still there', async ({ page }) => {
+    // Given a party size chosen on step 2 of the booking flow
+    await page.goto('/');
+    await page.locator('[id^="btn-book-"]').first().click();
+    await page.click('#booking-next-btn');
+    await expect(page.locator('#booking-step-party')).toBeVisible();
+    await page.selectOption('#booking-party-select', '6');
+
+    // When advancing to step 3 and then returning to step 2
+    await page.click('#booking-next-btn');
+    await expect(page.locator('#booking-step-seating')).toBeVisible();
+    await page.click('#booking-back-btn');
+
+    // Then the previously chosen party size is still selected
+    await expect(page.locator('#booking-step-party')).toBeVisible();
+    await expect(page.locator('#booking-party-select')).toHaveValue('6');
+  });
+
+  test('Given the restaurant detail modal is open, When arrow keys are pressed on the tab list, Then focus moves between tabs and the panel activates', async ({ page }) => {
+    // Given the modal opens on the Menu tab
+    await page.goto('/');
+    await page.locator('[id^="btn-menu-"]').first().click();
+    await expect(page.locator('#tab-menu')).toHaveAttribute('aria-selected', 'true');
+    await page.locator('#tab-menu').focus();
+
+    // When the right arrow key is pressed
+    await page.keyboard.press('ArrowRight');
+
+    // Then focus and selection move to the Popular Times tab, and its panel renders
+    await expect(page.locator('#tab-busy')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tab-busy')).toBeFocused();
+    await expect(page.locator('#panel-busy')).toBeVisible();
   });
 
   test('Given MoodDiner UI layout, When scanned by axe accessibility engine, Then pass zero WCAG 2.0 AA violations', async ({ page }) => {

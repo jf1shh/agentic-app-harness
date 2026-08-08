@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
-import { X, Star, MapPin, Footprints, Car, CheckCircle2, Clock, Utensils, BarChart3, Calendar, ShieldCheck, AlertTriangle, MessageSquareQuote } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Star, MapPin, Footprints, Car, CheckCircle2, Clock, Utensils, BarChart3, Calendar, ShieldCheck, AlertTriangle, MessageSquareQuote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Restaurant, WeatherCondition, Reservation, MenuItem } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
 import { formatOpeningHours } from '../utils/openStatus';
 import { parseReviewCommentsForMood } from '../utils/reviewVibeParser';
 
 type TabType = 'overview' | 'menu' | 'busy' | 'book';
+
+// Single source for time-slot labels, consumed by the select in step 1 and
+// the review step / confirmation screen, so the friendly label can't drift
+// between where it's chosen and where it's confirmed.
+const TIME_SLOTS: { value: string; label: string }[] = [
+  { value: '17:00', label: '5:00 PM (Quiet & Intimate)' },
+  { value: '18:00', label: '6:00 PM (Moderate)' },
+  { value: '19:00', label: '7:00 PM (Prime Dinner)' },
+  { value: '20:00', label: '8:00 PM (Prime Dinner)' },
+  { value: '21:00', label: '9:00 PM (Late Night)' },
+];
+
+const BOOKING_STEP_LABELS = ['Date & time', 'Party & occasion', 'Seating & notes', 'Review & confirm'];
 
 interface RestaurantModalProps {
   restaurant: Restaurant | null;
@@ -23,9 +36,11 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
   onBookReservation,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const tabRefs = useRef<Partial<Record<TabType, HTMLButtonElement | null>>>({});
   const [selectedMenuCategory, setSelectedMenuCategory] = useState<string>('All');
-  
+
   // Booking Form State
+  const [bookingStep, setBookingStep] = useState<number>(1);
   const [bookingDate, setBookingDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [bookingTime, setBookingTime] = useState<string>('19:00');
   const [partySize, setPartySize] = useState<number>(2);
@@ -50,8 +65,14 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
     ? restaurant.menu
     : restaurant.menu.filter((item) => item.category === selectedMenuCategory);
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleBookingSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    // Guards against submitting from any step but the last — belt-and-braces
+    // alongside removing type="submit" from every nav button below, since a
+    // <button> reused across a same-position ternary can have its `type`
+    // flipped by React mid-click, which the browser can treat as an implicit
+    // submit of whichever click triggered the flip.
+    if (bookingStep !== BOOKING_STEP_LABELS.length) return;
     onBookReservation({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
@@ -71,6 +92,23 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
     { id: 'busy', label: 'Popular Times', icon: BarChart3 },
     { id: 'book', label: 'Reserve Table', icon: Calendar },
   ];
+
+  // Shared by the tab click handler and the arrow-key roving-tabindex handler
+  // below, so activating a tab is defined once rather than twice.
+  const activateTab = (tabId: TabType) => {
+    setActiveTab(tabId);
+    setBookingSuccess(false);
+  };
+
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+    const delta = e.key === 'ArrowRight' ? 1 : -1;
+    const nextTab = tabs[(currentIndex + delta + tabs.length) % tabs.length].id;
+    activateTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -94,14 +132,24 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', padding: '0 24px', gap: '8px', background: '#0b0f19' }}>
+        <div
+          role="tablist"
+          aria-label={`${restaurant.name} details`}
+          onKeyDown={handleTabKeyDown}
+          style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', padding: '0 24px', gap: '8px', background: '#0b0f19' }}
+        >
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setBookingSuccess(false); }}
+                ref={(el) => { tabRefs.current[tab.id] = el; }}
+                onClick={() => activateTab(tab.id)}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`panel-${tab.id}`}
+                tabIndex={isActive ? 0 : -1}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -129,7 +177,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
           
           {/* TAB 1: OVERVIEW & MULTI-SOURCE SCORES */}
           {activeTab === 'overview' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabIndex={0} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               {/* Multi-Source Aggregate Panel */}
               <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '18px' }}>
@@ -244,7 +292,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
 
           {/* TAB 2: MENU */}
           {activeTab === 'menu' && (
-            <div>
+            <div role="tabpanel" id="panel-menu" aria-labelledby="tab-menu" tabIndex={0}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
                   Extracted live from <a href={restaurant.websiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>{restaurant.websiteUrl}</a>
@@ -318,7 +366,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
 
           {/* TAB 3: POPULAR TIMES & BUSY HEATMAP */}
           {activeTab === 'busy' && (
-            <div>
+            <div role="tabpanel" id="panel-busy" aria-labelledby="tab-busy" tabIndex={0}>
               <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '6px' }}>Hourly Popularity & Busy Heatmap</h4>
               <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '20px' }}>
                 Analyze traffic trends to pick the ideal arrival time for your desired dining vibe.
@@ -371,7 +419,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
 
           {/* TAB 4: RESERVE TABLE */}
           {activeTab === 'book' && (
-            <div>
+            <div role="tabpanel" id="panel-book" aria-labelledby="tab-book" tabIndex={0}>
               {bookingSuccess ? (
                 <div style={{ textAlign: 'center', padding: '32px 16px' }}>
                   <div style={{ width: '64px', height: '64px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
@@ -381,112 +429,206 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
                     Reservation Confirmed!
                   </h3>
                   <p style={{ color: '#cbd5e1', fontSize: '0.95rem', marginBottom: '20px' }}>
-                    Table reserved at <strong>{restaurant.name}</strong> for <strong>{partySize} guests</strong> on <strong>{bookingDate}</strong> at <strong>{bookingTime}</strong>.
+                    Table reserved at <strong>{restaurant.name}</strong> for <strong>{partySize} guests</strong> on <strong>{bookingDate}</strong> at <strong>{TIME_SLOTS.find((t) => t.value === bookingTime)?.label ?? bookingTime}</strong>.
                   </p>
-                  <button onClick={() => setActiveTab('overview')} className="btn-secondary" id="btn-back-overview">
+                  <button
+                    onClick={() => { setActiveTab('overview'); setBookingSuccess(false); setBookingStep(1); }}
+                    className="btn-secondary"
+                    id="btn-back-overview"
+                  >
                     View Reservation Summary
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Date</label>
-                      <input
-                        type="date"
-                        value={bookingDate}
-                        onChange={(e) => setBookingDate(e.target.value)}
-                        style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
-                        required
-                        id="booking-date-input"
-                      />
-                    </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Time Slot</label>
-                      <select
-                        value={bookingTime}
-                        onChange={(e) => setBookingTime(e.target.value)}
-                        style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
-                        id="booking-time-select"
-                      >
-                        <option value="17:00">5:00 PM (Quiet & Intimate)</option>
-                        <option value="18:00">6:00 PM (Moderate)</option>
-                        <option value="19:00">7:00 PM (Prime Dinner)</option>
-                        <option value="20:00">8:00 PM (Prime Dinner)</option>
-                        <option value="21:00">9:00 PM (Late Night)</option>
-                      </select>
-                    </div>
+                  {/* Step progress */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} aria-hidden="true">
+                    {BOOKING_STEP_LABELS.map((label, i) => {
+                      const stepNum = i + 1;
+                      const isCurrent = bookingStep === stepNum;
+                      const isDone = bookingStep > stepNum;
+                      return (
+                        <React.Fragment key={label}>
+                          <span
+                            style={{
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              background: isCurrent ? '#f59e0b' : isDone ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255,255,255,0.08)',
+                              color: isCurrent ? '#0b0f19' : isDone ? '#34d399' : '#64748b',
+                            }}
+                          >
+                            {isDone ? <CheckCircle2 size={13} /> : stepNum}
+                          </span>
+                          {stepNum < BOOKING_STEP_LABELS.length && (
+                            <span style={{ flex: 1, height: '2px', minWidth: '12px', background: isDone ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)' }} />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '-8px 0 0' }} id="booking-step-label">
+                    Step {bookingStep} of {BOOKING_STEP_LABELS.length} — {BOOKING_STEP_LABELS[bookingStep - 1]}
+                  </p>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Party Size</label>
-                      <select
-                        value={partySize}
-                        onChange={(e) => setPartySize(Number(e.target.value))}
-                        style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
-                        id="booking-party-select"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
-                          <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* STEP 1: DATE & TIME */}
+                  {bookingStep === 1 && (
+                    <div id="booking-step-datetime" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Date</label>
+                        <input
+                          type="date"
+                          value={bookingDate}
+                          onChange={(e) => setBookingDate(e.target.value)}
+                          style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
+                          required
+                          id="booking-date-input"
+                        />
+                      </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Occasion</label>
-                      <select
-                        value={occasion}
-                        onChange={(e) => setOccasion(e.target.value)}
-                        style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
-                        id="booking-occasion-select"
-                      >
-                        {['Anniversary', 'Birthday', 'First Date', 'Business Dinner', 'Casual Dining'].map((o) => (
-                          <option key={o} value={o}>{o}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Seating Preference</label>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      {(['Outdoor', 'Indoor', 'Window', 'Booth'] as const).map((pref) => (
-                        <button
-                          type="button"
-                          key={pref}
-                          onClick={() => setSeatingPreference(pref)}
-                          className={`glass-pill ${seatingPreference === pref ? 'active' : ''}`}
-                          style={{ flex: 1, padding: '8px' }}
-                          id={`seating-pref-${pref.toLowerCase()}`}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Time Slot</label>
+                        <select
+                          value={bookingTime}
+                          onChange={(e) => setBookingTime(e.target.value)}
+                          style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
+                          id="booking-time-select"
                         >
-                          {pref}
-                        </button>
-                      ))}
+                          {TIME_SLOTS.map((slot) => (
+                            <option key={slot.value} value={slot.value}>{slot.label}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Special Requests / Notes</label>
-                    <textarea
-                      value={specialRequests}
-                      onChange={(e) => setSpecialRequests(e.target.value)}
-                      placeholder="e.g. Anniversary candle, window view, allergy notes..."
-                      style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', height: '70px' }}
-                      id="booking-notes-input"
-                    />
-                  </div>
+                  {/* STEP 2: PARTY & OCCASION */}
+                  {bookingStep === 2 && (
+                    <div id="booking-step-party" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Party Size</label>
+                        <select
+                          value={partySize}
+                          onChange={(e) => setPartySize(Number(e.target.value))}
+                          style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
+                          id="booking-party-select"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
+                            <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ padding: '12px', fontSize: '1rem', marginTop: '8px' }}
-                    id="submit-reservation-btn"
-                  >
-                    Confirm Instant Booking
-                  </button>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Occasion</label>
+                        <select
+                          value={occasion}
+                          onChange={(e) => setOccasion(e.target.value)}
+                          style={{ width: '100%', padding: '10px', background: '#1f2937', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff' }}
+                          id="booking-occasion-select"
+                        >
+                          {['Anniversary', 'Birthday', 'First Date', 'Business Dinner', 'Casual Dining'].map((o) => (
+                            <option key={o} value={o}>{o}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 3: SEATING & NOTES */}
+                  {bookingStep === 3 && (
+                    <div id="booking-step-seating" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Seating Preference</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                          {(['Outdoor', 'Indoor', 'Window', 'Booth'] as const).map((pref) => (
+                            <button
+                              type="button"
+                              key={pref}
+                              onClick={() => setSeatingPreference(pref)}
+                              className={`glass-pill ${seatingPreference === pref ? 'active' : ''}`}
+                              style={{ flex: '1 1 100px', padding: '8px' }}
+                              id={`seating-pref-${pref.toLowerCase()}`}
+                            >
+                              {pref}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '6px' }}>Special Requests / Notes</label>
+                        <textarea
+                          value={specialRequests}
+                          onChange={(e) => setSpecialRequests(e.target.value)}
+                          placeholder="e.g. Anniversary candle, window view, allergy notes..."
+                          style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#fff', height: '70px' }}
+                          id="booking-notes-input"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 4: REVIEW & CONFIRM */}
+                  {bookingStep === 4 && (
+                    <div id="booking-step-review" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.88rem', color: '#cbd5e1' }}>
+                        <div style={{ fontWeight: 700, color: '#f8fafc' }}>{restaurant.name}</div>
+                        <div>
+                          {bookingDate} at {TIME_SLOTS.find((t) => t.value === bookingTime)?.label ?? bookingTime} — {partySize} {partySize === 1 ? 'guest' : 'guests'}
+                        </div>
+                        <div>{occasion} • {seatingPreference} seating</div>
+                        {specialRequests && (
+                          <div style={{ color: '#94a3b8', fontStyle: 'italic' }}>"{specialRequests}"</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step navigation */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
+                    {bookingStep > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setBookingStep((s) => s - 1)}
+                        className="btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                        id="booking-back-btn"
+                      >
+                        <ChevronLeft size={16} /> Back
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+                    {bookingStep < BOOKING_STEP_LABELS.length ? (
+                      <button
+                        type="button"
+                        onClick={() => setBookingStep((s) => s + 1)}
+                        className="btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                        id="booking-next-btn"
+                      >
+                        Next <ChevronRight size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleBookingSubmit()}
+                        className="btn-primary"
+                        style={{ padding: '10px 20px', fontSize: '1rem' }}
+                        id="submit-reservation-btn"
+                      >
+                        Confirm Instant Booking
+                      </button>
+                    )}
+                  </div>
 
                 </form>
               )}
