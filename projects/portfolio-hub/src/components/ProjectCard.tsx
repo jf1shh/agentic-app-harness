@@ -33,7 +33,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
       </p>
 
       {/* Metrics Row */}
-      <div style={{ background: 'rgba(255,43,70,0.04)', border: '1px solid rgba(255,43,70,0.1)', borderRadius: '2px', padding: '0.75rem', marginBottom: '1.25rem' }}>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px', padding: '0.75rem', marginBottom: '1.25rem' }}>
         <div className="font-display" style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Verification Metrics</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-body)' }}>
           <span>Vitest: <strong style={{ color: 'var(--accent-verified)' }}>{project.metrics.unitTests} Unit Tests</strong></span>
@@ -44,7 +44,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
       {/* Tech Stack Pills */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '1.25rem' }}>
         {project.techStack.map((tech, idx) => (
-          <span key={idx} className="font-display" style={{ background: 'rgba(255,43,70,0.06)', color: 'var(--text-body)', fontSize: '0.68rem', padding: '2px 8px', borderRadius: '2px' }}>
+          <span key={idx} className="font-display" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-body)', fontSize: '0.68rem', padding: '2px 8px', borderRadius: '2px' }}>
             {tech}
           </span>
         ))}

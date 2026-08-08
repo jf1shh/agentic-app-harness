@@ -17,7 +17,7 @@ export const SpecModal: React.FC<SpecModalProps> = ({ project, onClose }) => {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(10, 5, 5, 0.85)',
+      backgroundColor: 'rgba(5, 5, 5, 0.85)',
       backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
@@ -40,8 +40,8 @@ export const SpecModal: React.FC<SpecModalProps> = ({ project, onClose }) => {
             position: 'absolute',
             top: '1.25rem',
             right: '1.25rem',
-            background: 'rgba(255,43,70,0.1)',
-            border: '1px solid rgba(255,43,70,0.2)',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.14)',
             color: 'var(--text-muted)',
             width: '32px',
             height: '32px',
@@ -63,10 +63,10 @@ export const SpecModal: React.FC<SpecModalProps> = ({ project, onClose }) => {
         </div>
 
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-          Spec Path: <code style={{ color: 'var(--accent-primary)', background: 'rgba(255,43,70,0.1)', padding: '2px 6px', borderRadius: '2px' }}>{project.specPath}</code>
+          Spec Path: <code style={{ color: 'var(--accent-primary)', background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '2px' }}>{project.specPath}</code>
         </p>
 
-        <div style={{ background: 'rgba(21,10,12,0.6)', padding: '1.25rem', borderRadius: '0', border: '1px solid rgba(255,43,70,0.12)', marginBottom: '1.5rem' }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.25rem', borderRadius: '0', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem' }}>
           <h3 className="font-display" style={{ fontSize: '1rem', color: 'var(--accent-primary)', marginBottom: '0.5rem' }}>Single Source of Truth & Acceptance Criteria</h3>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
             {project.description}
@@ -75,13 +75,13 @@ export const SpecModal: React.FC<SpecModalProps> = ({ project, onClose }) => {
 
         <h4 className="font-display" style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-main)' }}>Verified CI/CD Metric Thresholds</h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div style={{ background: 'rgba(255,43,70,0.04)', padding: '10px', borderRadius: '2px', border: '1px solid rgba(255,43,70,0.1)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '2px', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Unit Test Suite</div>
             <div style={{ fontWeight: 700, color: 'var(--accent-verified)', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <CheckCircle size={14} /> {project.metrics.unitTests} Vitest Specs Passed
             </div>
           </div>
-          <div style={{ background: 'rgba(255,43,70,0.04)', padding: '10px', borderRadius: '2px', border: '1px solid rgba(255,43,70,0.1)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '2px', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Accessibility Compliance</div>
             <div style={{ fontWeight: 700, color: 'var(--accent-verified)', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <CheckCircle size={14} /> {project.metrics.a11yScore}

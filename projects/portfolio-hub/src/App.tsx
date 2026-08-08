@@ -21,7 +21,7 @@ interface AnimatedStatProps {
 const AnimatedStat: React.FC<AnimatedStatProps> = ({ label, value, suffix = '', color }) => {
   const animated = useCountUp(value);
   return (
-    <div style={{ background: 'rgba(255,43,70,0.04)', border: '1px solid rgba(255,43,70,0.1)', borderRadius: '2px', padding: '1rem' }}>
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px', padding: '1rem' }}>
       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{label}</div>
       <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color, letterSpacing: '0.02em' }}>{animated}{suffix}</div>
     </div>
@@ -91,13 +91,13 @@ export const App: React.FC = () => {
             suffix={` Tests (${TOTAL_UNIT_TESTS} Unit / ${TOTAL_E2E_TESTS} E2E)`}
             color="#4dfff0"
           />
-          <div style={{ background: 'rgba(255,43,70,0.04)', border: '1px solid rgba(255,43,70,0.1)', borderRadius: '2px', padding: '1rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px', padding: '1rem' }}>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Accessibility Rate</div>
             <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-verified)' }}>100% WCAG AA</div>
           </div>
-          <div style={{ background: 'rgba(255,43,70,0.04)', border: '1px solid rgba(255,43,70,0.1)', borderRadius: '2px', padding: '1rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px', padding: '1rem' }}>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Google Play Readiness</div>
-            <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-tertiary)' }}>Capacitor APK</div>
+            <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>Capacitor APK</div>
           </div>
         </div>
       </section>
@@ -113,8 +113,8 @@ export const App: React.FC = () => {
               padding: '6px 16px',
               borderRadius: '2px',
               border: '1px solid',
-              borderColor: activeCategory === cat ? '#ff2b46' : 'rgba(255,43,70,0.14)',
-              background: activeCategory === cat ? 'linear-gradient(135deg, #ff2b46, #7a0c1e)' : 'rgba(255,43,70,0.04)',
+              borderColor: activeCategory === cat ? '#ff2b46' : 'rgba(255,255,255,0.12)',
+              background: activeCategory === cat ? 'linear-gradient(135deg, #ff2b46, #7a0c1e)' : 'rgba(255,255,255,0.03)',
               color: activeCategory === cat ? '#ffffff' : 'var(--text-muted)',
               fontWeight: 700,
               cursor: 'pointer',
@@ -153,7 +153,7 @@ export const App: React.FC = () => {
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '1rem' }}>
           <AnimatedStat label="Guardrails Enforced in CI" value={LOOP_STATS.guardrailCount} suffix=" Guardrails" color="#ff2b46" />
-          <AnimatedStat label="Documented Learned Lessons" value={LOOP_STATS.lessonCount} suffix=" Lessons" color="#ff6b81" />
+          <AnimatedStat label="Documented Learned Lessons" value={LOOP_STATS.lessonCount} suffix=" Lessons" color="var(--text-main)" />
           <AnimatedStat label="Apps Under the Same Gate" value={LOOP_STATS.appCount} suffix=" Apps" color="#4dfff0" />
         </div>
       </section>
@@ -161,7 +161,7 @@ export const App: React.FC = () => {
       <CaseStudySection />
 
       {/* Footer */}
-      <footer style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,43,70,0.16)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+      <footer style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
         <div style={{ fontWeight: 700, color: 'var(--text-body)', marginBottom: '0.5rem' }}>
           Jared Fisher — AI/Full-Stack Engineer
         </div>

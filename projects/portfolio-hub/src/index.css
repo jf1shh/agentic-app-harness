@@ -1,19 +1,23 @@
+/* True black-first cyberpunk theme: surfaces, borders and body copy are
+   neutral black/gray by default, so accent-primary (red) reads as an actual
+   highlight — a CTA, an active state, a hover glow — instead of tinting
+   every panel on the page. --accent-primary itself is unchanged from the
+   prior palette (it was already contrast-verified at >=5:1 on the void bg);
+   only the ambient chrome around it moved off red. */
 :root {
-  --bg-void: #0a0505;
-  --bg-surface: #150a0c;
-  --bg-card: rgba(21, 10, 12, 0.72);
-  --border-color: rgba(255, 43, 70, 0.16);
-  --border-strong: rgba(255, 43, 70, 0.4);
+  --bg-void: #050505;
+  --bg-surface: #0d0d0d;
+  --bg-card: rgba(17, 17, 17, 0.75);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 43, 70, 0.55);
 
-  --text-main: #f6e9ea;
-  --text-body: #e3c9cc;
-  --text-muted: #c2a0a5;
-  --text-dim: #97767c;
+  --text-main: #f5f5f5;
+  --text-body: #c9c9c9;
+  --text-muted: #999999;
+  --text-dim: #808080;
 
   --accent-primary: #ff2b46;
   --accent-primary-dim: #7a0c1e;
-  --accent-secondary: #b3273f;
-  --accent-tertiary: #ff6b81;
   --accent-verified: #4dfff0;
 
   --glow-primary: rgba(255, 43, 70, 0.45);
@@ -32,13 +36,14 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   line-height: 1.5;
-  /* Scanlines + HUD grid + a soft glow at the top of the page — all static,
-     so this motif needs no prefers-reduced-motion gate. */
+  /* Scanlines + HUD grid are neutral gray (texture, not color); the one red
+     note is the radial glow at the top of the page — a single highlight, not
+     an ambient tint. All static, so this motif needs no prefers-reduced-motion gate. */
   background-image:
-    repeating-linear-gradient(0deg, rgba(255, 43, 70, 0.03) 0px, rgba(255, 43, 70, 0.03) 1px, transparent 1px, transparent 3px),
-    linear-gradient(rgba(255, 43, 70, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 43, 70, 0.05) 1px, transparent 1px),
-    radial-gradient(at 50% 0%, rgba(255, 43, 70, 0.12) 0px, transparent 55%);
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 3px),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    radial-gradient(at 50% 0%, rgba(255, 43, 70, 0.14) 0px, transparent 55%);
   background-size: auto, 48px 48px, 48px 48px, auto;
 }
 
@@ -78,9 +83,9 @@ body {
 .badge-amber { background: rgba(255, 43, 70, 0.14); color: var(--accent-primary); border: 1px solid rgba(255, 43, 70, 0.4); }
 /* Verified/success — terminal cyan, ≥16:1. */
 .badge-emerald { background: rgba(77, 255, 240, 0.1); color: var(--accent-verified); border: 1px solid rgba(77, 255, 240, 0.35); }
-/* Neutral/category — mid red can't carry text at 4.5:1 (~3.2:1), so this badge
-   uses it only as a tint and borrows the safe light body-text color instead. */
-.badge-indigo { background: rgba(179, 39, 63, 0.2); color: var(--text-body); border: 1px solid rgba(179, 39, 63, 0.45); }
+/* Neutral/category — genuinely neutral now: this tag is informational, not a
+   highlight, so it stays black/gray like the rest of the default-state chrome. */
+.badge-indigo { background: rgba(255, 255, 255, 0.06); color: var(--text-body); border: 1px solid rgba(255, 255, 255, 0.14); }
 
 .project-grid {
   display: grid;
@@ -116,7 +121,7 @@ body {
 }
 
 .btn-secondary {
-  background: rgba(255, 43, 70, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text-main);
   border: 1px solid var(--border-color);
   padding: 8px 18px;
@@ -156,9 +161,9 @@ body {
 
 /* Code snippet disclosure inside a project card */
 .snippet-details {
-  border: 1px solid rgba(255, 43, 70, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 2px;
-  background: rgba(255, 43, 70, 0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .snippet-summary {
@@ -187,7 +192,7 @@ details[open] > .snippet-summary .snippet-chevron {
 }
 
 .code-block {
-  border-top: 1px solid rgba(255, 43, 70, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0.85rem;
 }
 
@@ -263,7 +268,7 @@ details[open] > .skill-card-summary .skill-card-chevron {
   list-style: none;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 43, 70, 0.14);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -292,7 +297,7 @@ details[open] > .skill-card-summary .skill-card-chevron {
 .case-study-body {
   margin: 1rem 0 0;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 43, 70, 0.14);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
