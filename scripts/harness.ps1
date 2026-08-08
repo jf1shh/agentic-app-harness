@@ -65,12 +65,16 @@ switch ($Command.ToLower()) {
   }
 
   "verify" {
-    Write-Host "Running Harness Verify Gate (guardrail self-test + lesson traceability + blocking findings)..." -ForegroundColor Cyan
+    Write-Host "Running Harness Verify Gate (guardrail self-test + lesson traceability + blocking findings + doc claims)..." -ForegroundColor Cyan
     & node "$PSScriptRoot\harness-status.test.mjs"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & node "$PSScriptRoot\harness-learn.mjs"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & node "$PSScriptRoot\harness-status.mjs" --gate
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & node "$PSScriptRoot\check-doc-claims.test.mjs"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & node "$PSScriptRoot\check-doc-claims.mjs" --gate
     exit $LASTEXITCODE
   }
 

@@ -42,8 +42,9 @@
  * outright deletion, and any edit to gate logic (isBlocking, senseApp, the
  * two other gate scripts) that isn't accompanied by growing the registry.
  *
- * Zero dependencies. Not yet wired into CI — see the PR that introduces this
- * file for why. Run locally with:
+ * Zero dependencies. Wired into .github/workflows/sdd-sentinel.yml (self-test,
+ * then --base/--head/PR_BODY) the same way check-enum-blast-radius.mjs is. Run
+ * locally with:
  *   node scripts/check-guardrail-integrity.mjs --base origin/master --head HEAD
  */
 

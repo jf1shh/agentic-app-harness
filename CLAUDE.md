@@ -76,6 +76,10 @@ node scripts/emit-tasks.mjs --prune       # retire work orders whose findings ar
 node scripts/harness-learn.mjs            # learn: enforce Lesson ⇄ Guardrail ⇄ Self-test traceability
 node scripts/harness-status.test.mjs      # self-test the guardrails themselves
 node scripts/check-enum-blast-radius.mjs  # diff-shaped: widened enum/union has an unvisited consumer
+node scripts/check-doc-claims.mjs --gate  # verify: checked-in docs (this file included) match what they claim
+node scripts/check-guardrail-integrity.mjs --base origin/master --head HEAD
+                                           # diff-shaped: "who guards the guards" — blocks a deleted
+                                           # guardrail or shrunk gate self-test, silent on additions
 ```
 
 `.\scripts\harness.ps1 {status|tasks|verify|learn}` wraps the same four in one entry point.
@@ -125,8 +129,10 @@ lesson, so the enforcement can't silently rot or silently expand past what's doc
 
 **CI** (`.github/workflows/`): `ci.yml` runs `node scripts/test-app.mjs <app>` as one parallel matrix leg
 per app on `ubuntu-latest`; `sdd-sentinel.yml` runs the harness gate plus `check-enum-blast-radius.mjs`,
-`check-doc-claims.mjs --gate` (checked-in docs must match what they claim), and `validate-specs.ps1
--Strict` on every PR; `deploy-pages.yml` and `android-release.yml` build and ship
+`check-doc-claims.mjs --gate` (checked-in docs must match what they claim),
+`check-guardrail-integrity.mjs` ("who guards the guards" — blocks a silently deleted guardrail or
+shrunk gate self-test), and `validate-specs.ps1 -Strict` on every PR; `deploy-pages.yml` and
+`android-release.yml` build and ship
 the live artifacts (GitHub Pages, and the `mood-diner` Android APK) — both already run on `ubuntu-latest`,
 which is why `ci.yml` does too rather than paying for a Windows runner to exercise the `.ps1` wrapper.
 
