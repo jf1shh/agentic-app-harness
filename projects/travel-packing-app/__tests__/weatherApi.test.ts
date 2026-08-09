@@ -29,6 +29,41 @@ describe('weatherApi logic', () => {
     expect(itinerary[1].dayNumber).toBe(2);
     expect(itinerary[1].weatherWarmthTarget).toBe(6); // 15C -> 6
   });
+
+  it('Given no per-day activities, When transformed, Then every day falls back to the single default activity', () => {
+    const mockMeteoResponse = {
+      time: ['2026-08-01', '2026-08-02'],
+      temperature_2m_max: [30, 15],
+      temperature_2m_min: [20, 10],
+      precipitation_sum: [0, 5],
+    };
+    const itinerary = transformWeatherToItinerary(mockMeteoResponse, 'transit');
+    expect(itinerary[0].activity).toBe('transit');
+    expect(itinerary[1].activity).toBe('transit');
+  });
+
+  it('Given a per-day activities array, When transformed, Then each day carries its own tagged activity instead of one blanket default', () => {
+    const mockMeteoResponse = {
+      time: ['2026-08-01', '2026-08-02', '2026-08-03'],
+      temperature_2m_max: [30, 15, 20],
+      temperature_2m_min: [20, 10, 12],
+      precipitation_sum: [0, 5, 0],
+    };
+    const itinerary = transformWeatherToItinerary(mockMeteoResponse, 'sightseeing', ['beach', 'formal', 'hike']);
+    expect(itinerary.map((d) => d.activity)).toEqual(['beach', 'formal', 'hike']);
+  });
+
+  it('Given a per-day activities array shorter than the trip, When transformed, Then the missing days fall back to the default activity', () => {
+    const mockMeteoResponse = {
+      time: ['2026-08-01', '2026-08-02'],
+      temperature_2m_max: [30, 15],
+      temperature_2m_min: [20, 10],
+      precipitation_sum: [0, 5],
+    };
+    const itinerary = transformWeatherToItinerary(mockMeteoResponse, 'sightseeing', ['beach']);
+    expect(itinerary[0].activity).toBe('beach');
+    expect(itinerary[1].activity).toBe('sightseeing');
+  });
 });
 
 describe('searchLocations', () => {
