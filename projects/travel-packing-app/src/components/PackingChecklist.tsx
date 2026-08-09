@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Garment } from '../types';
 import { useT } from '../i18n/context';
+import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage } from '../services/groupSync';
 
 interface Props {
   garments: Garment[];
@@ -21,15 +22,48 @@ export default function PackingChecklist({ garments, tripDays }: Props) {
       return {};
     }
   });
+  // Whether BroadcastChannel is supported never changes during the
+  // component's lifetime, so it's derived once at init rather than set
+  // from inside the effect that opens the channel.
+  const [syncSupported] = useState(() => typeof BroadcastChannel !== 'undefined');
+  const channelRef = useRef<ReturnType<typeof createSyncChannel>>(null);
+
+  // Live collaborative check-off: another tab on the same origin toggling
+  // an item updates this tab's list immediately, no reload.
+  useEffect(() => {
+    const channel = createSyncChannel();
+    channelRef.current = channel;
+    if (!channel) return;
+
+    channel.onmessage = (event) => {
+      if (!isChecklistSyncMessage(event.data)) return;
+      setCheckedItems(event.data.checkedItems);
+      try {
+        localStorage.setItem('packright_checklist', JSON.stringify(event.data.checkedItems));
+      } catch (e) {
+        console.error("Failed to save synced checklist state", e);
+      }
+    };
+
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  }, []);
+
+  const persistAndSync = (next: Record<string, boolean>) => {
+    try {
+      localStorage.setItem('packright_checklist', JSON.stringify(next));
+    } catch (e) {
+      console.error("Failed to save checklist state", e);
+    }
+    broadcastChecklistUpdate(channelRef.current, next);
+  };
 
   const toggleItem = (id: string) => {
     setCheckedItems(prev => {
       const next = { ...prev, [id]: !prev[id] };
-      try {
-        localStorage.setItem('packright_checklist', JSON.stringify(next));
-      } catch (e) {
-        console.error("Failed to save checklist state", e);
-      }
+      persistAndSync(next);
       return next;
     });
   };
@@ -41,6 +75,7 @@ export default function PackingChecklist({ garments, tripDays }: Props) {
     } catch (e) {
       console.error("Failed to clear checklist state", e);
     }
+    broadcastChecklistUpdate(channelRef.current, {});
   };
 
   // Build full list of items
@@ -56,17 +91,34 @@ export default function PackingChecklist({ garments, tripDays }: Props) {
   const progressPercent = totalItems > 0 ? Math.round((checkedCount / totalItems) * 100) : 0;
 
   return (
-    <div className="glass-panel" style={{ padding: '24px', marginTop: '32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2>{t('checklist.title')}</h2>
-        <button
-          onClick={handleReset}
-          className="btn-primary"
-          style={{ backgroundColor: '#64748b', fontSize: '0.85rem', padding: '6px 12px' }}
-        >
-          {t('checklist.resetButton')}
-        </button>
+    <div className="glass-panel print-section" style={{ padding: '24px', marginTop: '32px' }}>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h2>{t('checklist.title')}</h2>
+          {syncSupported && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} title="Checkmarks sync live with other tabs open to this app">
+              🔄 Live sync across tabs
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => window.print()}
+            className="btn-secondary"
+            style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+          >
+            🖨️ Print
+          </button>
+          <button
+            onClick={handleReset}
+            className="btn-primary"
+            style={{ backgroundColor: '#64748b', fontSize: '0.85rem', padding: '6px 12px' }}
+          >
+            {t('checklist.resetButton')}
+          </button>
+        </div>
       </div>
+      <h2 className="print-only-heading" style={{ display: 'none' }}>🎒 Packing Checklist</h2>
 
       <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '16px' }}>
         {t('checklist.instructions')}

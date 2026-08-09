@@ -53,6 +53,7 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
 
   return (
     <div className="glass-panel" style={{ marginTop: '32px', padding: '24px' }}>
+      <div className="no-print">
       <h2 style={{ marginBottom: '24px', color: 'var(--primary)' }}>{t('wearability.title')}</h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '16px', marginBottom: '16px' }}>
@@ -137,6 +138,7 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
             </div>
           </div>
         ))}
+      </div>
       </div>
 
       <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} />
