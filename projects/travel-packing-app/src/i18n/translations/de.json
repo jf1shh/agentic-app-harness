@@ -23,6 +23,11 @@
     "defaultActivity": "Standardaktivität",
     "uploadWardrobeFile": "Garderobendatei hochladen (.txt oder .md)",
     "loadedGarments": "✔ {count} Kleidungsstücke aus {file} geladen",
+    "travelMode": "Reiseart",
+    "travelModeFlying": "✈️ Fliegen",
+    "travelModeDriving": "🚗 Autofahrt",
+    "travelModeTrain": "🚂 Zug",
+    "travelModeBiking": "🚴 Fahrrad",
     "suitcase": "Koffer",
     "airline": "Fluggesellschaft (Handgepäck-Limits)",
     "analyzing": "Wetter wird abgerufen und analysiert...",
@@ -49,10 +54,12 @@
     "title": "Rucksack-Engine: Gepäckphysik",
     "volumeWeight": "Volumen & Gewicht",
     "weightLine": "Gewicht: {weight}kg / {limit}kg Limit",
+    "weightLineNoLimit": "Gewicht: {weight}kg",
     "volumeLine": "Volumen: {volume}L / {capacity}L",
     "percentFull": "{percent}% Voll",
     "airlineCompliance": "Konformität mit der Fluggesellschaft",
-    "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}"
+    "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}",
+    "notFlying": "Nicht zutreffend — Handgepäck-Limits gelten nicht, da du nicht fliegst."
   },
   "itinerary": {
     "title": "Live-Reiseplan ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "1x Kulturbeutel",
     "techPouch": "1x Technik-Etui / Ladegeräte",
     "universalAdapter": "1x Universal-Reiseadapter",
+    "carCharger": "1x Auto-USB-Ladegerät",
+    "roadKit": "1x Auto-Notfallset",
     "travelAdapterFor": "1x Reiseadapter (Typ {type})"
   },
   "language": {

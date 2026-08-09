@@ -79,6 +79,13 @@
   (wardrobe photos, via the already-existing `clearAllLocalData` in `src/services/db.ts`) and every
   `localStorage` key (theme, language, checklist, saved trip), then reloads. Gated behind a native
   confirmation (`window.confirm`) describing the action as irreversible.
+- [x] Travel Mode — a Flying/Driving/Train/Biking selector (`src/utils/knapsackEngine.ts`'s
+  `TravelMode`). Airline carry-on weight and dimension limits only apply when flying:
+  `calculateKnapsackPhysics()` skips airline compliance entirely for any other mode (still enforcing
+  the suitcase's own volume capacity, which isn't airline-specific), and the Airline dropdown itself
+  is hidden from the trip form when not flying. Driving adds two checklist essentials — a car USB
+  charger and an emergency road kit — via `buildEssentialSpecs()`'s `travelMode` parameter
+  (`src/utils/checklistEssentials.ts`); train and biking add nothing extra.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

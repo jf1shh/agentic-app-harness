@@ -23,6 +23,11 @@
     "defaultActivity": "默认活动",
     "uploadWardrobeFile": "上传衣橱文件 (.txt 或 .md)",
     "loadedGarments": "✔ 已从 {file} 加载 {count} 件衣物",
+    "travelMode": "出行方式",
+    "travelModeFlying": "✈️ 飞机",
+    "travelModeDriving": "🚗 自驾",
+    "travelModeTrain": "🚂 火车",
+    "travelModeBiking": "🚴 骑行",
     "suitcase": "行李箱",
     "airline": "航空公司（随身行李限制）",
     "analyzing": "正在获取天气并分析...",
@@ -49,10 +54,12 @@
     "title": "背包引擎：行李物理计算",
     "volumeWeight": "体积与重量",
     "weightLine": "重量：{weight}kg / 上限 {limit}kg",
+    "weightLineNoLimit": "重量：{weight}kg",
     "volumeLine": "体积：{volume}L / {capacity}L",
     "percentFull": "已装 {percent}%",
     "airlineCompliance": "航空公司合规性",
-    "compliantWith": "✔ 符合 {airline} 的随身行李限制"
+    "compliantWith": "✔ 符合 {airline} 的随身行李限制",
+    "notFlying": "不适用 — 由于您不是乘坐飞机出行，航空公司随身行李限制不适用。"
   },
   "itinerary": {
     "title": "实时行程（{destination}）",
@@ -91,6 +98,8 @@
     "toiletryKit": "洗漱包 1个",
     "techPouch": "数码收纳包/充电器 1套",
     "universalAdapter": "万能旅行转换插头 1个",
+    "carCharger": "车载 USB 充电器 1个",
+    "roadKit": "汽车应急包 1个",
     "travelAdapterFor": "旅行转换插头 1个（{type} 型）"
   },
   "language": {

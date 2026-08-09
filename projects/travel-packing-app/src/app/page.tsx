@@ -5,7 +5,7 @@ import WardrobeAnalyzer from '../components/WardrobeAnalyzer';
 import { Garment, DayItinerary, WearabilityReport } from '../types';
 import { analyzeWardrobe } from '../utils/wardrobeEngine';
 import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../services/weatherApi';
-import { calculateKnapsackPhysics, PackingPhysicsReport } from '../utils/knapsackEngine';
+import { calculateKnapsackPhysics, PackingPhysicsReport, TravelMode } from '../utils/knapsackEngine';
 import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
@@ -40,6 +40,7 @@ export default function Home() {
   const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
   const [selectedSuitcase, setSelectedSuitcase] = useState(suitcaseKey(MODELS[0]));
   const [selectedAirline, setSelectedAirline] = useState('EK'); // Emirates
+  const [travelMode, setTravelMode] = useState<TravelMode>('flying');
 
   const [archetype, setArchetype] = useState('quiet-luxury');
   const [strategy, setStrategy] = useState('standard');
@@ -165,7 +166,7 @@ export default function Home() {
 
       // Run Knapsack Physics
       const suitcase = MODELS.find(m => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
-      const physicsResult = calculateKnapsackPhysics(result, garmentsToUse, suitcase, selectedAirline);
+      const physicsResult = calculateKnapsackPhysics(result, garmentsToUse, suitcase, selectedAirline, travelMode);
       setPhysics(physicsResult);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -346,6 +347,15 @@ export default function Home() {
               </div>
             )}
           </div>
+          <div>
+            <label htmlFor="travelMode" className="label">{t('trip.travelMode')}</label>
+            <select id="travelMode" className="input-field" value={travelMode} onChange={e => setTravelMode(e.target.value as TravelMode)}>
+              <option value="flying">{t('trip.travelModeFlying')}</option>
+              <option value="driving">{t('trip.travelModeDriving')}</option>
+              <option value="train">{t('trip.travelModeTrain')}</option>
+              <option value="biking">{t('trip.travelModeBiking')}</option>
+            </select>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
               <SuitcaseFinder onSelect={(m) => setSelectedSuitcase(suitcaseKey(m))} />
@@ -356,14 +366,16 @@ export default function Home() {
                 ))}
               </select>
             </div>
-            <div>
-              <label htmlFor="airline" className="label">{t('trip.airline')}</label>
-              <select id="airline" className="input-field" value={selectedAirline} onChange={e => setSelectedAirline(e.target.value)}>
-                {AIRLINES.map(a => (
-                  <option key={a.code} value={a.code}>{a.name} ({a.carryOn.weight}kg)</option>
-                ))}
-              </select>
-            </div>
+            {travelMode === 'flying' && (
+              <div>
+                <label htmlFor="airline" className="label">{t('trip.airline')}</label>
+                <select id="airline" className="input-field" value={selectedAirline} onChange={e => setSelectedAirline(e.target.value)}>
+                  {AIRLINES.map(a => (
+                    <option key={a.code} value={a.code}>{a.name} ({a.carryOn.weight}kg)</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -379,7 +391,11 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
               <div style={{ padding: '16px', border: `2px solid ${physics.fitsInSuitcase ? 'var(--primary)' : 'red'}`, borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeWeight')}</h3>
-                <p>{t('knapsack.weightLine', { weight: physics.totalWeightKg.toFixed(2), limit: physics.weightLimitKg ?? 0 })}</p>
+                <p>
+                  {physics.weightLimitKg !== undefined
+                    ? t('knapsack.weightLine', { weight: physics.totalWeightKg.toFixed(2), limit: physics.weightLimitKg })
+                    : t('knapsack.weightLineNoLimit', { weight: physics.totalWeightKg.toFixed(2) })}
+                </p>
                 <p>{t('knapsack.volumeLine', { volume: physics.totalVolumeLiters.toFixed(2), capacity: physics.suitcaseCapacityLiters.toFixed(2) })}</p>
                 <div style={{ width: '100%', backgroundColor: '#334155', height: '12px', borderRadius: '6px', marginTop: '12px', overflow: 'hidden' }}>
                   <div style={{ width: `${Math.min(physics.volumeUsedPercent, 100)}%`, backgroundColor: physics.volumeUsedPercent > 100 ? 'red' : 'var(--primary)', height: '100%' }}></div>
@@ -388,7 +404,9 @@ export default function Home() {
               </div>
               <div style={{ padding: '16px', border: `2px solid ${physics.airlineCompliant ? 'var(--primary)' : 'orange'}`, borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.airlineCompliance')}</h3>
-                {physics.airlineWarnings.length > 0 ? (
+                {travelMode !== 'flying' ? (
+                  <p style={{ color: 'var(--text-muted)' }}>{t('knapsack.notFlying')}</p>
+                ) : physics.airlineWarnings.length > 0 ? (
                   <ul style={{ paddingLeft: '20px', color: 'orange' }}>
                     {physics.airlineWarnings.map((w, i) => <li key={i}>{w}</li>)}
                   </ul>
@@ -413,7 +431,7 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCode={destinationCountryCode} />
+          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCode={destinationCountryCode} travelMode={travelMode} />
           <LocalInfoPanel countryCode={destinationCountryCode} />
 
           <div className="no-print" style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>

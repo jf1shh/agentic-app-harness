@@ -22,6 +22,31 @@ describe('buildEssentialSpecs', () => {
     expect(adapter?.key).toBe('checklist.travelAdapterFor');
     expect(adapter?.params).toEqual({ type: 'C/F' });
   });
+
+  it('Given no travel mode argument, When specs are built, Then it defaults to flying and adds no road-trip essentials', () => {
+    const specs = buildEssentialSpecs(5, null);
+    expect(specs.some((s) => s.id === 'essential-car-charger')).toBe(false);
+    expect(specs.some((s) => s.id === 'essential-road-kit')).toBe(false);
+  });
+
+  it('Given travel mode is driving, When specs are built, Then a car charger and emergency road kit are appended', () => {
+    const specs = buildEssentialSpecs(5, null, 'driving');
+    expect(specs.map((s) => s.id)).toEqual([
+      'essential-underwear',
+      'essential-socks',
+      'essential-toiletries',
+      'essential-tech',
+      'essential-adapter',
+      'essential-car-charger',
+      'essential-road-kit',
+    ]);
+  });
+
+  it.each(['flying', 'train', 'biking'] as const)('Given travel mode is %s, When specs are built, Then no road-trip essentials are added', (mode) => {
+    const specs = buildEssentialSpecs(5, null, mode);
+    expect(specs.some((s) => s.id === 'essential-car-charger')).toBe(false);
+    expect(specs.some((s) => s.id === 'essential-road-kit')).toBe(false);
+  });
 });
 
 describe('computeProgressPercent', () => {

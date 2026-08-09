@@ -23,6 +23,11 @@
     "defaultActivity": "기본 활동",
     "uploadWardrobeFile": "옷장 파일 업로드 (.txt 또는 .md)",
     "loadedGarments": "✔ {file}에서 {count}개의 의류를 불러왔습니다",
+    "travelMode": "이동 수단",
+    "travelModeFlying": "✈️ 비행기",
+    "travelModeDriving": "🚗 자동차",
+    "travelModeTrain": "🚂 기차",
+    "travelModeBiking": "🚴 자전거",
     "suitcase": "여행 가방",
     "airline": "항공사 (기내 수하물 제한)",
     "analyzing": "날씨 조회 및 분석 중...",
@@ -49,10 +54,12 @@
     "title": "배낭 엔진: 수하물 물리학",
     "volumeWeight": "부피 및 무게",
     "weightLine": "무게: {weight}kg / 한도 {limit}kg",
+    "weightLineNoLimit": "무게: {weight}kg",
     "volumeLine": "부피: {volume}L / {capacity}L",
     "percentFull": "{percent}% 참",
     "airlineCompliance": "항공사 규정 준수",
-    "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다"
+    "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다",
+    "notFlying": "해당 없음 — 비행기를 이용하지 않으므로 항공사 기내 수하물 제한이 적용되지 않습니다."
   },
   "itinerary": {
     "title": "실시간 일정 ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "세면도구 세트 1개",
     "techPouch": "전자기기 파우치 / 충전기 1개",
     "universalAdapter": "멀티 여행용 어댑터 1개",
+    "carCharger": "차량용 USB 충전기 1개",
+    "roadKit": "비상 차량 안전 키트 1개",
     "travelAdapterFor": "여행용 어댑터 1개 (타입 {type})"
   },
   "language": {

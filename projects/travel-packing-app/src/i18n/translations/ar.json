@@ -23,6 +23,11 @@
     "defaultActivity": "النشاط الافتراضي",
     "uploadWardrobeFile": "تحميل ملف خزانة الملابس (.txt أو .md)",
     "loadedGarments": "✔ تم تحميل {count} قطعة من {file}",
+    "travelMode": "وسيلة السفر",
+    "travelModeFlying": "✈️ طيران",
+    "travelModeDriving": "🚗 قيادة سيارة",
+    "travelModeTrain": "🚂 قطار",
+    "travelModeBiking": "🚴 دراجة",
     "suitcase": "حقيبة السفر",
     "airline": "شركة الطيران (حدود حقيبة اليد)",
     "analyzing": "جارٍ جلب الطقس والتحليل...",
@@ -49,10 +54,12 @@
     "title": "محرك الحقيبة: فيزياء الأمتعة",
     "volumeWeight": "الحجم والوزن",
     "weightLine": "الوزن: {weight} كجم / الحد {limit} كجم",
+    "weightLineNoLimit": "الوزن: {weight} كجم",
     "volumeLine": "الحجم: {volume} لتر / {capacity} لتر",
     "percentFull": "{percent}٪ ممتلئة",
     "airlineCompliance": "مطابقة شركة الطيران",
-    "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}"
+    "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}",
+    "notFlying": "لا ينطبق — لا تُطبَّق حدود حقيبة اليد لأنك لا تسافر بالطائرة."
   },
   "itinerary": {
     "title": "خط سير الرحلة المباشر ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "حقيبة أدوات نظافة واحدة",
     "techPouch": "حقيبة إلكترونيات / شواحن واحدة",
     "universalAdapter": "محول سفر عالمي واحد",
+    "carCharger": "شاحن USB للسيارة واحد",
+    "roadKit": "طقم طوارئ للسيارة واحد",
     "travelAdapterFor": "محول سفر واحد (نوع {type})"
   },
   "language": {

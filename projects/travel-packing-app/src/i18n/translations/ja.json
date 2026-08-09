@@ -23,6 +23,11 @@
     "defaultActivity": "デフォルトのアクティビティ",
     "uploadWardrobeFile": "ワードローブファイルをアップロード (.txt または .md)",
     "loadedGarments": "✔ {file} から {count} 点の衣類を読み込みました",
+    "travelMode": "移動手段",
+    "travelModeFlying": "✈️ 飛行機",
+    "travelModeDriving": "🚗 車",
+    "travelModeTrain": "🚂 電車",
+    "travelModeBiking": "🚴 自転車",
     "suitcase": "スーツケース",
     "airline": "航空会社（手荷物制限）",
     "analyzing": "天気を取得して分析中...",
@@ -49,10 +54,12 @@
     "title": "ナップザックエンジン：荷物の物理学",
     "volumeWeight": "容量と重量",
     "weightLine": "重量：{weight}kg／上限 {limit}kg",
+    "weightLineNoLimit": "重量：{weight}kg",
     "volumeLine": "容量：{volume}L／{capacity}L",
     "percentFull": "{percent}％使用",
     "airlineCompliance": "航空会社の規定への適合",
-    "compliantWith": "✔ {airline} の手荷物制限に適合しています"
+    "compliantWith": "✔ {airline} の手荷物制限に適合しています",
+    "notFlying": "該当なし — 飛行機を利用しないため、航空会社の手荷物制限は適用されません。"
   },
   "itinerary": {
     "title": "リアルタイム旅程（{destination}）",
@@ -91,6 +98,8 @@
     "toiletryKit": "洗面用具セット 1個",
     "techPouch": "電子機器ポーチ／充電器 1式",
     "universalAdapter": "ユニバーサル変換プラグ 1個",
+    "carCharger": "車載USB充電器 1個",
+    "roadKit": "緊急ロードキット 1個",
     "travelAdapterFor": "変換プラグ 1個（タイプ {type}）"
   },
   "language": {

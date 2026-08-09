@@ -23,6 +23,11 @@
     "defaultActivity": "Activité par Défaut",
     "uploadWardrobeFile": "Importer un Fichier de Garde-robe (.txt ou .md)",
     "loadedGarments": "✔ {count} vêtements chargés depuis {file}",
+    "travelMode": "Mode de Transport",
+    "travelModeFlying": "✈️ Avion",
+    "travelModeDriving": "🚗 Voiture",
+    "travelModeTrain": "🚂 Train",
+    "travelModeBiking": "🚴 Vélo",
     "suitcase": "Valise",
     "airline": "Compagnie Aérienne (Limites Bagage Cabine)",
     "analyzing": "Récupération de la Météo et Analyse en cours...",
@@ -49,10 +54,12 @@
     "title": "Moteur de Sac à Dos : Physique du Bagage",
     "volumeWeight": "Volume et Poids",
     "weightLine": "Poids : {weight}kg / Limite de {limit}kg",
+    "weightLineNoLimit": "Poids : {weight}kg",
     "volumeLine": "Volume : {volume}L / {capacity}L",
     "percentFull": "{percent}% Plein",
     "airlineCompliance": "Conformité avec la Compagnie Aérienne",
-    "compliantWith": "✔ Conforme aux limites de bagage cabine de {airline}"
+    "compliantWith": "✔ Conforme aux limites de bagage cabine de {airline}",
+    "notFlying": "Non applicable — les limites de bagage cabine ne s'appliquent pas puisque vous ne prenez pas l'avion."
   },
   "itinerary": {
     "title": "Itinéraire en Direct ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "1 trousse de toilette",
     "techPouch": "1 pochette tech / chargeurs",
     "universalAdapter": "1 adaptateur de voyage universel",
+    "carCharger": "1 chargeur USB voiture",
+    "roadKit": "1 kit d'urgence voiture",
     "travelAdapterFor": "1 adaptateur de voyage (Type {type})"
   },
   "language": {

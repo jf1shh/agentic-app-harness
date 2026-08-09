@@ -4,14 +4,16 @@ import { WearabilityReport, Garment } from '../types';
 import { saveItemImage, getItemImage } from '../services/db';
 import PackingChecklist from './PackingChecklist';
 import { useT } from '../i18n/context';
+import { EssentialsTravelMode } from '../utils/checklistEssentials';
 
 interface Props {
   report: WearabilityReport;
   garments: Garment[];
   destinationCountryCode: string | null;
+  travelMode: EssentialsTravelMode;
 }
 
-export default function WardrobeAnalyzer({ report, garments, destinationCountryCode }: Props) {
+export default function WardrobeAnalyzer({ report, garments, destinationCountryCode, travelMode }: Props) {
   const { t } = useT();
   const getGarmentName = (id: string) => garments.find(g => g.id === id)?.name || id;
 
@@ -142,7 +144,7 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
       </div>
       </div>
 
-      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} destinationCountryCode={destinationCountryCode} />
+      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} destinationCountryCode={destinationCountryCode} travelMode={travelMode} />
     </div>
   );
 }

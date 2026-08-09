@@ -38,4 +38,36 @@ describe('knapsackEngine', () => {
     expect(result.fitsInSuitcase).toBe(true);
     expect(result.airlineCompliant).toBe(true);
   });
+
+  it('Given a load that exceeds the airline carry-on weight limit, When flying, Then it is reported non-compliant with a weight limit', () => {
+    const heavyGarments: Garment[] = [
+      { id: 'coat', name: 'Winter Coat', category: 'layer', roles: ['topper'], colors: [], warmth: 10, exclusionTags: [], weightGrams: 6000, volumeCm3: 10000 },
+      { id: 'boots', name: 'Hiking Boots', category: 'shoes', roles: ['bottom'], colors: [], warmth: 8, exclusionTags: [], weightGrams: 3000, volumeCm3: 6000 },
+    ];
+    const heavyReport: WearabilityReport = {
+      flexibilityScore: 1,
+      mvpItemId: 'coat',
+      deadWeightIds: [],
+      scheduledOutfits: [
+        { day: 1, outfit: { id: 'o1', top: heavyGarments[0], bottom: heavyGarments[1], totalWarmth: 18 } },
+      ],
+    };
+    const suitcase = MODELS[0];
+
+    const flying = calculateKnapsackPhysics(heavyReport, heavyGarments, suitcase, 'EK', 'flying');
+    expect(flying.weightLimitKg).toBe(7);
+    expect(flying.airlineCompliant).toBe(false);
+    expect(flying.fitsInSuitcase).toBe(false);
+
+    const driving = calculateKnapsackPhysics(heavyReport, heavyGarments, suitcase, 'EK', 'driving');
+    expect(driving.weightLimitKg).toBeUndefined();
+    expect(driving.airlineCompliant).toBe(true);
+    expect(driving.airlineWarnings).toEqual([]);
+  });
+
+  it('Given no travel mode argument, When physics are calculated, Then it defaults to flying (airline limits apply)', () => {
+    const suitcase = MODELS[0];
+    const result = calculateKnapsackPhysics(mockReport, mockGarments, suitcase, 'EK');
+    expect(result.weightLimitKg).toBe(7);
+  });
 });

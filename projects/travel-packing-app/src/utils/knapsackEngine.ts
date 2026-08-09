@@ -2,6 +2,8 @@ import { Garment, WearabilityReport } from '../types';
 import { checkBaggageCompliance, lookupAirline } from './airlineBaggage';
 import { SuitcaseModel } from './suitcaseDatabase';
 
+export type TravelMode = 'flying' | 'driving' | 'train' | 'biking';
+
 export interface PackingPhysicsReport {
   totalWeightKg: number;
   totalVolumeLiters: number;
@@ -17,7 +19,8 @@ export function calculateKnapsackPhysics(
   report: WearabilityReport,
   garments: Garment[],
   suitcase: SuitcaseModel,
-  airlineCode: string
+  airlineCode: string,
+  travelMode: TravelMode = 'flying'
 ): PackingPhysicsReport {
   // Find all unique garments actually scheduled in the outfits
   const packedGarmentIds = new Set<string>();
@@ -44,12 +47,29 @@ export function calculateKnapsackPhysics(
   const suitcaseCapacityLiters = (suitcase.l * suitcase.w * suitcase.h) / 1000;
   const volumeUsedPercent = (totalVolumeLiters / suitcaseCapacityLiters) * 100;
 
-  // Check airline compliance
+  let fitsInSuitcase = volumeUsedPercent <= 100;
+
+  // Airline carry-on limits (weight and dimensions) only constrain a trip
+  // that's actually flown; driving/train/biking still need to physically
+  // fit the suitcase (checked above via volume) but aren't bound by any
+  // airline's carry-on policy.
+  if (travelMode !== 'flying') {
+    return {
+      totalWeightKg,
+      totalVolumeLiters,
+      suitcaseCapacityLiters,
+      volumeUsedPercent,
+      airlineCompliant: true,
+      airlineWarnings: [],
+      fitsInSuitcase,
+      weightLimitKg: undefined,
+    };
+  }
+
   const compliance = checkBaggageCompliance(suitcase, airlineCode);
   const airline = lookupAirline(airlineCode);
   const weightLimitKg = airline?.carryOn?.weight || 0;
 
-  let fitsInSuitcase = volumeUsedPercent <= 100;
   if (weightLimitKg > 0 && totalWeightKg > weightLimitKg) {
     compliance.warnings.push(`Weight: ${totalWeightKg.toFixed(1)}kg exceeds ${weightLimitKg}kg limit`);
     fitsInSuitcase = false;

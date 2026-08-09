@@ -23,6 +23,11 @@
     "defaultActivity": "Default Activity",
     "uploadWardrobeFile": "Upload Wardrobe File (.txt or .md)",
     "loadedGarments": "✔ Loaded {count} garments from {file}",
+    "travelMode": "Travel Mode",
+    "travelModeFlying": "✈️ Flying",
+    "travelModeDriving": "🚗 Driving",
+    "travelModeTrain": "🚂 Train",
+    "travelModeBiking": "🚴 Biking",
     "suitcase": "Suitcase",
     "airline": "Airline (Carry-on Limits)",
     "analyzing": "Fetching Weather & Analyzing...",
@@ -49,10 +54,12 @@
     "title": "Knapsack Engine: Luggage Physics",
     "volumeWeight": "Volume & Weight",
     "weightLine": "Weight: {weight}kg / {limit}kg Limit",
+    "weightLineNoLimit": "Weight: {weight}kg",
     "volumeLine": "Volume: {volume}L / {capacity}L",
     "percentFull": "{percent}% Full",
     "airlineCompliance": "Airline Compliance",
-    "compliantWith": "✔ Compliant with {airline} carry-on limits"
+    "compliantWith": "✔ Compliant with {airline} carry-on limits",
+    "notFlying": "Not applicable — airline carry-on limits don't apply since you're not flying."
   },
   "itinerary": {
     "title": "Live Itinerary ({destination})",
@@ -91,7 +98,9 @@
     "toiletryKit": "1x Toiletry Kit",
     "techPouch": "1x Tech Pouch / Chargers",
     "universalAdapter": "1x Universal Travel Adapter",
-    "travelAdapterFor": "1x Travel Adapter (Type {type} outlets)"
+    "travelAdapterFor": "1x Travel Adapter (Type {type} outlets)",
+    "carCharger": "1x Car USB Charger",
+    "roadKit": "1x Emergency Road Kit"
   },
   "language": {
     "label": "Language"

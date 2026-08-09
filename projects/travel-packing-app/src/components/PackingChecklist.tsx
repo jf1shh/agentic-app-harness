@@ -4,16 +4,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Garment } from '../types';
 import { useT } from '../i18n/context';
 import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage } from '../services/groupSync';
-import { buildEssentialSpecs, computeProgressPercent } from '../utils/checklistEssentials';
+import { buildEssentialSpecs, computeProgressPercent, EssentialsTravelMode } from '../utils/checklistEssentials';
 import { getAdapterPlugType } from '../utils/plugs';
 
 interface Props {
   garments: Garment[];
   tripDays: number;
   destinationCountryCode: string | null;
+  travelMode: EssentialsTravelMode;
 }
 
-export default function PackingChecklist({ garments, tripDays, destinationCountryCode }: Props) {
+export default function PackingChecklist({ garments, tripDays, destinationCountryCode, travelMode }: Props) {
   const { t } = useT();
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -83,7 +84,7 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
 
   // Build full list of items
   const adapterPlugType = getAdapterPlugType(destinationCountryCode);
-  const essentials = buildEssentialSpecs(tripDays, adapterPlugType).map((spec) => ({
+  const essentials = buildEssentialSpecs(tripDays, adapterPlugType, travelMode).map((spec) => ({
     id: spec.id,
     name: t(spec.key, spec.params),
     category: 'Essentials',

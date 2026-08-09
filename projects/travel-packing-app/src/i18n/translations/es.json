@@ -23,6 +23,11 @@
     "defaultActivity": "Actividad Predeterminada",
     "uploadWardrobeFile": "Subir Archivo de Vestuario (.txt o .md)",
     "loadedGarments": "✔ Se cargaron {count} prendas de {file}",
+    "travelMode": "Modo de Viaje",
+    "travelModeFlying": "✈️ En Avión",
+    "travelModeDriving": "🚗 En Coche",
+    "travelModeTrain": "🚂 En Tren",
+    "travelModeBiking": "🚴 En Bicicleta",
     "suitcase": "Maleta",
     "airline": "Aerolínea (Límites de Equipaje de Mano)",
     "analyzing": "Obteniendo el Clima y Analizando...",
@@ -49,10 +54,12 @@
     "title": "Motor de Mochila: Física del Equipaje",
     "volumeWeight": "Volumen y Peso",
     "weightLine": "Peso: {weight}kg / Límite de {limit}kg",
+    "weightLineNoLimit": "Peso: {weight}kg",
     "volumeLine": "Volumen: {volume}L / {capacity}L",
     "percentFull": "{percent}% Lleno",
     "airlineCompliance": "Cumplimiento de la Aerolínea",
-    "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}"
+    "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}",
+    "notFlying": "No aplica — los límites de equipaje de mano no se aplican porque no vas en avión."
   },
   "itinerary": {
     "title": "Itinerario en Vivo ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "1 kit de aseo",
     "techPouch": "1 estuche de tecnología / cargadores",
     "universalAdapter": "1 adaptador de viaje universal",
+    "carCharger": "1 cargador USB para coche",
+    "roadKit": "1 kit de emergencia para el coche",
     "travelAdapterFor": "1 adaptador de viaje (Tipo {type})"
   },
   "language": {

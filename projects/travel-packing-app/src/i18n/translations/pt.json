@@ -23,6 +23,11 @@
     "defaultActivity": "Atividade Padrão",
     "uploadWardrobeFile": "Enviar Arquivo de Guarda-roupa (.txt ou .md)",
     "loadedGarments": "✔ {count} peças carregadas de {file}",
+    "travelMode": "Modo de Viagem",
+    "travelModeFlying": "✈️ Avião",
+    "travelModeDriving": "🚗 Carro",
+    "travelModeTrain": "🚂 Trem",
+    "travelModeBiking": "🚴 Bicicleta",
     "suitcase": "Mala",
     "airline": "Companhia Aérea (Limites de Bagagem de Mão)",
     "analyzing": "Buscando clima e analisando...",
@@ -49,10 +54,12 @@
     "title": "Motor de Mochila: Física da Bagagem",
     "volumeWeight": "Volume e Peso",
     "weightLine": "Peso: {weight}kg / Limite de {limit}kg",
+    "weightLineNoLimit": "Peso: {weight}kg",
     "volumeLine": "Volume: {volume}L / {capacity}L",
     "percentFull": "{percent}% Cheio",
     "airlineCompliance": "Conformidade com a Companhia Aérea",
-    "compliantWith": "✔ Em conformidade com os limites de bagagem de mão da {airline}"
+    "compliantWith": "✔ Em conformidade com os limites de bagagem de mão da {airline}",
+    "notFlying": "Não aplicável — os limites de bagagem de mão não se aplicam porque você não vai de avião."
   },
   "itinerary": {
     "title": "Itinerário ao Vivo ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "1 kit de higiene",
     "techPouch": "1 estojo de tecnologia / carregadores",
     "universalAdapter": "1 adaptador de viagem universal",
+    "carCharger": "1 carregador USB veicular",
+    "roadKit": "1 kit de emergência para o carro",
     "travelAdapterFor": "1 adaptador de viagem (Tipo {type})"
   },
   "language": {

@@ -67,6 +67,15 @@ independently-developed phase branch) still render their own hardcoded English s
 - **Delete All My Data** — a footer button that wipes IndexedDB (wardrobe photos, via the existing
   `clearAllLocalData()`) and every `localStorage` key, then reloads. Confirmed via `window.confirm()`.
 
+### Travel Mode
+A Flying/Driving/Train/Biking selector. Airline carry-on weight and dimension limits only apply
+when flying — `calculateKnapsackPhysics()` (`src/utils/knapsackEngine.ts`) skips airline compliance
+entirely for any other mode (the suitcase's own volume capacity still applies, since that's not
+airline-specific), and the Airline dropdown itself is hidden from the trip form when not flying.
+Driving adds two checklist essentials, a car USB charger and an emergency road kit, via
+`buildEssentialSpecs()`'s `travelMode` parameter (`src/utils/checklistEssentials.ts`); train and
+biking add nothing extra.
+
 ### Engine rules enforced by the wardrobe layer
 - **Exclusion tags** — items tagged `clash_navy` etc. are never paired.
 - **Color math** — Pink and Red, for example, are mathematically excluded from pairing.

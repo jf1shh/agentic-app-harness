@@ -23,6 +23,11 @@
     "defaultActivity": "Attività Predefinita",
     "uploadWardrobeFile": "Carica File del Guardaroba (.txt o .md)",
     "loadedGarments": "✔ Caricati {count} capi da {file}",
+    "travelMode": "Modalità di Viaggio",
+    "travelModeFlying": "✈️ Aereo",
+    "travelModeDriving": "🚗 Auto",
+    "travelModeTrain": "🚂 Treno",
+    "travelModeBiking": "🚴 Bicicletta",
     "suitcase": "Valigia",
     "airline": "Compagnia Aerea (Limiti Bagaglio a Mano)",
     "analyzing": "Recupero meteo e analisi in corso...",
@@ -49,10 +54,12 @@
     "title": "Motore Zaino: Fisica del Bagaglio",
     "volumeWeight": "Volume e Peso",
     "weightLine": "Peso: {weight}kg / Limite {limit}kg",
+    "weightLineNoLimit": "Peso: {weight}kg",
     "volumeLine": "Volume: {volume}L / {capacity}L",
     "percentFull": "{percent}% Pieno",
     "airlineCompliance": "Conformità con la Compagnia Aerea",
-    "compliantWith": "✔ Conforme ai limiti del bagaglio a mano di {airline}"
+    "compliantWith": "✔ Conforme ai limiti del bagaglio a mano di {airline}",
+    "notFlying": "Non applicabile — i limiti del bagaglio a mano non si applicano perché non stai volando."
   },
   "itinerary": {
     "title": "Itinerario in Tempo Reale ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "1 kit da toeletta",
     "techPouch": "1 astuccio tech / caricabatterie",
     "universalAdapter": "1 adattatore da viaggio universale",
+    "carCharger": "1 caricabatterie USB da auto",
+    "roadKit": "1 kit di emergenza per l'auto",
     "travelAdapterFor": "1 adattatore da viaggio (Tipo {type})"
   },
   "language": {

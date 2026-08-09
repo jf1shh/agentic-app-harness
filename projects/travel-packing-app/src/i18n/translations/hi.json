@@ -23,6 +23,11 @@
     "defaultActivity": "डिफ़ॉल्ट गतिविधि",
     "uploadWardrobeFile": "अलमारी फ़ाइल अपलोड करें (.txt या .md)",
     "loadedGarments": "✔ {file} से {count} कपड़े लोड किए गए",
+    "travelMode": "यात्रा का तरीका",
+    "travelModeFlying": "✈️ हवाई जहाज़",
+    "travelModeDriving": "🚗 कार",
+    "travelModeTrain": "🚂 ट्रेन",
+    "travelModeBiking": "🚴 साइकिल",
     "suitcase": "सूटकेस",
     "airline": "एयरलाइन (हैंड बैगेज सीमा)",
     "analyzing": "मौसम प्राप्त कर विश्लेषण किया जा रहा है...",
@@ -49,10 +54,12 @@
     "title": "बैग इंजन: सामान की भौतिकी",
     "volumeWeight": "आयतन और वजन",
     "weightLine": "वजन: {weight}कि.ग्रा. / सीमा {limit}कि.ग्रा.",
+    "weightLineNoLimit": "वजन: {weight}कि.ग्रा.",
     "volumeLine": "आयतन: {volume}लीटर / {capacity}लीटर",
     "percentFull": "{percent}% भरा हुआ",
     "airlineCompliance": "एयरलाइन अनुपालन",
-    "compliantWith": "✔ {airline} की हैंड बैगेज सीमाओं के अनुरूप"
+    "compliantWith": "✔ {airline} की हैंड बैगेज सीमाओं के अनुरूप",
+    "notFlying": "लागू नहीं — चूंकि आप हवाई यात्रा नहीं कर रहे हैं, इसलिए एयरलाइन हैंड बैगेज सीमाएं लागू नहीं होतीं।"
   },
   "itinerary": {
     "title": "लाइव यात्रा कार्यक्रम ({destination})",
@@ -91,6 +98,8 @@
     "toiletryKit": "1 टॉयलेटरी किट",
     "techPouch": "1 टेक पाउच / चार्जर",
     "universalAdapter": "1 यूनिवर्सल ट्रैवल एडाप्टर",
+    "carCharger": "1 कार USB चार्जर",
+    "roadKit": "1 इमरजेंसी रोड किट",
     "travelAdapterFor": "1 ट्रैवल एडाप्टर (टाइप {type})"
   },
   "language": {
