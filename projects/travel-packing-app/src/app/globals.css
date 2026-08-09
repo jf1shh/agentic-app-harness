@@ -128,3 +128,29 @@ body {
     padding: 5px 10px;
   }
 }
+
+/* Print stylesheet: shows only the packing checklist, on white paper,
+   independent of whichever theme (light/dark) the screen is currently in --
+   [data-theme='dark']'s CSS custom properties are print-unfriendly and are
+   overridden here regardless of the attribute on <html>. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .print-section {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .print-only-heading {
+    display: block !important;
+  }
+}

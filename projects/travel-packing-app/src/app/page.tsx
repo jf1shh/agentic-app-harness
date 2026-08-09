@@ -10,6 +10,7 @@ import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
 import { parseClosetFile } from '../utils/fileImporter';
+import { buildShareUrl, parseShareFromHash } from '../utils/share';
 import DestinationAutocomplete from '../components/DestinationAutocomplete';
 import LocalInfoPanel from '../components/LocalInfoPanel';
 import { resolveActivity } from '../utils/activity';
@@ -46,6 +47,7 @@ export default function Home() {
   const [closetSource, setClosetSource] = useState<'archetype' | 'custom'>('archetype');
   const [customGarments, setCustomGarments] = useState<Garment[]>([]);
   const [customFileName, setCustomFileName] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
   const [closetManagerOpen, setClosetManagerOpen] = useState(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -71,6 +73,52 @@ export default function Home() {
       localStorage.setItem('packright_theme', nextTheme);
     } catch {
       // Ignore fallback
+    }
+  };
+
+  // Fragment-only navigation (opening/pasting a #share=... link while the
+  // app is already open in a tab) is a same-document navigation in every
+  // browser -- no reload, no remount -- so a mount-only effect would never
+  // see it. Checking on mount AND on 'hashchange' covers both a fresh load
+  // and a link opened into an already-running tab.
+  useEffect(() => {
+    const applyShareFromHash = () => {
+      const shared = parseShareFromHash(window.location.hash);
+      if (!shared) return;
+      setDestination(shared.destination);
+      setStartDate(shared.startDate);
+      setEndDate(shared.endDate);
+      setArchetype(shared.archetype);
+      setStrategy(shared.strategy);
+      setActivity(shared.activity);
+      setClosetSource(shared.closetSource);
+      if (shared.customGarments) setCustomGarments(shared.customGarments);
+      setSelectedSuitcase(shared.selectedSuitcase);
+      setSelectedAirline(shared.selectedAirline);
+    };
+    applyShareFromHash();
+    window.addEventListener('hashchange', applyShareFromHash);
+    return () => window.removeEventListener('hashchange', applyShareFromHash);
+  }, []);
+
+  const handleShare = async () => {
+    const url = buildShareUrl(
+      {
+        destination, startDate, endDate, archetype, strategy, activity,
+        closetSource, customGarments: closetSource === 'custom' ? customGarments : undefined,
+        selectedSuitcase, selectedAirline,
+      },
+      window.location.href
+    );
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable (e.g. insecure context) -- fall back to
+      // updating the URL bar itself so the link is still copyable manually.
+      window.location.hash = url.slice(url.indexOf('#') + 1);
     }
   };
 
@@ -129,7 +177,7 @@ export default function Home() {
 
   return (
     <main className="container" style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
-      <header className="page-header" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
+      <header className="page-header no-print" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
         <button
           onClick={toggleTheme}
           className="btn-secondary theme-toggle-btn"
@@ -137,11 +185,18 @@ export default function Home() {
         >
           {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
         </button>
+        <button
+          onClick={handleShare}
+          className="btn-secondary"
+          style={{ position: 'absolute', left: 0, top: 0, fontSize: '0.9rem', padding: '6px 12px' }}
+        >
+          {shareCopied ? '✔ Copied!' : '🔗 Share Trip'}
+        </button>
         <h1 suppressHydrationWarning style={{ fontSize: '2.5rem', marginBottom: '8px', color: 'var(--primary)' }}>PackRight V4</h1>
         <p suppressHydrationWarning style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Live Weather & Intelligent Wardrobe Analyzer</p>
       </header>
 
-      <div className="glass-panel" style={{ padding: '24px' }}>
+      <div className="glass-panel no-print" style={{ padding: '24px' }}>
         <h2 style={{ marginBottom: '16px' }}>Trip Details</h2>
         
         {error && <div style={{ color: 'red', marginBottom: '16px' }}>{error}</div>}
@@ -283,7 +338,7 @@ export default function Home() {
 
       {report && physics && (
         <>
-          <div className="glass-panel" style={{ padding: '24px', marginTop: '32px' }}>
+          <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>Knapsack Engine: Luggage Physics</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
               <div style={{ padding: '16px', border: `2px solid ${physics.fitsInSuitcase ? 'var(--primary)' : 'red'}`, borderRadius: '8px' }}>
@@ -308,7 +363,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="glass-panel" style={{ padding: '24px', marginTop: '32px' }}>
+          <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>Live Itinerary ({destination})</h2>
             <ul style={{ margin: '16px 0', paddingLeft: '24px' }}>
               {itinerary.map(day => (
