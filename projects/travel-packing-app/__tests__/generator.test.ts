@@ -198,3 +198,65 @@ describe('generateWardrobeFromArchetype', () => {
     expect(fallback).toEqual(expected);
   });
 });
+
+describe('fashion archetype catalog', () => {
+  // Pins the exact key set (not just "at least N archetypes") so a future
+  // rename or accidental deletion is caught here rather than silently
+  // falling back to quiet-luxury (which the "unknown key" test above shows
+  // happens without error).
+  const EXPECTED_ARCHETYPES = [
+    'athleisure',
+    'bohemian',
+    'coastal',
+    'cottagecore',
+    'dark-academia',
+    'gorpcore',
+    'preppy',
+    'quiet-luxury',
+    'rock',
+    'scandi',
+    'streetwear',
+    'whimsigoth',
+  ];
+
+  it('Given the fashion archetype catalog, When its keys are listed, Then all 12 styles are present', () => {
+    expect(Object.keys(PALETTES).sort()).toEqual(EXPECTED_ARCHETYPES);
+  });
+
+  it.each(EXPECTED_ARCHETYPES)(
+    'Given the %s archetype, When a wardrobe is generated, Then it yields real tops, bottoms and a topper with valid warmth',
+    (archetypeKey) => {
+      const garments = generateWardrobeFromArchetype(archetypeKey, 'balanced', 5);
+      const tops = garments.filter((g) => g.roles.includes('top'));
+      const bottoms = garments.filter((g) => g.roles.includes('bottom'));
+      const toppers = garments.filter((g) => g.roles.includes('topper'));
+
+      expect(tops.length).toBeGreaterThan(0);
+      expect(bottoms.length).toBeGreaterThan(0);
+      expect(toppers).toHaveLength(1);
+
+      for (const g of garments) {
+        expect(g.warmth).toBeGreaterThanOrEqual(1);
+        expect(g.warmth).toBeLessThanOrEqual(10);
+        expect(g.colors.length).toBeGreaterThan(0);
+      }
+    }
+  );
+
+  it('Given two different archetypes, When their wardrobes are generated, Then the garment names actually differ', () => {
+    // Proves each new archetype carries its own ported data rather than
+    // reusing quiet-luxury's palette under a different key.
+    const rock = generateWardrobeFromArchetype('rock', 'balanced', 4);
+    const cottagecore = generateWardrobeFromArchetype('cottagecore', 'balanced', 4);
+    const rockNames = new Set(rock.map((g) => g.name));
+    const cottagecoreNames = new Set(cottagecore.map((g) => g.name));
+    const overlap = [...rockNames].filter((n) => cottagecoreNames.has(n));
+    expect(overlap).toHaveLength(0);
+  });
+
+  it('Given the streetwear archetype, When its outerwear is generated, Then it matches the ported palette rather than a placeholder', () => {
+    const garments = generateWardrobeFromArchetype('streetwear', 'balanced', 3);
+    const topper = garments.find((g) => g.roles.includes('topper'));
+    expect(topper?.name).toBe('Black Cropped Puffer');
+  });
+});
