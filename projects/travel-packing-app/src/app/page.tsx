@@ -10,6 +10,8 @@ import { MODELS } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
 import { parseClosetFile } from '../utils/fileImporter';
+import DestinationAutocomplete from '../components/DestinationAutocomplete';
+import LocalInfoPanel from '../components/LocalInfoPanel';
 
 
 
@@ -22,6 +24,7 @@ export default function Home() {
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
   const [selectedSuitcase, setSelectedSuitcase] = useState(MODELS[0].model);
   const [selectedAirline, setSelectedAirline] = useState('EK'); // Emirates
   
@@ -80,6 +83,7 @@ export default function Home() {
     setError('');
     try {
       const geo = await geocodeLocation(destination);
+      setDestinationCountryCode('country_code' in geo && geo.country_code ? geo.country_code : null);
       const weather = await fetchWeather(geo.latitude, geo.longitude, startDate, endDate);
       const generatedItinerary = transformWeatherToItinerary(weather, activity);
       
@@ -132,8 +136,7 @@ export default function Home() {
 
         <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
           <div>
-            <label htmlFor="dest" className="label">Destination</label>
-            <input id="dest" className="input-field" value={destination} onChange={e => setDestination(e.target.value)} />
+            <DestinationAutocomplete value={destination} onChange={setDestination} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
@@ -279,6 +282,7 @@ export default function Home() {
             </ul>
           </div>
           <WardrobeAnalyzer report={report} garments={activeGarments} />
+          <LocalInfoPanel countryCode={destinationCountryCode} />
         </>
       )}
     </main>

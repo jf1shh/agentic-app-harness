@@ -11,8 +11,9 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ## What the app actually does
 
 ### Trip input (`src/app/page.tsx`)
-- Destination string → geocode via Open-Meteo's geocoding API.
+- Destination string → `DestinationAutocomplete` suggests real places as you type (`searchLocations()`, Open-Meteo geocoding search only) → geocode via Open-Meteo's geocoding API, falling back to Nominatim for zip/postal codes Open-Meteo doesn't recognize (`geocodeViaNominatim()`, which also resolves the destination's country code).
 - Start & end dates → fetch daily forecast → `transformWeatherToItinerary()` produces `DayItinerary[]` with `weatherWarmthTarget` (0–10) and `maxTempC` per day.
+- **Local Info** — once Analyze resolves a destination country, `LocalInfoPanel` shows a few typical tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter API) and a GOV.UK travel-advisory summary with a link to the full advisory (`src/services/advisory.ts`).
 
 ### Wardrobe source — two paths
 - **Style archetype preset** — pick one of three (`quiet-luxury`, `gorpcore`, `scandi-minimalist`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
@@ -49,9 +50,13 @@ src/
   components/
     WardrobeAnalyzer.tsx           # wearability report + Dead Weight + Smart Swaps
     PackingChecklist.tsx           # interactive checklist, localStorage progress
+    DestinationAutocomplete.tsx    # live destination suggestions (searchLocations)
+    LocalInfoPanel.tsx             # typical-cost currency conversion + travel advisory
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
-    weatherApi.ts                  # geocode + Open-Meteo forecast + itinerary transform
+    weatherApi.ts                  # geocode + autocomplete + Open-Meteo forecast + itinerary transform
+    currency.ts                    # Frankfurter exchange rates, typical-cost conversion
+    advisory.ts                    # GOV.UK travel advisories
     db.ts                          # IndexedDB layer; wardrobe media, etc.
     logger.ts                      # client logger
   utils/
