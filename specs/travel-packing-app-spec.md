@@ -79,6 +79,14 @@
   (wardrobe photos, via the already-existing `clearAllLocalData` in `src/services/db.ts`) and every
   `localStorage` key (theme, language, checklist, saved trip), then reloads. Gated behind a native
   confirmation (`window.confirm`) describing the action as irreversible.
+- [x] Laundry-cycle-aware packing math — a "Assume laundry access on longer trips (weekly)" checkbox
+  (on by default) caps the trip length actually used to size the wardrobe at one laundry cycle
+  (`LAUNDRY_CYCLE_DAYS = 7` in `src/utils/laundryCycle.ts`) once the trip runs longer than that, since
+  the same tops/bottoms get re-worn after washing rather than needing a fresh item for every remaining
+  day. A no-op for any trip within one cycle — `effectiveDurationForPacking()` returns the trip length
+  unchanged — so this only changes behavior for genuinely long trips. Unchecking the box (no laundry
+  access assumed, e.g. an off-grid trip) reverts to the pre-existing behavior of scaling with the full
+  trip length, capped only by the archetype's palette size as before.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

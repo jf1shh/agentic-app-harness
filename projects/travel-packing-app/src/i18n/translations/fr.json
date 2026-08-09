@@ -21,6 +21,7 @@
     "fashionArchetype": "Style Vestimentaire",
     "packingStrategy": "Stratégie de Bagage",
     "defaultActivity": "Activité par Défaut",
+    "hasLaundryAccess": "Supposer un accès à une laverie pour les longs séjours (hebdomadaire)",
     "uploadWardrobeFile": "Importer un Fichier de Garde-robe (.txt ou .md)",
     "loadedGarments": "✔ {count} vêtements chargés depuis {file}",
     "suitcase": "Valise",

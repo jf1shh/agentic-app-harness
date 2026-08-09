@@ -18,6 +18,12 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 
 ### Wardrobe source — two paths
 - **Style archetype preset** — pick one of 12 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+  - **Laundry-cycle-aware packing** — an "Assume laundry access on longer trips (weekly)" checkbox
+    (on by default) caps the trip length used to size the wardrobe at one laundry cycle
+    (`LAUNDRY_CYCLE_DAYS = 7`, `src/utils/laundryCycle.ts`) once the trip runs longer than that,
+    since the same tops/bottoms get re-worn after washing. A no-op for trips within one cycle;
+    unchecking it reverts to scaling with the full trip length (capped only by the archetype's
+    palette size, as before this feature existed).
 - **Custom upload** — drag in a `.txt` or `.md` wardrobe file; `parseClosetFile()` auto-detects each line's role (`top | bottom | topper | layer`), colors, and thermal score, and produces a `Garment[]` from your real closet.
 - **Digital Closet manager** — the "📸 Manage Digital Closet" panel (`WardrobeManager`) lets you build that same `Garment[]` by hand instead of uploading a file: add an item (name, role, color, evening flag) via `buildManualGarment()`, then attach a photo with on-device AI background removal (`@imgly/background-removal`), stored per-item in IndexedDB. A low-storage warning appears before a photo save can fail silently.
 

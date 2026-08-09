@@ -43,6 +43,11 @@ export default function Home() {
 
   const [archetype, setArchetype] = useState('quiet-luxury');
   const [strategy, setStrategy] = useState('standard');
+  // On a trip much longer than one laundry cycle, assumes the same tops/
+  // bottoms get worn on repeat after washing rather than packing a fresh
+  // item for every remaining day (see src/utils/laundryCycle.ts). A no-op
+  // for any trip within one cycle, so on by default.
+  const [hasLaundryAccess, setHasLaundryAccess] = useState(true);
   const [activity, setActivity] = useState('sightseeing');
   const [dailyActivities, setDailyActivities] = useState<(string | null)[]>([]);
   const [activeGarments, setActiveGarments] = useState<Garment[]>([]);
@@ -156,7 +161,7 @@ export default function Home() {
 
       const garmentsToUse = closetSource === 'custom' && customGarments.length > 0
         ? customGarments
-        : generateWardrobeFromArchetype(archetype, strategy, tripDuration);
+        : generateWardrobeFromArchetype(archetype, strategy, tripDuration, hasLaundryAccess);
 
       setActiveGarments(garmentsToUse);
 
@@ -308,6 +313,14 @@ export default function Home() {
                     <option value="flexible">{t('strategy.flexible')}</option>
                     <option value="minimalist">{t('strategy.minimalist')}</option>
                   </select>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={hasLaundryAccess}
+                      onChange={(e) => setHasLaundryAccess(e.target.checked)}
+                    />
+                    {t('trip.hasLaundryAccess')}
+                  </label>
                 </div>
                 <div>
                   <label htmlFor="activity" className="label">{t('trip.defaultActivity')}</label>

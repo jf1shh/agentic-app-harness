@@ -1,4 +1,5 @@
 import { Garment } from '../types';
+import { effectiveDurationForPacking } from './laundryCycle';
 
 export const COLOR_MATCHES: Record<string, string[]> = {
   'black': ['white', 'grey', 'beige', 'khaki', 'olive', 'black'],
@@ -241,19 +242,29 @@ export const PALETTES: Record<string, { name: string; tops: LegacyGarment[]; bot
   }
 };
 
-export const generateWardrobeFromArchetype = (archetypeKey: string, strategy: string, tripDuration: number): Garment[] => {
+export const generateWardrobeFromArchetype = (
+  archetypeKey: string,
+  strategy: string,
+  tripDuration: number,
+  hasLaundryAccess: boolean = true
+): Garment[] => {
   const p = PALETTES[archetypeKey] || PALETTES['quiet-luxury'];
   const garments: Garment[] = [];
-  
-  let topsNeeded = tripDuration;
-  let bottomsNeeded = Math.ceil(tripDuration / 2);
+
+  // A trip much longer than a laundry cycle doesn't need a fresh top/bottom
+  // for every remaining day when laundry access is assumed -- see
+  // laundryCycle.ts. For any trip within one cycle this is a no-op.
+  const packingDuration = effectiveDurationForPacking(tripDuration, hasLaundryAccess);
+
+  let topsNeeded = packingDuration;
+  let bottomsNeeded = Math.ceil(packingDuration / 2);
 
   if (strategy === 'minimalist') {
-    topsNeeded = Math.ceil(tripDuration / 3);
-    bottomsNeeded = Math.ceil(tripDuration / 5);
+    topsNeeded = Math.ceil(packingDuration / 3);
+    bottomsNeeded = Math.ceil(packingDuration / 5);
   } else if (strategy === 'flexible') {
-    topsNeeded = Math.ceil(tripDuration / 2);
-    bottomsNeeded = Math.ceil(tripDuration / 3);
+    topsNeeded = Math.ceil(packingDuration / 2);
+    bottomsNeeded = Math.ceil(packingDuration / 3);
   }
 
   topsNeeded = Math.max(1, Math.min(topsNeeded, p.tops.length));

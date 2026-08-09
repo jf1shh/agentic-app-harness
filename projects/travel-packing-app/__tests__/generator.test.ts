@@ -197,6 +197,26 @@ describe('generateWardrobeFromArchetype', () => {
     const expected = generateWardrobeFromArchetype('quiet-luxury', 'balanced', 4);
     expect(fallback).toEqual(expected);
   });
+
+  it('Given a trip much longer than one laundry cycle and laundry access assumed (the default), When a minimalist wardrobe is generated, Then tops plateau at the laundry-cycle count instead of climbing toward the palette cap', () => {
+    // quiet-luxury has 4 tops -- without laundry-cycle awareness, minimalist
+    // over 30 days is capped by the palette at 4. With it, the effective
+    // packing duration plateaus at 7 days, so minimalist (ceil(days/3))
+    // yields 3, strictly fewer than the palette would otherwise allow.
+    const withLaundryAccess = generateWardrobeFromArchetype('quiet-luxury', 'minimalist', 30);
+    const withoutLaundryAccess = generateWardrobeFromArchetype('quiet-luxury', 'minimalist', 30, false);
+    const topsOf = (gs: typeof withLaundryAccess) => gs.filter((g) => g.roles.includes('top')).length;
+
+    expect(topsOf(withLaundryAccess)).toBe(3);
+    expect(topsOf(withoutLaundryAccess)).toBe(PALETTES['quiet-luxury'].tops.length);
+    expect(topsOf(withLaundryAccess)).toBeLessThan(topsOf(withoutLaundryAccess));
+  });
+
+  it('Given a trip no longer than one laundry cycle, When wardrobes are generated with and without laundry access assumed, Then they pack identically -- the assumption only matters once laundry becomes necessary', () => {
+    const withLaundryAccess = generateWardrobeFromArchetype('quiet-luxury', 'balanced', 5, true);
+    const withoutLaundryAccess = generateWardrobeFromArchetype('quiet-luxury', 'balanced', 5, false);
+    expect(withLaundryAccess).toEqual(withoutLaundryAccess);
+  });
 });
 
 describe('fashion archetype catalog', () => {

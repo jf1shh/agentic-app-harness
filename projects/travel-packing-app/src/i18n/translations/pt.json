@@ -21,6 +21,7 @@
     "fashionArchetype": "Arquétipo de Moda",
     "packingStrategy": "Estratégia de Empacotamento",
     "defaultActivity": "Atividade Padrão",
+    "hasLaundryAccess": "Supor acesso a lavanderia em viagens mais longas (semanal)",
     "uploadWardrobeFile": "Enviar Arquivo de Guarda-roupa (.txt ou .md)",
     "loadedGarments": "✔ {count} peças carregadas de {file}",
     "suitcase": "Mala",

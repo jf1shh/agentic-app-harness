@@ -21,6 +21,7 @@
     "fashionArchetype": "패션 아키타입",
     "packingStrategy": "짐 싸기 전략",
     "defaultActivity": "기본 활동",
+    "hasLaundryAccess": "장기 여행 시 세탁 시설 이용 가정 (주 1회)",
     "uploadWardrobeFile": "옷장 파일 업로드 (.txt 또는 .md)",
     "loadedGarments": "✔ {file}에서 {count}개의 의류를 불러왔습니다",
     "suitcase": "여행 가방",

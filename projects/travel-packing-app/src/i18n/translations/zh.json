@@ -21,6 +21,7 @@
     "fashionArchetype": "时尚风格",
     "packingStrategy": "打包策略",
     "defaultActivity": "默认活动",
+    "hasLaundryAccess": "假设长途旅行可洗衣（每周一次）",
     "uploadWardrobeFile": "上传衣橱文件 (.txt 或 .md)",
     "loadedGarments": "✔ 已从 {file} 加载 {count} 件衣物",
     "suitcase": "行李箱",
