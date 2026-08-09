@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeWardrobe, generateAllValidOutfits } from '../src/utils/wardrobeEngine';
+import { analyzeWardrobe, generateAllValidOutfits, deriveUsageStats } from '../src/utils/wardrobeEngine';
 import { Garment, DayItinerary } from '../src/types';
 
 describe('wardrobeEngine', () => {
@@ -57,5 +57,37 @@ describe('wardrobeEngine', () => {
 
     // Heavy wool sweater shouldn't be picked because target is 5 (hot day)
     expect(report.deadWeightIds).toContain('dead1');
+  });
+});
+
+describe('deriveUsageStats', () => {
+  const g: Garment[] = [
+    { id: 'top1', name: 'White Linen Shirt', category: 'shirt', roles: ['top'], colors: ['white'], warmth: 2, exclusionTags: [], weightGrams: 200, volumeCm3: 800 },
+    { id: 'top2', name: 'Navy T-Shirt', category: 'shirt', roles: ['top'], colors: ['navy'], warmth: 3, exclusionTags: [], weightGrams: 150, volumeCm3: 600 },
+    { id: 'bottom1', name: 'Khaki Shorts', category: 'shorts', roles: ['bottom'], colors: ['khaki'], warmth: 2, exclusionTags: [], weightGrams: 300, volumeCm3: 1000 },
+    { id: 'bottom2', name: 'Navy Chinos', category: 'pants', roles: ['bottom'], colors: ['navy'], warmth: 4, exclusionTags: [], weightGrams: 500, volumeCm3: 2000 },
+    { id: 'unused', name: 'Spare Cardigan', category: 'sweater', roles: ['topper'], colors: ['grey'], warmth: 6, exclusionTags: [], weightGrams: 400, volumeCm3: 1200 },
+  ];
+
+  it('Given a schedule that wears top1 on two of three days, When usage stats are derived, Then top1 is the MVP and the never-scheduled garment is dead weight', () => {
+    const outfit1 = { id: 'o1', top: g[0], bottom: g[2], totalWarmth: 4 };
+    const outfit2 = { id: 'o2', top: g[1], bottom: g[3], totalWarmth: 7 };
+    const scheduledOutfits = [
+      { day: 1, outfit: outfit1 },
+      { day: 2, outfit: outfit2 },
+      { day: 3, outfit: outfit1 },
+    ];
+
+    const stats = deriveUsageStats(scheduledOutfits, g);
+
+    expect(stats.mvpItemId).toBe('top1');
+    expect(stats.deadWeightIds).toEqual(['unused']);
+    expect(stats.swapSuggestion?.removeId).toBe('unused');
+  });
+
+  it('Given an empty schedule, When usage stats are derived, Then every garment is reported as dead weight and there is no MVP', () => {
+    const stats = deriveUsageStats([], g);
+    expect(stats.mvpItemId).toBeNull();
+    expect(stats.deadWeightIds).toEqual(g.map((item) => item.id));
   });
 });
