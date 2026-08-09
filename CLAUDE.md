@@ -83,7 +83,17 @@ node scripts/check-doc-claims.mjs --gate  # verify: checked-in docs (this file i
 node scripts/check-guardrail-integrity.mjs --base origin/master --head HEAD
                                            # diff-shaped: "who guards the guards" — blocks a deleted
                                            # guardrail or shrunk gate self-test, silent on additions
+node scripts/run-mutation.mjs <AppName>   # informational: Stryker mutation score for one app
+node scripts/run-mutation.mjs --all       # informational: Stryker mutation score for every app
+node scripts/run-mutation.test.mjs        # self-test the mutation-scoring logic
+node scripts/harness-status-rdjson.mjs    # bridges guardrail hits to reviewdog rdjsonl (inline PR comments)
+node scripts/harness-status-rdjson.test.mjs  # self-test the rdjsonl bridge
 ```
+
+Mutation testing (`run-mutation.mjs`) and the reviewdog inline-annotation bridge
+(`harness-status-rdjson.mjs`) are both informational/additive — see `.agents/AGENTS.md` §8's
+"Mutation testing" and "Inline PR annotations" subsections for why each stays outside
+`harness-status.mjs`'s fast sense loop and never blocks a merge on its own.
 
 `.\scripts\harness.ps1 {status|tasks|verify|learn|history}` wraps the same five in one entry point.
 `harness-history.json` (git-tracked, unlike the gitignored `harness-status.json` snapshot) is the
@@ -136,8 +146,10 @@ lesson, so the enforcement can't silently rot or silently expand past what's doc
 per app on `ubuntu-latest`; `sdd-sentinel.yml` runs the harness gate plus `check-enum-blast-radius.mjs`,
 `check-doc-claims.mjs --gate` (checked-in docs must match what they claim),
 `check-guardrail-integrity.mjs` ("who guards the guards" — blocks a silently deleted guardrail or
-shrunk gate self-test), and `validate-specs.ps1 -Strict` on every PR; `deploy-pages.yml` and
-`android-release.yml` build and ship
+shrunk gate self-test), `validate-specs.ps1 -Strict`, and a reviewdog step that posts every
+guardrail hit as an inline PR comment (`harness-status-rdjson.mjs`, informational, never blocks)
+on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own informational,
+`continue-on-error` matrix job; `deploy-pages.yml` and `android-release.yml` build and ship
 the live artifacts (GitHub Pages, and the `mood-diner` Android APK) — both already run on `ubuntu-latest`,
 which is why `ci.yml` does too rather than paying for a Windows runner to exercise the `.ps1` wrapper.
 

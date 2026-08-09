@@ -16,7 +16,8 @@
     "build:capacitor": "npm run clean && node -e \"require('child_process').execSync('npx next build',{stdio:'inherit',env:{...process.env,NODE_ENV:'production',CAPACITOR_BUILD:'1',NEXT_BUILD_DIR:'.next-capacitor'}})\"",
     "start": "next start",
     "lint": "eslint",
-    "embed": "node embed-corpus.mjs"
+    "embed": "node embed-corpus.mjs",
+    "test:mutation": "stryker run"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
@@ -36,6 +37,8 @@
     "@capacitor/android": "^8.5.0",
     "@capacitor/cli": "^8.5.0",
     "@playwright/test": "^1.61.1",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26",

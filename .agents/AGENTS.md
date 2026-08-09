@@ -626,6 +626,59 @@ read-only check locally. Run `--record` at the same point in a change set where 
 `harness-learn.mjs`, and commit the updated `harness-history.json` alongside the rest of the PR,
 the same discipline this repo already applies to other generated-but-tracked files.
 
+### Mutation testing: `scripts/run-mutation.mjs` (Stryker, informational)
+
+§9.4 ("prove a new test can fail") has, until now, been enforced entirely by prose: an agent
+hand-mutates the implementation once, watches the test go red, restores it, and states the
+mutation in the PR body. That proof is real the moment it's written, and unverifiable a moment
+later — nothing re-runs it, and nothing stops a future PR from citing a mutation that was never
+actually tried. `scripts/run-mutation.mjs` is the machine-checked version: it runs Stryker Mutator
+against an app's logic modules (the same `mutate: ['src/**/*.ts', ...]` scope §5 draws for unit
+tests — components/pages are out, for the same reason they're out of unit-test scope) and reports
+what fraction of mutants the existing suite actually kills.
+
+It is an **informational sensor**, not a gate, and deliberately so — the same sensor-before-
+guardrail policy above applies to a new axis of measurement, not just to new finding types.
+`scripts/stryker.shared.mjs` sets `thresholds.break: null` so Stryker itself never exits non-zero
+on a low score, `run-mutation.mjs` always exits 0, and `.github/workflows/mutation-testing.yml`
+wraps the run in `continue-on-error: true` besides. Promoting a score floor to a blocking check is
+a deliberate, later, human decision, once a floor is chosen and any existing backlog is closed —
+exactly the arc `unit-test-coverage` went through before it started blocking the gate.
+
+One architectural line worth stating explicitly: this sensor is **not** wired into
+`harness-status.mjs`'s `senseApp`, unlike every other sensor in this section. `harness-status.mjs`
+is a synchronous, zero-dependency, sub-second sweep — every local invocation and every `--gate`
+check pays its cost — and mutation testing takes real wall-clock minutes per app. Folding it into
+that scan would quietly break the sense layer's speed contract for every future user of it. It
+runs instead as its own script and its own CI workflow, matching the same
+sensor-vs-guardrail-vs-gate split, just outside the module that split was originally described in.
+
+Run it locally with `node scripts/run-mutation.mjs <AppName>` (or `--all`); `npm run test:mutation`
+inside a given `projects/<app>` runs Stryker directly for a tighter local loop.
+
+### Inline PR annotations: `scripts/harness-status-rdjson.mjs` (reviewdog)
+
+§9.1 says "never self-certify verification" for PR bodies — a rule written because an agent's
+prose summary of a gate's output once said the opposite of what the gate actually found.
+`scripts/harness-status-rdjson.mjs` applies the same fix one level down: it turns every guardrail
+hit `harness-status.mjs` finds (each one already carries a `file`/`line`/`snippet` via its
+`evidence` array) into a reviewdog rdjsonl diagnostic, posted as an inline PR comment on the exact
+line that tripped it. There is no summary step left to get wrong, because the finding lands
+directly on the code it's about.
+
+Only guardrail findings translate — they're the one finding shape with a specific line to attach
+to. App-level findings (missing spec, spec drift, no Zod schema, ...) have no single line they
+belong on, and forcing one onto an arbitrary line would be a worse comment than none; those stay
+visible in `harness-status.mjs`'s own console and JSON output, which still runs on every PR.
+`-filter-mode=added` (in `.github/workflows/sdd-sentinel.yml`) means only findings that land on
+lines the PR itself touched get posted, so a pre-existing hit elsewhere in the repo isn't
+re-litigated on every unrelated PR — reviewdog's diff-awareness doing, for free, what a Danger.js
+rule would have to reimplement by hand.
+
+This is purely additive: the annotation step runs with `continue-on-error: true` and can never
+block a merge on its own. `scripts/harness-status.mjs --gate`, run immediately before it in the
+same workflow, remains the actual gate.
+
 ### Protocol: adding a learned lesson
 When you discover a reusable lesson, decide whether it is **mechanically detectable**:
 1. **Mechanical** (a pattern a regex can catch): (a) add a guardrail object to `GUARDRAILS` in `scripts/harness-status.mjs` with a `lesson` field; (b) add a known-bad + known-good case to `scripts/harness-status.test.mjs`; (c) add the lesson bullet to section 6 below and tag it `` `[guardrail: <id>]` ``. Run `.\scripts\harness.ps1 verify` — self-test, learn, and gate must all pass.
