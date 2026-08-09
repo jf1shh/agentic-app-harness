@@ -12,6 +12,19 @@
 - [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
 - [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules).
 - [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
+- [x] Share Trip — a "🔗 Share Trip" button compresses the trip's inputs (destination, dates,
+  archetype/strategy/activity, wardrobe source, suitcase, airline) into a `#share=` URL fragment
+  (`src/utils/share.ts`, `lz-string`) and copies it to the clipboard. Opening or pasting that link —
+  including into an already-open tab, a same-document fragment navigation — restores the same trip.
+  A decoded share payload is attacker-controllable input and is validated against `TripShareSchema`
+  (`src/schemas.ts`) before it reaches app state, the same contract-first boundary file imports and
+  IndexedDB data already go through.
+- [x] Print — the Physical Packing Checklist has a dedicated print stylesheet (`@media print` in
+  `globals.css`) that hides every other panel and renders on white paper independent of the
+  on-screen light/dark theme, plus a "🖨️ Print" button.
+- [x] Group trip sync — packing checkmarks sync live across browser tabs on the same origin via
+  `BroadcastChannel` (`src/services/groupSync.ts`), deliberately tab-to-tab only (no server), matching
+  the app's 100%-local design. A "🔄 Live sync across tabs" indicator shows when supported.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

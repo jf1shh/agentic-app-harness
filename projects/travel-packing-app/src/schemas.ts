@@ -53,3 +53,21 @@ export type Garment = z.infer<typeof GarmentSchema>;
 export type Outfit = z.infer<typeof OutfitSchema>;
 export type DayItinerary = z.infer<typeof DayItinerarySchema>;
 export type WearabilityReport = z.infer<typeof WearabilityReportSchema>;
+
+// A share link is attacker-controllable input (anyone can hand-edit the URL
+// fragment), so it is validated at this boundary the same way file-imported
+// or IndexedDB-loaded data already is elsewhere in this app.
+export const TripShareSchema = z.object({
+  destination: z.string().max(200),
+  startDate: z.string().max(20),
+  endDate: z.string().max(20),
+  archetype: z.string().max(50),
+  strategy: z.string().max(50),
+  activity: z.string().max(50),
+  closetSource: z.enum(['archetype', 'custom']),
+  customGarments: z.array(GarmentSchema).max(300).optional(),
+  selectedSuitcase: z.string().max(100),
+  selectedAirline: z.string().max(10),
+});
+
+export type TripShareState = z.infer<typeof TripShareSchema>;

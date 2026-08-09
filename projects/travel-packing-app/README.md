@@ -31,6 +31,11 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
 
+### Share Trip, Print, and Group Sync
+- **Share Trip** — the "🔗 Share Trip" header button compresses the trip's inputs into a `#share=` URL fragment (`src/utils/share.ts`, `lz-string`) and copies it to the clipboard. Opening that link — including pasting it into a tab that already has the app open, a same-document fragment change — restores the same trip. The decoded payload is validated against `TripShareSchema` before it touches app state, since a share link is attacker-controllable input.
+- **Print** — the Physical Packing Checklist has its own `@media print` stylesheet (`globals.css`) that hides every other panel and forces light colors regardless of the on-screen theme, plus a "🖨️ Print" button.
+- **Group sync** — packing checkmarks sync live across browser tabs on the same origin via `BroadcastChannel` (`src/services/groupSync.ts`); a "🔄 Live sync across tabs" indicator shows when the browser supports it. Deliberately tab-to-tab only, no server, matching the app's 100%-local design.
+
 ### Engine rules enforced by the wardrobe layer
 - **Exclusion tags** — items tagged `clash_navy` etc. are never paired.
 - **Color math** — Pink and Red, for example, are mathematically excluded from pairing.
@@ -48,10 +53,11 @@ src/
     error.tsx, layout.tsx
   components/
     WardrobeAnalyzer.tsx           # wearability report + Dead Weight + Smart Swaps
-    PackingChecklist.tsx           # interactive checklist, localStorage progress
+    PackingChecklist.tsx           # interactive checklist, print stylesheet, group sync
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
     weatherApi.ts                  # geocode + Open-Meteo forecast + itinerary transform
+    groupSync.ts                   # BroadcastChannel cross-tab checklist sync
     db.ts                          # IndexedDB layer; wardrobe media, etc.
     logger.ts                      # client logger
   utils/
@@ -59,9 +65,10 @@ src/
     knapsackEngine.ts              # calculateKnapsackPhysics()
     generator.ts                   # archetype → Garment[]
     fileImporter.ts                # parseClosetFile(.txt | .md)
+    share.ts                       # encode/decode a #share= trip link (lz-string)
     suitcaseDatabase.ts            # MODELS (real-world suitcase specs)
     airlineBaggage.ts              # AIRLINES (real-world carry-on limits)
-  schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, ...)
+  schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, TripShare, ...)
   types.ts
 __tests__/                         # Vitest coverage for engines
 e2e/                               # Playwright + axe BDD specs
