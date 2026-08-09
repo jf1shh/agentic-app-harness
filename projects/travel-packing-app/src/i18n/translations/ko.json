@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "실시간 날씨 및 스마트 옷장 분석기"
+  },
+  "theme": {
+    "dark": "🌙 다크 모드",
+    "light": "☀️ 라이트 모드"
+  },
+  "trip": {
+    "detailsTitle": "여행 세부 정보",
+    "destination": "목적지",
+    "startDate": "시작일",
+    "endDate": "종료일",
+    "wardrobeSource": "옷장 소스",
+    "archetypePreset": "스타일 프리셋",
+    "uploadCloset": "나만의 옷장 업로드 (.txt / .md)",
+    "fashionArchetype": "패션 아키타입",
+    "packingStrategy": "짐 싸기 전략",
+    "defaultActivity": "기본 활동",
+    "uploadWardrobeFile": "옷장 파일 업로드 (.txt 또는 .md)",
+    "loadedGarments": "✔ {file}에서 {count}개의 의류를 불러왔습니다",
+    "suitcase": "여행 가방",
+    "airline": "항공사 (기내 수하물 제한)",
+    "analyzing": "날씨 조회 및 분석 중...",
+    "analyzeButton": "옷장 분석 및 코디 일정 짜기",
+    "failedToAnalyze": "여행 분석에 실패했습니다"
+  },
+  "archetype": {
+    "quietLuxury": "콰이엇 럭셔리",
+    "gorpcore": "고프코어",
+    "scandi": "스칸디 미니멀리스트"
+  },
+  "strategy": {
+    "standard": "표준 (편안함)",
+    "flexible": "유연하고 효율적",
+    "minimalist": "극단적 미니멀리스트"
+  },
+  "activity": {
+    "sightseeing": "📸 관광",
+    "transit": "✈️ 이동일",
+    "formal": "🍷 포멀 / 저녁 외출",
+    "casual": "🚶 캐주얼"
+  },
+  "knapsack": {
+    "title": "배낭 엔진: 수하물 물리학",
+    "volumeWeight": "부피 및 무게",
+    "weightLine": "무게: {weight}kg / 한도 {limit}kg",
+    "volumeLine": "부피: {volume}L / {capacity}L",
+    "percentFull": "{percent}% 참",
+    "airlineCompliance": "항공사 규정 준수",
+    "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다"
+  },
+  "itinerary": {
+    "title": "실시간 일정 ({destination})",
+    "dayLine": "{n}일차: {temp} (보온 목표: {warmth}/10)",
+    "notAvailable": "해당 없음"
+  },
+  "wearability": {
+    "title": "옷장 활용도 보고서",
+    "flexibilityScore": "활용도 점수",
+    "mvpItem": "MVP 아이템",
+    "none": "없음",
+    "deadWeight": "사용되지 않는 아이템",
+    "perfectPacking": "없음! 완벽한 짐 싸기입니다.",
+    "swapSuggestion": "💡 스마트 교체 제안",
+    "swapOut": "제외:",
+    "swapIn": "추가:",
+    "why": "이유: {reason}",
+    "digitalCloset": "디지털 옷장",
+    "addPhoto": "+ 사진",
+    "aiMagic": "AI 처리 중...",
+    "outfitSchedule": "3일 코디 일정",
+    "day": "{n}일차",
+    "top": "상의: {name}",
+    "bottom": "하의: {name}",
+    "layer": "겉옷: {name}"
+  },
+  "checklist": {
+    "title": "🎒 실물 짐 싸기 체크리스트",
+    "resetButton": "체크 초기화",
+    "instructions": "가방에 물건을 넣을 때마다 항목을 체크하세요. 진행 상황은 자동으로 저장됩니다.",
+    "progress": "짐 싸기 진행 상황: {checked} / {total} 완료",
+    "garmentsToPack": "챙길 의류",
+    "tripEssentials": "여행 필수품",
+    "underwear": "속옷 {n}벌",
+    "socks": "양말 {n}켤레",
+    "toiletryKit": "세면도구 세트 1개",
+    "techPouch": "전자기기 파우치 / 충전기 1개"
+  },
+  "language": {
+    "label": "언어"
+  }
+}

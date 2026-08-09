@@ -31,6 +31,18 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
 
+### Internationalization
+A language switcher in the header covers 11 languages — English, Arabic, German, Spanish, French,
+Hindi, Italian, Japanese, Korean, Portuguese, and Chinese. The initial language is detected from a
+persisted choice (`packright_lang` in `localStorage`), then the browser's `navigator.languages`,
+falling back to English. Every non-English dictionary is lazy-loaded on selection so the initial
+bundle only ships English. Selecting Arabic flips `document.dir` to `rtl`. See
+`src/i18n/translate.ts` (pure resolution/interpolation logic) and `src/i18n/context.tsx` (the
+`I18nProvider`/`useT()` React wiring). Translation files under `src/i18n/translations/*.json` are
+parity-tested against English (`__tests__/i18n.test.ts`) — every language must carry the same key
+set, no empty values, and the same `{placeholder}` tokens per key. The 10 non-English files are a
+first-pass, AI-generated translation and would benefit from native-speaker review.
+
 ### Engine rules enforced by the wardrobe layer
 - **Exclusion tags** — items tagged `clash_navy` etc. are never paired.
 - **Color math** — Pink and Red, for example, are mathematically excluded from pairing.
@@ -54,6 +66,10 @@ src/
     weatherApi.ts                  # geocode + Open-Meteo forecast + itinerary transform
     db.ts                          # IndexedDB layer; wardrobe media, etc.
     logger.ts                      # client logger
+  i18n/
+    translate.ts                   # pure key resolution/interpolation/language detection
+    context.tsx                    # I18nProvider + useT() React context
+    translations/*.json            # en (bundled) + 10 lazy-loaded languages
   utils/
     wardrobeEngine.ts              # analyzeWardrobe()
     knapsackEngine.ts              # calculateKnapsackPhysics()

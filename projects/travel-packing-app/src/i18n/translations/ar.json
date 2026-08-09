@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "الطقس المباشر ومحلل خزانة الملابس الذكي"
+  },
+  "theme": {
+    "dark": "🌙 الوضع الداكن",
+    "light": "☀️ الوضع الفاتح"
+  },
+  "trip": {
+    "detailsTitle": "تفاصيل الرحلة",
+    "destination": "الوجهة",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "wardrobeSource": "مصدر خزانة الملابس",
+    "archetypePreset": "نمط جاهز",
+    "uploadCloset": "تحميل خزانة ملابس مخصصة (.txt / .md)",
+    "fashionArchetype": "النمط",
+    "packingStrategy": "استراتيجية التعبئة",
+    "defaultActivity": "النشاط الافتراضي",
+    "uploadWardrobeFile": "تحميل ملف خزانة الملابس (.txt أو .md)",
+    "loadedGarments": "✔ تم تحميل {count} قطعة من {file}",
+    "suitcase": "حقيبة السفر",
+    "airline": "شركة الطيران (حدود حقيبة اليد)",
+    "analyzing": "جارٍ جلب الطقس والتحليل...",
+    "analyzeButton": "تحليل خزانة الملابس وجدولة الأزياء",
+    "failedToAnalyze": "فشل تحليل الرحلة"
+  },
+  "archetype": {
+    "quietLuxury": "الفخامة الهادئة",
+    "gorpcore": "جوربكور",
+    "scandi": "الإسكندنافي البسيط"
+  },
+  "strategy": {
+    "standard": "قياسي (مريح)",
+    "flexible": "مرن وفعّال",
+    "minimalist": "بساطة قصوى"
+  },
+  "activity": {
+    "sightseeing": "📸 السياحة",
+    "transit": "✈️ يوم سفر",
+    "formal": "🍷 رسمي / سهرة",
+    "casual": "🚶 غير رسمي"
+  },
+  "knapsack": {
+    "title": "محرك الحقيبة: فيزياء الأمتعة",
+    "volumeWeight": "الحجم والوزن",
+    "weightLine": "الوزن: {weight} كجم / الحد {limit} كجم",
+    "volumeLine": "الحجم: {volume} لتر / {capacity} لتر",
+    "percentFull": "{percent}٪ ممتلئة",
+    "airlineCompliance": "مطابقة شركة الطيران",
+    "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}"
+  },
+  "itinerary": {
+    "title": "خط سير الرحلة المباشر ({destination})",
+    "dayLine": "اليوم {n}: {temp} (هدف الدفء: {warmth}/10)",
+    "notAvailable": "غير متاح"
+  },
+  "wearability": {
+    "title": "تقرير تنوع خزانة الملابس",
+    "flexibilityScore": "درجة المرونة",
+    "mvpItem": "القطعة الأهم",
+    "none": "لا شيء",
+    "deadWeight": "وزن زائد غير مستخدم",
+    "perfectPacking": "لا شيء! تعبئة مثالية.",
+    "swapSuggestion": "💡 اقتراح استبدال ذكي",
+    "swapOut": "إزالة:",
+    "swapIn": "إضافة:",
+    "why": "لماذا؟ {reason}",
+    "digitalCloset": "خزانة الملابس الرقمية",
+    "addPhoto": "+ صورة",
+    "aiMagic": "سحر الذكاء الاصطناعي...",
+    "outfitSchedule": "جدول الأزياء لثلاثة أيام",
+    "day": "اليوم {n}",
+    "top": "العلوي: {name}",
+    "bottom": "السفلي: {name}",
+    "layer": "الطبقة: {name}"
+  },
+  "checklist": {
+    "title": "🎒 قائمة التعبئة الفعلية",
+    "resetButton": "إعادة تعيين العلامات",
+    "instructions": "ضع علامة على العناصر عند تعبئتها في حقيبتك. يتم حفظ التقدم تلقائيًا.",
+    "progress": "تقدم التعبئة: {checked} / {total} تم تعبئتها",
+    "garmentsToPack": "الملابس المراد تعبئتها",
+    "tripEssentials": "أساسيات الرحلة",
+    "underwear": "{n} أزواج من الملابس الداخلية",
+    "socks": "{n} أزواج من الجوارب",
+    "toiletryKit": "حقيبة أدوات نظافة واحدة",
+    "techPouch": "حقيبة إلكترونيات / شواحن واحدة"
+  },
+  "language": {
+    "label": "اللغة"
+  }
+}

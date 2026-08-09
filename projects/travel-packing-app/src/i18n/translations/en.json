@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "Live Weather & Intelligent Wardrobe Analyzer"
+  },
+  "theme": {
+    "dark": "🌙 Dark Mode",
+    "light": "☀️ Light Mode"
+  },
+  "trip": {
+    "detailsTitle": "Trip Details",
+    "destination": "Destination",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "wardrobeSource": "Wardrobe Source",
+    "archetypePreset": "Style Archetype Preset",
+    "uploadCloset": "Upload Custom Closet (.txt / .md)",
+    "fashionArchetype": "Fashion Archetype",
+    "packingStrategy": "Packing Strategy",
+    "defaultActivity": "Default Activity",
+    "uploadWardrobeFile": "Upload Wardrobe File (.txt or .md)",
+    "loadedGarments": "✔ Loaded {count} garments from {file}",
+    "suitcase": "Suitcase",
+    "airline": "Airline (Carry-on Limits)",
+    "analyzing": "Fetching Weather & Analyzing...",
+    "analyzeButton": "Analyze Wardrobe & Schedule Outfits",
+    "failedToAnalyze": "Failed to analyze trip"
+  },
+  "archetype": {
+    "quietLuxury": "Quiet Luxury",
+    "gorpcore": "Gorpcore",
+    "scandi": "Scandi Minimalist"
+  },
+  "strategy": {
+    "standard": "Standard (Comfortable)",
+    "flexible": "Flexible & Efficient",
+    "minimalist": "Extreme Minimalist"
+  },
+  "activity": {
+    "sightseeing": "📸 Sightseeing",
+    "transit": "✈️ Transit Day",
+    "formal": "🍷 Formal / Night Out",
+    "casual": "🚶 Casual"
+  },
+  "knapsack": {
+    "title": "Knapsack Engine: Luggage Physics",
+    "volumeWeight": "Volume & Weight",
+    "weightLine": "Weight: {weight}kg / {limit}kg Limit",
+    "volumeLine": "Volume: {volume}L / {capacity}L",
+    "percentFull": "{percent}% Full",
+    "airlineCompliance": "Airline Compliance",
+    "compliantWith": "✔ Compliant with {airline} carry-on limits"
+  },
+  "itinerary": {
+    "title": "Live Itinerary ({destination})",
+    "dayLine": "Day {n}: {temp} (Warmth Target: {warmth}/10)",
+    "notAvailable": "N/A"
+  },
+  "wearability": {
+    "title": "Wardrobe Wearability Report",
+    "flexibilityScore": "Flexibility Score",
+    "mvpItem": "MVP Item",
+    "none": "None",
+    "deadWeight": "Dead Weight",
+    "perfectPacking": "None! Perfect packing.",
+    "swapSuggestion": "💡 Smart Swap Suggestion",
+    "swapOut": "Swap out:",
+    "swapIn": "Swap in:",
+    "why": "Why? {reason}",
+    "digitalCloset": "Digital Closet",
+    "addPhoto": "+ Photo",
+    "aiMagic": "AI Magic...",
+    "outfitSchedule": "3-Day Outfit Schedule",
+    "day": "Day {n}",
+    "top": "Top: {name}",
+    "bottom": "Bottom: {name}",
+    "layer": "Layer: {name}"
+  },
+  "checklist": {
+    "title": "🎒 Physical Packing Checklist",
+    "resetButton": "Reset Checkmarks",
+    "instructions": "Check items off as you pack them into your suitcase. Progress is saved automatically.",
+    "progress": "Packing Progress: {checked} / {total} Packed",
+    "garmentsToPack": "Garments to Pack",
+    "tripEssentials": "Trip Essentials",
+    "underwear": "{n}x Pairs of Underwear",
+    "socks": "{n}x Pairs of Socks",
+    "toiletryKit": "1x Toiletry Kit",
+    "techPouch": "1x Tech Pouch / Chargers"
+  },
+  "language": {
+    "label": "Language"
+  }
+}

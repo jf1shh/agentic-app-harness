@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "Meteo in Tempo Reale e Analizzatore Intelligente del Guardaroba"
+  },
+  "theme": {
+    "dark": "🌙 Modalità Scura",
+    "light": "☀️ Modalità Chiara"
+  },
+  "trip": {
+    "detailsTitle": "Dettagli del Viaggio",
+    "destination": "Destinazione",
+    "startDate": "Data di Inizio",
+    "endDate": "Data di Fine",
+    "wardrobeSource": "Origine del Guardaroba",
+    "archetypePreset": "Stile Predefinito",
+    "uploadCloset": "Carica Guardaroba Personalizzato (.txt / .md)",
+    "fashionArchetype": "Archetipo di Moda",
+    "packingStrategy": "Strategia di Imballaggio",
+    "defaultActivity": "Attività Predefinita",
+    "uploadWardrobeFile": "Carica File del Guardaroba (.txt o .md)",
+    "loadedGarments": "✔ Caricati {count} capi da {file}",
+    "suitcase": "Valigia",
+    "airline": "Compagnia Aerea (Limiti Bagaglio a Mano)",
+    "analyzing": "Recupero meteo e analisi in corso...",
+    "analyzeButton": "Analizza Guardaroba e Pianifica Abbinamenti",
+    "failedToAnalyze": "Analisi del viaggio non riuscita"
+  },
+  "archetype": {
+    "quietLuxury": "Lusso Silenzioso",
+    "gorpcore": "Gorpcore",
+    "scandi": "Minimalista Scandinavo"
+  },
+  "strategy": {
+    "standard": "Standard (Comodo)",
+    "flexible": "Flessibile ed Efficiente",
+    "minimalist": "Minimalista Estremo"
+  },
+  "activity": {
+    "sightseeing": "📸 Visite Turistiche",
+    "transit": "✈️ Giorno di Transito",
+    "formal": "🍷 Formale / Serata",
+    "casual": "🚶 Casual"
+  },
+  "knapsack": {
+    "title": "Motore Zaino: Fisica del Bagaglio",
+    "volumeWeight": "Volume e Peso",
+    "weightLine": "Peso: {weight}kg / Limite {limit}kg",
+    "volumeLine": "Volume: {volume}L / {capacity}L",
+    "percentFull": "{percent}% Pieno",
+    "airlineCompliance": "Conformità con la Compagnia Aerea",
+    "compliantWith": "✔ Conforme ai limiti del bagaglio a mano di {airline}"
+  },
+  "itinerary": {
+    "title": "Itinerario in Tempo Reale ({destination})",
+    "dayLine": "Giorno {n}: {temp} (Obiettivo di Calore: {warmth}/10)",
+    "notAvailable": "N/D"
+  },
+  "wearability": {
+    "title": "Rapporto di Versatilità del Guardaroba",
+    "flexibilityScore": "Punteggio di Flessibilità",
+    "mvpItem": "Capo Chiave",
+    "none": "Nessuno",
+    "deadWeight": "Peso Morto",
+    "perfectPacking": "Nessuno! Imballaggio perfetto.",
+    "swapSuggestion": "💡 Suggerimento di Scambio Intelligente",
+    "swapOut": "Rimuovi:",
+    "swapIn": "Aggiungi:",
+    "why": "Perché? {reason}",
+    "digitalCloset": "Guardaroba Digitale",
+    "addPhoto": "+ Foto",
+    "aiMagic": "Magia dell'IA...",
+    "outfitSchedule": "Programma Abbinamenti di 3 Giorni",
+    "day": "Giorno {n}",
+    "top": "Sopra: {name}",
+    "bottom": "Sotto: {name}",
+    "layer": "Strato: {name}"
+  },
+  "checklist": {
+    "title": "🎒 Lista di Imballaggio Fisica",
+    "resetButton": "Reimposta Spunte",
+    "instructions": "Spunta gli articoli mentre li metti in valigia. Il progresso viene salvato automaticamente.",
+    "progress": "Progresso Imballaggio: {checked} / {total} Imballati",
+    "garmentsToPack": "Capi da Imballare",
+    "tripEssentials": "Essenziali di Viaggio",
+    "underwear": "{n} paia di biancheria intima",
+    "socks": "{n} paia di calzini",
+    "toiletryKit": "1 kit da toeletta",
+    "techPouch": "1 astuccio tech / caricabatterie"
+  },
+  "language": {
+    "label": "Lingua"
+  }
+}

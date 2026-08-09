@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "Clima en Vivo y Analizador Inteligente de Vestuario"
+  },
+  "theme": {
+    "dark": "🌙 Modo Oscuro",
+    "light": "☀️ Modo Claro"
+  },
+  "trip": {
+    "detailsTitle": "Detalles del Viaje",
+    "destination": "Destino",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "wardrobeSource": "Fuente del Vestuario",
+    "archetypePreset": "Estilo Predefinido",
+    "uploadCloset": "Subir Armario Personalizado (.txt / .md)",
+    "fashionArchetype": "Arquetipo de Moda",
+    "packingStrategy": "Estrategia de Empaque",
+    "defaultActivity": "Actividad Predeterminada",
+    "uploadWardrobeFile": "Subir Archivo de Vestuario (.txt o .md)",
+    "loadedGarments": "✔ Se cargaron {count} prendas de {file}",
+    "suitcase": "Maleta",
+    "airline": "Aerolínea (Límites de Equipaje de Mano)",
+    "analyzing": "Obteniendo el Clima y Analizando...",
+    "analyzeButton": "Analizar Vestuario y Programar Atuendos",
+    "failedToAnalyze": "No se pudo analizar el viaje"
+  },
+  "archetype": {
+    "quietLuxury": "Lujo Discreto",
+    "gorpcore": "Gorpcore",
+    "scandi": "Minimalista Escandinavo"
+  },
+  "strategy": {
+    "standard": "Estándar (Cómodo)",
+    "flexible": "Flexible y Eficiente",
+    "minimalist": "Minimalista Extremo"
+  },
+  "activity": {
+    "sightseeing": "📸 Turismo",
+    "transit": "✈️ Día de Tránsito",
+    "formal": "🍷 Formal / Noche de Fiesta",
+    "casual": "🚶 Casual"
+  },
+  "knapsack": {
+    "title": "Motor de Mochila: Física del Equipaje",
+    "volumeWeight": "Volumen y Peso",
+    "weightLine": "Peso: {weight}kg / Límite de {limit}kg",
+    "volumeLine": "Volumen: {volume}L / {capacity}L",
+    "percentFull": "{percent}% Lleno",
+    "airlineCompliance": "Cumplimiento de la Aerolínea",
+    "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}"
+  },
+  "itinerary": {
+    "title": "Itinerario en Vivo ({destination})",
+    "dayLine": "Día {n}: {temp} (Objetivo de Abrigo: {warmth}/10)",
+    "notAvailable": "N/D"
+  },
+  "wearability": {
+    "title": "Informe de Versatilidad del Vestuario",
+    "flexibilityScore": "Puntuación de Flexibilidad",
+    "mvpItem": "Prenda Estrella",
+    "none": "Ninguno",
+    "deadWeight": "Peso Muerto",
+    "perfectPacking": "¡Ninguno! Empaque perfecto.",
+    "swapSuggestion": "💡 Sugerencia de Intercambio Inteligente",
+    "swapOut": "Quitar:",
+    "swapIn": "Agregar:",
+    "why": "¿Por qué? {reason}",
+    "digitalCloset": "Armario Digital",
+    "addPhoto": "+ Foto",
+    "aiMagic": "Magia de IA...",
+    "outfitSchedule": "Programación de Atuendos de 3 Días",
+    "day": "Día {n}",
+    "top": "Parte superior: {name}",
+    "bottom": "Parte inferior: {name}",
+    "layer": "Capa: {name}"
+  },
+  "checklist": {
+    "title": "🎒 Lista de Empaque Física",
+    "resetButton": "Reiniciar Marcas",
+    "instructions": "Marca los artículos a medida que los empacas en tu maleta. El progreso se guarda automáticamente.",
+    "progress": "Progreso de Empaque: {checked} / {total} Empacados",
+    "garmentsToPack": "Prendas para Empacar",
+    "tripEssentials": "Esenciales del Viaje",
+    "underwear": "{n} pares de ropa interior",
+    "socks": "{n} pares de calcetines",
+    "toiletryKit": "1 kit de aseo",
+    "techPouch": "1 estuche de tecnología / cargadores"
+  },
+  "language": {
+    "label": "Idioma"
+  }
+}
