@@ -12,6 +12,14 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 
 ### Trip input (`src/app/page.tsx`)
 - Destination string → `DestinationAutocomplete` suggests real places as you type (`searchLocations()`, Open-Meteo geocoding search only) → geocode via Open-Meteo's geocoding API, falling back to Nominatim for zip/postal codes Open-Meteo doesn't recognize (`geocodeViaNominatim()`, which also resolves the destination's country code).
+- **Multi-destination trips** — "+ Add Another Destination" appends extra legs beyond the primary
+  destination. The trip's total days split across every leg as evenly as possible, remainder to the
+  earliest legs (`splitTripDays`/`buildDestinationLegs` in `src/utils/multiDestination.ts`); each leg
+  gets its own contiguous date range, geocode, and weather fetch (`fetchLegItinerary()` in
+  `src/services/weatherApi.ts`), tagged onto its `DayItinerary`s as `destinationName`. The combined
+  itinerary numbers days continuously (1..N) across every leg, and the packing checklist lists one
+  adapter per unique plug type across the whole trip rather than only the first destination's.
+  `LocalInfoPanel` stays scoped to the primary destination only (see "Left undone" in the phase's PR).
 - Start & end dates → fetch daily forecast → `transformWeatherToItinerary()` produces `DayItinerary[]` with `weatherWarmthTarget` (0–10) and `maxTempC` per day.
 - **Local Info** — once Analyze resolves a destination country, `LocalInfoPanel` shows a few typical tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter API) and a GOV.UK travel-advisory summary with a link to the full advisory (`src/services/advisory.ts`).
 - **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.

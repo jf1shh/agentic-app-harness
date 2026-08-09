@@ -23,6 +23,8 @@
     "defaultActivity": "Attività Predefinita",
     "uploadWardrobeFile": "Carica File del Guardaroba (.txt o .md)",
     "loadedGarments": "✔ Caricati {count} capi da {file}",
+    "addDestination": "+ Aggiungi Un'altra Destinazione",
+    "removeDestination": "Rimuovi destinazione {n}",
     "suitcase": "Valigia",
     "airline": "Compagnia Aerea (Limiti Bagaglio a Mano)",
     "analyzing": "Recupero meteo e analisi in corso...",
@@ -57,6 +59,7 @@
   "itinerary": {
     "title": "Itinerario in Tempo Reale ({destination})",
     "dayLine": "Giorno {n}: {temp} (Obiettivo di Calore: {warmth}/10)",
+    "dayLineForDestination": "Giorno {n} — {destination}: {temp} (Obiettivo di Calore: {warmth}/10)",
     "notAvailable": "N/D"
   },
   "wearability": {

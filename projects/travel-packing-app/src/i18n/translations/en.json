@@ -23,6 +23,8 @@
     "defaultActivity": "Default Activity",
     "uploadWardrobeFile": "Upload Wardrobe File (.txt or .md)",
     "loadedGarments": "✔ Loaded {count} garments from {file}",
+    "addDestination": "+ Add Another Destination",
+    "removeDestination": "Remove destination {n}",
     "suitcase": "Suitcase",
     "airline": "Airline (Carry-on Limits)",
     "analyzing": "Fetching Weather & Analyzing...",
@@ -57,6 +59,7 @@
   "itinerary": {
     "title": "Live Itinerary ({destination})",
     "dayLine": "Day {n}: {temp} (Warmth Target: {warmth}/10)",
+    "dayLineForDestination": "Day {n} — {destination}: {temp} (Warmth Target: {warmth}/10)",
     "notAvailable": "N/A"
   },
   "wearability": {

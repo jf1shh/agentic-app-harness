@@ -23,6 +23,8 @@
     "defaultActivity": "默认活动",
     "uploadWardrobeFile": "上传衣橱文件 (.txt 或 .md)",
     "loadedGarments": "✔ 已从 {file} 加载 {count} 件衣物",
+    "addDestination": "+ 添加另一个目的地",
+    "removeDestination": "移除目的地 {n}",
     "suitcase": "行李箱",
     "airline": "航空公司（随身行李限制）",
     "analyzing": "正在获取天气并分析...",
@@ -57,6 +59,7 @@
   "itinerary": {
     "title": "实时行程（{destination}）",
     "dayLine": "第 {n} 天：{temp}（保暖目标：{warmth}/10）",
+    "dayLineForDestination": "第 {n} 天 — {destination}：{temp}（保暖目标：{warmth}/10）",
     "notAvailable": "不可用"
   },
   "wearability": {

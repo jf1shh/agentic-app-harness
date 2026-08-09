@@ -23,6 +23,8 @@
     "defaultActivity": "Atividade Padrão",
     "uploadWardrobeFile": "Enviar Arquivo de Guarda-roupa (.txt ou .md)",
     "loadedGarments": "✔ {count} peças carregadas de {file}",
+    "addDestination": "+ Adicionar Outro Destino",
+    "removeDestination": "Remover destino {n}",
     "suitcase": "Mala",
     "airline": "Companhia Aérea (Limites de Bagagem de Mão)",
     "analyzing": "Buscando clima e analisando...",
@@ -57,6 +59,7 @@
   "itinerary": {
     "title": "Itinerário ao Vivo ({destination})",
     "dayLine": "Dia {n}: {temp} (Meta de Aquecimento: {warmth}/10)",
+    "dayLineForDestination": "Dia {n} — {destination}: {temp} (Meta de Aquecimento: {warmth}/10)",
     "notAvailable": "N/D"
   },
   "wearability": {

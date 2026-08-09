@@ -33,6 +33,7 @@ export const DayItinerarySchema = z.object({
   weatherWarmthTarget: z.number(),
   activity: z.string(),
   maxTempC: z.number().optional(),
+  destinationName: z.string().optional(),
 });
 
 export const WearabilityReportSchema = z.object({
@@ -59,6 +60,7 @@ export type WearabilityReport = z.infer<typeof WearabilityReportSchema>;
 // or IndexedDB-loaded data already is elsewhere in this app.
 export const TripShareSchema = z.object({
   destination: z.string().max(200),
+  additionalDestinations: z.array(z.string().max(200)).max(9).optional(),
   startDate: z.string().max(20),
   endDate: z.string().max(20),
   archetype: z.string().max(50),

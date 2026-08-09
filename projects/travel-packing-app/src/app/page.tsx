@@ -16,6 +16,8 @@ import DestinationAutocomplete from '../components/DestinationAutocomplete';
 import LocalInfoPanel from '../components/LocalInfoPanel';
 import { resolveActivity } from '../utils/activity';
 import { tripDurationFromDates } from '../utils/tripDuration';
+import { buildDestinationLegs } from '../utils/multiDestination';
+import { fetchLegItinerary } from '../services/weatherApi';
 import DailyActivityPicker from '../components/DailyActivityPicker';
 import WardrobeManager from '../components/WardrobeManager';
 import SuitcaseFinder from '../components/SuitcaseFinder';
@@ -30,6 +32,7 @@ const suitcaseKey = (m: SuitcaseModel) => `${m.brand} — ${m.model}`;
 export default function Home() {
   const { t, language, setLanguage, languages } = useT();
   const [destination, setDestination] = useState('Hawaii');
+  const [additionalDestinations, setAdditionalDestinations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('2026-08-01');
   const [endDate, setEndDate] = useState('2026-08-05');
   const [report, setReport] = useState<WearabilityReport | null>(null);
@@ -37,7 +40,14 @@ export default function Home() {
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // The primary destination's country code — feeds LocalInfoPanel, which is
+  // deliberately scoped to one destination's local-cost/advisory lookup even
+  // on a multi-destination trip (see the "Left undone" PR note).
   const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
+  // One country code per leg (a single-destination trip is a one-element
+  // array) — feeds the packing checklist, which needs an adapter per
+  // distinct plug type across the whole trip, not just the first leg.
+  const [legCountryCodes, setLegCountryCodes] = useState<(string | null)[]>([]);
   const [selectedSuitcase, setSelectedSuitcase] = useState(suitcaseKey(MODELS[0]));
   const [selectedAirline, setSelectedAirline] = useState('EK'); // Emirates
 
@@ -89,6 +99,7 @@ export default function Home() {
       const shared = parseShareFromHash(window.location.hash);
       if (!shared) return;
       setDestination(shared.destination);
+      setAdditionalDestinations(shared.additionalDestinations ?? []);
       setStartDate(shared.startDate);
       setEndDate(shared.endDate);
       setArchetype(shared.archetype);
@@ -105,9 +116,11 @@ export default function Home() {
   }, []);
 
   const handleShare = async () => {
+    const trimmedAdditionalDestinations = additionalDestinations.map((d) => d.trim()).filter((d) => d.length > 0);
     const url = buildShareUrl(
       {
         destination, startDate, endDate, archetype, strategy, activity,
+        additionalDestinations: trimmedAdditionalDestinations.length > 0 ? trimmedAdditionalDestinations : undefined,
         closetSource, customGarments: closetSource === 'custom' ? customGarments : undefined,
         selectedSuitcase, selectedAirline,
       },
@@ -144,12 +157,42 @@ export default function Home() {
     setLoading(true);
     setError('');
     try {
-      const geo = await geocodeLocation(destination);
-      setDestinationCountryCode('country_code' in geo && geo.country_code ? geo.country_code : null);
-      const weather = await fetchWeather(geo.latitude, geo.longitude, startDate, endDate);
-      const resolvedDailyActivities = dailyActivities.map((a) => resolveActivity(a, destination));
-      const generatedItinerary = transformWeatherToItinerary(weather, activity, resolvedDailyActivities);
+      const validAdditionalDestinations = additionalDestinations.map((d) => d.trim()).filter((d) => d.length > 0);
+      let generatedItinerary: DayItinerary[];
+      let legCodes: (string | null)[];
 
+      if (validAdditionalDestinations.length === 0) {
+        // Single destination: unchanged from before multi-destination trips
+        // existed, so this path carries none of the new feature's risk.
+        const geo = await geocodeLocation(destination);
+        const primaryCountryCode = 'country_code' in geo && geo.country_code ? geo.country_code : null;
+        const weather = await fetchWeather(geo.latitude, geo.longitude, startDate, endDate);
+        const resolvedDailyActivities = dailyActivities.map((a) => resolveActivity(a, destination));
+        generatedItinerary = transformWeatherToItinerary(weather, activity, resolvedDailyActivities);
+        legCodes = [primaryCountryCode];
+      } else {
+        // Multi-destination: split the trip's total days across every
+        // destination in order, fetch each leg's own weather, and number
+        // the combined itinerary continuously (day 1..N across all legs)
+        // rather than restarting at 1 per leg.
+        const totalTripDays = tripDurationFromDates(startDate, endDate);
+        const legs = buildDestinationLegs([destination, ...validAdditionalDestinations], totalTripDays, startDate);
+        generatedItinerary = [];
+        legCodes = [];
+        let dayOffset = 0;
+        for (const leg of legs) {
+          const legDailyActivities = dailyActivities
+            .slice(dayOffset, dayOffset + leg.days)
+            .map((a) => resolveActivity(a, leg.destination));
+          const legResult = await fetchLegItinerary(leg, dayOffset, activity, legDailyActivities);
+          generatedItinerary.push(...legResult.itinerary);
+          legCodes.push(legResult.countryCode);
+          dayOffset += leg.days;
+        }
+      }
+
+      setDestinationCountryCode(legCodes[0] ?? null);
+      setLegCountryCodes(legCodes);
       setItinerary(generatedItinerary);
 
       const tripDuration = generatedItinerary.length;
@@ -241,6 +284,37 @@ export default function Home() {
           <div>
             <DestinationAutocomplete value={destination} onChange={setDestination} />
           </div>
+
+          {additionalDestinations.map((dest, i) => (
+            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <DestinationAutocomplete
+                  id={`dest-${i + 2}`}
+                  label={`Destination ${i + 2}`}
+                  value={dest}
+                  onChange={(next) => setAdditionalDestinations((prev) => prev.map((d, j) => (j === i ? next : d)))}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                aria-label={t('trip.removeDestination', { n: i + 2 })}
+                onClick={() => setAdditionalDestinations((prev) => prev.filter((_, j) => j !== i))}
+                style={{ padding: '10px 14px' }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setAdditionalDestinations((prev) => [...prev, ''])}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            {t('trip.addDestination')}
+          </button>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
               <label htmlFor="start" className="label">{t('trip.startDate')}</label>
@@ -404,8 +478,9 @@ export default function Home() {
             <ul style={{ margin: '16px 0', paddingLeft: '24px' }}>
               {itinerary.map(day => (
                 <li key={day.dayNumber} style={{ marginBottom: '8px' }}>
-                  {t('itinerary.dayLine', {
+                  {t(day.destinationName ? 'itinerary.dayLineForDestination' : 'itinerary.dayLine', {
                     n: day.dayNumber,
+                    destination: day.destinationName ?? '',
                     temp: day.maxTempC !== undefined ? `${day.maxTempC}°C` : t('itinerary.notAvailable'),
                     warmth: day.weatherWarmthTarget,
                   })}
@@ -413,7 +488,7 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCode={destinationCountryCode} />
+          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCodes={legCountryCodes} />
           <LocalInfoPanel countryCode={destinationCountryCode} />
 
           <div className="no-print" style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
