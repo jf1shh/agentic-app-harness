@@ -10,6 +10,9 @@ import { MODELS } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
 import { parseClosetFile } from '../utils/fileImporter';
+import { resolveActivity } from '../utils/activity';
+import { tripDurationFromDates } from '../utils/tripDuration';
+import DailyActivityPicker from '../components/DailyActivityPicker';
 
 
 
@@ -28,6 +31,7 @@ export default function Home() {
   const [archetype, setArchetype] = useState('quiet-luxury');
   const [strategy, setStrategy] = useState('standard');
   const [activity, setActivity] = useState('sightseeing');
+  const [dailyActivities, setDailyActivities] = useState<(string | null)[]>([]);
   const [activeGarments, setActiveGarments] = useState<Garment[]>([]);
 
   const [closetSource, setClosetSource] = useState<'archetype' | 'custom'>('archetype');
@@ -81,7 +85,8 @@ export default function Home() {
     try {
       const geo = await geocodeLocation(destination);
       const weather = await fetchWeather(geo.latitude, geo.longitude, startDate, endDate);
-      const generatedItinerary = transformWeatherToItinerary(weather, activity);
+      const resolvedDailyActivities = dailyActivities.map((a) => resolveActivity(a, destination));
+      const generatedItinerary = transformWeatherToItinerary(weather, activity, resolvedDailyActivities);
       
       setItinerary(generatedItinerary);
 
@@ -145,6 +150,13 @@ export default function Home() {
               <input id="end" type="date" className="input-field" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
+
+          <DailyActivityPicker
+            duration={tripDurationFromDates(startDate, endDate)}
+            destination={destination}
+            dailyActivities={dailyActivities}
+            setDailyActivities={setDailyActivities}
+          />
 
           <div style={{ padding: '16px', backgroundColor: 'rgba(255, 255, 255, 0.5)', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px' }}>
             <label className="label">Wardrobe Source</label>
