@@ -125,14 +125,25 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
     await expect(page.getByText(/\d+ Apps/).first()).toBeVisible();
   });
 
-  test('Given the footer, When the page loads, Then it credits the author by name and links a real GitHub profile and contact email', async ({ page }) => {
+  test('Given the footer, When the page loads, Then it credits the author by name and links a real GitHub profile, LinkedIn profile, and contact email', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByText('Jared Fisher')).toBeVisible();
+    await expect(page.locator('footer').getByText('Jared Fisher')).toBeVisible();
     const githubLink = page.locator('footer a[href="https://github.com/jf1shh"]');
     await expect(githubLink).toBeVisible();
+    const linkedinLink = page.locator('footer a[href="https://www.linkedin.com/in/jared-f-17680b7a"]');
+    await expect(linkedinLink).toBeVisible();
     const mailLink = page.locator('footer a[href="mailto:xjaredfisher@gmail.com"]');
     await expect(mailLink).toBeVisible();
+  });
+
+  test('Given the About panel, When the page loads, Then it introduces the author with a bio and a LinkedIn call-to-action', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('#about-heading')).toBeVisible();
+    await expect(page.getByText(/Jared Fisher/).first()).toBeVisible();
+    const aboutLinkedinLink = page.locator('#about-section a[href="https://www.linkedin.com/in/jared-f-17680b7a"]');
+    await expect(aboutLinkedinLink).toBeVisible();
   });
 
   test('Given Portfolio Hub UI portal, When audited by axe accessibility scanner, Then pass zero WCAG 2.0 AA violations', async ({ page }) => {
