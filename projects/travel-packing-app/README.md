@@ -11,8 +11,9 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ## What the app actually does
 
 ### Trip input (`src/app/page.tsx`)
-- Destination string → geocode via Open-Meteo's geocoding API.
+- Destination string → `DestinationAutocomplete` suggests real places as you type (`searchLocations()`, Open-Meteo geocoding search only) → geocode via Open-Meteo's geocoding API, falling back to Nominatim for zip/postal codes Open-Meteo doesn't recognize (`geocodeViaNominatim()`, which also resolves the destination's country code).
 - Start & end dates → fetch daily forecast → `transformWeatherToItinerary()` produces `DayItinerary[]` with `weatherWarmthTarget` (0–10) and `maxTempC` per day.
+- **Local Info** — once Analyze resolves a destination country, `LocalInfoPanel` shows a few typical tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter API) and a GOV.UK travel-advisory summary with a link to the full advisory (`src/services/advisory.ts`).
 - **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.
 
 ### Wardrobe source — two paths
@@ -57,11 +58,15 @@ src/
     WardrobeAnalyzer.tsx           # wearability report + Dead Weight + Smart Swaps
     WardrobeManager.tsx            # Digital Closet: add/photo/delete real garments
     PackingChecklist.tsx           # interactive checklist, print stylesheet, group sync
+    DestinationAutocomplete.tsx    # live destination suggestions (searchLocations)
+    LocalInfoPanel.tsx             # typical-cost currency conversion + travel advisory
     DailyActivityPicker.tsx        # per-day activity tagging (Beach/Hike/Ski/Formal/...)
     SuitcaseFinder.tsx             # brand/model text search + barcode lookup
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
-    weatherApi.ts                  # geocode + Open-Meteo forecast + itinerary transform
+    weatherApi.ts                  # geocode + autocomplete + Open-Meteo forecast + itinerary transform
+    currency.ts                    # Frankfurter exchange rates, typical-cost conversion
+    advisory.ts                    # GOV.UK travel advisories
     groupSync.ts                   # BroadcastChannel cross-tab checklist sync
     db.ts                          # IndexedDB layer; wardrobe media, checkStorageQuota()
     logger.ts                      # client logger

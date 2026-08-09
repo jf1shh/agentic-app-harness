@@ -7,6 +7,16 @@
 
 ## 2. Core Features
 - [x] Live Weather integration (Open-Meteo) for dynamic itinerary warmth targets.
+- [x] Destination autocomplete — `DestinationAutocomplete` suggests real places as the user types
+  (`searchLocations` in `src/services/weatherApi.ts`, Open-Meteo's geocoding search only — never
+  Nominatim, whose usage policy explicitly forbids client-side autocomplete). Zip/postal geocoding
+  fallback to Nominatim (`geocodeViaNominatim`) already existed for the one-off destination lookup on
+  Analyze and now also captures the resolved country code.
+- [x] Local Info panel — once a destination resolves to a country, `LocalInfoPanel` shows a few typical
+  tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter exchange-rate
+  API, no key required) and a GOV.UK foreign-travel-advisory summary with a link to the full advisory
+  (`src/services/advisory.ts`). Both are best-effort: an unmapped country or a failed fetch renders
+  nothing rather than a broken panel.
 - [x] Complex Wardrobe Engine that enforces garment pairing rules, color matching, and exclusion tags.
 - [x] Multi-role garment handling and dynamic Material Thermals (Cashmere vs Linen).
 - [x] Per-day activity tagging — a `DailyActivityPicker` lets the user tag each trip day
