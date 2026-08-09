@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "リアルタイム天気とスマートワードローブ分析"
+    "subtitle": "リアルタイム天気とスマートワードローブ分析",
+    "startOver": "↩ 最初からやり直す",
+    "deleteAllData": "🗑️ すべてのデータを削除",
+    "deleteConfirm": "この端末に保存されたワードローブ、写真、設定を完全に削除します。この操作は取り消せません。続行しますか？"
   },
   "theme": {
     "dark": "🌙 ダークモード",
@@ -86,7 +89,9 @@
     "underwear": "下着 {n} セット",
     "socks": "靴下 {n} 足",
     "toiletryKit": "洗面用具セット 1個",
-    "techPouch": "電子機器ポーチ／充電器 1式"
+    "techPouch": "電子機器ポーチ／充電器 1式",
+    "universalAdapter": "ユニバーサル変換プラグ 1個",
+    "travelAdapterFor": "変換プラグ 1個（タイプ {type}）"
   },
   "language": {
     "label": "言語"

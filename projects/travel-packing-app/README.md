@@ -55,6 +55,18 @@ independently-developed phase branch) still render their own hardcoded English s
 - **Print** — the Physical Packing Checklist has its own `@media print` stylesheet (`globals.css`) that hides every other panel and forces light colors regardless of the on-screen theme, plus a "🖨️ Print" button.
 - **Group sync** — packing checkmarks sync live across browser tabs on the same origin via `BroadcastChannel` (`src/services/groupSync.ts`); a "🔄 Live sync across tabs" indicator shows when the browser supports it. Deliberately tab-to-tab only, no server, matching the app's 100%-local design.
 
+### Quick wins: travel adapter, Start Over, Delete All My Data
+- **Destination-aware travel adapter** — the packing checklist's essentials always include one travel
+  adapter. `getAdapterPlugType()` (`src/utils/plugs.ts`) resolves the destination's IEC wall-plug type
+  from its country code; the checklist names the specific type (e.g. "Travel Adapter (Type C/F
+  outlets)") when known, falling back to "Universal Travel Adapter" otherwise. The essentials list and
+  progress-percent calculation are pure functions (`src/utils/checklistEssentials.ts`) the component
+  calls, not logic reimplemented inline.
+- **Start Over** — once a plan is generated, clears the report/physics/itinerary/garments so you can
+  plan again without reloading the page. Leaves the packing checklist's own saved checkmarks alone.
+- **Delete All My Data** — a footer button that wipes IndexedDB (wardrobe photos, via the existing
+  `clearAllLocalData()`) and every `localStorage` key, then reloads. Confirmed via `window.confirm()`.
+
 ### Engine rules enforced by the wardrobe layer
 - **Exclusion tags** — items tagged `clash_navy` etc. are never paired.
 - **Color math** — Pink and Red, for example, are mathematically excluded from pairing.
@@ -98,6 +110,8 @@ src/
     share.ts                       # encode/decode a #share= trip link (lz-string)
     activity.ts                    # guessActivityFromDestination(), resolveActivity()
     tripDuration.ts                # inclusive start/end date -> day count
+    checklistEssentials.ts         # buildEssentialSpecs(), computeProgressPercent() — pure checklist logic
+    plugs.ts                       # getAdapterPlugType() — IEC wall-plug type by destination country
     wardrobeBuilder.ts             # buildManualGarment() — Digital Closet's schema-valid Garment builder
     suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
     airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)

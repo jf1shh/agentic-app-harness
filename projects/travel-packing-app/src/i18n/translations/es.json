@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "Clima en Vivo y Analizador Inteligente de Vestuario"
+    "subtitle": "Clima en Vivo y Analizador Inteligente de Vestuario",
+    "startOver": "↩ Empezar de Nuevo",
+    "deleteAllData": "🗑️ Eliminar Todos Mis Datos",
+    "deleteConfirm": "Esto elimina permanentemente tu vestuario guardado, fotos y preferencias de este dispositivo. No se puede deshacer. ¿Continuar?"
   },
   "theme": {
     "dark": "🌙 Modo Oscuro",
@@ -86,7 +89,9 @@
     "underwear": "{n} pares de ropa interior",
     "socks": "{n} pares de calcetines",
     "toiletryKit": "1 kit de aseo",
-    "techPouch": "1 estuche de tecnología / cargadores"
+    "techPouch": "1 estuche de tecnología / cargadores",
+    "universalAdapter": "1 adaptador de viaje universal",
+    "travelAdapterFor": "1 adaptador de viaje (Tipo {type})"
   },
   "language": {
     "label": "Idioma"

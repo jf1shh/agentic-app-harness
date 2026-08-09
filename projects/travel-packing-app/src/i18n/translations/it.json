@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "Meteo in Tempo Reale e Analizzatore Intelligente del Guardaroba"
+    "subtitle": "Meteo in Tempo Reale e Analizzatore Intelligente del Guardaroba",
+    "startOver": "↩ Ricomincia",
+    "deleteAllData": "🗑️ Elimina Tutti i Miei Dati",
+    "deleteConfirm": "Questo elimina permanentemente il tuo guardaroba salvato, le foto e le preferenze da questo dispositivo. L'operazione non può essere annullata. Continuare?"
   },
   "theme": {
     "dark": "🌙 Modalità Scura",
@@ -86,7 +89,9 @@
     "underwear": "{n} paia di biancheria intima",
     "socks": "{n} paia di calzini",
     "toiletryKit": "1 kit da toeletta",
-    "techPouch": "1 astuccio tech / caricabatterie"
+    "techPouch": "1 astuccio tech / caricabatterie",
+    "universalAdapter": "1 adattatore da viaggio universale",
+    "travelAdapterFor": "1 adattatore da viaggio (Tipo {type})"
   },
   "language": {
     "label": "Lingua"
