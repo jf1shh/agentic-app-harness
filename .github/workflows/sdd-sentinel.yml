@@ -106,6 +106,31 @@ jobs:
         shell: pwsh
         run: node ./scripts/harness-status.mjs --gate
 
+      # Posts every guardrail hit as an inline PR review comment, on the exact
+      # line it fired on — see scripts/harness-status-rdjson.mjs's header for
+      # why: it's the §9.1 "never self-certify verification" rule applied to
+      # the gate's own output, so there's nothing left for a PR body to
+      # mis-summarize. `if: always()` so a failing Verify Gate above still
+      # gets annotated (that's the case this is most useful for); reviewdog's
+      # own `-filter-mode=added` means only findings on lines this PR actually
+      # touched get posted, so a pre-existing hit elsewhere in the repo isn't
+      # re-litigated on every unrelated PR. Purely additive/informational —
+      # `continue-on-error: true` so reviewdog itself can never block a merge;
+      # the Verify Gate step above is the actual gate.
+      - name: Setup reviewdog
+        if: always() && github.event_name == 'pull_request'
+        uses: reviewdog/action-setup@v1
+
+      - name: Annotate PR with guardrail findings (reviewdog, informational)
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        shell: bash
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node ./scripts/harness-status-rdjson.mjs | \
+            reviewdog -f=rdjsonl -name=harness-status -reporter=github-pr-review -filter-mode=added -fail-level=none
+
       # §9.1 says "never self-certify verification" for PR bodies; this is the same
       # rule applied to the docs themselves — a checked-in claim like "7 guardrails"
       # must match what the code it describes actually contains.

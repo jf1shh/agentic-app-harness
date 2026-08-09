@@ -1,0 +1,70 @@
+name: Mutation Testing (informational)
+
+# Reports a Stryker Mutator score per app — the machine-checked half of
+# .agents/AGENTS.md §9.4 ("prove a new test can fail"). This is deliberately
+# an informational sensor, not a gate: no step here fails the build or blocks
+# a merge (see scripts/stryker.shared.mjs and scripts/run-mutation.mjs for the
+# sensor-before-guardrail rationale in .agents/AGENTS.md §8). Promoting a
+# score floor to a blocking check is a separate, later, human decision.
+
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    strategy:
+      # One leg per app, in parallel, same shape as the Harness Testing Suite
+      # (ci.yml) — a slow or crashing app's mutation run must not hide the
+      # others' scores.
+      fail-fast: false
+      matrix:
+        app: [mood-diner, portfolio-hub, travel-packing-app, smart-recipe-app, legal-financial-rag, elder-care-planner]
+
+    name: mutation (${{ matrix.app }})
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # Root lockfile: the repo is an npm workspace (root package.json,
+          # projects/*) so there is one lockfile for all 6 apps' shared deps.
+          cache-dependency-path: package-lock.json
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      # Speeds up repeat runs on the same PR: Stryker's --incremental mode
+      # (used by run-mutation.mjs) skips re-testing mutants it already scored
+      # against unchanged code, using this file as its memory between runs.
+      - name: Cache Stryker incremental state
+        uses: actions/cache@v4
+        with:
+          path: projects/${{ matrix.app }}/reports/mutation/incremental.json
+          key: stryker-incremental-${{ matrix.app }}-${{ github.event.pull_request.number || 'dispatch' }}
+          restore-keys: |
+            stryker-incremental-${{ matrix.app }}-
+
+      # continue-on-error: informational sensor, never blocks the PR — see
+      # the workflow header and .agents/AGENTS.md §8.
+      - name: Run mutation testing sensor for ${{ matrix.app }}
+        run: node scripts/run-mutation.mjs ${{ matrix.app }}
+        continue-on-error: true
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-${{ matrix.app }}
+          path: projects/${{ matrix.app }}/reports/mutation/
+          if-no-files-found: ignore
+          retention-days: 14
