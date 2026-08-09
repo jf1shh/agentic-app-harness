@@ -10,6 +10,7 @@ import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
 import { parseClosetFile } from '../utils/fileImporter';
+import WardrobeManager from '../components/WardrobeManager';
 import SuitcaseFinder from '../components/SuitcaseFinder';
 
 // Model names alone collide across brands (e.g. Away, Arlo Skye and Roam all
@@ -38,6 +39,7 @@ export default function Home() {
   const [closetSource, setClosetSource] = useState<'archetype' | 'custom'>('archetype');
   const [customGarments, setCustomGarments] = useState<Garment[]>([]);
   const [customFileName, setCustomFileName] = useState('');
+  const [closetManagerOpen, setClosetManagerOpen] = useState(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -214,19 +216,27 @@ export default function Home() {
             ) : (
               <div>
                 <label htmlFor="closet-upload" className="label">Upload Wardrobe File (.txt or .md)</label>
-                <input 
-                  id="closet-upload" 
-                  type="file" 
-                  accept=".txt,.md" 
-                  onChange={handleFileUpload} 
-                  className="input-field" 
+                <input
+                  id="closet-upload"
+                  type="file"
+                  accept=".txt,.md"
+                  onChange={handleFileUpload}
+                  className="input-field"
                   style={{ cursor: 'pointer' }}
                 />
-                {customGarments.length > 0 && (
+                {customGarments.length > 0 && customFileName && (
                   <p style={{ marginTop: '8px', color: '#22c55e', fontSize: '0.9rem' }}>
                     ✔ Loaded {customGarments.length} garments from {customFileName}
                   </p>
                 )}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ marginTop: '12px' }}
+                  onClick={() => setClosetManagerOpen(true)}
+                >
+                  📸 Manage Digital Closet {customGarments.length > 0 ? `(${customGarments.length} items)` : ''}
+                </button>
               </div>
             )}
           </div>
@@ -296,6 +306,13 @@ export default function Home() {
           <WardrobeAnalyzer report={report} garments={activeGarments} />
         </>
       )}
+
+      <WardrobeManager
+        isOpen={closetManagerOpen}
+        onClose={() => setClosetManagerOpen(false)}
+        garments={customGarments}
+        setGarments={setCustomGarments}
+      />
     </main>
   );
 }

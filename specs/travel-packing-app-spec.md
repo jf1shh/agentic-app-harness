@@ -19,7 +19,14 @@
   camera-free functions — a future camera-based photo-tap UI can build on it directly, but that live
   camera/canvas flow itself is out of scope here (see the PR's "Left undone" note: it cannot be
   meaningfully exercised or verified in this harness, which has no camera).
-- [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
+- [x] Digital Closet (IndexedDB + Client-side AI Background Removal) — a manager panel
+  (`WardrobeManager`) lets a user build a real custom wardrobe by hand: add a garment (name, role,
+  color, evening flag), attach a photo per item with on-device background removal, and delete items.
+  Garments built this way go through the same `GarmentSchema` runtime contract as the archetype
+  generator and file importer (`buildManualGarment` in `src/utils/wardrobeBuilder.ts`). A low-storage
+  warning (`checkStorageQuota` in `src/services/db.ts`) surfaces before a photo save can fail silently,
+  per the "binary attachment must not share a storage budget" lesson in `.agents/AGENTS.md` §6 — photos
+  live in IndexedDB, never in the same store as the wardrobe/trip data.
 - [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
   Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`

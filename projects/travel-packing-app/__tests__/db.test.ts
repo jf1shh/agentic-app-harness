@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get, set, del, clear } from 'idb-keyval';
 import {
   saveItemImage,
   getItemImage,
   deleteItemImage,
   clearAllLocalData,
+  checkStorageQuota,
 } from '../src/services/db';
 
 // idb-keyval is stubbed rather than exercised: this suite is about the app's
@@ -102,5 +103,46 @@ describe('clearAllLocalData', () => {
   it('Given a store that rejects the clear, When erasing, Then the failure is swallowed rather than thrown', async () => {
     mockClear.mockRejectedValue(new Error('InvalidStateError'));
     await expect(clearAllLocalData()).resolves.toBeUndefined();
+  });
+});
+
+describe('checkStorageQuota', () => {
+  const originalStorage = navigator.storage;
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'storage', { value: originalStorage, configurable: true });
+  });
+
+  it('Given the Storage API is unavailable, When quota is checked, Then it reports no low-space warning rather than throwing', async () => {
+    Object.defineProperty(navigator, 'storage', { value: undefined, configurable: true });
+    await expect(checkStorageQuota()).resolves.toEqual({ quota: 0, usage: 0, lowSpace: false });
+  });
+
+  it('Given plenty of free space, When quota is checked, Then lowSpace is false', async () => {
+    Object.defineProperty(navigator, 'storage', {
+      value: { estimate: vi.fn().mockResolvedValue({ quota: 1_000_000_000, usage: 1_000_000 }) },
+      configurable: true,
+    });
+    const result = await checkStorageQuota();
+    expect(result.lowSpace).toBe(false);
+    expect(result.quota).toBe(1_000_000_000);
+    expect(result.usage).toBe(1_000_000);
+  });
+
+  it('Given fewer than 10MB free, When quota is checked, Then lowSpace is true so the closet UI can warn before a save silently fails', async () => {
+    Object.defineProperty(navigator, 'storage', {
+      value: { estimate: vi.fn().mockResolvedValue({ quota: 10 * 1024 * 1024, usage: 10 * 1024 * 1024 - 1 }) },
+      configurable: true,
+    });
+    const result = await checkStorageQuota();
+    expect(result.lowSpace).toBe(true);
+  });
+
+  it('Given the estimate call rejects, When quota is checked, Then it reports no low-space warning rather than throwing', async () => {
+    Object.defineProperty(navigator, 'storage', {
+      value: { estimate: vi.fn().mockRejectedValue(new Error('unsupported')) },
+      configurable: true,
+    });
+    await expect(checkStorageQuota()).resolves.toEqual({ quota: 0, usage: 0, lowSpace: false });
   });
 });
