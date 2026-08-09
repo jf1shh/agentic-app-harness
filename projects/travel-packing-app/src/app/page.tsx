@@ -177,6 +177,15 @@ export default function Home() {
                     <option value="quiet-luxury">Quiet Luxury</option>
                     <option value="gorpcore">Gorpcore</option>
                     <option value="scandi">Scandi Minimalist</option>
+                    <option value="streetwear">Y2K Streetwear</option>
+                    <option value="dark-academia">Dark Academia</option>
+                    <option value="athleisure">Athleisure</option>
+                    <option value="bohemian">Bohemian / Resort</option>
+                    <option value="preppy">Ivy League Prep</option>
+                    <option value="rock">Rock Chic</option>
+                    <option value="whimsigoth">Whimsigoth</option>
+                    <option value="coastal">Coastal Maritime</option>
+                    <option value="cottagecore">Cottagecore</option>
                   </select>
                 </div>
                 <div>

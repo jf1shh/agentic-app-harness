@@ -12,6 +12,10 @@
 - [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
 - [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules).
 - [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
+- [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
+  Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
+  Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
+  palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)
