@@ -15,7 +15,7 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 - Start & end dates → fetch daily forecast → `transformWeatherToItinerary()` produces `DayItinerary[]` with `weatherWarmthTarget` (0–10) and `maxTempC` per day.
 
 ### Wardrobe source — two paths
-- **Style archetype preset** — pick one of three (`quiet-luxury`, `gorpcore`, `scandi-minimalist`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+- **Style archetype preset** — pick one of 12 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
 - **Custom upload** — drag in a `.txt` or `.md` wardrobe file; `parseClosetFile()` auto-detects each line's role (`top | bottom | topper | layer`), colors, and thermal score, and produces a `Garment[]` from your real closet.
 - **Digital Closet manager** — the "📸 Manage Digital Closet" panel (`WardrobeManager`) lets you build that same `Garment[]` by hand instead of uploading a file: add an item (name, role, color, evening flag) via `buildManualGarment()`, then attach a photo with on-device AI background removal (`@imgly/background-removal`), stored per-item in IndexedDB. A low-storage warning appears before a photo save can fail silently.
 
@@ -26,8 +26,8 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
    - **Dead Weight** — items that never appear in any scheduled outfit.
    - **Smart Swap Suggestions** — targeted item replacements that would most reduce dead weight.
 2. **Knapsack physics report** (`calculateKnapsackPhysics()`)
-   - Total weight and volume vs. the selected suitcase's real capacity (`MODELS` in `src/utils/suitcaseDatabase.ts` — including the Away Carry-On).
-   - Airline compliance against the chosen airline's carry-on limits (`src/utils/airlineBaggage.ts` — Emirates and Delta are pre-loaded; others are added as needed).
+   - Total weight and volume vs. the selected suitcase's real capacity (`MODELS` in `src/utils/suitcaseDatabase.ts` — 64 models across 25 brands). `SuitcaseFinder` lets you search by brand/model text or paste a barcode number (`lookupByBarcode`) instead of scrolling the full dropdown.
+   - Airline compliance against the chosen airline's carry-on limits (`src/utils/airlineBaggage.ts` — 77 carriers across 7 regions, with `searchAirlines`/`getAllAirlines`/`getRegions` for lookup).
 
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
@@ -51,6 +51,7 @@ src/
     WardrobeAnalyzer.tsx           # wearability report + Dead Weight + Smart Swaps
     WardrobeManager.tsx            # Digital Closet: add/photo/delete real garments
     PackingChecklist.tsx           # interactive checklist, localStorage progress
+    SuitcaseFinder.tsx             # brand/model text search + barcode lookup
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
     weatherApi.ts                  # geocode + Open-Meteo forecast + itinerary transform
@@ -62,8 +63,9 @@ src/
     generator.ts                   # archetype → Garment[]
     fileImporter.ts                # parseClosetFile(.txt | .md)
     wardrobeBuilder.ts             # buildManualGarment() — Digital Closet's schema-valid Garment builder
-    suitcaseDatabase.ts            # MODELS (real-world suitcase specs)
-    airlineBaggage.ts              # AIRLINES (real-world carry-on limits)
+    suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
+    airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)
+    measurement.ts                 # credit-card-calibrated measurement math (pure, camera-free)
   schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, ...)
   types.ts
 __tests__/                         # Vitest coverage for engines
