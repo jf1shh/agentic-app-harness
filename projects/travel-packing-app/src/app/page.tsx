@@ -10,6 +10,7 @@ import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
 import { parseClosetFile } from '../utils/fileImporter';
+import { useT } from '../i18n/context';
 import { buildShareUrl, parseShareFromHash } from '../utils/share';
 import DestinationAutocomplete from '../components/DestinationAutocomplete';
 import LocalInfoPanel from '../components/LocalInfoPanel';
@@ -26,6 +27,7 @@ const suitcaseKey = (m: SuitcaseModel) => `${m.brand} — ${m.model}`;
 
 
 export default function Home() {
+  const { t, language, setLanguage, languages } = useT();
   const [destination, setDestination] = useState('Hawaii');
   const [startDate, setStartDate] = useState('2026-08-01');
   const [endDate, setEndDate] = useState('2026-08-05');
@@ -37,7 +39,7 @@ export default function Home() {
   const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
   const [selectedSuitcase, setSelectedSuitcase] = useState(suitcaseKey(MODELS[0]));
   const [selectedAirline, setSelectedAirline] = useState('EK'); // Emirates
-  
+
   const [archetype, setArchetype] = useState('quiet-luxury');
   const [strategy, setStrategy] = useState('standard');
   const [activity, setActivity] = useState('sightseeing');
@@ -146,11 +148,11 @@ export default function Home() {
       const weather = await fetchWeather(geo.latitude, geo.longitude, startDate, endDate);
       const resolvedDailyActivities = dailyActivities.map((a) => resolveActivity(a, destination));
       const generatedItinerary = transformWeatherToItinerary(weather, activity, resolvedDailyActivities);
-      
+
       setItinerary(generatedItinerary);
 
       const tripDuration = generatedItinerary.length;
-      
+
       const garmentsToUse = closetSource === 'custom' && customGarments.length > 0
         ? customGarments
         : generateWardrobeFromArchetype(archetype, strategy, tripDuration);
@@ -168,7 +170,7 @@ export default function Home() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Failed to analyze trip');
+        setError(t('trip.failedToAnalyze'));
       }
     } finally {
       setLoading(false);
@@ -179,26 +181,40 @@ export default function Home() {
     <main className="container" style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
       <header className="page-header no-print" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
         <button
-          onClick={toggleTheme}
-          className="btn-secondary theme-toggle-btn"
-          style={{ position: 'absolute', right: 0, top: 0, fontSize: '0.9rem', padding: '6px 12px' }}
-        >
-          {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
-        </button>
-        <button
           onClick={handleShare}
           className="btn-secondary"
           style={{ position: 'absolute', left: 0, top: 0, fontSize: '0.9rem', padding: '6px 12px' }}
         >
           {shareCopied ? '✔ Copied!' : '🔗 Share Trip'}
         </button>
-        <h1 suppressHydrationWarning style={{ fontSize: '2.5rem', marginBottom: '8px', color: 'var(--primary)' }}>PackRight V4</h1>
-        <p suppressHydrationWarning style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Live Weather & Intelligent Wardrobe Analyzer</p>
+        <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <select
+            id="language-switcher"
+            aria-label={t('language.label')}
+            className="btn-secondary theme-toggle-btn"
+            value={language}
+            onChange={e => setLanguage(e.target.value)}
+            style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+          >
+            {languages.map(lang => (
+              <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
+            ))}
+          </select>
+          <button
+            onClick={toggleTheme}
+            className="btn-secondary theme-toggle-btn"
+            style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+          >
+            {theme === 'light' ? t('theme.dark') : t('theme.light')}
+          </button>
+        </div>
+        <h1 suppressHydrationWarning style={{ fontSize: '2.5rem', marginBottom: '8px', color: 'var(--primary)' }}>{t('app.title')}</h1>
+        <p suppressHydrationWarning style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>{t('app.subtitle')}</p>
       </header>
 
       <div className="glass-panel no-print" style={{ padding: '24px' }}>
-        <h2 style={{ marginBottom: '16px' }}>Trip Details</h2>
-        
+        <h2 style={{ marginBottom: '16px' }}>{t('trip.detailsTitle')}</h2>
+
         {error && <div style={{ color: 'red', marginBottom: '16px' }}>{error}</div>}
 
         <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
@@ -207,11 +223,11 @@ export default function Home() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
-              <label htmlFor="start" className="label">Start Date</label>
+              <label htmlFor="start" className="label">{t('trip.startDate')}</label>
               <input id="start" type="date" className="input-field" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div>
-              <label htmlFor="end" className="label">End Date</label>
+              <label htmlFor="end" className="label">{t('trip.endDate')}</label>
               <input id="end" type="date" className="input-field" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
@@ -224,36 +240,36 @@ export default function Home() {
           />
 
           <div style={{ padding: '16px', backgroundColor: 'rgba(255, 255, 255, 0.5)', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px' }}>
-            <label className="label">Wardrobe Source</label>
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+            <label className="label">{t('trip.wardrobeSource')}</label>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', flexWrap: 'wrap' }}>
               <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input 
-                  type="radio" 
-                  name="closetSource" 
-                  checked={closetSource === 'archetype'} 
-                  onChange={() => setClosetSource('archetype')} 
+                <input
+                  type="radio"
+                  name="closetSource"
+                  checked={closetSource === 'archetype'}
+                  onChange={() => setClosetSource('archetype')}
                 />
-                Style Archetype Preset
+                {t('trip.archetypePreset')}
               </label>
               <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input 
-                  type="radio" 
-                  name="closetSource" 
-                  checked={closetSource === 'custom'} 
-                  onChange={() => setClosetSource('custom')} 
+                <input
+                  type="radio"
+                  name="closetSource"
+                  checked={closetSource === 'custom'}
+                  onChange={() => setClosetSource('custom')}
                 />
-                Upload Custom Closet (.txt / .md)
+                {t('trip.uploadCloset')}
               </label>
             </div>
 
             {closetSource === 'archetype' ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '16px' }}>
                 <div>
-                  <label htmlFor="archetype" className="label">Fashion Archetype</label>
+                  <label htmlFor="archetype" className="label">{t('trip.fashionArchetype')}</label>
                   <select id="archetype" className="input-field" value={archetype} onChange={e => setArchetype(e.target.value)}>
-                    <option value="quiet-luxury">Quiet Luxury</option>
-                    <option value="gorpcore">Gorpcore</option>
-                    <option value="scandi">Scandi Minimalist</option>
+                    <option value="quiet-luxury">{t('archetype.quietLuxury')}</option>
+                    <option value="gorpcore">{t('archetype.gorpcore')}</option>
+                    <option value="scandi">{t('archetype.scandi')}</option>
                     <option value="streetwear">Y2K Streetwear</option>
                     <option value="dark-academia">Dark Academia</option>
                     <option value="athleisure">Athleisure</option>
@@ -266,26 +282,26 @@ export default function Home() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="strategy" className="label">Packing Strategy</label>
+                  <label htmlFor="strategy" className="label">{t('trip.packingStrategy')}</label>
                   <select id="strategy" className="input-field" value={strategy} onChange={e => setStrategy(e.target.value)}>
-                    <option value="standard">Standard (Comfortable)</option>
-                    <option value="flexible">Flexible & Efficient</option>
-                    <option value="minimalist">Extreme Minimalist</option>
+                    <option value="standard">{t('strategy.standard')}</option>
+                    <option value="flexible">{t('strategy.flexible')}</option>
+                    <option value="minimalist">{t('strategy.minimalist')}</option>
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="activity" className="label">Default Activity</label>
+                  <label htmlFor="activity" className="label">{t('trip.defaultActivity')}</label>
                   <select id="activity" className="input-field" value={activity} onChange={e => setActivity(e.target.value)}>
-                    <option value="sightseeing">📸 Sightseeing</option>
-                    <option value="transit">✈️ Transit Day</option>
-                    <option value="formal">🍷 Formal / Night Out</option>
-                    <option value="casual">🚶 Casual</option>
+                    <option value="sightseeing">{t('activity.sightseeing')}</option>
+                    <option value="transit">{t('activity.transit')}</option>
+                    <option value="formal">{t('activity.formal')}</option>
+                    <option value="casual">{t('activity.casual')}</option>
                   </select>
                 </div>
               </div>
             ) : (
               <div>
-                <label htmlFor="closet-upload" className="label">Upload Wardrobe File (.txt or .md)</label>
+                <label htmlFor="closet-upload" className="label">{t('trip.uploadWardrobeFile')}</label>
                 <input
                   id="closet-upload"
                   type="file"
@@ -296,7 +312,7 @@ export default function Home() {
                 />
                 {customGarments.length > 0 && customFileName && (
                   <p style={{ marginTop: '8px', color: '#22c55e', fontSize: '0.9rem' }}>
-                    ✔ Loaded {customGarments.length} garments from {customFileName}
+                    {t('trip.loadedGarments', { count: customGarments.length, file: customFileName })}
                   </p>
                 )}
                 <button
@@ -313,7 +329,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
               <SuitcaseFinder onSelect={(m) => setSelectedSuitcase(suitcaseKey(m))} />
-              <label htmlFor="suitcase" className="label" style={{ marginTop: '12px', display: 'block' }}>Suitcase</label>
+              <label htmlFor="suitcase" className="label" style={{ marginTop: '12px', display: 'block' }}>{t('trip.suitcase')}</label>
               <select id="suitcase" className="input-field" value={selectedSuitcase} onChange={e => setSelectedSuitcase(e.target.value)}>
                 {MODELS.map(m => (
                   <option key={suitcaseKey(m)} value={suitcaseKey(m)}>{m.brand} - {m.model}</option>
@@ -321,7 +337,7 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <label htmlFor="airline" className="label">Airline (Carry-on Limits)</label>
+              <label htmlFor="airline" className="label">{t('trip.airline')}</label>
               <select id="airline" className="input-field" value={selectedAirline} onChange={e => setSelectedAirline(e.target.value)}>
                 {AIRLINES.map(a => (
                   <option key={a.code} value={a.code}>{a.name} ({a.carryOn.weight}kg)</option>
@@ -332,43 +348,47 @@ export default function Home() {
         </div>
 
         <button className="btn-primary" onClick={handleAnalyze} disabled={loading} style={{ width: '100%' }}>
-          {loading ? 'Fetching Weather & Analyzing...' : 'Analyze Wardrobe & Schedule Outfits'}
+          {loading ? t('trip.analyzing') : t('trip.analyzeButton')}
         </button>
       </div>
 
       {report && physics && (
         <>
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
-            <h2>Knapsack Engine: Luggage Physics</h2>
+            <h2>{t('knapsack.title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
               <div style={{ padding: '16px', border: `2px solid ${physics.fitsInSuitcase ? 'var(--primary)' : 'red'}`, borderRadius: '8px' }}>
-                <h3 style={{ marginBottom: '8px' }}>Volume & Weight</h3>
-                <p><strong>Weight:</strong> {physics.totalWeightKg.toFixed(2)}kg / {physics.weightLimitKg}kg Limit</p>
-                <p><strong>Volume:</strong> {physics.totalVolumeLiters.toFixed(2)}L / {physics.suitcaseCapacityLiters.toFixed(2)}L</p>
+                <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeWeight')}</h3>
+                <p>{t('knapsack.weightLine', { weight: physics.totalWeightKg.toFixed(2), limit: physics.weightLimitKg ?? 0 })}</p>
+                <p>{t('knapsack.volumeLine', { volume: physics.totalVolumeLiters.toFixed(2), capacity: physics.suitcaseCapacityLiters.toFixed(2) })}</p>
                 <div style={{ width: '100%', backgroundColor: '#334155', height: '12px', borderRadius: '6px', marginTop: '12px', overflow: 'hidden' }}>
                   <div style={{ width: `${Math.min(physics.volumeUsedPercent, 100)}%`, backgroundColor: physics.volumeUsedPercent > 100 ? 'red' : 'var(--primary)', height: '100%' }}></div>
                 </div>
-                <p style={{ marginTop: '4px', fontSize: '0.9rem', color: '#94a3b8' }}>{physics.volumeUsedPercent.toFixed(1)}% Full</p>
+                <p style={{ marginTop: '4px', fontSize: '0.9rem', color: '#94a3b8' }}>{t('knapsack.percentFull', { percent: physics.volumeUsedPercent.toFixed(1) })}</p>
               </div>
               <div style={{ padding: '16px', border: `2px solid ${physics.airlineCompliant ? 'var(--primary)' : 'orange'}`, borderRadius: '8px' }}>
-                <h3 style={{ marginBottom: '8px' }}>Airline Compliance</h3>
+                <h3 style={{ marginBottom: '8px' }}>{t('knapsack.airlineCompliance')}</h3>
                 {physics.airlineWarnings.length > 0 ? (
                   <ul style={{ paddingLeft: '20px', color: 'orange' }}>
                     {physics.airlineWarnings.map((w, i) => <li key={i}>{w}</li>)}
                   </ul>
                 ) : (
-                  <p style={{ color: 'var(--primary)' }}>✔ Compliant with {selectedAirline} carry-on limits</p>
+                  <p style={{ color: 'var(--primary)' }}>{t('knapsack.compliantWith', { airline: selectedAirline })}</p>
                 )}
               </div>
             </div>
           </div>
 
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
-            <h2>Live Itinerary ({destination})</h2>
+            <h2>{t('itinerary.title', { destination })}</h2>
             <ul style={{ margin: '16px 0', paddingLeft: '24px' }}>
               {itinerary.map(day => (
                 <li key={day.dayNumber} style={{ marginBottom: '8px' }}>
-                  <strong>Day {day.dayNumber}:</strong> {day.maxTempC !== undefined ? `${day.maxTempC}°C` : 'N/A'} (Warmth Target: {day.weatherWarmthTarget}/10)
+                  {t('itinerary.dayLine', {
+                    n: day.dayNumber,
+                    temp: day.maxTempC !== undefined ? `${day.maxTempC}°C` : t('itinerary.notAvailable'),
+                    warmth: day.weatherWarmthTarget,
+                  })}
                 </li>
               ))}
             </ul>

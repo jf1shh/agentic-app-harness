@@ -57,6 +57,9 @@
 - [x] Group trip sync — packing checkmarks sync live across browser tabs on the same origin via
   `BroadcastChannel` (`src/services/groupSync.ts`), deliberately tab-to-tab only (no server), matching
   the app's 100%-local design. A "🔄 Live sync across tabs" indicator shows when supported.
+- [x] Internationalization: 11 languages (English, Arabic, German, Spanish, French, Hindi, Italian,
+      Japanese, Korean, Portuguese, Chinese) with automatic browser-language detection, a persisted
+      user override, and right-to-left layout for Arabic.
 - [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
   Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
@@ -114,6 +117,34 @@ interface DayItinerary {
   a toggle they don't currently have. This closes the open question, it isn't a default to revisit per
   app.
 
+## 5a. Internationalization (i18n)
+- **Coverage:** English (fallback), Arabic, German, Spanish, French, Hindi, Italian, Japanese,
+  Korean, Portuguese, and Chinese — one flat, dot-path-keyed JSON dictionary per language under
+  `src/i18n/translations/`. English is bundled statically since it also serves as the runtime
+  fallback for any key missing from an active language; every other language is lazy-loaded via
+  dynamic `import()` on selection, so a user who never switches never downloads translations they
+  won't use.
+- **Resolution:** `translate(activeDict, fallbackDict, key, params)` resolves a dotted key path,
+  falls back to English on a miss, then interpolates `{placeholder}` tokens — a missing key
+  renders the key itself rather than a blank string, so a translation gap is visible instead of
+  silent.
+- **Language selection:** detected once, in priority order — a previously persisted choice
+  (`localStorage`), then the browser's `navigator.languages` list matched against the supported
+  codes, then English. The user can override it at any time via the language switcher in the page
+  header; the override persists across reloads.
+- **RTL layout:** Arabic is flagged `rtl` in the language catalog; selecting it sets
+  `document.documentElement.dir = 'rtl'` (and `lang` to the active code) so the browser's native
+  bidi layout takes over — no per-component RTL styling is maintained separately.
+- **Parity is enforced, not assumed:** a unit test suite asserts every shipped language's key set
+  is identical to English's, that no value is empty, and that every `{placeholder}` set in a
+  localized string exactly matches the English source's placeholder set for that key — a
+  translation file that silently drops a key or a placeholder fails the suite rather than shipping
+  a broken interpolation.
+- **First-pass translations:** the 10 non-English translation files were produced in this session
+  without native-speaker review. They are structurally correct (parity-tested) and semantically
+  reasonable, but would benefit from a native-speaker pass before being treated as
+  production-quality copy.
+
 ## 6. Testing & Compliance (Security, Privacy, Optimization)
 - **Unit Tests:** Core Logic Engine must have Vitest coverage proving multi-role and consecutive repeat rules.
 - **Security & Privacy:** Ensure no PII is logged. Audit dependencies.
@@ -131,3 +162,6 @@ interface DayItinerary {
 2. The engine schedules outfits such that Day N base != Day N-1 base.
 3. Wearability Report correctly identifies items that were never used in any scheduled outfit as "Dead Weight" and suggests swaps.
 4. Knapsack Physics accurately alerts users if their packed volume exceeds their airline's carry-on limits.
+5. Switching the language re-renders the trip-details form, wearability report, and packing
+   checklist in the selected language, persists the choice across a reload, and — for Arabic —
+   flips the document to right-to-left layout without breaking accessibility.

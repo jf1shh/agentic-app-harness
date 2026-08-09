@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "实时天气与智能衣橱分析"
+  },
+  "theme": {
+    "dark": "🌙 深色模式",
+    "light": "☀️ 浅色模式"
+  },
+  "trip": {
+    "detailsTitle": "行程详情",
+    "destination": "目的地",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "wardrobeSource": "衣橱来源",
+    "archetypePreset": "预设风格",
+    "uploadCloset": "上传自定义衣橱 (.txt / .md)",
+    "fashionArchetype": "时尚风格",
+    "packingStrategy": "打包策略",
+    "defaultActivity": "默认活动",
+    "uploadWardrobeFile": "上传衣橱文件 (.txt 或 .md)",
+    "loadedGarments": "✔ 已从 {file} 加载 {count} 件衣物",
+    "suitcase": "行李箱",
+    "airline": "航空公司（随身行李限制）",
+    "analyzing": "正在获取天气并分析...",
+    "analyzeButton": "分析衣橱并安排每日穿搭",
+    "failedToAnalyze": "行程分析失败"
+  },
+  "archetype": {
+    "quietLuxury": "静奢风",
+    "gorpcore": "户外机能风",
+    "scandi": "北欧极简风"
+  },
+  "strategy": {
+    "standard": "标准（舒适）",
+    "flexible": "灵活高效",
+    "minimalist": "极致极简"
+  },
+  "activity": {
+    "sightseeing": "📸 观光",
+    "transit": "✈️ 转机/赶路日",
+    "formal": "🍷 正式 / 夜间活动",
+    "casual": "🚶 休闲"
+  },
+  "knapsack": {
+    "title": "背包引擎：行李物理计算",
+    "volumeWeight": "体积与重量",
+    "weightLine": "重量：{weight}kg / 上限 {limit}kg",
+    "volumeLine": "体积：{volume}L / {capacity}L",
+    "percentFull": "已装 {percent}%",
+    "airlineCompliance": "航空公司合规性",
+    "compliantWith": "✔ 符合 {airline} 的随身行李限制"
+  },
+  "itinerary": {
+    "title": "实时行程（{destination}）",
+    "dayLine": "第 {n} 天：{temp}（保暖目标：{warmth}/10）",
+    "notAvailable": "不可用"
+  },
+  "wearability": {
+    "title": "衣橱多用性报告",
+    "flexibilityScore": "灵活性得分",
+    "mvpItem": "最强单品",
+    "none": "无",
+    "deadWeight": "闲置单品",
+    "perfectPacking": "无！完美打包。",
+    "swapSuggestion": "💡 智能替换建议",
+    "swapOut": "移除：",
+    "swapIn": "加入：",
+    "why": "原因：{reason}",
+    "digitalCloset": "数字衣橱",
+    "addPhoto": "+ 照片",
+    "aiMagic": "AI 处理中...",
+    "outfitSchedule": "3天穿搭安排",
+    "day": "第 {n} 天",
+    "top": "上装：{name}",
+    "bottom": "下装：{name}",
+    "layer": "外层：{name}"
+  },
+  "checklist": {
+    "title": "🎒 实物打包清单",
+    "resetButton": "重置勾选",
+    "instructions": "装箱时勾选相应物品，进度会自动保存。",
+    "progress": "打包进度：{checked} / {total} 已打包",
+    "garmentsToPack": "待打包衣物",
+    "tripEssentials": "旅行必需品",
+    "underwear": "内衣 {n} 套",
+    "socks": "袜子 {n} 双",
+    "toiletryKit": "洗漱包 1个",
+    "techPouch": "数码收纳包/充电器 1套"
+  },
+  "language": {
+    "label": "语言"
+  }
+}

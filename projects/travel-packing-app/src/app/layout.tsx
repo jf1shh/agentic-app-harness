@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import LoggerInit from "../components/LoggerInit";
+import { I18nProvider } from "../i18n/context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,7 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <LoggerInit />
-        {children}
+        <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
   );

@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "लाइव मौसम और स्मार्ट अलमारी विश्लेषक"
+  },
+  "theme": {
+    "dark": "🌙 डार्क मोड",
+    "light": "☀️ लाइट मोड"
+  },
+  "trip": {
+    "detailsTitle": "यात्रा का विवरण",
+    "destination": "गंतव्य",
+    "startDate": "आरंभ तिथि",
+    "endDate": "समाप्ति तिथि",
+    "wardrobeSource": "अलमारी का स्रोत",
+    "archetypePreset": "शैली प्रीसेट",
+    "uploadCloset": "कस्टम अलमारी अपलोड करें (.txt / .md)",
+    "fashionArchetype": "फैशन शैली",
+    "packingStrategy": "पैकिंग रणनीति",
+    "defaultActivity": "डिफ़ॉल्ट गतिविधि",
+    "uploadWardrobeFile": "अलमारी फ़ाइल अपलोड करें (.txt या .md)",
+    "loadedGarments": "✔ {file} से {count} कपड़े लोड किए गए",
+    "suitcase": "सूटकेस",
+    "airline": "एयरलाइन (हैंड बैगेज सीमा)",
+    "analyzing": "मौसम प्राप्त कर विश्लेषण किया जा रहा है...",
+    "analyzeButton": "अलमारी का विश्लेषण करें और पोशाकें तय करें",
+    "failedToAnalyze": "यात्रा का विश्लेषण विफल रहा"
+  },
+  "archetype": {
+    "quietLuxury": "शांत विलासिता",
+    "gorpcore": "गोर्पकोर",
+    "scandi": "स्कैंडी मिनिमलिस्ट"
+  },
+  "strategy": {
+    "standard": "मानक (आरामदायक)",
+    "flexible": "लचीली और कुशल",
+    "minimalist": "अत्यंत न्यूनतम"
+  },
+  "activity": {
+    "sightseeing": "📸 दर्शनीय स्थल",
+    "transit": "✈️ यात्रा का दिन",
+    "formal": "🍷 औपचारिक / रात्रि आयोजन",
+    "casual": "🚶 आकस्मिक"
+  },
+  "knapsack": {
+    "title": "बैग इंजन: सामान की भौतिकी",
+    "volumeWeight": "आयतन और वजन",
+    "weightLine": "वजन: {weight}कि.ग्रा. / सीमा {limit}कि.ग्रा.",
+    "volumeLine": "आयतन: {volume}लीटर / {capacity}लीटर",
+    "percentFull": "{percent}% भरा हुआ",
+    "airlineCompliance": "एयरलाइन अनुपालन",
+    "compliantWith": "✔ {airline} की हैंड बैगेज सीमाओं के अनुरूप"
+  },
+  "itinerary": {
+    "title": "लाइव यात्रा कार्यक्रम ({destination})",
+    "dayLine": "दिन {n}: {temp} (गर्माहट लक्ष्य: {warmth}/10)",
+    "notAvailable": "उपलब्ध नहीं"
+  },
+  "wearability": {
+    "title": "अलमारी बहुमुखी प्रतिभा रिपोर्ट",
+    "flexibilityScore": "लचीलापन स्कोर",
+    "mvpItem": "सबसे उपयोगी वस्त्र",
+    "none": "कोई नहीं",
+    "deadWeight": "अनुपयोगी वस्त्र",
+    "perfectPacking": "कोई नहीं! सम्पूर्ण पैकिंग।",
+    "swapSuggestion": "💡 स्मार्ट बदलाव सुझाव",
+    "swapOut": "हटाएं:",
+    "swapIn": "जोड़ें:",
+    "why": "क्यों? {reason}",
+    "digitalCloset": "डिजिटल अलमारी",
+    "addPhoto": "+ फ़ोटो",
+    "aiMagic": "एआई जादू...",
+    "outfitSchedule": "3-दिन का पोशाक शेड्यूल",
+    "day": "दिन {n}",
+    "top": "ऊपरी वस्त्र: {name}",
+    "bottom": "निचला वस्त्र: {name}",
+    "layer": "परत: {name}"
+  },
+  "checklist": {
+    "title": "🎒 भौतिक पैकिंग सूची",
+    "resetButton": "निशान रीसेट करें",
+    "instructions": "जैसे ही आप अपने सूटकेस में सामान पैक करें, वस्तुओं को चेक करें। प्रगति स्वतः सहेजी जाती है।",
+    "progress": "पैकिंग प्रगति: {checked} / {total} पैक किए गए",
+    "garmentsToPack": "पैक करने के लिए कपड़े",
+    "tripEssentials": "यात्रा की आवश्यक वस्तुएं",
+    "underwear": "{n} जोड़ी अंडरवियर",
+    "socks": "{n} जोड़ी मोज़े",
+    "toiletryKit": "1 टॉयलेटरी किट",
+    "techPouch": "1 टेक पाउच / चार्जर"
+  },
+  "language": {
+    "label": "भाषा"
+  }
+}

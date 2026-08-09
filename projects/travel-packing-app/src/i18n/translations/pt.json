@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "Clima ao Vivo e Analisador Inteligente de Guarda-roupa"
+  },
+  "theme": {
+    "dark": "🌙 Modo Escuro",
+    "light": "☀️ Modo Claro"
+  },
+  "trip": {
+    "detailsTitle": "Detalhes da Viagem",
+    "destination": "Destino",
+    "startDate": "Data de Início",
+    "endDate": "Data de Término",
+    "wardrobeSource": "Origem do Guarda-roupa",
+    "archetypePreset": "Estilo Predefinido",
+    "uploadCloset": "Enviar Guarda-roupa Personalizado (.txt / .md)",
+    "fashionArchetype": "Arquétipo de Moda",
+    "packingStrategy": "Estratégia de Empacotamento",
+    "defaultActivity": "Atividade Padrão",
+    "uploadWardrobeFile": "Enviar Arquivo de Guarda-roupa (.txt ou .md)",
+    "loadedGarments": "✔ {count} peças carregadas de {file}",
+    "suitcase": "Mala",
+    "airline": "Companhia Aérea (Limites de Bagagem de Mão)",
+    "analyzing": "Buscando clima e analisando...",
+    "analyzeButton": "Analisar Guarda-roupa e Programar Looks",
+    "failedToAnalyze": "Falha ao analisar a viagem"
+  },
+  "archetype": {
+    "quietLuxury": "Luxo Discreto",
+    "gorpcore": "Gorpcore",
+    "scandi": "Minimalista Escandinavo"
+  },
+  "strategy": {
+    "standard": "Padrão (Confortável)",
+    "flexible": "Flexível e Eficiente",
+    "minimalist": "Minimalista Extremo"
+  },
+  "activity": {
+    "sightseeing": "📸 Passeio Turístico",
+    "transit": "✈️ Dia de Trânsito",
+    "formal": "🍷 Formal / Noite",
+    "casual": "🚶 Casual"
+  },
+  "knapsack": {
+    "title": "Motor de Mochila: Física da Bagagem",
+    "volumeWeight": "Volume e Peso",
+    "weightLine": "Peso: {weight}kg / Limite de {limit}kg",
+    "volumeLine": "Volume: {volume}L / {capacity}L",
+    "percentFull": "{percent}% Cheio",
+    "airlineCompliance": "Conformidade com a Companhia Aérea",
+    "compliantWith": "✔ Em conformidade com os limites de bagagem de mão da {airline}"
+  },
+  "itinerary": {
+    "title": "Itinerário ao Vivo ({destination})",
+    "dayLine": "Dia {n}: {temp} (Meta de Aquecimento: {warmth}/10)",
+    "notAvailable": "N/D"
+  },
+  "wearability": {
+    "title": "Relatório de Versatilidade do Guarda-roupa",
+    "flexibilityScore": "Pontuação de Flexibilidade",
+    "mvpItem": "Peça Destaque",
+    "none": "Nenhum",
+    "deadWeight": "Peso Morto",
+    "perfectPacking": "Nenhum! Empacotamento perfeito.",
+    "swapSuggestion": "💡 Sugestão de Troca Inteligente",
+    "swapOut": "Remover:",
+    "swapIn": "Adicionar:",
+    "why": "Por quê? {reason}",
+    "digitalCloset": "Guarda-roupa Digital",
+    "addPhoto": "+ Foto",
+    "aiMagic": "Mágica da IA...",
+    "outfitSchedule": "Programação de Looks de 3 Dias",
+    "day": "Dia {n}",
+    "top": "Parte de cima: {name}",
+    "bottom": "Parte de baixo: {name}",
+    "layer": "Camada: {name}"
+  },
+  "checklist": {
+    "title": "🎒 Lista de Empacotamento Física",
+    "resetButton": "Redefinir Marcações",
+    "instructions": "Marque os itens conforme os coloca na mala. O progresso é salvo automaticamente.",
+    "progress": "Progresso do Empacotamento: {checked} / {total} Empacotados",
+    "garmentsToPack": "Peças para Empacotar",
+    "tripEssentials": "Essenciais da Viagem",
+    "underwear": "{n} pares de roupa íntima",
+    "socks": "{n} pares de meias",
+    "toiletryKit": "1 kit de higiene",
+    "techPouch": "1 estojo de tecnologia / carregadores"
+  },
+  "language": {
+    "label": "Idioma"
+  }
+}

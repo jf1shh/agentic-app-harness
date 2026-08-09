@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "Météo en Direct et Analyseur Intelligent de Garde-robe"
+  },
+  "theme": {
+    "dark": "🌙 Mode Sombre",
+    "light": "☀️ Mode Clair"
+  },
+  "trip": {
+    "detailsTitle": "Détails du Voyage",
+    "destination": "Destination",
+    "startDate": "Date de Début",
+    "endDate": "Date de Fin",
+    "wardrobeSource": "Source de la Garde-robe",
+    "archetypePreset": "Style Prédéfini",
+    "uploadCloset": "Importer une Garde-robe Personnalisée (.txt / .md)",
+    "fashionArchetype": "Style Vestimentaire",
+    "packingStrategy": "Stratégie de Bagage",
+    "defaultActivity": "Activité par Défaut",
+    "uploadWardrobeFile": "Importer un Fichier de Garde-robe (.txt ou .md)",
+    "loadedGarments": "✔ {count} vêtements chargés depuis {file}",
+    "suitcase": "Valise",
+    "airline": "Compagnie Aérienne (Limites Bagage Cabine)",
+    "analyzing": "Récupération de la Météo et Analyse en cours...",
+    "analyzeButton": "Analyser la Garde-robe et Planifier les Tenues",
+    "failedToAnalyze": "Échec de l'analyse du voyage"
+  },
+  "archetype": {
+    "quietLuxury": "Luxe Discret",
+    "gorpcore": "Gorpcore",
+    "scandi": "Minimaliste Scandinave"
+  },
+  "strategy": {
+    "standard": "Standard (Confortable)",
+    "flexible": "Flexible et Efficace",
+    "minimalist": "Minimaliste Extrême"
+  },
+  "activity": {
+    "sightseeing": "📸 Tourisme",
+    "transit": "✈️ Journée de Transit",
+    "formal": "🍷 Formel / Soirée",
+    "casual": "🚶 Décontracté"
+  },
+  "knapsack": {
+    "title": "Moteur de Sac à Dos : Physique du Bagage",
+    "volumeWeight": "Volume et Poids",
+    "weightLine": "Poids : {weight}kg / Limite de {limit}kg",
+    "volumeLine": "Volume : {volume}L / {capacity}L",
+    "percentFull": "{percent}% Plein",
+    "airlineCompliance": "Conformité avec la Compagnie Aérienne",
+    "compliantWith": "✔ Conforme aux limites de bagage cabine de {airline}"
+  },
+  "itinerary": {
+    "title": "Itinéraire en Direct ({destination})",
+    "dayLine": "Jour {n} : {temp} (Indice de Chaleur : {warmth}/10)",
+    "notAvailable": "N/D"
+  },
+  "wearability": {
+    "title": "Rapport de Polyvalence de la Garde-robe",
+    "flexibilityScore": "Score de Flexibilité",
+    "mvpItem": "Pièce Maîtresse",
+    "none": "Aucun",
+    "deadWeight": "Poids Mort",
+    "perfectPacking": "Aucun ! Bagage parfait.",
+    "swapSuggestion": "💡 Suggestion d'Échange Intelligent",
+    "swapOut": "Retirer :",
+    "swapIn": "Ajouter :",
+    "why": "Pourquoi ? {reason}",
+    "digitalCloset": "Garde-robe Numérique",
+    "addPhoto": "+ Photo",
+    "aiMagic": "Magie de l'IA...",
+    "outfitSchedule": "Planning des Tenues sur 3 Jours",
+    "day": "Jour {n}",
+    "top": "Haut : {name}",
+    "bottom": "Bas : {name}",
+    "layer": "Couche : {name}"
+  },
+  "checklist": {
+    "title": "🎒 Liste de Bagage Physique",
+    "resetButton": "Réinitialiser les Cases",
+    "instructions": "Cochez les articles au fur et à mesure que vous les mettez dans votre valise. La progression est enregistrée automatiquement.",
+    "progress": "Progression du Bagage : {checked} / {total} Emballés",
+    "garmentsToPack": "Vêtements à Emballer",
+    "tripEssentials": "Essentiels de Voyage",
+    "underwear": "{n} paires de sous-vêtements",
+    "socks": "{n} paires de chaussettes",
+    "toiletryKit": "1 trousse de toilette",
+    "techPouch": "1 pochette tech / chargeurs"
+  },
+  "language": {
+    "label": "Langue"
+  }
+}

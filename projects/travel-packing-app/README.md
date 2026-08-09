@@ -34,6 +34,22 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
 
+### Internationalization
+A language switcher in the header covers 11 languages — English, Arabic, German, Spanish, French,
+Hindi, Italian, Japanese, Korean, Portuguese, and Chinese. The initial language is detected from a
+persisted choice (`packright_lang` in `localStorage`), then the browser's `navigator.languages`,
+falling back to English. Every non-English dictionary is lazy-loaded on selection so the initial
+bundle only ships English. Selecting Arabic flips `document.dir` to `rtl`. See
+`src/i18n/translate.ts` (pure resolution/interpolation logic) and `src/i18n/context.tsx` (the
+`I18nProvider`/`useT()` React wiring). Translation files under `src/i18n/translations/*.json` are
+parity-tested against English (`__tests__/i18n.test.ts`) — every language must carry the same key
+set, no empty values, and the same `{placeholder}` tokens per key. The 10 non-English files are a
+first-pass, AI-generated translation and would benefit from native-speaker review. Translation
+coverage is `page.tsx`, `WardrobeAnalyzer.tsx`, and `PackingChecklist.tsx` only — `DestinationAutocomplete`,
+`LocalInfoPanel`, `DailyActivityPicker`, `SuitcaseFinder`, and `WardrobeManager` (each from an
+independently-developed phase branch) still render their own hardcoded English strings; extending
+`useT()` into them is a natural follow-up.
+
 ### Share Trip, Print, and Group Sync
 - **Share Trip** — the "🔗 Share Trip" header button compresses the trip's inputs into a `#share=` URL fragment (`src/utils/share.ts`, `lz-string`) and copies it to the clipboard. Opening that link — including pasting it into a tab that already has the app open, a same-document fragment change — restores the same trip. The decoded payload is validated against `TripShareSchema` before it touches app state, since a share link is attacker-controllable input.
 - **Print** — the Physical Packing Checklist has its own `@media print` stylesheet (`globals.css`) that hides every other panel and forces light colors regardless of the on-screen theme, plus a "🖨️ Print" button.
@@ -70,6 +86,10 @@ src/
     groupSync.ts                   # BroadcastChannel cross-tab checklist sync
     db.ts                          # IndexedDB layer; wardrobe media, checkStorageQuota()
     logger.ts                      # client logger
+  i18n/
+    translate.ts                   # pure key resolution/interpolation/language detection
+    context.tsx                    # I18nProvider + useT() React context
+    translations/*.json            # en (bundled) + 10 lazy-loaded languages
   utils/
     wardrobeEngine.ts              # analyzeWardrobe()
     knapsackEngine.ts              # calculateKnapsackPhysics()

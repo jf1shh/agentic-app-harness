@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "リアルタイム天気とスマートワードローブ分析"
+  },
+  "theme": {
+    "dark": "🌙 ダークモード",
+    "light": "☀️ ライトモード"
+  },
+  "trip": {
+    "detailsTitle": "旅行の詳細",
+    "destination": "目的地",
+    "startDate": "開始日",
+    "endDate": "終了日",
+    "wardrobeSource": "ワードローブの入力方法",
+    "archetypePreset": "スタイルプリセット",
+    "uploadCloset": "自分のクローゼットをアップロード (.txt / .md)",
+    "fashionArchetype": "ファッションアーキタイプ",
+    "packingStrategy": "パッキング戦略",
+    "defaultActivity": "デフォルトのアクティビティ",
+    "uploadWardrobeFile": "ワードローブファイルをアップロード (.txt または .md)",
+    "loadedGarments": "✔ {file} から {count} 点の衣類を読み込みました",
+    "suitcase": "スーツケース",
+    "airline": "航空会社（手荷物制限）",
+    "analyzing": "天気を取得して分析中...",
+    "analyzeButton": "ワードローブを分析してコーディネートを組む",
+    "failedToAnalyze": "旅行の分析に失敗しました"
+  },
+  "archetype": {
+    "quietLuxury": "クワイエットラグジュアリー",
+    "gorpcore": "ゴープコア",
+    "scandi": "北欧ミニマリスト"
+  },
+  "strategy": {
+    "standard": "標準（快適重視）",
+    "flexible": "柔軟＆効率的",
+    "minimalist": "超ミニマリスト"
+  },
+  "activity": {
+    "sightseeing": "📸 観光",
+    "transit": "✈️ 移動日",
+    "formal": "🍷 フォーマル／夜のお出かけ",
+    "casual": "🚶 カジュアル"
+  },
+  "knapsack": {
+    "title": "ナップザックエンジン：荷物の物理学",
+    "volumeWeight": "容量と重量",
+    "weightLine": "重量：{weight}kg／上限 {limit}kg",
+    "volumeLine": "容量：{volume}L／{capacity}L",
+    "percentFull": "{percent}％使用",
+    "airlineCompliance": "航空会社の規定への適合",
+    "compliantWith": "✔ {airline} の手荷物制限に適合しています"
+  },
+  "itinerary": {
+    "title": "リアルタイム旅程（{destination}）",
+    "dayLine": "{n}日目：{temp}（暖かさ目標：{warmth}/10）",
+    "notAvailable": "該当なし"
+  },
+  "wearability": {
+    "title": "ワードローブ汎用性レポート",
+    "flexibilityScore": "柔軟性スコア",
+    "mvpItem": "MVPアイテム",
+    "none": "なし",
+    "deadWeight": "使わないアイテム",
+    "perfectPacking": "なし！完璧なパッキングです。",
+    "swapSuggestion": "💡 スマート入れ替え提案",
+    "swapOut": "外す：",
+    "swapIn": "追加：",
+    "why": "理由：{reason}",
+    "digitalCloset": "デジタルクローゼット",
+    "addPhoto": "＋写真",
+    "aiMagic": "AI処理中...",
+    "outfitSchedule": "3日間のコーディネート予定",
+    "day": "{n}日目",
+    "top": "トップス：{name}",
+    "bottom": "ボトムス：{name}",
+    "layer": "アウター：{name}"
+  },
+  "checklist": {
+    "title": "🎒 実際のパッキングリスト",
+    "resetButton": "チェックをリセット",
+    "instructions": "スーツケースに詰めたらアイテムにチェックを入れてください。進捗は自動的に保存されます。",
+    "progress": "パッキング進捗：{checked} / {total} 完了",
+    "garmentsToPack": "詰める衣類",
+    "tripEssentials": "旅行の必需品",
+    "underwear": "下着 {n} セット",
+    "socks": "靴下 {n} 足",
+    "toiletryKit": "洗面用具セット 1個",
+    "techPouch": "電子機器ポーチ／充電器 1式"
+  },
+  "language": {
+    "label": "言語"
+  }
+}

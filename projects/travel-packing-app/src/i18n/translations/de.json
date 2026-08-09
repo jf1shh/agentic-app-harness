@@ -1,0 +1,94 @@
+{
+  "app": {
+    "title": "PackRight V4",
+    "subtitle": "Live-Wetter & Intelligenter Garderoben-Analysator"
+  },
+  "theme": {
+    "dark": "🌙 Dunkelmodus",
+    "light": "☀️ Hellmodus"
+  },
+  "trip": {
+    "detailsTitle": "Reisedetails",
+    "destination": "Reiseziel",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "wardrobeSource": "Garderoben-Quelle",
+    "archetypePreset": "Stil-Vorlage",
+    "uploadCloset": "Eigenen Kleiderschrank hochladen (.txt / .md)",
+    "fashionArchetype": "Mode-Archetyp",
+    "packingStrategy": "Packstrategie",
+    "defaultActivity": "Standardaktivität",
+    "uploadWardrobeFile": "Garderobendatei hochladen (.txt oder .md)",
+    "loadedGarments": "✔ {count} Kleidungsstücke aus {file} geladen",
+    "suitcase": "Koffer",
+    "airline": "Fluggesellschaft (Handgepäck-Limits)",
+    "analyzing": "Wetter wird abgerufen und analysiert...",
+    "analyzeButton": "Garderobe analysieren & Outfits planen",
+    "failedToAnalyze": "Reiseanalyse fehlgeschlagen"
+  },
+  "archetype": {
+    "quietLuxury": "Quiet Luxury",
+    "gorpcore": "Gorpcore",
+    "scandi": "Skandinavisch Minimalistisch"
+  },
+  "strategy": {
+    "standard": "Standard (Komfortabel)",
+    "flexible": "Flexibel & Effizient",
+    "minimalist": "Extrem Minimalistisch"
+  },
+  "activity": {
+    "sightseeing": "📸 Sightseeing",
+    "transit": "✈️ Reisetag",
+    "formal": "🍷 Formell / Ausgehen",
+    "casual": "🚶 Casual"
+  },
+  "knapsack": {
+    "title": "Rucksack-Engine: Gepäckphysik",
+    "volumeWeight": "Volumen & Gewicht",
+    "weightLine": "Gewicht: {weight}kg / {limit}kg Limit",
+    "volumeLine": "Volumen: {volume}L / {capacity}L",
+    "percentFull": "{percent}% Voll",
+    "airlineCompliance": "Konformität mit der Fluggesellschaft",
+    "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}"
+  },
+  "itinerary": {
+    "title": "Live-Reiseplan ({destination})",
+    "dayLine": "Tag {n}: {temp} (Wärmeziel: {warmth}/10)",
+    "notAvailable": "N/V"
+  },
+  "wearability": {
+    "title": "Garderoben-Vielseitigkeitsbericht",
+    "flexibilityScore": "Flexibilitätswert",
+    "mvpItem": "Wertvollstes Teil",
+    "none": "Keine",
+    "deadWeight": "Totes Gewicht",
+    "perfectPacking": "Keins! Perfekt gepackt.",
+    "swapSuggestion": "💡 Intelligenter Tauschvorschlag",
+    "swapOut": "Entfernen:",
+    "swapIn": "Hinzufügen:",
+    "why": "Warum? {reason}",
+    "digitalCloset": "Digitaler Kleiderschrank",
+    "addPhoto": "+ Foto",
+    "aiMagic": "KI-Magie...",
+    "outfitSchedule": "3-Tage-Outfit-Plan",
+    "day": "Tag {n}",
+    "top": "Oberteil: {name}",
+    "bottom": "Unterteil: {name}",
+    "layer": "Schicht: {name}"
+  },
+  "checklist": {
+    "title": "🎒 Physische Packliste",
+    "resetButton": "Häkchen zurücksetzen",
+    "instructions": "Hake Artikel ab, sobald du sie in den Koffer packst. Der Fortschritt wird automatisch gespeichert.",
+    "progress": "Packfortschritt: {checked} / {total} gepackt",
+    "garmentsToPack": "Zu packende Kleidung",
+    "tripEssentials": "Reise-Essentials",
+    "underwear": "{n}x Unterwäsche",
+    "socks": "{n}x Paar Socken",
+    "toiletryKit": "1x Kulturbeutel",
+    "techPouch": "1x Technik-Etui / Ladegeräte"
+  },
+  "language": {
+    "label": "Sprache"
+  }
+}
