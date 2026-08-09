@@ -6,12 +6,18 @@ import { Garment, DayItinerary, WearabilityReport } from '../types';
 import { analyzeWardrobe } from '../utils/wardrobeEngine';
 import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../services/weatherApi';
 import { calculateKnapsackPhysics, PackingPhysicsReport } from '../utils/knapsackEngine';
-import { MODELS } from '../utils/suitcaseDatabase';
+import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
 import { parseClosetFile } from '../utils/fileImporter';
 import DestinationAutocomplete from '../components/DestinationAutocomplete';
 import LocalInfoPanel from '../components/LocalInfoPanel';
+import WardrobeManager from '../components/WardrobeManager';
+import SuitcaseFinder from '../components/SuitcaseFinder';
+
+// Model names alone collide across brands (e.g. Away, Arlo Skye and Roam all
+// sell "The Carry-On"), so selection is keyed by brand+model together.
+const suitcaseKey = (m: SuitcaseModel) => `${m.brand} — ${m.model}`;
 
 
 
@@ -25,7 +31,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
-  const [selectedSuitcase, setSelectedSuitcase] = useState(MODELS[0].model);
+  const [selectedSuitcase, setSelectedSuitcase] = useState(suitcaseKey(MODELS[0]));
   const [selectedAirline, setSelectedAirline] = useState('EK'); // Emirates
   
   const [archetype, setArchetype] = useState('quiet-luxury');
@@ -36,6 +42,7 @@ export default function Home() {
   const [closetSource, setClosetSource] = useState<'archetype' | 'custom'>('archetype');
   const [customGarments, setCustomGarments] = useState<Garment[]>([]);
   const [customFileName, setCustomFileName] = useState('');
+  const [closetManagerOpen, setClosetManagerOpen] = useState(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
@@ -101,7 +108,7 @@ export default function Home() {
       setReport(result);
 
       // Run Knapsack Physics
-      const suitcase = MODELS.find(m => m.model === selectedSuitcase) || MODELS[0];
+      const suitcase = MODELS.find(m => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
       const physicsResult = calculateKnapsackPhysics(result, garmentsToUse, suitcase, selectedAirline);
       setPhysics(physicsResult);
     } catch (err: unknown) {
@@ -180,6 +187,15 @@ export default function Home() {
                     <option value="quiet-luxury">Quiet Luxury</option>
                     <option value="gorpcore">Gorpcore</option>
                     <option value="scandi">Scandi Minimalist</option>
+                    <option value="streetwear">Y2K Streetwear</option>
+                    <option value="dark-academia">Dark Academia</option>
+                    <option value="athleisure">Athleisure</option>
+                    <option value="bohemian">Bohemian / Resort</option>
+                    <option value="preppy">Ivy League Prep</option>
+                    <option value="rock">Rock Chic</option>
+                    <option value="whimsigoth">Whimsigoth</option>
+                    <option value="coastal">Coastal Maritime</option>
+                    <option value="cottagecore">Cottagecore</option>
                   </select>
                 </div>
                 <div>
@@ -203,28 +219,37 @@ export default function Home() {
             ) : (
               <div>
                 <label htmlFor="closet-upload" className="label">Upload Wardrobe File (.txt or .md)</label>
-                <input 
-                  id="closet-upload" 
-                  type="file" 
-                  accept=".txt,.md" 
-                  onChange={handleFileUpload} 
-                  className="input-field" 
+                <input
+                  id="closet-upload"
+                  type="file"
+                  accept=".txt,.md"
+                  onChange={handleFileUpload}
+                  className="input-field"
                   style={{ cursor: 'pointer' }}
                 />
-                {customGarments.length > 0 && (
+                {customGarments.length > 0 && customFileName && (
                   <p style={{ marginTop: '8px', color: '#22c55e', fontSize: '0.9rem' }}>
                     ✔ Loaded {customGarments.length} garments from {customFileName}
                   </p>
                 )}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ marginTop: '12px' }}
+                  onClick={() => setClosetManagerOpen(true)}
+                >
+                  📸 Manage Digital Closet {customGarments.length > 0 ? `(${customGarments.length} items)` : ''}
+                </button>
               </div>
             )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
-              <label htmlFor="suitcase" className="label">Suitcase</label>
+              <SuitcaseFinder onSelect={(m) => setSelectedSuitcase(suitcaseKey(m))} />
+              <label htmlFor="suitcase" className="label" style={{ marginTop: '12px', display: 'block' }}>Suitcase</label>
               <select id="suitcase" className="input-field" value={selectedSuitcase} onChange={e => setSelectedSuitcase(e.target.value)}>
                 {MODELS.map(m => (
-                  <option key={m.model} value={m.model}>{m.brand} - {m.model}</option>
+                  <option key={suitcaseKey(m)} value={suitcaseKey(m)}>{m.brand} - {m.model}</option>
                 ))}
               </select>
             </div>
@@ -285,6 +310,13 @@ export default function Home() {
           <LocalInfoPanel countryCode={destinationCountryCode} />
         </>
       )}
+
+      <WardrobeManager
+        isOpen={closetManagerOpen}
+        onClose={() => setClosetManagerOpen(false)}
+        garments={customGarments}
+        setGarments={setCustomGarments}
+      />
     </main>
   );
 }
