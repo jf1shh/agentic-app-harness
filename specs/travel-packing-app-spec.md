@@ -64,6 +64,21 @@
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
   Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
   palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
+- [x] Destination-aware travel adapter — the packing checklist's essentials always include one travel
+  adapter; `getAdapterPlugType` (`src/utils/plugs.ts`) resolves the destination's IEC wall-plug type
+  from its resolved country code (e.g. Germany → "Type C/F"), and the checklist names the specific
+  adapter instead of a generic one when it's known. Falls back to "Universal Travel Adapter" for an
+  unresolved or unmapped country. The essentials list itself (`buildEssentialSpecs` in
+  `src/utils/checklistEssentials.ts`) and the progress-percent calculation (`computeProgressPercent`)
+  are pure, unit-tested functions the checklist component calls — not logic reimplemented inline.
+- [x] Start Over — once a plan is generated, a "Start Over" button clears the report, knapsack physics,
+  itinerary, and active garments so the trip form is ready to plan again without a page reload. Does
+  not touch the packing checklist's own saved checkmarks (a separate concern, matching the app's
+  existing per-feature persistence boundaries).
+- [x] Delete All My Data — a footer button wipes every piece of this app's on-device state: IndexedDB
+  (wardrobe photos, via the already-existing `clearAllLocalData` in `src/services/db.ts`) and every
+  `localStorage` key (theme, language, checklist, saved trip), then reloads. Gated behind a native
+  confirmation (`window.confirm`) describing the action as irreversible.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

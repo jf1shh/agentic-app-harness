@@ -4,13 +4,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Garment } from '../types';
 import { useT } from '../i18n/context';
 import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage } from '../services/groupSync';
+import { buildEssentialSpecs, computeProgressPercent } from '../utils/checklistEssentials';
+import { getAdapterPlugType } from '../utils/plugs';
 
 interface Props {
   garments: Garment[];
   tripDays: number;
+  destinationCountryCode: string | null;
 }
 
-export default function PackingChecklist({ garments, tripDays }: Props) {
+export default function PackingChecklist({ garments, tripDays, destinationCountryCode }: Props) {
   const { t } = useT();
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -79,16 +82,16 @@ export default function PackingChecklist({ garments, tripDays }: Props) {
   };
 
   // Build full list of items
-  const essentials = [
-    { id: 'essential-underwear', name: t('checklist.underwear', { n: tripDays }), category: 'Essentials' },
-    { id: 'essential-socks', name: t('checklist.socks', { n: tripDays }), category: 'Essentials' },
-    { id: 'essential-toiletries', name: t('checklist.toiletryKit'), category: 'Essentials' },
-    { id: 'essential-tech', name: t('checklist.techPouch'), category: 'Essentials' },
-  ];
+  const adapterPlugType = getAdapterPlugType(destinationCountryCode);
+  const essentials = buildEssentialSpecs(tripDays, adapterPlugType).map((spec) => ({
+    id: spec.id,
+    name: t(spec.key, spec.params),
+    category: 'Essentials',
+  }));
 
   const totalItems = garments.length + essentials.length;
   const checkedCount = Object.values(checkedItems).filter(Boolean).length;
-  const progressPercent = totalItems > 0 ? Math.round((checkedCount / totalItems) * 100) : 0;
+  const progressPercent = computeProgressPercent(checkedCount, totalItems);
 
   return (
     <div className="glass-panel print-section" style={{ padding: '24px', marginTop: '32px' }}>

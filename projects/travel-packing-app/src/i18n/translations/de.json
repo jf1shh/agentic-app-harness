@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "Live-Wetter & Intelligenter Garderoben-Analysator"
+    "subtitle": "Live-Wetter & Intelligenter Garderoben-Analysator",
+    "startOver": "↩ Neu Starten",
+    "deleteAllData": "🗑️ Alle Meine Daten Löschen",
+    "deleteConfirm": "Dadurch werden deine gespeicherte Garderobe, Fotos und Einstellungen dauerhaft von diesem Gerät gelöscht. Dies kann nicht rückgängig gemacht werden. Fortfahren?"
   },
   "theme": {
     "dark": "🌙 Dunkelmodus",
@@ -86,7 +89,9 @@
     "underwear": "{n}x Unterwäsche",
     "socks": "{n}x Paar Socken",
     "toiletryKit": "1x Kulturbeutel",
-    "techPouch": "1x Technik-Etui / Ladegeräte"
+    "techPouch": "1x Technik-Etui / Ladegeräte",
+    "universalAdapter": "1x Universal-Reiseadapter",
+    "travelAdapterFor": "1x Reiseadapter (Typ {type})"
   },
   "language": {
     "label": "Sprache"

@@ -19,6 +19,7 @@ import { tripDurationFromDates } from '../utils/tripDuration';
 import DailyActivityPicker from '../components/DailyActivityPicker';
 import WardrobeManager from '../components/WardrobeManager';
 import SuitcaseFinder from '../components/SuitcaseFinder';
+import { clearAllLocalData } from '../services/db';
 
 // Model names alone collide across brands (e.g. Away, Arlo Skye and Roam all
 // sell "The Carry-On"), so selection is keyed by brand+model together.
@@ -175,6 +176,25 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStartOver = () => {
+    setReport(null);
+    setPhysics(null);
+    setItinerary([]);
+    setActiveGarments([]);
+    setError('');
+  };
+
+  const handleDeleteAllData = async () => {
+    if (typeof window !== 'undefined' && !window.confirm(t('app.deleteConfirm'))) return;
+    await clearAllLocalData();
+    try {
+      localStorage.clear();
+    } catch {
+      // Best-effort; IndexedDB is already cleared above.
+    }
+    window.location.reload();
   };
 
   return (
@@ -393,8 +413,18 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          <WardrobeAnalyzer report={report} garments={activeGarments} />
+          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCode={destinationCountryCode} />
           <LocalInfoPanel countryCode={destinationCountryCode} />
+
+          <div className="no-print" style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={handleStartOver}
+              className="btn-secondary"
+              style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', padding: '10px 24px' }}
+            >
+              {t('app.startOver')}
+            </button>
+          </div>
         </>
       )}
 
@@ -404,6 +434,16 @@ export default function Home() {
         garments={customGarments}
         setGarments={setCustomGarments}
       />
+
+      <div className="no-print" style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+        <button
+          onClick={handleDeleteAllData}
+          className="btn-secondary"
+          style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', fontSize: '0.85rem', padding: '8px 16px' }}
+        >
+          {t('app.deleteAllData')}
+        </button>
+      </div>
     </main>
   );
 }

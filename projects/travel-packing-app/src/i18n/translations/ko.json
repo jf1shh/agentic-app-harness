@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "실시간 날씨 및 스마트 옷장 분석기"
+    "subtitle": "실시간 날씨 및 스마트 옷장 분석기",
+    "startOver": "↩ 처음부터 다시",
+    "deleteAllData": "🗑️ 내 모든 데이터 삭제",
+    "deleteConfirm": "이 기기에 저장된 옷장, 사진, 환경설정이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?"
   },
   "theme": {
     "dark": "🌙 다크 모드",
@@ -86,7 +89,9 @@
     "underwear": "속옷 {n}벌",
     "socks": "양말 {n}켤레",
     "toiletryKit": "세면도구 세트 1개",
-    "techPouch": "전자기기 파우치 / 충전기 1개"
+    "techPouch": "전자기기 파우치 / 충전기 1개",
+    "universalAdapter": "멀티 여행용 어댑터 1개",
+    "travelAdapterFor": "여행용 어댑터 1개 (타입 {type})"
   },
   "language": {
     "label": "언어"

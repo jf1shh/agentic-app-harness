@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "实时天气与智能衣橱分析"
+    "subtitle": "实时天气与智能衣橱分析",
+    "startOver": "↩ 重新开始",
+    "deleteAllData": "🗑️ 删除我的所有数据",
+    "deleteConfirm": "这将永久删除此设备上保存的衣橱、照片和偏好设置，且无法撤销。是否继续？"
   },
   "theme": {
     "dark": "🌙 深色模式",
@@ -86,7 +89,9 @@
     "underwear": "内衣 {n} 套",
     "socks": "袜子 {n} 双",
     "toiletryKit": "洗漱包 1个",
-    "techPouch": "数码收纳包/充电器 1套"
+    "techPouch": "数码收纳包/充电器 1套",
+    "universalAdapter": "万能旅行转换插头 1个",
+    "travelAdapterFor": "旅行转换插头 1个（{type} 型）"
   },
   "language": {
     "label": "语言"

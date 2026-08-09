@@ -1,7 +1,10 @@
 {
   "app": {
     "title": "PackRight V4",
-    "subtitle": "Live Weather & Intelligent Wardrobe Analyzer"
+    "subtitle": "Live Weather & Intelligent Wardrobe Analyzer",
+    "startOver": "↩ Start Over",
+    "deleteAllData": "🗑️ Delete All My Data",
+    "deleteConfirm": "This permanently deletes your saved wardrobe, photos, and preferences from this device. This cannot be undone. Continue?"
   },
   "theme": {
     "dark": "🌙 Dark Mode",
@@ -86,7 +89,9 @@
     "underwear": "{n}x Pairs of Underwear",
     "socks": "{n}x Pairs of Socks",
     "toiletryKit": "1x Toiletry Kit",
-    "techPouch": "1x Tech Pouch / Chargers"
+    "techPouch": "1x Tech Pouch / Chargers",
+    "universalAdapter": "1x Universal Travel Adapter",
+    "travelAdapterFor": "1x Travel Adapter (Type {type} outlets)"
   },
   "language": {
     "label": "Language"
