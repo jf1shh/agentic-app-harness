@@ -7,14 +7,50 @@
 
 ## 2. Core Features
 - [x] Live Weather integration (Open-Meteo) for dynamic itinerary warmth targets.
+- [x] Destination autocomplete — `DestinationAutocomplete` suggests real places as the user types
+  (`searchLocations` in `src/services/weatherApi.ts`, Open-Meteo's geocoding search only — never
+  Nominatim, whose usage policy explicitly forbids client-side autocomplete). Zip/postal geocoding
+  fallback to Nominatim (`geocodeViaNominatim`) already existed for the one-off destination lookup on
+  Analyze and now also captures the resolved country code.
+- [x] Local Info panel — once a destination resolves to a country, `LocalInfoPanel` shows a few typical
+  tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter exchange-rate
+  API, no key required) and a GOV.UK foreign-travel-advisory summary with a link to the full advisory
+  (`src/services/advisory.ts`). Both are best-effort: an unmapped country or a failed fetch renders
+  nothing rather than a broken panel.
 - [x] Complex Wardrobe Engine that enforces garment pairing rules, color matching, and exclusion tags.
 - [x] Multi-role garment handling and dynamic Material Thermals (Cashmere vs Linen).
+- [x] Per-day activity tagging — a `DailyActivityPicker` lets the user tag each trip day
+  (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one blanket activity for
+  the whole trip. An untagged day shows a destination-guessed activity as its pre-selected pill
+  (`guessActivityFromDestination` in `src/utils/activity.ts`, e.g. "Whistler" guesses `ski`), which the
+  user can override; `resolveActivity` is what the wardrobe engine's day-by-day scheduling already
+  branches on (evening-outfit selection, hot-weather color exclusion) — this closes the gap between
+  that per-day engine capability and a UI that previously could only set one activity for every day.
 - [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
-- [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules).
-- [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
+- [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules) — the
+  suitcase catalog (`src/utils/suitcaseDatabase.ts`) covers 64 real models across 25 brands, and the
+  airline catalog (`src/utils/airlineBaggage.ts`) covers 77 carriers across 7 regions. A `SuitcaseFinder`
+  component lets a user look a suitcase up by brand/model text search or by pasting a barcode number
+  (`lookupByBarcode`), rather than only scrolling a flat dropdown. `src/utils/measurement.ts` ports the
+  credit-card-calibrated measurement math (pixel distance -> mm/px scale -> cm dimensions) as pure,
+  camera-free functions — a future camera-based photo-tap UI can build on it directly, but that live
+  camera/canvas flow itself is out of scope here (see the PR's "Left undone" note: it cannot be
+  meaningfully exercised or verified in this harness, which has no camera).
+- [x] Digital Closet (IndexedDB + Client-side AI Background Removal) — a manager panel
+  (`WardrobeManager`) lets a user build a real custom wardrobe by hand: add a garment (name, role,
+  color, evening flag), attach a photo per item with on-device background removal, and delete items.
+  Garments built this way go through the same `GarmentSchema` runtime contract as the archetype
+  generator and file importer (`buildManualGarment` in `src/utils/wardrobeBuilder.ts`). A low-storage
+  warning (`checkStorageQuota` in `src/services/db.ts`) surfaces before a photo save can fail silently,
+  per the "binary attachment must not share a storage budget" lesson in `.agents/AGENTS.md` §6 — photos
+  live in IndexedDB, never in the same store as the wardrobe/trip data.
 - [x] Internationalization: 11 languages (English, Arabic, German, Spanish, French, Hindi, Italian,
       Japanese, Korean, Portuguese, Chinese) with automatic browser-language detection, a persisted
       user override, and right-to-left layout for Arabic.
+- [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
+  Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
+  Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
+  palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

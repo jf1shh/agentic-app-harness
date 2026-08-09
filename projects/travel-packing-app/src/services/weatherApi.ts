@@ -1,5 +1,14 @@
 const COORD_REGEX = /^\s*(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\s*$/;
 
+interface NominatimAddress {
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  country?: string;
+  country_code?: string;
+}
+
 export const geocodeViaNominatim = async (locationName: string) => {
   try {
     const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}&format=jsonv2&addressdetails=1&limit=1`);
@@ -7,12 +16,50 @@ export const geocodeViaNominatim = async (locationName: string) => {
     const data = await response.json();
     if (!Array.isArray(data) || data.length === 0) return null;
     const item = data[0];
+    const address: NominatimAddress = item.address || {};
     const lat = parseFloat(item.lat);
     const lon = parseFloat(item.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-    return { latitude: lat, longitude: lon, name: locationName };
+    return {
+      latitude: lat,
+      longitude: lon,
+      name: address.city || address.town || address.village || address.municipality
+        || (item.display_name ? String(item.display_name).split(',')[0] : locationName),
+      country: address.country || 'Unknown',
+      country_code: address.country_code ? address.country_code.toUpperCase() : undefined,
+    };
   } catch {
     return null;
+  }
+};
+
+const AUTOCOMPLETE_COORD_REGEX = /^\s*(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\s*$/;
+
+export interface LocationSuggestion {
+  name: string;
+  latitude: number;
+  longitude: number;
+  country?: string;
+  country_code?: string;
+  admin1?: string;
+}
+
+/**
+ * Live destination suggestions for an autocomplete dropdown. Uses only
+ * Open-Meteo's geocoding search (never Nominatim -- its usage policy
+ * explicitly forbids client-side autocomplete: "you must not implement
+ * such a service on the client side using the API",
+ * https://operations.osmfoundation.org/policies/nominatim/).
+ */
+export const searchLocations = async (query: string, count: number = 5): Promise<LocationSuggestion[]> => {
+  const trimmed = (query || '').trim();
+  if (trimmed.length < 2 || AUTOCOMPLETE_COORD_REGEX.test(trimmed)) return [];
+  try {
+    const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trimmed)}&count=${count}&language=en&format=json`);
+    const data = await response.json();
+    return Array.isArray(data.results) ? data.results : [];
+  } catch {
+    return [];
   }
 };
 
@@ -85,19 +132,23 @@ interface DailyWeather {
   precipitation_sum?: number[];
 }
 
-export function transformWeatherToItinerary(dailyWeather: DailyWeather, defaultActivity: string = 'sightseeing'): DayItinerary[] {
+export function transformWeatherToItinerary(
+  dailyWeather: DailyWeather,
+  defaultActivity: string = 'sightseeing',
+  dailyActivities?: string[]
+): DayItinerary[] {
   if (!dailyWeather || !dailyWeather.time || !dailyWeather.temperature_2m_max) return [];
-  
+
   const temps = dailyWeather.temperature_2m_max;
-  
+
   return dailyWeather.time.map((dateStr: string, index: number) => {
     const maxTempC = temps[index];
     const target = calculateWarmthTarget(maxTempC);
-    
+
     return {
       dayNumber: index + 1,
       weatherWarmthTarget: target,
-      activity: defaultActivity,
+      activity: dailyActivities?.[index] ?? defaultActivity,
       maxTempC: maxTempC
     };
   });
