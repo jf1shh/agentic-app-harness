@@ -9,6 +9,13 @@
 - [x] Live Weather integration (Open-Meteo) for dynamic itinerary warmth targets.
 - [x] Complex Wardrobe Engine that enforces garment pairing rules, color matching, and exclusion tags.
 - [x] Multi-role garment handling and dynamic Material Thermals (Cashmere vs Linen).
+- [x] Per-day activity tagging — a `DailyActivityPicker` lets the user tag each trip day
+  (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one blanket activity for
+  the whole trip. An untagged day shows a destination-guessed activity as its pre-selected pill
+  (`guessActivityFromDestination` in `src/utils/activity.ts`, e.g. "Whistler" guesses `ski`), which the
+  user can override; `resolveActivity` is what the wardrobe engine's day-by-day scheduling already
+  branches on (evening-outfit selection, hot-weather color exclusion) — this closes the gap between
+  that per-day engine capability and a UI that previously could only set one activity for every day.
 - [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
 - [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules) — the
   suitcase catalog (`src/utils/suitcaseDatabase.ts`) covers 64 real models across 25 brands, and the

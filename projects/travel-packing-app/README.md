@@ -13,6 +13,7 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ### Trip input (`src/app/page.tsx`)
 - Destination string → geocode via Open-Meteo's geocoding API.
 - Start & end dates → fetch daily forecast → `transformWeatherToItinerary()` produces `DayItinerary[]` with `weatherWarmthTarget` (0–10) and `maxTempC` per day.
+- **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.
 
 ### Wardrobe source — two paths
 - **Style archetype preset** — pick one of 12 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
@@ -51,6 +52,7 @@ src/
     WardrobeAnalyzer.tsx           # wearability report + Dead Weight + Smart Swaps
     WardrobeManager.tsx            # Digital Closet: add/photo/delete real garments
     PackingChecklist.tsx           # interactive checklist, localStorage progress
+    DailyActivityPicker.tsx        # per-day activity tagging (Beach/Hike/Ski/Formal/...)
     SuitcaseFinder.tsx             # brand/model text search + barcode lookup
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
@@ -62,6 +64,8 @@ src/
     knapsackEngine.ts              # calculateKnapsackPhysics()
     generator.ts                   # archetype → Garment[]
     fileImporter.ts                # parseClosetFile(.txt | .md)
+    activity.ts                    # guessActivityFromDestination(), resolveActivity()
+    tripDuration.ts                # inclusive start/end date -> day count
     wardrobeBuilder.ts             # buildManualGarment() — Digital Closet's schema-valid Garment builder
     suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
     airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)

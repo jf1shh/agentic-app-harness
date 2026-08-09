@@ -85,19 +85,23 @@ interface DailyWeather {
   precipitation_sum?: number[];
 }
 
-export function transformWeatherToItinerary(dailyWeather: DailyWeather, defaultActivity: string = 'sightseeing'): DayItinerary[] {
+export function transformWeatherToItinerary(
+  dailyWeather: DailyWeather,
+  defaultActivity: string = 'sightseeing',
+  dailyActivities?: string[]
+): DayItinerary[] {
   if (!dailyWeather || !dailyWeather.time || !dailyWeather.temperature_2m_max) return [];
-  
+
   const temps = dailyWeather.temperature_2m_max;
-  
+
   return dailyWeather.time.map((dateStr: string, index: number) => {
     const maxTempC = temps[index];
     const target = calculateWarmthTarget(maxTempC);
-    
+
     return {
       dayNumber: index + 1,
       weatherWarmthTarget: target,
-      activity: defaultActivity,
+      activity: dailyActivities?.[index] ?? defaultActivity,
       maxTempC: maxTempC
     };
   });
