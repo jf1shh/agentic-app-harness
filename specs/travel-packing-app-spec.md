@@ -11,7 +11,14 @@
 - [x] Multi-role garment handling and dynamic Material Thermals (Cashmere vs Linen).
 - [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
 - [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules).
-- [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
+- [x] Digital Closet (IndexedDB + Client-side AI Background Removal) — a manager panel
+  (`WardrobeManager`) lets a user build a real custom wardrobe by hand: add a garment (name, role,
+  color, evening flag), attach a photo per item with on-device background removal, and delete items.
+  Garments built this way go through the same `GarmentSchema` runtime contract as the archetype
+  generator and file importer (`buildManualGarment` in `src/utils/wardrobeBuilder.ts`). A low-storage
+  warning (`checkStorageQuota` in `src/services/db.ts`) surfaces before a photo save can fail silently,
+  per the "binary attachment must not share a storage budget" lesson in `.agents/AGENTS.md` §6 — photos
+  live in IndexedDB, never in the same store as the wardrobe/trip data.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

@@ -17,6 +17,7 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 ### Wardrobe source — two paths
 - **Style archetype preset** — pick one of three (`quiet-luxury`, `gorpcore`, `scandi-minimalist`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
 - **Custom upload** — drag in a `.txt` or `.md` wardrobe file; `parseClosetFile()` auto-detects each line's role (`top | bottom | topper | layer`), colors, and thermal score, and produces a `Garment[]` from your real closet.
+- **Digital Closet manager** — the "📸 Manage Digital Closet" panel (`WardrobeManager`) lets you build that same `Garment[]` by hand instead of uploading a file: add an item (name, role, color, evening flag) via `buildManualGarment()`, then attach a photo with on-device AI background removal (`@imgly/background-removal`), stored per-item in IndexedDB. A low-storage warning appears before a photo save can fail silently.
 
 ### Two reports from one analysis run
 1. **Wearability report** (`WardrobeAnalyzer` component, fed by `analyzeWardrobe()`)
@@ -48,17 +49,19 @@ src/
     error.tsx, layout.tsx
   components/
     WardrobeAnalyzer.tsx           # wearability report + Dead Weight + Smart Swaps
+    WardrobeManager.tsx            # Digital Closet: add/photo/delete real garments
     PackingChecklist.tsx           # interactive checklist, localStorage progress
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
     weatherApi.ts                  # geocode + Open-Meteo forecast + itinerary transform
-    db.ts                          # IndexedDB layer; wardrobe media, etc.
+    db.ts                          # IndexedDB layer; wardrobe media, checkStorageQuota()
     logger.ts                      # client logger
   utils/
     wardrobeEngine.ts              # analyzeWardrobe()
     knapsackEngine.ts              # calculateKnapsackPhysics()
     generator.ts                   # archetype → Garment[]
     fileImporter.ts                # parseClosetFile(.txt | .md)
+    wardrobeBuilder.ts             # buildManualGarment() — Digital Closet's schema-valid Garment builder
     suitcaseDatabase.ts            # MODELS (real-world suitcase specs)
     airlineBaggage.ts              # AIRLINES (real-world carry-on limits)
   schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, ...)
