@@ -393,7 +393,7 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          <WardrobeAnalyzer report={report} garments={activeGarments} />
+          <WardrobeAnalyzer report={report} garments={activeGarments} itinerary={itinerary} />
           <LocalInfoPanel countryCode={destinationCountryCode} />
         </>
       )}

@@ -30,6 +30,36 @@ describe('weatherApi logic', () => {
     expect(itinerary[1].weatherWarmthTarget).toBe(6); // 15C -> 6
   });
 
+  it('Given a forecast with precipitation and UV data, When it is transformed, Then each day carries its own precipitation and UV values', () => {
+    const mockMeteoResponse = {
+      time: ['2026-08-01', '2026-08-02'],
+      temperature_2m_max: [30, 15],
+      temperature_2m_min: [20, 10],
+      precipitation_sum: [0, 5.5],
+      uv_index_max: [8.2, 2],
+    };
+
+    const itinerary = transformWeatherToItinerary(mockMeteoResponse);
+
+    expect(itinerary[0].precipitationMm).toBe(0);
+    expect(itinerary[0].uvIndexMax).toBe(8.2);
+    expect(itinerary[1].precipitationMm).toBe(5.5);
+    expect(itinerary[1].uvIndexMax).toBe(2);
+  });
+
+  it('Given a forecast missing precipitation/UV fields, When it is transformed, Then those day fields are simply left undefined', () => {
+    const mockMeteoResponse = {
+      time: ['2026-08-01'],
+      temperature_2m_max: [30],
+      temperature_2m_min: [20],
+    };
+
+    const itinerary = transformWeatherToItinerary(mockMeteoResponse);
+
+    expect(itinerary[0].precipitationMm).toBeUndefined();
+    expect(itinerary[0].uvIndexMax).toBeUndefined();
+  });
+
   it('Given no per-day activities, When transformed, Then every day falls back to the single default activity', () => {
     const mockMeteoResponse = {
       time: ['2026-08-01', '2026-08-02'],

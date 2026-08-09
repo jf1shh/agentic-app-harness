@@ -96,7 +96,7 @@ const addDays = (d: Date, n: number) => {
 export const fetchWeather = async (lat: number, lon: number, startDateStr: string, endDateStr: string) => {
   try {
     // For V4 Phase 1, we will just use the forecast API (we can add the climate archive fallback later if needed)
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&start_date=${startDateStr}&end_date=${endDateStr}`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,uv_index_max&timezone=auto&start_date=${startDateStr}&end_date=${endDateStr}`;
     const response = await fetch(url);
     const data = await response.json();
     
@@ -130,6 +130,7 @@ interface DailyWeather {
   temperature_2m_max?: number[];
   temperature_2m_min?: number[];
   precipitation_sum?: number[];
+  uv_index_max?: number[];
 }
 
 export function transformWeatherToItinerary(
@@ -149,7 +150,9 @@ export function transformWeatherToItinerary(
       dayNumber: index + 1,
       weatherWarmthTarget: target,
       activity: dailyActivities?.[index] ?? defaultActivity,
-      maxTempC: maxTempC
+      maxTempC: maxTempC,
+      precipitationMm: dailyWeather.precipitation_sum?.[index],
+      uvIndexMax: dailyWeather.uv_index_max?.[index],
     };
   });
 }

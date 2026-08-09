@@ -86,7 +86,10 @@
     "underwear": "下着 {n} セット",
     "socks": "靴下 {n} 足",
     "toiletryKit": "洗面用具セット 1個",
-    "techPouch": "電子機器ポーチ／充電器 1式"
+    "techPouch": "電子機器ポーチ／充電器 1式",
+    "umbrella": "コンパクト折りたたみ傘 1本",
+    "sunglasses": "サングラス 1本",
+    "sunscreen": "日焼け止め（SPF30以上、携帯サイズ）1個"
   },
   "language": {
     "label": "言語"

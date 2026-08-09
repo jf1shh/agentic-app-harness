@@ -86,7 +86,10 @@
     "underwear": "内衣 {n} 套",
     "socks": "袜子 {n} 双",
     "toiletryKit": "洗漱包 1个",
-    "techPouch": "数码收纳包/充电器 1套"
+    "techPouch": "数码收纳包/充电器 1套",
+    "umbrella": "便携旅行雨伞 1把",
+    "sunglasses": "太阳镜 1副",
+    "sunscreen": "防晒霜 1瓶（SPF 30+，旅行装）"
   },
   "language": {
     "label": "语言"

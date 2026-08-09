@@ -86,7 +86,10 @@
     "underwear": "{n} paires de sous-vêtements",
     "socks": "{n} paires de chaussettes",
     "toiletryKit": "1 trousse de toilette",
-    "techPouch": "1 pochette tech / chargeurs"
+    "techPouch": "1 pochette tech / chargeurs",
+    "umbrella": "1 parapluie de voyage compact",
+    "sunglasses": "1 paire de lunettes de soleil",
+    "sunscreen": "1 crème solaire (SPF 30+, format voyage)"
   },
   "language": {
     "label": "Langue"

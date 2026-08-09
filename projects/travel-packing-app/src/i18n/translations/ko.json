@@ -86,7 +86,10 @@
     "underwear": "속옷 {n}벌",
     "socks": "양말 {n}켤레",
     "toiletryKit": "세면도구 세트 1개",
-    "techPouch": "전자기기 파우치 / 충전기 1개"
+    "techPouch": "전자기기 파우치 / 충전기 1개",
+    "umbrella": "휴대용 여행 우산 1개",
+    "sunglasses": "선글라스 1개",
+    "sunscreen": "선크림 1개 (SPF 30+, 여행용 사이즈)"
   },
   "language": {
     "label": "언어"

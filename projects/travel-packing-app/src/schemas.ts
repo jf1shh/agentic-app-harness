@@ -33,6 +33,8 @@ export const DayItinerarySchema = z.object({
   weatherWarmthTarget: z.number(),
   activity: z.string(),
   maxTempC: z.number().optional(),
+  precipitationMm: z.number().optional(),
+  uvIndexMax: z.number().optional(),
 });
 
 export const WearabilityReportSchema = z.object({

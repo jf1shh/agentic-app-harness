@@ -86,7 +86,10 @@
     "underwear": "{n}x Pairs of Underwear",
     "socks": "{n}x Pairs of Socks",
     "toiletryKit": "1x Toiletry Kit",
-    "techPouch": "1x Tech Pouch / Chargers"
+    "techPouch": "1x Tech Pouch / Chargers",
+    "umbrella": "1x Compact Travel Umbrella",
+    "sunglasses": "1x Sunglasses",
+    "sunscreen": "1x Sunscreen (SPF 30+, travel size)"
   },
   "language": {
     "label": "Language"

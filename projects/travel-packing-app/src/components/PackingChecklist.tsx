@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Garment } from '../types';
+import { Garment, DayItinerary } from '../types';
 import { useT } from '../i18n/context';
 import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage } from '../services/groupSync';
+import { needsUmbrella, needsSunProtection } from '../utils/weatherEssentials';
 
 interface Props {
   garments: Garment[];
   tripDays: number;
+  itinerary: DayItinerary[];
 }
 
-export default function PackingChecklist({ garments, tripDays }: Props) {
+export default function PackingChecklist({ garments, tripDays, itinerary }: Props) {
   const { t } = useT();
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -85,6 +87,13 @@ export default function PackingChecklist({ garments, tripDays }: Props) {
     { id: 'essential-toiletries', name: t('checklist.toiletryKit'), category: 'Essentials' },
     { id: 'essential-tech', name: t('checklist.techPouch'), category: 'Essentials' },
   ];
+  if (needsUmbrella(itinerary)) {
+    essentials.push({ id: 'essential-umbrella', name: t('checklist.umbrella'), category: 'Essentials' });
+  }
+  if (needsSunProtection(itinerary)) {
+    essentials.push({ id: 'essential-sunglasses', name: t('checklist.sunglasses'), category: 'Essentials' });
+    essentials.push({ id: 'essential-sunscreen', name: t('checklist.sunscreen'), category: 'Essentials' });
+  }
 
   const totalItems = garments.length + essentials.length;
   const checkedCount = Object.values(checkedItems).filter(Boolean).length;

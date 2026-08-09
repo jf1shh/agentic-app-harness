@@ -86,7 +86,10 @@
     "underwear": "{n}x Unterwäsche",
     "socks": "{n}x Paar Socken",
     "toiletryKit": "1x Kulturbeutel",
-    "techPouch": "1x Technik-Etui / Ladegeräte"
+    "techPouch": "1x Technik-Etui / Ladegeräte",
+    "umbrella": "1x kompakter Reiseschirm",
+    "sunglasses": "1x Sonnenbrille",
+    "sunscreen": "1x Sonnencreme (LSF 30+, Reisegröße)"
   },
   "language": {
     "label": "Sprache"

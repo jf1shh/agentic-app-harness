@@ -64,6 +64,13 @@
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
   Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
   palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
+- [x] Weather-reactive packing essentials — the forecast Open-Meteo already returns (daily
+  `precipitation_sum`, and now also `uv_index_max`) is carried onto each `DayItinerary` as
+  `precipitationMm`/`uvIndexMax` (`src/services/weatherApi.ts`). `needsUmbrella()` and
+  `needsSunProtection()` (`src/utils/weatherEssentials.ts`) are pure functions over the itinerary —
+  any day with measurable precipitation adds a Compact Travel Umbrella; any day at UV index 6+ (the
+  WHO "high" band) adds Sunglasses and Sunscreen. Both are additive to the checklist's existing fixed
+  essentials, never replacing them, and add nothing on a calm, dry, low-UV trip.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

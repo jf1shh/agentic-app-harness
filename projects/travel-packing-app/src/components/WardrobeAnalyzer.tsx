@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { WearabilityReport, Garment } from '../types';
+import { WearabilityReport, Garment, DayItinerary } from '../types';
 import { saveItemImage, getItemImage } from '../services/db';
 import PackingChecklist from './PackingChecklist';
 import { useT } from '../i18n/context';
@@ -8,9 +8,10 @@ import { useT } from '../i18n/context';
 interface Props {
   report: WearabilityReport;
   garments: Garment[];
+  itinerary: DayItinerary[];
 }
 
-export default function WardrobeAnalyzer({ report, garments }: Props) {
+export default function WardrobeAnalyzer({ report, garments, itinerary }: Props) {
   const { t } = useT();
   const getGarmentName = (id: string) => garments.find(g => g.id === id)?.name || id;
 
@@ -141,7 +142,7 @@ export default function WardrobeAnalyzer({ report, garments }: Props) {
       </div>
       </div>
 
-      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} />
+      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} itinerary={itinerary} />
     </div>
   );
 }

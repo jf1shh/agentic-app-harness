@@ -86,7 +86,10 @@
     "underwear": "{n} pares de roupa íntima",
     "socks": "{n} pares de meias",
     "toiletryKit": "1 kit de higiene",
-    "techPouch": "1 estojo de tecnologia / carregadores"
+    "techPouch": "1 estojo de tecnologia / carregadores",
+    "umbrella": "1 guarda-chuva de viagem compacto",
+    "sunglasses": "1 óculos de sol",
+    "sunscreen": "1 protetor solar (FPS 30+, tamanho de viagem)"
   },
   "language": {
     "label": "Idioma"

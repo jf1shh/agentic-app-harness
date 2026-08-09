@@ -55,6 +55,15 @@ independently-developed phase branch) still render their own hardcoded English s
 - **Print** — the Physical Packing Checklist has its own `@media print` stylesheet (`globals.css`) that hides every other panel and forces light colors regardless of the on-screen theme, plus a "🖨️ Print" button.
 - **Group sync** — packing checkmarks sync live across browser tabs on the same origin via `BroadcastChannel` (`src/services/groupSync.ts`); a "🔄 Live sync across tabs" indicator shows when the browser supports it. Deliberately tab-to-tab only, no server, matching the app's 100%-local design.
 
+### Weather-reactive packing essentials
+The forecast already returned by Open-Meteo carries daily precipitation and (now also) UV index,
+which `transformWeatherToItinerary()` (`src/services/weatherApi.ts`) attaches to each `DayItinerary`
+as `precipitationMm`/`uvIndexMax`. `needsUmbrella()` and `needsSunProtection()`
+(`src/utils/weatherEssentials.ts`) are pure functions over that itinerary: any day with measurable
+rain adds a "Compact Travel Umbrella" to the checklist; any day reaching UV index 6+ (the WHO "high"
+band) adds "Sunglasses" and "Sunscreen". Both are additive on top of the checklist's fixed
+essentials — nothing is added on a calm, dry, low-UV trip.
+
 ### Engine rules enforced by the wardrobe layer
 - **Exclusion tags** — items tagged `clash_navy` etc. are never paired.
 - **Color math** — Pink and Red, for example, are mathematically excluded from pairing.
@@ -98,6 +107,7 @@ src/
     share.ts                       # encode/decode a #share= trip link (lz-string)
     activity.ts                    # guessActivityFromDestination(), resolveActivity()
     tripDuration.ts                # inclusive start/end date -> day count
+    weatherEssentials.ts           # needsUmbrella(), needsSunProtection() over a DayItinerary[]
     wardrobeBuilder.ts             # buildManualGarment() — Digital Closet's schema-valid Garment builder
     suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
     airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)

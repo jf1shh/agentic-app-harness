@@ -86,7 +86,10 @@
     "underwear": "{n} paia di biancheria intima",
     "socks": "{n} paia di calzini",
     "toiletryKit": "1 kit da toeletta",
-    "techPouch": "1 astuccio tech / caricabatterie"
+    "techPouch": "1 astuccio tech / caricabatterie",
+    "umbrella": "1 ombrello da viaggio compatto",
+    "sunglasses": "1 paio di occhiali da sole",
+    "sunscreen": "1 crema solare (SPF 30+, formato da viaggio)"
   },
   "language": {
     "label": "Lingua"
