@@ -6,6 +6,14 @@ A **spec-driven development (SDD) harness** for building and maintaining product
 
 It hosts six real, deployed applications and holds every one of them to the same enforced standard.
 
+<p align="center">
+  <a href="https://jf1shh.github.io/agentic-app-harness/">
+    <img src=".github/screenshots/portfolio-hub.png" alt="Agentic App Harness portfolio hub — spec-driven monorepo dashboard showing 5 active apps, 371 total unit/E2E tests, 100% WCAG AA accessibility, and Capacitor Android readiness" width="100%">
+  </a>
+  <br>
+  <sub>Live at <a href="https://jf1shh.github.io/agentic-app-harness/">jf1shh.github.io/agentic-app-harness</a></sub>
+</p>
+
 ---
 
 ## 🌐 Live GitHub Pages Showcase & Applications
