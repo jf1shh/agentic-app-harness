@@ -44,7 +44,11 @@ bundle only ships English. Selecting Arabic flips `document.dir` to `rtl`. See
 `I18nProvider`/`useT()` React wiring). Translation files under `src/i18n/translations/*.json` are
 parity-tested against English (`__tests__/i18n.test.ts`) — every language must carry the same key
 set, no empty values, and the same `{placeholder}` tokens per key. The 10 non-English files are a
-first-pass, AI-generated translation and would benefit from native-speaker review.
+first-pass, AI-generated translation and would benefit from native-speaker review. Translation
+coverage is `page.tsx`, `WardrobeAnalyzer.tsx`, and `PackingChecklist.tsx` only — `DestinationAutocomplete`,
+`LocalInfoPanel`, `DailyActivityPicker`, `SuitcaseFinder`, and `WardrobeManager` (each from an
+independently-developed phase branch) still render their own hardcoded English strings; extending
+`useT()` into them is a natural follow-up.
 
 ### Engine rules enforced by the wardrobe layer
 - **Exclusion tags** — items tagged `clash_navy` etc. are never paired.
