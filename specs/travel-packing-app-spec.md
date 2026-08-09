@@ -10,7 +10,15 @@
 - [x] Complex Wardrobe Engine that enforces garment pairing rules, color matching, and exclusion tags.
 - [x] Multi-role garment handling and dynamic Material Thermals (Cashmere vs Linen).
 - [x] Wearability Report detailing Flexibility Score, MVP item, Dead Weight, and Smart Swap Suggestions.
-- [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules).
+- [x] Knapsack Physics Engine (calculates volume/weight limits against specific Airline rules) — the
+  suitcase catalog (`src/utils/suitcaseDatabase.ts`) covers 64 real models across 25 brands, and the
+  airline catalog (`src/utils/airlineBaggage.ts`) covers 77 carriers across 7 regions. A `SuitcaseFinder`
+  component lets a user look a suitcase up by brand/model text search or by pasting a barcode number
+  (`lookupByBarcode`), rather than only scrolling a flat dropdown. `src/utils/measurement.ts` ports the
+  credit-card-calibrated measurement math (pixel distance -> mm/px scale -> cm dimensions) as pure,
+  camera-free functions — a future camera-based photo-tap UI can build on it directly, but that live
+  camera/canvas flow itself is out of scope here (see the PR's "Left undone" note: it cannot be
+  meaningfully exercised or verified in this harness, which has no camera).
 - [x] Digital Closet (IndexedDB + Client-side AI Background Removal).
 
 ## 3. Architecture & Tech Stack

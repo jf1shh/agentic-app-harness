@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { AIRLINES, lookupAirline, checkBaggageCompliance } from '../src/utils/airlineBaggage';
+import { AIRLINES, lookupAirline, checkBaggageCompliance, searchAirlines, getAllAirlines, getRegions } from '../src/utils/airlineBaggage';
 
 // Backfilled coverage (.agents/AGENTS.md §5): the module already worked, so
 // there is no Red step. Every case below was proved by mutation instead — see
@@ -45,6 +45,57 @@ describe('the shipped airline dataset', () => {
       expect(airline.carryOn.w).toBeGreaterThan(0);
       expect(airline.carryOn.h).toBeGreaterThan(0);
     }
+  });
+
+  it('Given the AIRLINES table, When its size is checked, Then it covers the full ported dataset rather than a handful of carriers', () => {
+    expect(AIRLINES.length).toBeGreaterThanOrEqual(70);
+  });
+});
+
+describe('searchAirlines', () => {
+  it('Given a query matching an airline name, When searched, Then it is returned', () => {
+    const results = searchAirlines('Emirates');
+    expect(results.some((a) => a.code === 'EK')).toBe(true);
+  });
+
+  it('Given a query that is exactly an IATA code, When searched, Then that airline is included even if the code is a substring of others', () => {
+    const results = searchAirlines('FR');
+    expect(results.some((a) => a.code === 'FR')).toBe(true);
+  });
+
+  it('Given a query shorter than 2 characters, When searched, Then no results are returned', () => {
+    expect(searchAirlines('E')).toEqual([]);
+  });
+
+  it('Given a broad query, When searched, Then results are capped at 12', () => {
+    const results = searchAirlines('a');
+    expect(results.length).toBeLessThanOrEqual(12);
+  });
+});
+
+describe('getAllAirlines', () => {
+  it('Given no region filter, When airlines are listed, Then every airline in the table is returned', () => {
+    expect(getAllAirlines()).toHaveLength(AIRLINES.length);
+  });
+
+  it('Given a region filter, When airlines are listed, Then only that region is returned', () => {
+    const results = getAllAirlines('Middle East');
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((a) => a.region === 'Middle East')).toBe(true);
+  });
+
+  it('Given a region with no airlines, When airlines are listed, Then an empty array is returned', () => {
+    expect(getAllAirlines('Antarctica')).toEqual([]);
+  });
+});
+
+describe('getRegions', () => {
+  it('Given the dataset, When regions are listed, Then they are unique and sorted', () => {
+    const regions = getRegions();
+    expect(new Set(regions).size).toBe(regions.length);
+    expect(regions).toEqual([...regions].sort());
+    expect(regions).toContain('Europe');
+    expect(regions).toContain('Asia');
   });
 });
 
