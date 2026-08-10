@@ -21,6 +21,7 @@
     "fashionArchetype": "ファッションアーキタイプ",
     "packingStrategy": "パッキング戦略",
     "defaultActivity": "デフォルトのアクティビティ",
+    "hasLaundryAccess": "長期旅行ではランドリーが利用できると想定する（週1回）",
     "uploadWardrobeFile": "ワードローブファイルをアップロード (.txt または .md)",
     "loadedGarments": "✔ {file} から {count} 点の衣類を読み込みました",
     "addDestination": "+ 目的地を追加",

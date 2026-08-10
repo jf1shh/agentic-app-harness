@@ -21,6 +21,7 @@
     "fashionArchetype": "फैशन शैली",
     "packingStrategy": "पैकिंग रणनीति",
     "defaultActivity": "डिफ़ॉल्ट गतिविधि",
+    "hasLaundryAccess": "लंबी यात्राओं पर लॉन्ड्री सुविधा मान लें (साप्ताहिक)",
     "uploadWardrobeFile": "अलमारी फ़ाइल अपलोड करें (.txt या .md)",
     "loadedGarments": "✔ {file} से {count} कपड़े लोड किए गए",
     "addDestination": "+ एक और गंतव्य जोड़ें",

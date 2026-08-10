@@ -21,6 +21,7 @@
     "fashionArchetype": "النمط",
     "packingStrategy": "استراتيجية التعبئة",
     "defaultActivity": "النشاط الافتراضي",
+    "hasLaundryAccess": "افتراض توفر مغسلة في الرحلات الطويلة (أسبوعيًا)",
     "uploadWardrobeFile": "تحميل ملف خزانة الملابس (.txt أو .md)",
     "loadedGarments": "✔ تم تحميل {count} قطعة من {file}",
     "addDestination": "+ إضافة وجهة أخرى",
