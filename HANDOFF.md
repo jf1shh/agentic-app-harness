@@ -70,9 +70,11 @@ All four merged to `master`. GitHub auto-merge was enabled on this repo and land
 an unpredictable order relative to each other, so each one needed at least one
 conflict-resolution merge (`git merge origin/master --no-edit`) against its still-open siblings
 before it could land clean — one needed three rounds, as master kept advancing mid-resolution.
-Full detail and the remaining known gaps (mobile port, expanded archetypes, 3D luggage view, the
+Full detail and the remaining known gaps (expanded archetypes, 3D luggage view, the
 `SuitcaseLayout` packing-cube view split out of #166, a broader light-theme contrast audit) are in
-`projects/travel-packing-app/handoff.md`, not duplicated here.
+`projects/travel-packing-app/handoff.md`, not duplicated here. (The "mobile port" gap this section
+used to list here was stale: a Capacitor Android shell had already shipped in PR #84, before this
+pass was written — Phase 20 closed the spec and E2E-proof gaps #84 left behind; see that file.)
 
 **No known outstanding harness findings**: `node scripts/harness-status.mjs --gate` reports 0
 findings across all 6 apps as of this pass.
@@ -107,9 +109,9 @@ the repo currently has zero open issues.
 1. Triage the Dependabot backlog — don't let it re-accumulate.
 2. Verify the GitHub repo description reflects six apps and fix manually if not.
 3. If picking up `travel-packing-app` again, read its own `handoff.md` first — it lists what's
-   left after the 2026-08-10 audit-closure pass: mobile port (React Native), expanded archetypes,
-   3D luggage visualization, the `SuitcaseLayout` packing-cube view, and a light-theme contrast
-   audit for the rest of the app.
+   left after Phase 20 (native Android shell spec/E2E closure): expanded archetypes, 3D luggage
+   visualization, the `SuitcaseLayout` packing-cube view, and a light-theme contrast audit for the
+   rest of the app.
 4. Consider whether `legal-financial-rag`'s vault lock should extend to
    actually encrypting document content at rest (currently: real passphrase
    verification gates the UI, but `SAMPLE_DOCUMENTS`/chunks are held as plain

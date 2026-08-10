@@ -113,11 +113,25 @@ verification output before treating it as merged:
 All five Phase 11–15 branches were deliberately opened independently off `master` (not stacked) per
 this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
 order — each required at least one conflict-resolution merge (`git merge origin/master --no-edit`)
-against the others before it could land clean. `specs/travel-packing-app-spec.md` now carries all
-22 feature bullets checked off.
+against the others before it could land clean. `specs/travel-packing-app-spec.md` now carries every
+feature bullet checked off, including the native Android shell (Phase 20, below).
+
+**Phase 20 — Native Android shell (Capacitor), spec + E2E-proof closure**: the actual Capacitor
+wrap — `capacitor.config.ts`, the committed `android/` native container, the two-export
+`build`/`build:capacitor` split, and `.github/workflows/android-release-travel-packing-app.yml` —
+already shipped in PR #84 ("Play Store readiness: Capacitor Android shells for the remaining 4
+apps"), before this handoff.md's 2026-08-10 pass was even written; that pass's "Mobile Port (React
+Native) — not started" line was stale the day it was written, describing a rewrite that was never
+the plan rather than the shell that had already landed. This phase closes two real gaps left behind
+by #84: the feature had **no spec coverage** (`specs/travel-packing-app-spec.md` §3a is new) and
+**no E2E proof that the built output resolves at the WebView origin** — `e2e/capacitor-bundle.spec.ts`
+serves the real `.next-capacitor` export at a bare origin root (the shape `https://localhost/`
+presents inside the WebView, never the Pages subpath) and fails on any failed asset request or a
+Pages-subpath URL baked into the bundle; this is the E2E-level proof behind
+`[guardrail: capacitor-absolute-base]`, mutation-verified by temporarily forcing the Pages basePath
+into the Capacitor build and confirming the new spec goes red (see PR body). No app code changed.
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
-- **Mobile Port** (React Native) — not started.
 - **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)
   covers the "where does my volume go" question without this.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
