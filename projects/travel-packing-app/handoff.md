@@ -91,6 +91,13 @@ verification output before treating it as merged:
   succeeds, since this only changes how a plan is arranged, not what's packed, unlike the
   rule-validated Outfit Editor. This was the follow-up the Phase 14 PR split out and left explicitly
   undone; see this phase's own PR body.
+- **Phase 19 — Per-leg Local Info and activity guessing**: `LocalInfoPanel` now shows typical
+  costs/travel-advisory info for **every** destination leg on a multi-destination trip, clearly
+  labeled by leg, instead of only the primary destination; `DailyActivityPicker`'s pre-selected
+  pill guess uses each day's own leg destination (`buildDayDestinations` in
+  `src/utils/multiDestination.ts`, `resolveDayActivity` in `src/utils/activity.ts`) rather than
+  always guessing from the trip's primary destination, so a day in a later leg no longer inherits
+  an earlier leg's guess.
 
 All five Phase 11–15 branches were deliberately opened independently off `master` (not stacked) per
 this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
@@ -105,8 +112,5 @@ against the others before it could land clean. `specs/travel-packing-app-spec.md
   covers the "where does my volume go" question without this.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
   surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
-- `LocalInfoPanel` (typical costs / travel advisory) and `DailyActivityPicker`'s pre-selected pill
-  guess still scope to the *primary* destination only on a multi-destination trip — the itinerary
-  and packing math themselves are correctly per-leg, but these two secondary panels are not.
 
 Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.
