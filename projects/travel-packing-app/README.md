@@ -24,7 +24,13 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 - **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. On a multi-destination trip, each day's guess is made from that day's own leg destination (`buildDayDestinations`/`resolveDayActivity`), not always the primary destination. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.
 
 ### Wardrobe source — two paths
-- **Style archetype preset** — pick one of 12 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+- **Style archetype preset** — pick one of 15 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`, `corporate`, `old-money`, `balletcore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+  - **Expanded archetypes (Phase 16)** — `corporate` (Corporate Power, business/boardroom formal),
+    `old-money` (heritage/equestrian-adjacent), and `balletcore` (soft pastel) round out the original
+    twelve, each chosen for genuine distinctiveness from its nearest neighbour (Corporate Power vs.
+    Quiet Luxury's off-duty cashmere; Old Money vs. Ivy League Prep's collegiate stripes and Dark
+    Academia's tweed; Balletcore vs. Bohemian/Resort's earthy linen and Cottagecore's prairie
+    palette). Same data shape as the original twelve — no special-casing in the wardrobe engine.
   - **Laundry-cycle-aware packing** — an "Assume laundry access on longer trips (weekly)" checkbox
     (on by default) caps the trip length used to size the wardrobe at one laundry cycle
     (`LAUNDRY_CYCLE_DAYS = 7`, `src/utils/laundryCycle.ts`) once the trip runs longer than that,
@@ -60,6 +66,16 @@ suggestion from the edited schedule via `deriveUsageStats()` — the same functi
 calls, extracted so the two paths can't drift — and recomputes the knapsack physics so weight/volume
 stay consistent with what's actually scheduled. Scoped to swapping an existing role's garment for
 another of the same role; there's no drop target for adding a topper to a day that doesn't have one.
+
+### SuitcaseLayout (`@dnd-kit/core`)
+A decorative/organizational companion to the Outfit Editor, in the Knapsack Engine panel: every
+packed garment renders as a numbered, draggable tile, and dragging one tile onto another reorders
+them by priority. Unlike the Outfit Editor, there's no combination to validate — a drop always
+succeeds, since this view only changes how you arrange an already-computed plan, not what's packed.
+`buildSuitcaseLayout()`/`reorderSuitcaseLayout()` (`src/utils/suitcaseLayout.ts`) only order the
+same packed-garment set `getPackedGarments()` already derives — category and volume are read off
+each `Garment`, never recomputed. The order lives in component state for the current analysis run
+only; it isn't persisted across a reload or a new Analyze.
 
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.

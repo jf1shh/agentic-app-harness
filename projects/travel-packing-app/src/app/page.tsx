@@ -9,6 +9,7 @@ import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../s
 import { calculateKnapsackPhysics, getPackedGarments, PackingPhysicsReport } from '../utils/knapsackEngine';
 import { computeVolumeBreakdown } from '../utils/volumeBreakdown';
 import VolumeDonutChart from '../components/VolumeDonutChart';
+import SuitcaseLayout from '../components/SuitcaseLayout';
 import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
@@ -412,6 +413,9 @@ export default function Home() {
                     <option value="whimsigoth">Whimsigoth</option>
                     <option value="coastal">Coastal Maritime</option>
                     <option value="cottagecore">Cottagecore</option>
+                    <option value="corporate">{t('archetype.corporate')}</option>
+                    <option value="old-money">{t('archetype.oldMoney')}</option>
+                    <option value="balletcore">{t('archetype.balletcore')}</option>
                   </select>
                 </div>
                 <div>
@@ -521,6 +525,9 @@ export default function Home() {
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeByCategory')}</h3>
                 <VolumeDonutChart slices={computeVolumeBreakdown(getPackedGarments(report, activeGarments))} />
               </div>
+            </div>
+            <div style={{ marginTop: '24px' }}>
+              <SuitcaseLayout garments={getPackedGarments(report, activeGarments)} />
             </div>
           </div>
 

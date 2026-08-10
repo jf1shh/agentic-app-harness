@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Lusso Silenzioso",
     "gorpcore": "Gorpcore",
-    "scandi": "Minimalista Scandinavo"
+    "scandi": "Minimalista Scandinavo",
+    "corporate": "Eleganza Corporate",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Standard (Comodo)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "Conformità con la Compagnia Aerea",
     "compliantWith": "✔ Conforme ai limiti del bagaglio a mano di {airline}",
     "volumeByCategory": "Volume Imballato per Categoria"
+  },
+  "suitcaseLayout": {
+    "title": "Disposizione della valigia",
+    "dragHint": "Trascina una tessera per riordinare la priorità di imballaggio — questo non cambia cosa è imballato, solo come è disposto.",
+    "position": "#{n}",
+    "moved": "{name} spostato in posizione {position}"
   },
   "itinerary": {
     "title": "Itinerario in Tempo Reale ({destination})",

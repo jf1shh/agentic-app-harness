@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "الفخامة الهادئة",
     "gorpcore": "جوربكور",
-    "scandi": "الإسكندنافي البسيط"
+    "scandi": "الإسكندنافي البسيط",
+    "corporate": "الأناقة المؤسسية",
+    "oldMoney": "أولد موني",
+    "balletcore": "باليكور"
   },
   "strategy": {
     "standard": "قياسي (مريح)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "مطابقة شركة الطيران",
     "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}",
     "volumeByCategory": "الحجم المعبأ حسب الفئة"
+  },
+  "suitcaseLayout": {
+    "title": "تخطيط الحقيبة",
+    "dragHint": "اسحب أي بطاقة لإعادة ترتيب أولوية تعبئتها — هذا لا يغيّر ما تم تعبئته، بل فقط طريقة ترتيبه.",
+    "position": "#{n}",
+    "moved": "تم نقل {name} إلى الموضع {position}"
   },
   "itinerary": {
     "title": "خط سير الرحلة المباشر ({destination})",

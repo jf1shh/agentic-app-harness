@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "콰이엇 럭셔리",
     "gorpcore": "고프코어",
-    "scandi": "스칸디 미니멀리스트"
+    "scandi": "스칸디 미니멀리스트",
+    "corporate": "코퍼레이트 파워",
+    "oldMoney": "올드 머니",
+    "balletcore": "발레코어"
   },
   "strategy": {
     "standard": "표준 (편안함)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "항공사 규정 준수",
     "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다",
     "volumeByCategory": "카테고리별 포장 부피"
+  },
+  "suitcaseLayout": {
+    "title": "여행가방 배치",
+    "dragHint": "타일을 드래그하여 짐 싸기 우선순위를 재정렬하세요 — 무엇을 싸는지는 바뀌지 않고 배치 방식만 바뀝니다.",
+    "position": "#{n}",
+    "moved": "{name}을(를) {position}번 위치로 이동했습니다"
   },
   "itinerary": {
     "title": "실시간 일정 ({destination})",

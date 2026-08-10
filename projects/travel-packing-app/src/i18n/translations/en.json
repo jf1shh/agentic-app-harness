@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Quiet Luxury",
     "gorpcore": "Gorpcore",
-    "scandi": "Scandi Minimalist"
+    "scandi": "Scandi Minimalist",
+    "corporate": "Corporate Power",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Standard (Comfortable)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "Airline Compliance",
     "compliantWith": "✔ Compliant with {airline} carry-on limits",
     "volumeByCategory": "Packed Volume by Category"
+  },
+  "suitcaseLayout": {
+    "title": "Suitcase Layout",
+    "dragHint": "Drag any tile to reorder how you'll prioritize packing it — this doesn't change what's packed, just how you arrange it.",
+    "position": "#{n}",
+    "moved": "Moved {name} to position {position}"
   },
   "itinerary": {
     "title": "Live Itinerary ({destination})",

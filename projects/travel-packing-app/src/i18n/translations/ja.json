@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "クワイエットラグジュアリー",
     "gorpcore": "ゴープコア",
-    "scandi": "北欧ミニマリスト"
+    "scandi": "北欧ミニマリスト",
+    "corporate": "コーポレートパワー",
+    "oldMoney": "オールドマネー",
+    "balletcore": "バレエコア"
   },
   "strategy": {
     "standard": "標準（快適重視）",
@@ -57,6 +60,12 @@
     "airlineCompliance": "航空会社の規定への適合",
     "compliantWith": "✔ {airline} の手荷物制限に適合しています",
     "volumeByCategory": "カテゴリー別の梱包容量"
+  },
+  "suitcaseLayout": {
+    "title": "スーツケースレイアウト",
+    "dragHint": "タイルをドラッグしてパッキングの優先順位を並べ替えられます — 何を詰めるかは変わらず、並べ方だけが変わります。",
+    "position": "#{n}",
+    "moved": "{name} を位置 {position} に移動しました"
   },
   "itinerary": {
     "title": "リアルタイム旅程（{destination}）",

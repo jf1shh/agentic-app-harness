@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Quiet Luxury",
     "gorpcore": "Gorpcore",
-    "scandi": "Skandinavisch Minimalistisch"
+    "scandi": "Skandinavisch Minimalistisch",
+    "corporate": "Corporate Power",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Standard (Komfortabel)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "Konformität mit der Fluggesellschaft",
     "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}",
     "volumeByCategory": "Gepacktes Volumen nach Kategorie"
+  },
+  "suitcaseLayout": {
+    "title": "Kofferlayout",
+    "dragHint": "Ziehe eine Kachel, um die Packpriorität neu zu ordnen — das ändert nicht, was gepackt ist, nur die Anordnung.",
+    "position": "#{n}",
+    "moved": "{name} auf Position {position} verschoben"
   },
   "itinerary": {
     "title": "Live-Reiseplan ({destination})",

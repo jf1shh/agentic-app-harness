@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Lujo Discreto",
     "gorpcore": "Gorpcore",
-    "scandi": "Minimalista Escandinavo"
+    "scandi": "Minimalista Escandinavo",
+    "corporate": "Poder Corporativo",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Estándar (Cómodo)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "Cumplimiento de la Aerolínea",
     "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}",
     "volumeByCategory": "Volumen Empacado por Categoría"
+  },
+  "suitcaseLayout": {
+    "title": "Distribución de la maleta",
+    "dragHint": "Arrastra cualquier ficha para reordenar la prioridad de empaque — esto no cambia lo que está empacado, solo cómo lo organizas.",
+    "position": "#{n}",
+    "moved": "{name} movido a la posición {position}"
   },
   "itinerary": {
     "title": "Itinerario en Vivo ({destination})",

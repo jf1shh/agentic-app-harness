@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "शांत विलासिता",
     "gorpcore": "गोर्पकोर",
-    "scandi": "स्कैंडी मिनिमलिस्ट"
+    "scandi": "स्कैंडी मिनिमलिस्ट",
+    "corporate": "कॉर्पोरेट पावर",
+    "oldMoney": "ओल्ड मनी",
+    "balletcore": "बैलेकोर"
   },
   "strategy": {
     "standard": "मानक (आरामदायक)",
@@ -57,6 +60,12 @@
     "airlineCompliance": "एयरलाइन अनुपालन",
     "compliantWith": "✔ {airline} की हैंड बैगेज सीमाओं के अनुरूप",
     "volumeByCategory": "श्रेणी के अनुसार पैक किया गया आयतन"
+  },
+  "suitcaseLayout": {
+    "title": "सूटकेस लेआउट",
+    "dragHint": "किसी भी टाइल को खींचकर पैकिंग की प्राथमिकता का क्रम बदलें — इससे यह नहीं बदलता कि क्या पैक है, केवल उसकी व्यवस्था बदलती है।",
+    "position": "#{n}",
+    "moved": "{name} को स्थिति {position} पर ले जाया गया"
   },
   "itinerary": {
     "title": "लाइव यात्रा कार्यक्रम ({destination})",
