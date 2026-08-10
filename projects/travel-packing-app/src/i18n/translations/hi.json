@@ -24,6 +24,8 @@
     "hasLaundryAccess": "लंबी यात्राओं पर लॉन्ड्री सुविधा मान लें (साप्ताहिक)",
     "uploadWardrobeFile": "अलमारी फ़ाइल अपलोड करें (.txt या .md)",
     "loadedGarments": "✔ {file} से {count} कपड़े लोड किए गए",
+    "addDestination": "+ एक और गंतव्य जोड़ें",
+    "removeDestination": "गंतव्य {n} हटाएं",
     "suitcase": "सूटकेस",
     "airline": "एयरलाइन (हैंड बैगेज सीमा)",
     "analyzing": "मौसम प्राप्त कर विश्लेषण किया जा रहा है...",
@@ -59,6 +61,7 @@
   "itinerary": {
     "title": "लाइव यात्रा कार्यक्रम ({destination})",
     "dayLine": "दिन {n}: {temp} (गर्माहट लक्ष्य: {warmth}/10)",
+    "dayLineForDestination": "दिन {n} — {destination}: {temp} (गर्माहट लक्ष्य: {warmth}/10)",
     "notAvailable": "उपलब्ध नहीं"
   },
   "wearability": {

@@ -87,6 +87,20 @@
   both consumers share one definition of "what's actually packed"). The source app's cube-based
   packing-list categories (plane/main/base/liquid/dry/tech) have no equivalent in this app's data
   model, so the chart groups by the categories this app actually tracks rather than inventing them.
+- [x] Multi-destination trips — a user can add extra destinations (`+ Add Another Destination`) beyond
+  the primary one; the trip's total day count is split across every leg in order, as evenly as possible
+  with the remainder going to the earliest legs (`splitTripDays`/`buildDestinationLegs` in
+  `src/utils/multiDestination.ts`), and each leg gets its own contiguous date range, its own geocode +
+  weather fetch (`fetchLegItinerary` in `src/services/weatherApi.ts`), and its own `DayItinerary.destinationName`
+  tag. The combined itinerary numbers days continuously across the whole trip (day 1..N), never
+  restarting per leg, since the wardrobe engine's scheduling already reasons about the trip as one
+  continuous day sequence. The packing checklist's adapter essential becomes one-per-unique-plug-type
+  across every leg (`buildEssentialSpecs` now takes `(string | null)[]`), falling back to a shared
+  universal adapter for any leg whose country didn't resolve. Deliberately scoped: `LocalInfoPanel`
+  (typical costs / travel advisory) stays tied to the primary destination only — extending it to every
+  leg is a natural follow-up, not built here to keep this phase's blast radius achievable. Share Trip
+  carries `additionalDestinations` through the share-link payload so a shared multi-destination trip
+  restores completely rather than silently dropping legs.
 - [x] Drag-and-drop Outfit Editor — any garment in the Digital Closet can be dragged onto a scheduled
   day's Top/Bottom/Layer slot to manually override the auto-scheduler's choice for that one day
   (`@dnd-kit/core`). A drop is only accepted if it produces a combination `generateAllValidOutfits()` —

@@ -24,6 +24,8 @@
     "hasLaundryAccess": "長期旅行ではランドリーが利用できると想定する（週1回）",
     "uploadWardrobeFile": "ワードローブファイルをアップロード (.txt または .md)",
     "loadedGarments": "✔ {file} から {count} 点の衣類を読み込みました",
+    "addDestination": "+ 目的地を追加",
+    "removeDestination": "目的地 {n} を削除",
     "suitcase": "スーツケース",
     "airline": "航空会社（手荷物制限）",
     "analyzing": "天気を取得して分析中...",
@@ -59,6 +61,7 @@
   "itinerary": {
     "title": "リアルタイム旅程（{destination}）",
     "dayLine": "{n}日目：{temp}（暖かさ目標：{warmth}/10）",
+    "dayLineForDestination": "{n}日目 — {destination}：{temp}（暖かさ目標：{warmth}/10）",
     "notAvailable": "該当なし"
   },
   "wearability": {

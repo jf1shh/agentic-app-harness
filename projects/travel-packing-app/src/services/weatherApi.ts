@@ -118,6 +118,7 @@ export const fetchWeather = async (lat: number, lon: number, startDateStr: strin
 };
 
 import { DayItinerary } from '../types';
+import { DestinationLeg } from '../utils/multiDestination';
 
 export function calculateWarmthTarget(maxTempC: number): number {
   let warmth = 10 - ((maxTempC + 10) / 50) * 9;
@@ -152,4 +153,32 @@ export function transformWeatherToItinerary(
       maxTempC: maxTempC
     };
   });
+}
+
+export interface LegItineraryResult {
+  itinerary: DayItinerary[];
+  countryCode: string | null;
+}
+
+/**
+ * Geocodes and fetches weather for a single leg of a multi-destination trip,
+ * then tags every resulting day with that leg's destination and offsets its
+ * dayNumber so a multi-leg itinerary numbers its days once, continuously,
+ * across the whole trip rather than restarting at 1 per leg.
+ */
+export async function fetchLegItinerary(
+  leg: DestinationLeg,
+  dayNumberOffset: number,
+  defaultActivity: string,
+  dailyActivitiesForLeg?: string[]
+): Promise<LegItineraryResult> {
+  const geo = await geocodeLocation(leg.destination);
+  const countryCode = 'country_code' in geo && geo.country_code ? geo.country_code : null;
+  const weather = await fetchWeather(geo.latitude, geo.longitude, leg.startDate, leg.endDate);
+  const itinerary = transformWeatherToItinerary(weather, defaultActivity, dailyActivitiesForLeg).map((day) => ({
+    ...day,
+    dayNumber: day.dayNumber + dayNumberOffset,
+    destinationName: leg.destination,
+  }));
+  return { itinerary, countryCode };
 }

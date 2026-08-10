@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { calculateWarmthTarget, transformWeatherToItinerary, searchLocations, geocodeViaNominatim } from '../src/services/weatherApi';
+import { calculateWarmthTarget, transformWeatherToItinerary, searchLocations, geocodeViaNominatim, fetchLegItinerary } from '../src/services/weatherApi';
+import { DestinationLeg } from '../src/utils/multiDestination';
 
 describe('weatherApi logic', () => {
   it('Given a forecast temperature, When the warmth target is calculated, Then colder days demand a higher warmth rating', () => {
@@ -147,5 +148,67 @@ describe('geocodeViaNominatim', () => {
     });
     const result = await geocodeViaNominatim('Some Landmark');
     expect(result?.name).toBe('Some Landmark');
+  });
+});
+
+describe('fetchLegItinerary', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  const leg: DestinationLeg = { destination: 'Kyoto', days: 2, startDate: '2026-08-04', endDate: '2026-08-05' };
+
+  it("Given a leg with a day-number offset, When its itinerary is fetched, Then every day is tagged with the leg's destination and numbered continuously from the offset", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [{ latitude: 35.01, longitude: 135.76, name: 'Kyoto', country_code: 'JP' }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          daily: {
+            time: ['2026-08-04', '2026-08-05'],
+            temperature_2m_max: [30, 28],
+            temperature_2m_min: [22, 21],
+            precipitation_sum: [0, 0],
+          },
+        }),
+      });
+
+    const result = await fetchLegItinerary(leg, 3, 'sightseeing');
+
+    expect(result.countryCode).toBe('JP');
+    expect(result.itinerary).toHaveLength(2);
+    expect(result.itinerary.map((d) => d.dayNumber)).toEqual([4, 5]);
+    expect(result.itinerary.every((d) => d.destinationName === 'Kyoto')).toBe(true);
+  });
+
+  it('Given a geocode result with no country code, When its itinerary is fetched, Then the leg reports a null country code rather than an empty string', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [{ latitude: 21.3, longitude: -157.8, name: 'Hawaii' }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          daily: {
+            time: ['2026-08-04', '2026-08-05'],
+            temperature_2m_max: [30, 28],
+            temperature_2m_min: [22, 21],
+            precipitation_sum: [0, 0],
+          },
+        }),
+      });
+
+    const result = await fetchLegItinerary({ ...leg, destination: 'Hawaii' }, 0, 'sightseeing');
+    expect(result.countryCode).toBeNull();
   });
 });

@@ -10,10 +10,10 @@ import { getAdapterPlugType } from '../utils/plugs';
 interface Props {
   garments: Garment[];
   tripDays: number;
-  destinationCountryCode: string | null;
+  destinationCountryCodes: (string | null)[];
 }
 
-export default function PackingChecklist({ garments, tripDays, destinationCountryCode }: Props) {
+export default function PackingChecklist({ garments, tripDays, destinationCountryCodes }: Props) {
   const { t } = useT();
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -82,8 +82,8 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
   };
 
   // Build full list of items
-  const adapterPlugType = getAdapterPlugType(destinationCountryCode);
-  const essentials = buildEssentialSpecs(tripDays, adapterPlugType).map((spec) => ({
+  const adapterPlugTypes = destinationCountryCodes.map(getAdapterPlugType);
+  const essentials = buildEssentialSpecs(tripDays, adapterPlugTypes).map((spec) => ({
     id: spec.id,
     name: t(spec.key, spec.params),
     category: 'Essentials',

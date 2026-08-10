@@ -6,6 +6,8 @@ import { searchLocations, LocationSuggestion } from '../services/weatherApi';
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  id?: string;
+  label?: string;
 }
 
 const DEBOUNCE_MS = 300;
@@ -13,7 +15,11 @@ const DEBOUNCE_MS = 300;
 // Real-time destination suggestions as the user types, via Open-Meteo's
 // geocoding search (searchLocations) — never Nominatim, which forbids
 // client-side autocomplete. Debounced so it doesn't fire on every keystroke.
-export default function DestinationAutocomplete({ value, onChange }: Props) {
+// `id`/`label` default to the original single-destination shape so every
+// existing call site is unchanged; a multi-destination trip renders one
+// instance per leg and must pass a distinct id/label per instance, or every
+// extra leg's <input> would collide on the same "dest" id.
+export default function DestinationAutocomplete({ value, onChange, id = 'dest', label = 'Destination' }: Props) {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -43,9 +49,9 @@ export default function DestinationAutocomplete({ value, onChange }: Props) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <label htmlFor="dest" className="label">Destination</label>
+      <label htmlFor={id} className="label">{label}</label>
       <input
-        id="dest"
+        id={id}
         className="input-field"
         value={value}
         onChange={(e) => handleChange(e.target.value)}
@@ -56,7 +62,7 @@ export default function DestinationAutocomplete({ value, onChange }: Props) {
       {open && (
         <ul
           role="listbox"
-          aria-label="Destination suggestions"
+          aria-label={`${label} suggestions`}
           style={{
             position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: '4px',
             listStyle: 'none', padding: 0, backgroundColor: 'var(--bg, #fff)',

@@ -24,6 +24,8 @@
     "hasLaundryAccess": "장기 여행 시 세탁 시설 이용 가정 (주 1회)",
     "uploadWardrobeFile": "옷장 파일 업로드 (.txt 또는 .md)",
     "loadedGarments": "✔ {file}에서 {count}개의 의류를 불러왔습니다",
+    "addDestination": "+ 목적지 추가",
+    "removeDestination": "목적지 {n} 삭제",
     "suitcase": "여행 가방",
     "airline": "항공사 (기내 수하물 제한)",
     "analyzing": "날씨 조회 및 분석 중...",
@@ -59,6 +61,7 @@
   "itinerary": {
     "title": "실시간 일정 ({destination})",
     "dayLine": "{n}일차: {temp} (보온 목표: {warmth}/10)",
+    "dayLineForDestination": "{n}일차 — {destination}: {temp} (보온 목표: {warmth}/10)",
     "notAvailable": "해당 없음"
   },
   "wearability": {
