@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "此选择已超过行李箱容积——下方视图已按100%装满封顶显示。",
     "volume3DLoading": "正在加载三维视图……"
   },
+  "suitcaseLayout": {
+    "title": "行李箱布局",
+    "dragHint": "拖动任意方块以重新排列打包优先级——这不会改变已打包的物品，只会改变排列方式。",
+    "position": "#{n}",
+    "moved": "已将{name}移动到位置{position}"
+  },
   "itinerary": {
     "title": "实时行程（{destination}）",
     "dayLine": "第 {n} 天：{temp}（保暖目标：{warmth}/10）",

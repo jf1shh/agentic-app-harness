@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "This selection exceeds the suitcase's volume — the view below is capped at 100% full.",
     "volume3DLoading": "Loading 3D view…"
   },
+  "suitcaseLayout": {
+    "title": "Suitcase Layout",
+    "dragHint": "Drag any tile to reorder how you'll prioritize packing it — this doesn't change what's packed, just how you arrange it.",
+    "position": "#{n}",
+    "moved": "Moved {name} to position {position}"
+  },
   "itinerary": {
     "title": "Live Itinerary ({destination})",
     "dayLine": "Day {n}: {temp} (Warmth Target: {warmth}/10)",

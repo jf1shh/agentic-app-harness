@@ -114,6 +114,19 @@
   scheduled. Deliberately scoped to swapping an existing role's garment for another of the same
   role — adding a topper to a day that has none is not supported (there is no drop target for a role
   the outfit doesn't already have).
+- [x] SuitcaseLayout — a visual, drag-to-reorder packing-cube layout view showing every packed
+  garment as a draggable tile the user can reorder by priority within the suitcase, purely
+  decorative/organizational (unlike the rule-validated Outfit Editor above, a drop here always
+  succeeds — there is no combination to invalidate). Built on the same packed-garment set the
+  Knapsack Engine panel already derives (`getPackedGarments` from `src/utils/knapsackEngine.ts`)
+  and each tile's own `category`/`volumeCm3` fields; `src/utils/suitcaseLayout.ts`
+  (`buildSuitcaseLayout`/`reorderSuitcaseLayout`) only orders that existing data — it never
+  recomputes weight or volume, per the "Explain the Arithmetic Without Re-implementing It" lesson
+  in `.agents/AGENTS.md` §6. `SuitcaseLayout.tsx` renders the ordered tiles with `@dnd-kit/core`,
+  following the same `DndContext`/`useDraggable`/`useDroppable` idiom as the Outfit Editor
+  (`WardrobeAnalyzer.tsx`). The order lives in component state for the current analysis run only —
+  it is not persisted across a reload or a new Analyze — since this view is about arranging an
+  already-computed plan, not a second source of truth for it.
 - [x] Laundry-cycle-aware packing math — a "Assume laundry access on longer trips (weekly)" checkbox
   (on by default) caps the trip length actually used to size the wardrobe at one laundry cycle
   (`LAUNDRY_CYCLE_DAYS = 7` in `src/utils/laundryCycle.ts`) once the trip runs longer than that, since

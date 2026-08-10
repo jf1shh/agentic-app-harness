@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "Questa selezione supera il volume della valigia: la vista sottostante è limitata al 100% di riempimento.",
     "volume3DLoading": "Caricamento vista 3D…"
   },
+  "suitcaseLayout": {
+    "title": "Disposizione della valigia",
+    "dragHint": "Trascina una tessera per riordinare la priorità di imballaggio — questo non cambia cosa è imballato, solo come è disposto.",
+    "position": "#{n}",
+    "moved": "{name} spostato in posizione {position}"
+  },
   "itinerary": {
     "title": "Itinerario in Tempo Reale ({destination})",
     "dayLine": "Giorno {n}: {temp} (Obiettivo di Calore: {warmth}/10)",

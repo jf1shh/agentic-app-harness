@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "Esta selección supera el volumen de la maleta; la vista de abajo está limitada al 100% de llenado.",
     "volume3DLoading": "Cargando vista 3D…"
   },
+  "suitcaseLayout": {
+    "title": "Distribución de la maleta",
+    "dragHint": "Arrastra cualquier ficha para reordenar la prioridad de empaque — esto no cambia lo que está empacado, solo cómo lo organizas.",
+    "position": "#{n}",
+    "moved": "{name} movido a la posición {position}"
+  },
   "itinerary": {
     "title": "Itinerario en Vivo ({destination})",
     "dayLine": "Día {n}: {temp} (Objetivo de Abrigo: {warmth}/10)",

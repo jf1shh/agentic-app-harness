@@ -10,6 +10,7 @@ import { calculateKnapsackPhysics, getPackedGarments, PackingPhysicsReport } fro
 import { computeVolumeBreakdown } from '../utils/volumeBreakdown';
 import VolumeDonutChart from '../components/VolumeDonutChart';
 import Volume3DPanel from '../components/Volume3DPanel';
+import SuitcaseLayout from '../components/SuitcaseLayout';
 import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
@@ -538,6 +539,9 @@ export default function Home() {
                   suitcase={{ l: selectedSuitcaseModel.l, w: selectedSuitcaseModel.w, h: selectedSuitcaseModel.h }}
                 />
               </div>
+            </div>
+            <div style={{ marginTop: '24px' }}>
+              <SuitcaseLayout garments={getPackedGarments(report, activeGarments)} />
             </div>
           </div>
             );

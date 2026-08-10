@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "Cette sélection dépasse le volume de la valise — la vue ci-dessous est plafonnée à 100 % de remplissage.",
     "volume3DLoading": "Chargement de la vue 3D…"
   },
+  "suitcaseLayout": {
+    "title": "Disposition de la valise",
+    "dragHint": "Faites glisser une tuile pour réorganiser l'ordre de priorité d'emballage — cela ne change pas ce qui est emballé, seulement son agencement.",
+    "position": "#{n}",
+    "moved": "{name} déplacé à la position {position}"
+  },
   "itinerary": {
     "title": "Itinéraire en Direct ({destination})",
     "dayLine": "Jour {n} : {temp} (Indice de Chaleur : {warmth}/10)",

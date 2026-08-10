@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "この内容はスーツケースの容量を超えています。下の表示は満杯（100%）で頭打ちになっています。",
     "volume3DLoading": "3D表示を読み込み中…"
   },
+  "suitcaseLayout": {
+    "title": "スーツケースレイアウト",
+    "dragHint": "タイルをドラッグしてパッキングの優先順位を並べ替えられます — 何を詰めるかは変わらず、並べ方だけが変わります。",
+    "position": "#{n}",
+    "moved": "{name} を位置 {position} に移動しました"
+  },
   "itinerary": {
     "title": "リアルタイム旅程（{destination}）",
     "dayLine": "{n}日目：{temp}（暖かさ目標：{warmth}/10）",

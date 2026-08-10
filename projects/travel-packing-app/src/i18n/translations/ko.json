@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "이 선택 항목은 여행 가방의 부피를 초과합니다 — 아래 보기는 100% 채움으로 제한됩니다.",
     "volume3DLoading": "3D 보기를 불러오는 중…"
   },
+  "suitcaseLayout": {
+    "title": "여행가방 배치",
+    "dragHint": "타일을 드래그하여 짐 싸기 우선순위를 재정렬하세요 — 무엇을 싸는지는 바뀌지 않고 배치 방식만 바뀝니다.",
+    "position": "#{n}",
+    "moved": "{name}을(를) {position}번 위치로 이동했습니다"
+  },
   "itinerary": {
     "title": "실시간 일정 ({destination})",
     "dayLine": "{n}일차: {temp} (보온 목표: {warmth}/10)",

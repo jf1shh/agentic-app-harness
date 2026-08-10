@@ -62,6 +62,12 @@
     "volume3DOverCapacity": "Diese Auswahl überschreitet das Koffervolumen — die Ansicht unten ist auf 100% Füllstand begrenzt.",
     "volume3DLoading": "3D-Ansicht wird geladen…"
   },
+  "suitcaseLayout": {
+    "title": "Kofferlayout",
+    "dragHint": "Ziehe eine Kachel, um die Packpriorität neu zu ordnen — das ändert nicht, was gepackt ist, nur die Anordnung.",
+    "position": "#{n}",
+    "moved": "{name} auf Position {position} verschoben"
+  },
   "itinerary": {
     "title": "Live-Reiseplan ({destination})",
     "dayLine": "Tag {n}: {temp} (Wärmeziel: {warmth}/10)",
