@@ -52,7 +52,8 @@
     "volumeLine": "الحجم: {volume} لتر / {capacity} لتر",
     "percentFull": "{percent}٪ ممتلئة",
     "airlineCompliance": "مطابقة شركة الطيران",
-    "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}"
+    "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}",
+    "volumeByCategory": "الحجم المعبأ حسب الفئة"
   },
   "itinerary": {
     "title": "خط سير الرحلة المباشر ({destination})",

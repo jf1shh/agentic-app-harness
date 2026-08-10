@@ -52,7 +52,8 @@
     "volumeLine": "Volume: {volume}L / {capacity}L",
     "percentFull": "{percent}% Full",
     "airlineCompliance": "Airline Compliance",
-    "compliantWith": "✔ Compliant with {airline} carry-on limits"
+    "compliantWith": "✔ Compliant with {airline} carry-on limits",
+    "volumeByCategory": "Packed Volume by Category"
   },
   "itinerary": {
     "title": "Live Itinerary ({destination})",
