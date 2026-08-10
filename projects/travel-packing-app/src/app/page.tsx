@@ -6,7 +6,9 @@ import { Garment, DayItinerary, WearabilityReport } from '../types';
 import { analyzeWardrobe } from '../utils/wardrobeEngine';
 import { applyGarmentSwap, OutfitRole } from '../utils/outfitEditor';
 import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../services/weatherApi';
-import { calculateKnapsackPhysics, PackingPhysicsReport } from '../utils/knapsackEngine';
+import { calculateKnapsackPhysics, getPackedGarments, PackingPhysicsReport } from '../utils/knapsackEngine';
+import { computeVolumeBreakdown } from '../utils/volumeBreakdown';
+import VolumeDonutChart from '../components/VolumeDonutChart';
 import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
@@ -416,6 +418,10 @@ export default function Home() {
                 ) : (
                   <p style={{ color: 'var(--primary)' }}>{t('knapsack.compliantWith', { airline: selectedAirline })}</p>
                 )}
+              </div>
+              <div style={{ padding: '16px', border: '2px solid var(--primary)', borderRadius: '8px' }}>
+                <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeByCategory')}</h3>
+                <VolumeDonutChart slices={computeVolumeBreakdown(getPackedGarments(report, activeGarments))} />
               </div>
             </div>
           </div>

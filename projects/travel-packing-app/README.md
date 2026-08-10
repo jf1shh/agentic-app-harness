@@ -30,6 +30,11 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 2. **Knapsack physics report** (`calculateKnapsackPhysics()`)
    - Total weight and volume vs. the selected suitcase's real capacity (`MODELS` in `src/utils/suitcaseDatabase.ts` — 64 models across 25 brands). `SuitcaseFinder` lets you search by brand/model text or paste a barcode number (`lookupByBarcode`) instead of scrolling the full dropdown.
    - Airline compliance against the chosen airline's carry-on limits (`src/utils/airlineBaggage.ts` — 77 carriers across 7 regions, with `searchAirlines`/`getAllAirlines`/`getRegions` for lookup).
+   - **Packed volume by category** — a hand-rolled SVG donut chart (`VolumeDonutChart`, no charting
+     library) breaks the packed volume down by each garment's `category` field, driven by a pure
+     `computeVolumeBreakdown()` (`src/utils/volumeBreakdown.ts`) over the same packed-garment set the
+     physics numbers above come from (`getPackedGarments()`, shared by both so there's one definition
+     of "what's actually packed").
 
 ### Drag-and-drop Outfit Editor (`@dnd-kit/core`)
 Drag any item out of the Digital Closet and drop it onto a scheduled day's Top/Bottom/Layer slot to
