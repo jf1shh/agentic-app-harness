@@ -125,6 +125,15 @@
 - [x] Native Android shell (Capacitor) — the existing Next.js static export ships unmodified inside a
   Capacitor WebView container so the app installs and runs as a real Android app, with zero rebuilt
   screens. See §3a for the architecture and why this app needs two separate builds, not one.
+- [x] Per-leg Local Info and activity guessing — closes the "deliberately scoped" gap the
+  multi-destination bullet above left open. `LocalInfoPanel` now renders a labeled section per
+  destination leg (typical costs + travel advisory), each tied to that leg's own resolved country,
+  never one leg's figures under another leg's heading. `DailyActivityPicker`'s pre-selected pill
+  guess is made from each day's own leg destination (`buildDayDestinations` in
+  `src/utils/multiDestination.ts`, consumed by `resolveDayActivity` in `src/utils/activity.ts`)
+  rather than always the trip's primary destination, so a day belonging to a later leg no longer
+  inherits an earlier leg's guess (e.g. a Maui-then-Whistler trip no longer guesses "beach" for
+  every Whistler day).
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

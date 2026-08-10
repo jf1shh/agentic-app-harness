@@ -47,3 +47,24 @@ export function buildDestinationLegs(destinations: string[], totalDays: number, 
 
   return legs;
 }
+
+// Maps every day of the trip (0-indexed) to the destination it belongs to,
+// using the exact same splitTripDays split buildDestinationLegs uses for
+// date ranges -- one definition of "how days divide across legs," so a
+// day's leg here can never disagree with its leg's date range there.
+// Unlike buildDestinationLegs, this needs no start date, so callers that
+// only know day counts (e.g. DailyActivityPicker, which renders before any
+// itinerary or leg date range exists) can call it directly. A leg assigned
+// zero days (more destinations than trip days) owns no day, matching
+// buildDestinationLegs excluding it entirely rather than emitting a blank.
+export function buildDayDestinations(destinations: string[], totalDays: number): string[] {
+  const trimmed = destinations.map((d) => d.trim()).filter((d) => d.length > 0);
+  if (trimmed.length === 0) return [];
+
+  const dayCounts = splitTripDays(totalDays, trimmed.length);
+  const result: string[] = [];
+  trimmed.forEach((destination, i) => {
+    for (let n = 0; n < dayCounts[i]; n++) result.push(destination);
+  });
+  return result;
+}

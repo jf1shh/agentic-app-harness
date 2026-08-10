@@ -64,4 +64,43 @@ test.describe('Day-by-Day Activities', () => {
     await expect(page.locator('h4:has-text("Day 1")')).toBeVisible();
     await expect(page.locator('h4:has-text("Day 5")')).toBeVisible();
   });
+
+  test('Given a two-destination trip (a beach-guessing leg, then a ski-guessing leg), When the page renders before Analyze, Then each day\'s pre-selected pill is guessed from ITS OWN leg\'s destination, not the primary destination', async ({ page }) => {
+    // Given the default 5-day trip (2026-08-01 to 2026-08-05), split 3/2
+    // across two legs once a second destination is added: Maui gets days
+    // 1-3 (guesses "beach"), Whistler gets days 4-5 (guesses "ski"). This
+    // never hits the network -- buildDayDestinations/resolveDayActivity are
+    // pure text-based guesses that run before Analyze/geocoding.
+    await page.goto('/');
+    await page.locator('#dest').fill('Maui');
+    await page.getByRole('button', { name: '+ Add Another Destination' }).click();
+    await page.locator('#dest-2').fill('Whistler');
+
+    // A generous timeout on these assertions (default is 5s): this is a
+    // client-side-only guess with no network involved, but the CI/dev
+    // sandbox this suite runs in is shared with other concurrent Next.js
+    // dev-server compiles, and a Turbopack recompile pause under that load
+    // can push an ordinary React commit past 5s without anything being
+    // actually wrong -- the same guess reliably resolves in well under a
+    // second when this spec is run in isolation.
+    const RESOLVE_TIMEOUT = { timeout: 15_000 };
+
+    // Then a leg-1 day's pill guesses Beach (from "Maui")...
+    const day1 = page.getByRole('group', { name: /^Day 1/ });
+    await expect(day1).toBeVisible(RESOLVE_TIMEOUT);
+    await expect(day1.getByRole('button', { name: /Beach/ })).toHaveAttribute('aria-pressed', 'true', RESOLVE_TIMEOUT);
+    await expect(day1.getByRole('button', { name: /Ski/ })).toHaveAttribute('aria-pressed', 'false', RESOLVE_TIMEOUT);
+
+    // ...and a leg-2 day's pill guesses Ski (from "Whistler"), not Beach --
+    // the exact bug: without a per-day destination, Day 4 would inherit
+    // Maui's "beach" guess despite belonging to the Whistler leg.
+    const day4 = page.getByRole('group', { name: /^Day 4/ });
+    await expect(day4).toBeVisible(RESOLVE_TIMEOUT);
+    await expect(day4.getByRole('button', { name: /Ski/ })).toHaveAttribute('aria-pressed', 'true', RESOLVE_TIMEOUT);
+    await expect(day4.getByRole('button', { name: /Beach/ })).toHaveAttribute('aria-pressed', 'false', RESOLVE_TIMEOUT);
+
+    // The day's own destination is also visible in its label, not just
+    // encoded in which pill is selected.
+    await expect(page.getByRole('group', { name: 'Day 4 — Whistler' })).toBeVisible(RESOLVE_TIMEOUT);
+  });
 });

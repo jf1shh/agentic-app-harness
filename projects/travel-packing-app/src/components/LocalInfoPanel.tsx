@@ -4,54 +4,100 @@ import React, { useState, useEffect } from 'react';
 import { getCurrencyForCountry, fetchExchangeRates, convertCost, ConvertedCost } from '../services/currency';
 import { fetchTravelAdvisory, TravelAdvisory } from '../services/advisory';
 
-interface Props {
+export interface LocalInfoLeg {
+  destination: string;
   countryCode: string | null;
+}
+
+interface LegInfo {
+  destination: string;
+  countryCode: string;
+  costs: ConvertedCost[] | null;
+  currency: string | null;
+  advisory: TravelAdvisory | null;
+}
+
+interface Props {
+  legs: LocalInfoLeg[];
 }
 
 const DISPLAY_COSTS = ['meal', 'coffee', 'taxi', 'laundry'];
 
-// Shows a few typical-cost currency conversions and a GOV.UK travel
-// advisory summary for the geocoded destination country, once known.
-export default function LocalInfoPanel({ countryCode }: Props) {
-  const [costs, setCosts] = useState<ConvertedCost[] | null>(null);
-  const [currency, setCurrency] = useState<string | null>(null);
-  const [advisory, setAdvisory] = useState<TravelAdvisory | null>(null);
+// Shows typical-cost currency conversions and a GOV.UK travel advisory
+// summary for EVERY destination leg of the trip (not just the primary one),
+// each rendered under its own destination heading so a multi-leg trip's
+// figures are never ambiguous about which leg they describe -- see "Two
+// Bases On One Page Is a Defect Even When Both Are Right" in
+// .agents/AGENTS.md §6. A leg whose country never resolved is skipped
+// (best-effort, matching the prior single-leg behaviour): it renders
+// nothing rather than a broken section, and the whole panel disappears if
+// no leg has anything to show.
+export default function LocalInfoPanel({ legs }: Props) {
+  const [legInfos, setLegInfos] = useState<LegInfo[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Effect identity is the resolved (destination, countryCode) pairs, not
+  // the legs array reference, so an unrelated re-render (e.g. typing in an
+  // unrelated field) doesn't re-fetch every leg's data.
+  const legsKey = legs.map((l) => `${l.destination}|${l.countryCode ?? ''}`).join('||');
+
   useEffect(() => {
-    if (!countryCode) return;
+    const resolvable = legs.filter(
+      (l): l is LocalInfoLeg & { countryCode: string } => !!l.countryCode
+    );
+
+    // Nothing to fetch. Deliberately not clearing legInfos here (that would
+    // be a synchronous setState in the effect body, which
+    // react-hooks/set-state-in-effect flags): the render guard just below
+    // already returns null whenever every leg lacks a country code, so a
+    // stale legInfos value from a prior, different leg set can never
+    // actually render.
+    if (resolvable.length === 0) return;
 
     let active = true;
-    const targetCurrency = getCurrencyForCountry(countryCode);
 
     (async () => {
       setLoading(true);
-      const [rates, travelAdvisory] = await Promise.all([
-        targetCurrency && targetCurrency !== 'USD'
-          ? fetchExchangeRates('USD', [targetCurrency]).catch(() => null)
-          : Promise.resolve(null),
-        fetchTravelAdvisory(countryCode),
-      ]);
+
+      const results = await Promise.all(
+        resolvable.map(async (leg): Promise<LegInfo> => {
+          const targetCurrency = getCurrencyForCountry(leg.countryCode);
+
+          const [rates, advisory] = await Promise.all([
+            targetCurrency && targetCurrency !== 'USD'
+              ? fetchExchangeRates('USD', [targetCurrency]).catch(() => null)
+              : Promise.resolve(null),
+            fetchTravelAdvisory(leg.countryCode),
+          ]);
+
+          const hasRate = !!(targetCurrency && rates?.rates?.[targetCurrency]);
+          const costs = hasRate
+            ? DISPLAY_COSTS.map((key) => convertCost(key, rates!.rates[targetCurrency!], targetCurrency!))
+            : null;
+
+          return {
+            destination: leg.destination,
+            countryCode: leg.countryCode,
+            costs,
+            currency: hasRate ? targetCurrency : null,
+            advisory,
+          };
+        })
+      );
 
       if (!active) return;
-
-      if (targetCurrency && rates?.rates?.[targetCurrency]) {
-        setCurrency(targetCurrency);
-        setCosts(DISPLAY_COSTS.map((key) => convertCost(key, rates.rates[targetCurrency], targetCurrency)));
-      } else {
-        setCurrency(null);
-        setCosts(null);
-      }
-      setAdvisory(travelAdvisory);
+      setLegInfos(results);
       setLoading(false);
     })();
 
     return () => {
       active = false;
     };
-  }, [countryCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legsKey]);
 
-  if (!countryCode) return null;
+  if (legs.length === 0 || legs.every((l) => !l.countryCode)) return null;
+
   if (loading) {
     return (
       <div className="glass-panel" style={{ padding: '24px', marginTop: '32px' }}>
@@ -60,30 +106,45 @@ export default function LocalInfoPanel({ countryCode }: Props) {
       </div>
     );
   }
-  if (!costs && !advisory) return null;
+
+  const visibleLegInfos = legInfos.filter((l) => l.costs || l.advisory);
+  if (visibleLegInfos.length === 0) return null;
 
   return (
     <div className="glass-panel" style={{ padding: '24px', marginTop: '32px' }}>
       <h2>Local Info</h2>
 
-      {costs && currency && (
-        <div style={{ marginTop: '16px' }}>
-          <h3>Typical Costs ({currency})</h3>
-          <ul style={{ paddingLeft: '20px' }}>
-            {costs.map((c) => (
-              <li key={c.label}>{c.label}: {c.display}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {visibleLegInfos.map((leg, i) => (
+        <div
+          key={`${leg.destination}-${leg.countryCode}`}
+          style={{
+            marginTop: i === 0 ? '16px' : '20px',
+            paddingTop: i === 0 ? 0 : '20px',
+            borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+          }}
+        >
+          {visibleLegInfos.length > 1 && <h3 style={{ marginBottom: '4px' }}>{leg.destination}</h3>}
 
-      {advisory && (
-        <div style={{ marginTop: '16px' }}>
-          <h3>Travel Advisory</h3>
-          <p>{advisory.summary}</p>
-          <a href={advisory.url} target="_blank" rel="noopener noreferrer">Read full advisory on GOV.UK</a>
+          {leg.costs && leg.currency && (
+            <div style={{ marginTop: '12px' }}>
+              <h4>Typical Costs ({leg.currency})</h4>
+              <ul style={{ paddingLeft: '20px' }}>
+                {leg.costs.map((c) => (
+                  <li key={c.label}>{c.label}: {c.display}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {leg.advisory && (
+            <div style={{ marginTop: '12px' }}>
+              <h4>Travel Advisory</h4>
+              <p>{leg.advisory.summary}</p>
+              <a href={leg.advisory.url} target="_blank" rel="noopener noreferrer">Read full advisory on GOV.UK</a>
+            </div>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
