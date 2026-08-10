@@ -161,8 +161,8 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
             {report.mvpItemId ? getGarmentName(report.mvpItemId) : t('wearability.none')}
           </p>
         </div>
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '16px', border: '1px solid #ef4444' }}>
-          <h3 style={{ fontSize: '1.2rem', color: '#ef4444' }}>{t('wearability.deadWeight')}</h3>
+        <div className="glass-panel" style={{ textAlign: 'center', padding: '16px', border: '1px solid var(--danger-text)' }}>
+          <h3 style={{ fontSize: '1.2rem', color: 'var(--danger-text)' }}>{t('wearability.deadWeight')}</h3>
           <p style={{ fontSize: '1.1rem', marginTop: '8px' }}>
             {report.deadWeightIds.length > 0
               ? report.deadWeightIds.map(getGarmentName).join(', ')
@@ -173,10 +173,15 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
 
       {report.swapSuggestion && (
         <div className="glass-panel" style={{ padding: '16px', marginBottom: '32px', borderLeft: '4px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-          <h3 style={{ color: '#f59e0b', marginBottom: '8px' }}>{t('wearability.swapSuggestion')}</h3>
+          <h3 style={{ color: 'var(--warning-text)', marginBottom: '8px' }}>{t('wearability.swapSuggestion')}</h3>
           <p><strong>{t('wearability.swapOut')}</strong> {getGarmentName(report.swapSuggestion.removeId)}</p>
           <p><strong>{t('wearability.swapIn')}</strong> {report.swapSuggestion.suggestion}</p>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '8px' }}><em>{t('wearability.why', { reason: report.swapSuggestion.reason })}</em></p>
+          {/* var(--text-muted) reads 4.36:1 against this box's amber tint in
+              light theme (below AA's 4.5:1) even though it passes 4.7+:1 on
+              the plain page background elsewhere -- the tint itself moves
+              the threshold, so this needs its own themed color rather than
+              the general-purpose muted one. */}
+          <p style={{ fontSize: '0.9rem', color: 'var(--warning-text)', marginTop: '8px' }}><em>{t('wearability.why', { reason: report.swapSuggestion.reason })}</em></p>
         </div>
       )}
 

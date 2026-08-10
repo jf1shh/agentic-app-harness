@@ -117,8 +117,20 @@ PR for its own verification output before treating it as merged:
   `src/utils/multiDestination.ts`, `resolveDayActivity` in `src/utils/activity.ts`) rather than
   always guessing from the trip's primary destination, so a day in a later leg no longer inherits
   an earlier leg's guess.
+- **Phase 18 — Broader light-theme WCAG AA contrast audit**: swept every major page state (trip
+  form, error/success messages, Knapsack Engine cards, dead-weight/swap-suggestion callouts,
+  Digital Closet "+ Photo" placeholder, Packing Checklist checked-off rows) in forced light theme
+  with `@axe-core/playwright`, fixing every hardcoded color that resolved to a sub-4.5:1 contrast
+  ratio. Introduced themed `--danger-text`/`--warning-text`/`--success-text`/`--checked-item-text`
+  CSS custom properties (`globals.css`) distinct from the existing `--secondary`/`--success`
+  background-tint variables, since the same bright hue that's fine for a border or a background
+  tint often fails AA when used as the text color itself. Also fixed a real gap in the existing
+  a11y suite: axe-core cannot compute contrast through this app's `radial-gradient` body
+  background, so it silently reported the gradient-covered majority of the page as "incomplete"
+  rather than a violation — `e2e/light-theme-contrast.spec.ts` neutralizes the gradient with an
+  injected test-only stylesheet so axe can actually evaluate it. No follow-up item.
 
-All Phase 11–17, 19, and 20 branches were deliberately opened independently off `master` (not
+All Phase 11–20 branches were deliberately opened independently off `master` (not
 stacked) per this session's pattern, since GitHub auto-merge was enabled and landed them in an
 unpredictable order — each required at least one conflict-resolution merge
 (`git merge origin/master --no-edit`) against the others before it could land clean.
@@ -142,8 +154,8 @@ Pages-subpath URL baked into the bundle; this is the E2E-level proof behind
 `[guardrail: capacitor-absolute-base]`, mutation-verified by temporarily forcing the Pages basePath
 into the Capacitor build and confirming the new spec goes red (see PR body). No app code changed.
 
-**Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
-- A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
-  surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
+**Known follow-ups explicitly left undone (see each PR body for the full reasoning):** none — the
+prior list (SuitcaseLayout, Mobile Port, Expanded Archetypes, 3D Luggage, per-leg LocalInfo/activity
+guessing, and the light-theme contrast audit) is now fully closed across Phases 15–20 above.
 
 Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.

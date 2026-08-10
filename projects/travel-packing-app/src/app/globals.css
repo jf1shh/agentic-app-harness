@@ -11,6 +11,24 @@
   --text-muted: #64748b;
   --border: #e2e8f0;
   --success: #10b981;
+  /* Status-text colors, distinct from --secondary/--success (which tint
+     backgrounds/borders and are already tuned for that use). These are for
+     TEXT specifically: light-theme values are deliberately darker than the
+     bright status hues design uses elsewhere, because that same amber/red/
+     green sitting directly on this app's light glass-panel surface (or on
+     its own ~10% tint of itself) falls well under WCAG AA's 4.5:1 text
+     threshold -- see the "Accessibility (a11y) Color Contrast" lesson in
+     .agents/AGENTS.md #6. Dark-theme values keep the original bright hues,
+     which already pass AA against the dark surface they were tuned for. */
+  --danger-text: #b91c1c;
+  --warning-text: #b45309;
+  --success-text: #15803d;
+  /* A packing-checklist row's checked-off text: the row's background swaps
+     from a fixed dark placeholder box to a translucent green "done" tint
+     over the *current* theme's surface, so the text sitting on it needs to
+     follow the theme too, unlike the row's own light-gray unchecked text
+     (which sits on that fixed dark box regardless of theme and stays as-is). */
+  --checked-item-text: #475569;
 }
 
 [data-theme='dark'] {
@@ -24,6 +42,10 @@
   --text-muted: #94a3b8;
   --border: #334155;
   --success: #34d399;
+  --danger-text: #f87171;
+  --warning-text: #fbbf24;
+  --success-text: #34d399;
+  --checked-item-text: #94a3b8;
 }
 
 * {
