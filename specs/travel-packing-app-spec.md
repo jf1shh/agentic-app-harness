@@ -79,6 +79,14 @@
   (wardrobe photos, via the already-existing `clearAllLocalData` in `src/services/db.ts`) and every
   `localStorage` key (theme, language, checklist, saved trip), then reloads. Gated behind a native
   confirmation (`window.confirm`) describing the action as irreversible.
+- [x] Packed volume by category — the Knapsack Engine panel includes a hand-rolled SVG donut chart
+  (`VolumeDonutChart`, no charting library, matching this app's existing no-dependency precedent)
+  breaking down packed volume by each garment's existing `category` field, driven by a pure
+  `computeVolumeBreakdown` (`src/utils/volumeBreakdown.ts`) over the same packed-garment set the
+  physics engine already derives (`getPackedGarments`, extracted from `calculateKnapsackPhysics` so
+  both consumers share one definition of "what's actually packed"). The source app's cube-based
+  packing-list categories (plane/main/base/liquid/dry/tech) have no equivalent in this app's data
+  model, so the chart groups by the categories this app actually tracks rather than inventing them.
 - [x] Laundry-cycle-aware packing math — a "Assume laundry access on longer trips (weekly)" checkbox
   (on by default) caps the trip length actually used to size the wardrobe at one laundry cycle
   (`LAUNDRY_CYCLE_DAYS = 7` in `src/utils/laundryCycle.ts`) once the trip runs longer than that, since

@@ -53,7 +53,8 @@
     "volumeLine": "Volumen: {volume}L / {capacity}L",
     "percentFull": "{percent}% Voll",
     "airlineCompliance": "Konformität mit der Fluggesellschaft",
-    "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}"
+    "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}",
+    "volumeByCategory": "Gepacktes Volumen nach Kategorie"
   },
   "itinerary": {
     "title": "Live-Reiseplan ({destination})",

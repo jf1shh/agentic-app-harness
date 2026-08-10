@@ -13,12 +13,7 @@ export interface PackingPhysicsReport {
   weightLimitKg?: number;
 }
 
-export function calculateKnapsackPhysics(
-  report: WearabilityReport,
-  garments: Garment[],
-  suitcase: SuitcaseModel,
-  airlineCode: string
-): PackingPhysicsReport {
+export function getPackedGarments(report: WearabilityReport, garments: Garment[]): Garment[] {
   // Find all unique garments actually scheduled in the outfits
   const packedGarmentIds = new Set<string>();
   report.scheduledOutfits.forEach(({ outfit }) => {
@@ -27,7 +22,16 @@ export function calculateKnapsackPhysics(
     if (outfit.topper) packedGarmentIds.add(outfit.topper.id);
   });
 
-  const packedGarments = garments.filter(g => packedGarmentIds.has(g.id));
+  return garments.filter(g => packedGarmentIds.has(g.id));
+}
+
+export function calculateKnapsackPhysics(
+  report: WearabilityReport,
+  garments: Garment[],
+  suitcase: SuitcaseModel,
+  airlineCode: string
+): PackingPhysicsReport {
+  const packedGarments = getPackedGarments(report, garments);
 
   // Calculate physics
   let totalWeightGrams = 0;

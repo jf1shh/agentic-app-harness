@@ -53,7 +53,8 @@
     "volumeLine": "आयतन: {volume}लीटर / {capacity}लीटर",
     "percentFull": "{percent}% भरा हुआ",
     "airlineCompliance": "एयरलाइन अनुपालन",
-    "compliantWith": "✔ {airline} की हैंड बैगेज सीमाओं के अनुरूप"
+    "compliantWith": "✔ {airline} की हैंड बैगेज सीमाओं के अनुरूप",
+    "volumeByCategory": "श्रेणी के अनुसार पैक किया गया आयतन"
   },
   "itinerary": {
     "title": "लाइव यात्रा कार्यक्रम ({destination})",
