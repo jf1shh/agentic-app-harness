@@ -62,8 +62,10 @@ This script runs:
 ## 📝 Current Status & TODOs
 _Last updated 2026-08-10._ The app has successfully ported all legacy V3 rules into Next.js V4,
 **and** closed out every gap identified in the source-repo audit
-(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app), including the four large
-architectural items that were the last of that backlog — all merged to `master`:
+(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app), including the five large
+architectural items that were the last of that backlog. Phases 11–14 are merged to `master`;
+Phase 15 (SuitcaseLayout) ships in the PR that added this line — see that PR for its own
+verification output before treating it as merged:
 
 - **Phase 11 — Packed volume by category (donut chart)**: `src/utils/volumeBreakdown.ts` +
   `VolumeDonutChart.tsx`, wired into the Knapsack Engine panel. PR #163.
@@ -82,6 +84,13 @@ architectural items that were the last of that backlog — all merged to `master
   diverge from the automatic scheduler's own rules. Uses `@dnd-kit/core`. PR #166.
 - Phases 9–10 (weather-reactive packing essentials, Travel Mode preference) landed earlier in the
   same audit effort — see PRs #161/#162.
+- **Phase 15 — SuitcaseLayout**: `src/utils/suitcaseLayout.ts` (`buildSuitcaseLayout`/
+  `reorderSuitcaseLayout`) orders the same packed-garment set `getPackedGarments()` already derives
+  into a decorative, drag-to-reorder tile view (`SuitcaseLayout.tsx`, `@dnd-kit/core`), wired into
+  the Knapsack Engine panel below the volume donut chart. Deliberately unvalidated — every drop
+  succeeds, since this only changes how a plan is arranged, not what's packed, unlike the
+  rule-validated Outfit Editor. This was the follow-up the Phase 14 PR split out and left explicitly
+  undone; see this phase's own PR body.
 - **Phase 19 — Per-leg Local Info and activity guessing**: `LocalInfoPanel` now shows typical
   costs/travel-advisory info for **every** destination leg on a multi-destination trip, clearly
   labeled by leg, instead of only the primary destination; `DailyActivityPicker`'s pre-selected
@@ -90,17 +99,13 @@ architectural items that were the last of that backlog — all merged to `master
   always guessing from the trip's primary destination, so a day in a later leg no longer inherits
   an earlier leg's guess.
 
-All four Phase 11–14 branches were deliberately opened independently off `master` (not stacked) per
+All five Phase 11–15 branches were deliberately opened independently off `master` (not stacked) per
 this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
 order — each required at least one conflict-resolution merge (`git merge origin/master --no-edit`)
 against the others before it could land clean. `specs/travel-packing-app-spec.md` now carries all
-21 feature bullets checked off.
+22 feature bullets checked off.
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
-- **`SuitcaseLayout`** — a visual, drag-to-reorder packing-cube layout view — was bundled with the
-  outfit editor in the original audit but deliberately split out as a separate, undelivered
-  feature; it's a materially different (decorative/organizational) surface from the rule-validated
-  outfit editor that *was* built.
 - **Mobile Port** (React Native) — not started.
 - **Expanded Archetypes** (e.g. "Boho Chic", "Business") — not started.
 - **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)

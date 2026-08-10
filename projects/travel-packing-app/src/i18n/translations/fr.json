@@ -58,6 +58,12 @@
     "compliantWith": "✔ Conforme aux limites de bagage cabine de {airline}",
     "volumeByCategory": "Volume Emballé par Catégorie"
   },
+  "suitcaseLayout": {
+    "title": "Disposition de la valise",
+    "dragHint": "Faites glisser une tuile pour réorganiser l'ordre de priorité d'emballage — cela ne change pas ce qui est emballé, seulement son agencement.",
+    "position": "#{n}",
+    "moved": "{name} déplacé à la position {position}"
+  },
   "itinerary": {
     "title": "Itinéraire en Direct ({destination})",
     "dayLine": "Jour {n} : {temp} (Indice de Chaleur : {warmth}/10)",

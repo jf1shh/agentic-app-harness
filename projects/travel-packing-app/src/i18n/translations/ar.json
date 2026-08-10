@@ -58,6 +58,12 @@
     "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}",
     "volumeByCategory": "الحجم المعبأ حسب الفئة"
   },
+  "suitcaseLayout": {
+    "title": "تخطيط الحقيبة",
+    "dragHint": "اسحب أي بطاقة لإعادة ترتيب أولوية تعبئتها — هذا لا يغيّر ما تم تعبئته، بل فقط طريقة ترتيبه.",
+    "position": "#{n}",
+    "moved": "تم نقل {name} إلى الموضع {position}"
+  },
   "itinerary": {
     "title": "خط سير الرحلة المباشر ({destination})",
     "dayLine": "اليوم {n}: {temp} (هدف الدفء: {warmth}/10)",
