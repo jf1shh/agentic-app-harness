@@ -38,12 +38,27 @@ export default defineConfig({
     // than via `npm run build`, whose clean step would delete playwright-report/
     // and test-results/ out from under the run.
     //
-    // --prefix serves the build on 5184 under the exact Pages subpath, so the
+    // --prefix serves the build on 5183 under the exact Pages subpath, so the
     // test exercises the deploy path rather than the root the dev server uses.
     {
       command: 'npx next build && node ../../scripts/serve-dist.mjs --dist .next-prod --port 5183 --prefix /agentic-app-harness/travel-packing-app',
       url: 'http://localhost:5183/__ready',
       env: { NEXT_BUILD_DIR: '.next-prod' },
+      reuseExistingServer: false,
+      timeout: 240 * 1000,
+    },
+    // Capacitor-target bundle — used by capacitor-bundle.spec.ts, the E2E-level
+    // proof that [guardrail: capacitor-absolute-base] actually holds for this
+    // app's built output, not just for the shape of next.config.ts. Served with
+    // no --prefix, so it is mounted only at a bare origin root — the same shape
+    // https://localhost/ presents inside the Android WebView, never the GitHub
+    // Pages subpath. CAPACITOR_BUILD=1 selects the empty basePath (see
+    // next.config.ts); NEXT_BUILD_DIR keeps this export out of both .next and
+    // .next-prod so the three webServer entries can never race on one directory.
+    {
+      command: 'npx next build && node ../../scripts/serve-dist.mjs --dist .next-capacitor --port 5185',
+      url: 'http://localhost:5185/__ready',
+      env: { NEXT_BUILD_DIR: '.next-capacitor', CAPACITOR_BUILD: '1' },
       reuseExistingServer: false,
       timeout: 240 * 1000,
     },
