@@ -58,6 +58,12 @@
     "compliantWith": "✔ Conforme ai limiti del bagaglio a mano di {airline}",
     "volumeByCategory": "Volume Imballato per Categoria"
   },
+  "suitcaseLayout": {
+    "title": "Disposizione della valigia",
+    "dragHint": "Trascina una tessera per riordinare la priorità di imballaggio — questo non cambia cosa è imballato, solo come è disposto.",
+    "position": "#{n}",
+    "moved": "{name} spostato in posizione {position}"
+  },
   "itinerary": {
     "title": "Itinerario in Tempo Reale ({destination})",
     "dayLine": "Giorno {n}: {temp} (Obiettivo di Calore: {warmth}/10)",
