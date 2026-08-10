@@ -67,6 +67,16 @@ calls, extracted so the two paths can't drift — and recomputes the knapsack ph
 stay consistent with what's actually scheduled. Scoped to swapping an existing role's garment for
 another of the same role; there's no drop target for adding a topper to a day that doesn't have one.
 
+### SuitcaseLayout (`@dnd-kit/core`)
+A decorative/organizational companion to the Outfit Editor, in the Knapsack Engine panel: every
+packed garment renders as a numbered, draggable tile, and dragging one tile onto another reorders
+them by priority. Unlike the Outfit Editor, there's no combination to validate — a drop always
+succeeds, since this view only changes how you arrange an already-computed plan, not what's packed.
+`buildSuitcaseLayout()`/`reorderSuitcaseLayout()` (`src/utils/suitcaseLayout.ts`) only order the
+same packed-garment set `getPackedGarments()` already derives — category and volume are read off
+each `Garment`, never recomputed. The order lives in component state for the current analysis run
+only; it isn't persisted across a reload or a new Analyze.
+
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
 

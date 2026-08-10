@@ -61,6 +61,12 @@
     "compliantWith": "✔ Em conformidade com os limites de bagagem de mão da {airline}",
     "volumeByCategory": "Volume Empacotado por Categoria"
   },
+  "suitcaseLayout": {
+    "title": "Disposição da mala",
+    "dragHint": "Arraste qualquer bloco para reordenar a prioridade de arrumação — isso não muda o que está arrumado, apenas a forma como é organizado.",
+    "position": "#{n}",
+    "moved": "{name} movido para a posição {position}"
+  },
   "itinerary": {
     "title": "Itinerário ao Vivo ({destination})",
     "dayLine": "Dia {n}: {temp} (Meta de Aquecimento: {warmth}/10)",
