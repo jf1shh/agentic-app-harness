@@ -1,6 +1,6 @@
 # Agentic App Harness — AI Agent Handoff Document
 
-_Last updated 2026-08-07. This file describes the state of the repo **right now** —
+_Last updated 2026-08-10. This file describes the state of the repo **right now** —
 it is rewritten, not appended to, each time it's updated. Session-by-session
 history belongs in git log and PR descriptions, not here._
 
@@ -51,120 +51,48 @@ contract.
 
 ## 3. Current State / Open Work
 
-**This pass (2026-08-07): full security / functionality / recruiter-facing audit.**
-Ran `npm install` at the repo root (dependencies weren't installed in this fresh
-container), then audited security, robustness, and how the repo reads to an
-outside reviewer (recruiter/hiring-manager lens). Findings and fixes:
+**This pass (2026-08-10): closed out the last of the `travel-packing-app` gap-audit
+backlog** — the four remaining "big architectural item" phases from an earlier audit against the
+source repo (github.com/jf1shh/Travel-Packing-Optimizer). Each phase was built as an independent
+branch/PR, TDD red→green with a stated mutation-proof, full `node scripts/test-app.mjs
+travel-packing-app` green before every push:
 
-- **[Security, real bug] LexiVault's vault-lock passphrase was decorative.**
-  `VaultLockModal` derived a PBKDF2 key from whatever was typed and always
-  accepted it — there was no stored verifier, so any string unlocked the vault.
-  Fixed with `src/lib/security/vaultAuth.ts` (`registerVaultPassphrase` /
-  `verifyVaultPassphrase`): the first unlock of a session registers a salt +
-  verifier; every unlock after that must reproduce the same passphrase or it's
-  rejected. Unit-tested (4 cases, TDD red→green) and mutation-proven (dropping
-  the comparison makes the "wrong passphrase" test fail, confirmed then
-  reverted). New E2E case in `e2e/rag-flow.spec.ts` proves a wrong passphrase is
-  rejected and the right one still works.
-- **[Security] Meta-delivered CSP `frame-ancestors`/`X-Frame-Options` are
-  silently ignored by browsers**, and GitHub Pages can't send custom HTTP
-  headers, so LexiVault's clickjacking defense didn't actually do anything.
-  Added real JS frame-busting in `src/main.tsx` as the working defense.
-- **[Security] `zero-telemetry` was imprecise** — LexiVault loads Google Fonts
-  over the network, which is a real (if content-free) outbound request.
-  Reworded to `zero-exfiltration` (the CSP's own `connect-src` scoping is what's
-  actually enforced) in `README.md` and `index.html`, with the fonts caveat
-  spelled out.
-- **[Robustness] Real port collision**: `portfolio-hub` and `legal-financial-rag`
-  both pinned dev/Playwright to port 3009 — exactly the trap
-  `.agents/AGENTS.md` §6 documents. Moved `legal-financial-rag` to 3010
-  (`playwright.config.ts`, `package.json`'s `dev` script). Root `README.md` and
-  `CONTRIBUTING.md` also had stale port numbers for `mood-diner` (said 5173,
-  actually 5178) and `smart-recipe-app` (said 3001, actually 3005) — corrected
-  to match the real `playwright.config.ts` baseURLs everywhere.
-- **[CI hygiene]** `ci.yml`'s test job had no explicit `permissions:` block
-  (every other workflow scopes one down) — added `permissions: contents: read`.
-  `.gitignore` listed `.env`/`.env.local` explicitly instead of the `.env*`
-  wildcard two of the six apps already use locally — widened to match.
-- **[Recruiter-facing]** All 5 mobile apps' `public/privacy.html` had shipped
-  with literal `[DEVELOPER NAME]` / `[CONTACT EMAIL]` placeholders — live on
-  the deployed Pages URL. Filled in and removed the stale "before publishing"
-  TODO callout; the READMEs that flagged this in bold were updated to match.
-  `CONTRIBUTING.md` was missing `legal-financial-rag` and `elder-care-planner`
-  from its app list (only 4 of 6), and pointed contributors at the PowerShell
-  gate exclusively — added the missing apps and the cross-platform
-  `node scripts/test-app.mjs` command that's actually authoritative.
-  `portfolio-hub/README.md`'s project layout was stale (missing
-  `CaseStudySection.tsx`, `caseStudiesData.ts`, `loopStats.generated.ts`,
-  `schemas.test.ts`) — updated, and the Case Studies / Loop Dashboard features
-  were undersold in the feature list — added.
-  Added `author`/`license`/`repository` fields to every `package.json` (root +
-  all 6 apps) — previously present nowhere.
-- **[Robustness, real bug already on master] `portfolio-hub` had a split
-  `@typescript-eslint` peer set** — `eslint-plugin` at `^7.1.0`,
-  `parser` at `^8.65.0` — from Dependabot PR #59 landing alone (its paired
-  PR #20 for `eslint-plugin` never merged; this repo's own §6 lesson names
-  this exact pair as a known risk). It happened not to crash lint in this
-  session's *first* `npm install` (lucky — v7 plugin tolerates a v8 parser's
-  output closely enough), but bumping the plugin to match (the "obvious" fix)
-  **does** crash: `@typescript-eslint/utils`'s `RuleCreator` built for v8
-  doesn't match what ESLint 8.57's rule loader expects, the same
-  dual-package-instance failure the Workspace Hoisting lesson documents.
-  Verified by reproducing the crash, then reverted `parser` back to `^7.1.0`
-  to match — a real pair, not a partial one. Confirmed with a full
-  `node scripts/test-app.mjs portfolio-hub` (lint/tsc/vitest/Playwright/a11y
-  all green). This means PR #59 should be considered **reverted**, not
-  completed — a real ESLint 9 migration for this app is separate, larger
-  work, not something to do as a side effect of an audit.
-- **`npm audit`**: attempted `npm audit fix` for the one advisory it claims is
-  non-breaking (`undici`, nested three levels under `promptfoo`→`ai`→
-  `@ai-sdk/provider-utils`). It's a no-op in practice — npm reports "fix
-  available via `npm audit fix`" but the vulnerability count and `npm ls
-  undici` don't change after running it, because the fix would require
-  re-resolving a deeply nested transitive dependency the non-force resolver
-  won't touch. Not chasing this further with `--force`: `promptfoo` is a
-  devDependency-only eval CLI (`legal-financial-rag`'s `npm run eval`), never
-  bundled into any shipped app, so the exposure is low, and forcing it would
-  downgrade `promptfoo` to 0.120.14 per npm's own output — a breaking change
-  for a tool nothing else depends on. Left as-is alongside `adm-zip`/`sharp`
-  (transitive through `@huggingface/transformers`, high severity, no fix
-  available upstream) and `uuid` (moderate, via `@capacitor/cli`→`xcode`,
-  fix only via a `@capacitor/cli` major bump) — all four are the same
-  "don't force a major without checking the whole peer set" lesson in
-  `.agents/AGENTS.md` §6; worth a dedicated look, not a drive-by bump.
-- **Full `node scripts/test-app.mjs`** was run for `legal-financial-rag` (the
-  vault-lock fix) and `portfolio-hub` (the peer-set fix) — both green, see PR
-  body for pasted output. The other four apps' `lint`/`tsc` were spot-checked
-  clean; no code paths changed in them beyond README/config/package.json text.
+- **#163** — packed-volume-by-category donut chart (Knapsack Engine panel).
+- **#164** — multi-destination trips (day-splitting across legs, per-leg weather/geocoding,
+  continuous day numbering, per-leg checklist adapters, Share Trip carrying every leg).
+- **#165** — laundry-cycle-aware packing math (wardrobe sizing plateaus at one weekly cycle once a
+  trip outlasts it, opt-out checkbox).
+- **#166** — drag-and-drop outfit editor (`@dnd-kit/core`), validated against the wardrobe engine's
+  own existing outfit-legality rules so a manual override can never diverge from the automatic
+  scheduler.
 
-**Not fixed this pass — flagged for a human, not auto-actioned:**
-- **Two stale `claude/*` branches look abandoned and are safe to delete** —
-  verified by diff, not just by staleness: `claude/monorepo-agentic-harness-review-3jkqxe`
-  (1 commit, "Harness efficiency, security and de-duplication pass") has both
-  its security fixes already merged into `master` via PR #94 (confirmed by
-  reading `test-app.mjs`'s allow-list and `serve-dist.mjs`'s containment check
-  directly). `claude/github-actions-monorepo-sg51qd` (81 commits, "Add Claude
-  Code GitHub Actions workflows") is superseded by PR #95, which shipped the
-  same two workflow files (`claude.yml`, `claude-code-review.yml`) already on
-  `master`. Neither was deleted in this pass — branch deletion wasn't
-  something this session had authorization to do unilaterally; a human should
-  delete them (or say why not) since an unreviewed 33/81-commit branch sitting
-  indefinitely is a bad look on a repo people are evaluating.
-- **`feat/11.11-starting-guide`** (1 commit, "§11.11 starting guide") conflicts
-  with a *different* approved §11.11 already in `specs/elder-care-planner-spec.md`
-  ("Live headline sentence on the break-even panel") — looks like an earlier,
-  un-adopted direction for that section number. Needs a human call on whether
-  anything in it is still wanted; not merged or deleted here.
-- **GitHub repo description** (Settings → General) still likely says "four live
-  web & mobile apps" (per the prior handoff) — there are six now. Still not
-  fixable via any tool available to this session (no repo-settings/topics API
-  exposed); do it manually.
-- **Open issues #69 and #70** — unchanged, still real, still unresolved. Not
-  touched this pass; out of scope for a security/recruiter-facing audit.
-- **Dependabot backlog** — not re-triaged this pass (last triaged 2026-08-04,
-  see prior git history / PR #91 for the mood-diner incident). Re-check before
-  it re-accumulates; the "peer set" lesson in `.agents/AGENTS.md` §6 is exactly
-  about what happens when it doesn't get periodic attention.
+All four merged to `master`. GitHub auto-merge was enabled on this repo and landed the four PRs in
+an unpredictable order relative to each other, so each one needed at least one
+conflict-resolution merge (`git merge origin/master --no-edit`) against its still-open siblings
+before it could land clean — one needed three rounds, as master kept advancing mid-resolution.
+Full detail and the remaining known gaps (mobile port, expanded archetypes, 3D luggage view, the
+`SuitcaseLayout` packing-cube view split out of #166, a broader light-theme contrast audit) are in
+`projects/travel-packing-app/handoff.md`, not duplicated here.
+
+**No known outstanding harness findings**: `node scripts/harness-status.mjs --gate` reports 0
+findings across all 6 apps as of this pass.
+
+**Resolved since the 2026-08-07 pass** (not touched by this session — already done by the time
+this pass started): the two previously-flagged stale `claude/*` branches and
+`feat/11.11-starting-guide` no longer exist on `origin`; issues #69 and #70 are both closed, and
+the repo currently has zero open issues.
+
+**Still outstanding, not touched this pass:**
+- **GitHub repo description** (Settings → General) — unverified whether it still undersells the
+  app count; no repo-settings API is exposed to this session, so this needs a human check.
+- **Dependabot backlog** — a large number of open `dependabot/*` PRs (dependency bumps across all
+  6 apps' peer sets) sat untriaged through this pass; don't let it grow further unattended. Per
+  `.agents/AGENTS.md` §6, treat any linter/compiler/icon-set major bump as an API change to
+  verify, and never let a split peer pair (e.g. `eslint`/`@typescript-eslint/*`,
+  `react`/`react-dom`) land only half-bumped.
+- **`legal-financial-rag`'s vault lock** (see the 2026-08-07 pass) gates the UI with real
+  passphrase verification but doesn't encrypt document content at rest in React state — a larger
+  redesign that needs a spec update first, not a drive-by fix.
 
 ## 4. How to Verify
 - Whole-repo sense + gates: `node scripts/harness-status.mjs --gate`, then
@@ -176,18 +104,18 @@ outside reviewer (recruiter/hiring-manager lens). Findings and fixes:
 - Enum/union widening blast radius: `node scripts/check-enum-blast-radius.mjs`.
 
 ## 5. Next Steps for the Next Agent
-1. Get a human to delete (or explicitly keep) the two confirmed-superseded
-   branches and decide on `feat/11.11-starting-guide`, per §3 above.
-2. Update the GitHub repo description manually (Settings → General) to reflect
-   six apps, not four.
-3. Triage the Dependabot backlog — don't let it re-accumulate.
-4. Close out issues #69 and #70, or at minimum comment with current status.
-5. Consider whether `legal-financial-rag`'s vault lock should extend to
+1. Triage the Dependabot backlog — don't let it re-accumulate.
+2. Verify the GitHub repo description reflects six apps and fix manually if not.
+3. If picking up `travel-packing-app` again, read its own `handoff.md` first — it lists what's
+   left after the 2026-08-10 audit-closure pass: mobile port (React Native), expanded archetypes,
+   3D luggage visualization, the `SuitcaseLayout` packing-cube view, and a light-theme contrast
+   audit for the rest of the app.
+4. Consider whether `legal-financial-rag`'s vault lock should extend to
    actually encrypting document content at rest (currently: real passphrase
    verification gates the UI, but `SAMPLE_DOCUMENTS`/chunks are held as plain
    strings in React state, matching the app's "session-only, nothing persists"
-   design — see its README). That's a larger redesign than this pass's scope
-   (fixing the passphrase check to be real, not fake) and would need a spec
-   update first per `.agents/AGENTS.md` §1's "no vibe coding" rule.
-6. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
+   design — see its README). That's a larger redesign than fixing the
+   passphrase check was, and would need a spec update first per
+   `.agents/AGENTS.md` §1's "no vibe coding" rule.
+5. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
    guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.

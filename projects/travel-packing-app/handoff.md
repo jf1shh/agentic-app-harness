@@ -60,11 +60,48 @@ This script runs:
 5. `playwright` (E2E & Axe-core A11y scans in `e2e/`)
 
 ## 📝 Current Status & TODOs
-The app has successfully ported all legacy V3 rules into Next.js V4. The codebase is clean, tests are green.
-**Future Roadmap (Where you should pick up):**
-- **Mobile Port**: Migrate core logic to React Native.
-- **Multi-City Itineraries**: Expand the weather fetcher to handle variable climates.
-- **Expanded Archetypes**: Add more default packing palettes (e.g., "Boho Chic", "Business").
-- **3D Luggage**: Implement Three.js to visually map volume usage inside the suitcase.
+_Last updated 2026-08-10._ The app has successfully ported all legacy V3 rules into Next.js V4,
+**and** closed out every gap identified in the source-repo audit
+(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app), including the four large
+architectural items that were the last of that backlog — all merged to `master`:
 
-Good luck! Read the `specs/travel-packing-app-spec.md` for formal requirements.
+- **Phase 11 — Packed volume by category (donut chart)**: `src/utils/volumeBreakdown.ts` +
+  `VolumeDonutChart.tsx`, wired into the Knapsack Engine panel. PR #163.
+- **Phase 12 — Multi-destination trips**: `src/utils/multiDestination.ts` splits trip days across
+  legs and builds contiguous date ranges; `weatherApi.ts`'s `fetchLegItinerary` geocodes/fetches
+  weather per leg with continuous day numbering; checklist adapters and Share Trip both handle
+  multiple legs. PR #164.
+- **Phase 13 — Laundry-cycle-aware packing math**: `src/utils/laundryCycle.ts`
+  (`effectiveDurationForPacking`) caps how many tops/bottoms `generateWardrobeFromArchetype` packs
+  once a trip outlasts one weekly laundry cycle, gated by a per-trip "assume laundry access"
+  checkbox (default on). PR #165.
+- **Phase 14 — Drag-and-drop outfit editor**: `src/utils/outfitEditor.ts`
+  (`findValidSwap`/`applyGarmentSwap`) lets a user drag a Digital Closet garment onto a scheduled
+  day's Top/Bottom/Layer slot; a drop only succeeds if the wardrobe engine's own
+  `generateAllValidOutfits()` already recognizes the resulting combo, so manual overrides can never
+  diverge from the automatic scheduler's own rules. Uses `@dnd-kit/core`. PR #166.
+- Phases 9–10 (weather-reactive packing essentials, Travel Mode preference) landed earlier in the
+  same audit effort — see PRs #161/#162.
+
+All four Phase 11–14 branches were deliberately opened independently off `master` (not stacked) per
+this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
+order — each required at least one conflict-resolution merge (`git merge origin/master --no-edit`)
+against the others before it could land clean. `specs/travel-packing-app-spec.md` now carries all
+21 feature bullets checked off.
+
+**Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
+- **`SuitcaseLayout`** — a visual, drag-to-reorder packing-cube layout view — was bundled with the
+  outfit editor in the original audit but deliberately split out as a separate, undelivered
+  feature; it's a materially different (decorative/organizational) surface from the rule-validated
+  outfit editor that *was* built.
+- **Mobile Port** (React Native) — not started.
+- **Expanded Archetypes** (e.g. "Boho Chic", "Business") — not started.
+- **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)
+  covers the "where does my volume go" question without this.
+- A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
+  surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
+- `LocalInfoPanel` (typical costs / travel advisory) and `DailyActivityPicker`'s pre-selected pill
+  guess still scope to the *primary* destination only on a multi-destination trip — the itinerary
+  and packing math themselves are correctly per-leg, but these two secondary panels are not.
+
+Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.
