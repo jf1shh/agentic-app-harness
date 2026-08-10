@@ -6,11 +6,13 @@ import { test, expect, Page, Locator } from '@playwright/test';
 // not trigger it -- a manual mouse down/move/up sequence is required.
 async function dragOnto(page: Page, source: Locator, target: Locator) {
   // boundingBox() reports the element's position relative to the current
-  // scroll offset. The source (Digital Closet tray) and target (an outfit
-  // day card) are far apart on a long page, so scrolling one into view
-  // after measuring the other invalidates the first measurement -- the test
-  // sets a tall viewport (see beforeEach) so both are on-screen at once and
-  // neither needs scrolling mid-drag.
+  // scroll offset, and dnd-kit's DndContext auto-scrolls the window during a
+  // drag whenever the page is taller than the viewport (real, desirable
+  // behavior for a user dragging on a small screen) -- which invalidates a
+  // coordinate measured before the drag started. The test's viewport (see
+  // beforeEach) is set taller than the whole page's scrollHeight so nothing
+  // is scrollable and auto-scroll never engages, keeping page coordinates
+  // stable for the whole mouse sequence below.
   const sourceBox = await source.boundingBox();
   const targetBox = await target.boundingBox();
   if (!sourceBox || !targetBox) throw new Error('Could not measure drag source/target');
@@ -72,7 +74,7 @@ test.describe('Outfit Editor (drag-and-drop)', () => {
     // Tall enough that the Digital Closet tray (drag source) and the outfit
     // schedule's day cards (drop targets) are both on-screen at once, so a
     // single mouse-move path between them never needs a mid-drag scroll.
-    await page.setViewportSize({ width: 1280, height: 3200 });
+    await page.setViewportSize({ width: 1280, height: 5000 });
   });
 
   test('Given a hand-built wardrobe with two valid bottoms, When the unused bottom is dragged onto Day 1, Then it swaps in and the knapsack physics reflect the new schedule', async ({ page }) => {
