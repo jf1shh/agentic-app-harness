@@ -60,10 +60,25 @@
 - [x] Internationalization: 11 languages (English, Arabic, German, Spanish, French, Hindi, Italian,
       Japanese, Korean, Portuguese, Chinese) with automatic browser-language detection, a persisted
       user override, and right-to-left layout for Arabic.
-- [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
+- [x] 15 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
-  Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
-  palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
+  Chic, Whimsigoth, Coastal Maritime, Cottagecore, Corporate Power, Old Money, Balletcore — each a
+  `tops`/`bottoms`/`outerwear`/`colors` palette in `src/utils/generator.ts`'s `PALETTES`, consumed
+  the same way regardless of key. Phase 16 added the last three, chosen to be genuinely distinct
+  from every existing archetype rather than a restyled duplicate: Corporate Power is
+  business/boardroom formal (structured shirting, suit trousers, wool overcoats — distinct from
+  Quiet Luxury's softer off-duty cashmere); Old Money is heritage/equestrian-adjacent (hunter
+  green quilting, camel wool, cashmere, houndstooth — distinct from Ivy League Prep's collegiate
+  stripes-and-chinos and from Dark Academia's tweed-and-plaid); Balletcore is soft pastel
+  (blush/lilac/ivory satin, silk and tulle — distinct from Bohemian/Resort's earthy linen palette
+  and Cottagecore's cream/olive prairie palette). Each new archetype carries the same data shape as
+  the original twelve (no `exclusionTags` on any archetype-generated garment, matching existing
+  behaviour), colours drawn only from `COLOR_MATCHES`' known key set so colour-clash and hot-weather
+  exclusion behave identically without special-casing, and at least one `time: 'evening'` top or
+  bottom so a formal/night-out day is always schedulable. The dropdown in `src/app/page.tsx` lists
+  archetypes as individual `<option>`s (not auto-enumerated from `PALETTES`, matching the existing
+  nine non-i18n'd archetypes' convention) — the three new options are i18n'd via
+  `archetype.corporate`/`archetype.oldMoney`/`archetype.balletcore` across all 11 languages.
 - [x] Destination-aware travel adapter — the packing checklist's essentials always include one travel
   adapter; `getAdapterPlugType` (`src/utils/plugs.ts`) resolves the destination's IEC wall-plug type
   from its resolved country code (e.g. Germany → "Type C/F"), and the checklist names the specific
@@ -178,6 +193,9 @@
     view supplements the 2D donut chart rather than replacing it; both read from one
     `computeVolumeBreakdown()` call so they can never disagree with each other about a category's
     share.
+- [x] Native Android shell (Capacitor) — the existing Next.js static export ships unmodified inside a
+  Capacitor WebView container so the app installs and runs as a real Android app, with zero rebuilt
+  screens. See §3a for the architecture and why this app needs two separate builds, not one.
 - [x] Per-leg Local Info and activity guessing — closes the "deliberately scoped" gap the
   multi-destination bullet above left open. `LocalInfoPanel` now renders a labeled section per
   destination leg (typical costs + travel advisory), each tied to that leg's own resolved country,
@@ -193,7 +211,62 @@
 - **Styling:** Vanilla CSS (Glassmorphism, High Contrast)
 - **Backend/API:** Next.js API Routes (Logic Engine operates on client for MVP)
 - **Database:** LocalStorage
-- **Deployment:** Vercel
+- **Deployment:** GitHub Pages (static export) + Capacitor Android (native shell, §3a).
+
+## 3a. Mobile Packaging (Capacitor Android Shell)
+
+The app wraps the existing Next.js static export in a native Capacitor container rather than being
+rebuilt as React Native — every screen, engine, and test in this spec is reused unmodified; the
+native shell adds only packaging, not new UI. This mirrors `mood-diner`'s existing Capacitor
+precedent (see `.agents/AGENTS.md` §6, "Capacitor Absolute Base Path"), with one structural
+difference this app's stack forces.
+
+**Why one bundle can't serve both origins.** `mood-diner` is a Vite app, and Vite's `base` accepts a
+relative value (`'./'`), so one build resolves correctly whether it's served from the GitHub Pages
+subpath or from `https://localhost/` inside the Android WebView. Next.js's `basePath` cannot be
+relative — it is always resolved against the document root — so this app ships **two separate static
+exports** instead of one universal bundle:
+
+| Build | Command | Output dir | `basePath` |
+|---|---|---|---|
+| GitHub Pages | `npm run build` | `.next` | the Pages subpath (`deploy.config.ts`) |
+| Capacitor (Android) | `npm run build:capacitor` | `.next-capacitor` | empty (root) |
+
+`CAPACITOR_BUILD=1` (set by `build:capacitor`) is the switch `next.config.ts` reads to pick the empty
+`basePath` — see the guardrail comment on that line. `capacitor.config.ts`'s `webDir` points at
+`.next-capacitor`, so `npx cap sync android` always syncs the Capacitor-target export, never the
+Pages one, and a `next.config.ts` change that hardcodes the Pages subpath into the Capacitor build's
+`basePath` is exactly the regression `[guardrail: capacitor-absolute-base]` in
+`scripts/harness-status.mjs` blocks at the harness gate — the WebView origin is `https://localhost/`,
+not the Pages subpath, so a hardcoded absolute subpath there 404s every asset and boots to a blank
+screen, silently, because the GitHub Pages deploy of the *other* export stays correct throughout.
+
+**Native project.** `android/` is the Capacitor-generated native container, committed to the repo (as
+`mood-diner`'s is) so CI can build it without re-running `npx cap add android`. App ID
+`com.harness.travelpacking`, following this repo's `com.harness.<appname>` convention. Release
+signing follows the same env-var/`keystore.properties` pattern documented in
+`projects/travel-packing-app/README.md`'s "Android release signing" section — neither the keystore
+nor its passwords are ever committed.
+
+**CI.** `.github/workflows/android-release-travel-packing-app.yml` builds the Capacitor export,
+syncs it into `android/`, and runs `./gradlew bundleRelease`, uploading the resulting AAB as a build
+artifact on every push/PR that touches this app — unsigned when the release secrets are absent (so
+the native build is still verified on forks and PRs), signed when they're present. This is the
+"Build AAB" check mirrored from `mood-diner`'s workflow.
+
+**Testing.** Unit/lint/type-check/Vitest/axe coverage is unchanged — the shell adds no new
+application logic to test that way. What the shell *does* need, and what a config file alone cannot
+prove, is that the Capacitor-target build's asset URLs actually resolve at the WebView's origin:
+`e2e/capacitor-bundle.spec.ts` serves the real `.next-capacitor` export at a bare origin root
+(`scripts/serve-dist.mjs`, no `--prefix`) — the same shape `https://localhost/` presents inside the
+WebView — and fails on any 404 or on an asset URL still carrying the Pages subpath. This is the
+same "test the artifact you ship, at every origin it ships to" discipline
+`e2e/production-bundle.spec.ts` already applies to the Pages export (`.agents/AGENTS.md` §6).
+
+**Out of scope.** No iOS shell (Capacitor supports one, but this repo has no macOS CI runner to
+build or sign it, and no app-store account to ship it to — the same reasoning `mood-diner` already
+applies). No React Native rewrite — explicitly rejected in favor of reusing 100% of the existing
+UI/logic.
 
 ## 4. Data Models
 ```typescript

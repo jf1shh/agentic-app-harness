@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "शांत विलासिता",
     "gorpcore": "गोर्पकोर",
-    "scandi": "स्कैंडी मिनिमलिस्ट"
+    "scandi": "स्कैंडी मिनिमलिस्ट",
+    "corporate": "कॉर्पोरेट पावर",
+    "oldMoney": "ओल्ड मनी",
+    "balletcore": "बैलेकोर"
   },
   "strategy": {
     "standard": "मानक (आरामदायक)",

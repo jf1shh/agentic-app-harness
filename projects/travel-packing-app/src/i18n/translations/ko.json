@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "콰이엇 럭셔리",
     "gorpcore": "고프코어",
-    "scandi": "스칸디 미니멀리스트"
+    "scandi": "스칸디 미니멀리스트",
+    "corporate": "코퍼레이트 파워",
+    "oldMoney": "올드 머니",
+    "balletcore": "발레코어"
   },
   "strategy": {
     "standard": "표준 (편안함)",
