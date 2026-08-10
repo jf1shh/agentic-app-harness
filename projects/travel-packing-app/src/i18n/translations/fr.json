@@ -23,6 +23,8 @@
     "defaultActivity": "Activité par Défaut",
     "uploadWardrobeFile": "Importer un Fichier de Garde-robe (.txt ou .md)",
     "loadedGarments": "✔ {count} vêtements chargés depuis {file}",
+    "addDestination": "+ Ajouter une Autre Destination",
+    "removeDestination": "Supprimer la destination {n}",
     "suitcase": "Valise",
     "airline": "Compagnie Aérienne (Limites Bagage Cabine)",
     "analyzing": "Récupération de la Météo et Analyse en cours...",
@@ -58,6 +60,7 @@
   "itinerary": {
     "title": "Itinéraire en Direct ({destination})",
     "dayLine": "Jour {n} : {temp} (Indice de Chaleur : {warmth}/10)",
+    "dayLineForDestination": "Jour {n} — {destination} : {temp} (Indice de Chaleur : {warmth}/10)",
     "notAvailable": "N/D"
   },
   "wearability": {

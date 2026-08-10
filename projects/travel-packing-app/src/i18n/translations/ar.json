@@ -23,6 +23,8 @@
     "defaultActivity": "النشاط الافتراضي",
     "uploadWardrobeFile": "تحميل ملف خزانة الملابس (.txt أو .md)",
     "loadedGarments": "✔ تم تحميل {count} قطعة من {file}",
+    "addDestination": "+ إضافة وجهة أخرى",
+    "removeDestination": "إزالة الوجهة {n}",
     "suitcase": "حقيبة السفر",
     "airline": "شركة الطيران (حدود حقيبة اليد)",
     "analyzing": "جارٍ جلب الطقس والتحليل...",
@@ -58,6 +60,7 @@
   "itinerary": {
     "title": "خط سير الرحلة المباشر ({destination})",
     "dayLine": "اليوم {n}: {temp} (هدف الدفء: {warmth}/10)",
+    "dayLineForDestination": "اليوم {n} — {destination}: {temp} (هدف الدفء: {warmth}/10)",
     "notAvailable": "غير متاح"
   },
   "wearability": {

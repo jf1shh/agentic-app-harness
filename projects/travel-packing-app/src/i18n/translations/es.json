@@ -23,6 +23,8 @@
     "defaultActivity": "Actividad Predeterminada",
     "uploadWardrobeFile": "Subir Archivo de Vestuario (.txt o .md)",
     "loadedGarments": "✔ Se cargaron {count} prendas de {file}",
+    "addDestination": "+ Añadir Otro Destino",
+    "removeDestination": "Eliminar destino {n}",
     "suitcase": "Maleta",
     "airline": "Aerolínea (Límites de Equipaje de Mano)",
     "analyzing": "Obteniendo el Clima y Analizando...",
@@ -58,6 +60,7 @@
   "itinerary": {
     "title": "Itinerario en Vivo ({destination})",
     "dayLine": "Día {n}: {temp} (Objetivo de Abrigo: {warmth}/10)",
+    "dayLineForDestination": "Día {n} — {destination}: {temp} (Objetivo de Abrigo: {warmth}/10)",
     "notAvailable": "N/D"
   },
   "wearability": {

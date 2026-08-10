@@ -23,6 +23,8 @@
     "defaultActivity": "Standardaktivität",
     "uploadWardrobeFile": "Garderobendatei hochladen (.txt oder .md)",
     "loadedGarments": "✔ {count} Kleidungsstücke aus {file} geladen",
+    "addDestination": "+ Weiteres Reiseziel Hinzufügen",
+    "removeDestination": "Reiseziel {n} entfernen",
     "suitcase": "Koffer",
     "airline": "Fluggesellschaft (Handgepäck-Limits)",
     "analyzing": "Wetter wird abgerufen und analysiert...",
@@ -58,6 +60,7 @@
   "itinerary": {
     "title": "Live-Reiseplan ({destination})",
     "dayLine": "Tag {n}: {temp} (Wärmeziel: {warmth}/10)",
+    "dayLineForDestination": "Tag {n} — {destination}: {temp} (Wärmeziel: {warmth}/10)",
     "notAvailable": "N/V"
   },
   "wearability": {

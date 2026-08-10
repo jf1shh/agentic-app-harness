@@ -20,7 +20,7 @@ import { useT } from '../i18n/context';
 interface Props {
   report: WearabilityReport;
   garments: Garment[];
-  destinationCountryCode: string | null;
+  destinationCountryCodes: (string | null)[];
   onOutfitSwap: (day: number, role: OutfitRole, garmentId: string) => boolean;
 }
 
@@ -76,7 +76,7 @@ function OutfitSlot({
   );
 }
 
-export default function WardrobeAnalyzer({ report, garments, destinationCountryCode, onOutfitSwap }: Props) {
+export default function WardrobeAnalyzer({ report, garments, destinationCountryCodes, onOutfitSwap }: Props) {
   const { t } = useT();
   const getGarmentName = (id: string) => garments.find(g => g.id === id)?.name || id;
 
@@ -224,7 +224,7 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
       </div>
       </div>
 
-      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} destinationCountryCode={destinationCountryCode} />
+      <PackingChecklist garments={garments} tripDays={report.scheduledOutfits.length || 3} destinationCountryCodes={destinationCountryCodes} />
     </div>
     </DndContext>
   );
