@@ -51,30 +51,25 @@ contract.
 
 ## 3. Current State / Open Work
 
-**This pass (2026-08-10): closed out the last of the `travel-packing-app` gap-audit
-backlog** — the four remaining "big architectural item" phases from an earlier audit against the
-source repo (github.com/jf1shh/Travel-Packing-Optimizer). Each phase was built as an independent
-branch/PR, TDD red→green with a stated mutation-proof, full `node scripts/test-app.mjs
-travel-packing-app` green before every push:
+**This pass (2026-08-10): closed out `travel-packing-app`'s full "port it all" gap-audit
+backlog against the source repo** (github.com/jf1shh/Travel-Packing-Optimizer) — eleven phases in
+total across this and prior passes (#163–#166, then Phases 15–21), each an independent branch/PR,
+TDD red→green with a stated mutation-proof, full `node scripts/test-app.mjs travel-packing-app`
+green before every push. GitHub auto-merge was enabled throughout, landing PRs in an unpredictable
+order relative to each other, so nearly every one needed at least one conflict-resolution merge
+(`git merge origin/master --no-edit`) against still-open siblings before it could land clean.
 
-- **#163** — packed-volume-by-category donut chart (Knapsack Engine panel).
-- **#164** — multi-destination trips (day-splitting across legs, per-leg weather/geocoding,
-  continuous day numbering, per-leg checklist adapters, Share Trip carrying every leg).
-- **#165** — laundry-cycle-aware packing math (wardrobe sizing plateaus at one weekly cycle once a
-  trip outlasts it, opt-out checkbox).
-- **#166** — drag-and-drop outfit editor (`@dnd-kit/core`), validated against the wardrobe engine's
-  own existing outfit-legality rules so a manual override can never diverge from the automatic
-  scheduler.
-
-All four merged to `master`. GitHub auto-merge was enabled on this repo and landed the four PRs in
-an unpredictable order relative to each other, so each one needed at least one
-conflict-resolution merge (`git merge origin/master --no-edit`) against its still-open siblings
-before it could land clean — one needed three rounds, as master kept advancing mid-resolution.
-Full detail and the remaining known gaps (expanded archetypes, 3D luggage view, the
-`SuitcaseLayout` packing-cube view split out of #166, a broader light-theme contrast audit) are in
-`projects/travel-packing-app/handoff.md`, not duplicated here. (The "mobile port" gap this section
-used to list here was stale: a Capacitor Android shell had already shipped in PR #84, before this
-pass was written — Phase 20 closed the spec and E2E-proof gaps #84 left behind; see that file.)
+The last three phases, merged this pass: **Phase 17** (3D luggage volume visualization, Three.js),
+**Phase 18** (broader light-theme WCAG AA contrast audit), and **Phase 21** (camera-based suitcase
+scanner). Phase 21 is worth flagging specifically: it was found by re-diffing this app against the
+source repo *after* the prior "gap-audit backlog" was declared closed — the source's 1,084-line
+`SuitcaseScanner.jsx` (live barcode scan + credit-card-calibrated tap-to-measure) had never been
+ported, only its pure lookup/math. The lesson: "closed the backlog" claims from an audit are only as
+complete as the audit was, and a stated completion is worth re-verifying against the actual source
+before trusting it, not just against the prior pass's own summary of itself. Full detail on every
+phase, including the architecture decisions Phase 21 forced (a `customSuitcase` state extension in
+`page.tsx` for suitcase dimensions with no catalog match), is in
+`projects/travel-packing-app/handoff.md`, not duplicated here.
 
 **No known outstanding harness findings**: `node scripts/harness-status.mjs --gate` reports 0
 findings across all 6 apps as of this pass.
@@ -108,10 +103,9 @@ the repo currently has zero open issues.
 ## 5. Next Steps for the Next Agent
 1. Triage the Dependabot backlog — don't let it re-accumulate.
 2. Verify the GitHub repo description reflects six apps and fix manually if not.
-3. If picking up `travel-packing-app` again, read its own `handoff.md` first — it lists what's
-   left after Phase 20 (native Android shell spec/E2E closure): expanded archetypes, 3D luggage
-   visualization, the `SuitcaseLayout` packing-cube view, and a light-theme contrast audit for the
-   rest of the app.
+3. If picking up `travel-packing-app` again, read its own `handoff.md` first. As of this pass its
+   own "known follow-ups" list is empty — but see the note above about re-verifying that kind of
+   claim against the actual source repo rather than trusting it at face value.
 4. Consider whether `legal-financial-rag`'s vault lock should extend to
    actually encrypting document content at rest (currently: real passphrase
    verification gates the UI, but `SAMPLE_DOCUMENTS`/chunks are held as plain

@@ -31,11 +31,61 @@
   suitcase catalog (`src/utils/suitcaseDatabase.ts`) covers 64 real models across 25 brands, and the
   airline catalog (`src/utils/airlineBaggage.ts`) covers 77 carriers across 7 regions. A `SuitcaseFinder`
   component lets a user look a suitcase up by brand/model text search or by pasting a barcode number
-  (`lookupByBarcode`), rather than only scrolling a flat dropdown. `src/utils/measurement.ts` ports the
-  credit-card-calibrated measurement math (pixel distance -> mm/px scale -> cm dimensions) as pure,
-  camera-free functions — a future camera-based photo-tap UI can build on it directly, but that live
-  camera/canvas flow itself is out of scope here (see the PR's "Left undone" note: it cannot be
-  meaningfully exercised or verified in this harness, which has no camera).
+  (`lookupByBarcode`), rather than only scrolling a flat dropdown.
+- [x] Camera-based suitcase scanner (`SuitcaseScanner`, launched from a "Scan" button on
+  `SuitcaseFinder`) — a live camera flow layered on top of the text-based finder above, in two modes:
+  **Barcode** (`getUserMedia` video feed + `BarcodeDetector.detect()` on a cropped center region,
+  looked up against the same `lookupByBarcode` the text finder uses) and **Measure** (capture a still
+  photo, tap two points on a credit-card reference object then two points on each suitcase edge; the
+  already-shipped `src/utils/measurement.ts` — pixel distance -> mm/px scale -> cm dimensions, pure and
+  camera-free — does the arithmetic unchanged, so this phase adds a UI on top of existing, already-
+  tested math rather than new engine logic). Interpretations made where the brief left a detail open:
+  - **Native `BarcodeDetector` only, no wasm ponyfill.** The API only exists in Chromium (desktop
+    Chrome/Edge and Chromium-based Android WebView, which is what Capacitor uses on Android); Safari
+    and Firefox have no implementation. Rather than bundle a `zxing-wasm` fallback decoder (the source
+    app's approach, needed there because its old device targets lacked even Chromium WebView), Barcode
+    mode feature-detects at runtime and degrades to the same message the source app shows when its own
+    ponyfill fails to load: "Barcode scanning unavailable on this device — use brand search below." The
+    brand/barcode text search on `SuitcaseFinder` remains the fully-supported, keyboard- and
+    screen-reader-accessible path on every browser regardless of camera/barcode support — this phase is
+    additive convenience on top of it, never a replacement path a user is forced through.
+  - **No i18n on the scanner UI**, matching `SuitcaseFinder` itself, which is not translated either
+    (plain English `label`/`placeholder` strings) — introducing translated strings on one half of a
+    single "find my suitcase" flow while its other half stays English-only would be a worse
+    inconsistency than staying English-only on both until a future pass i18n's the whole flow together.
+  - **Accessibility**: the video/canvas capture surface is inherently visual (so is the source app's),
+    but every control around it is a real `<button>` with an `aria-label` (icon-only buttons —
+    switch-camera, torch, undo-tap — carry no accessible name in the source app's title-only markup;
+    this port adds one), phase instructions are in an `aria-live="polite"` region so a screen-reader
+    user tracking progress by ear hears "tap the credit card's short edge" etc. as the flow advances,
+    and the whole modal is `role="dialog"`/`aria-modal`. The canvas tap-to-place-point interaction
+    itself has no non-visual equivalent — same limitation as Phase 17's WebGL suitcase view, disclosed
+    there rather than silently accepted — which is exactly why the text-based finder beneath it must
+    stay the fully-accessible primary path, per the point above.
+  - **Android**: `android/app/src/main/AndroidManifest.xml` gains
+    `<uses-permission android:name="android.permission.CAMERA" />` (plus a non-required
+    `android.hardware.camera` `<uses-feature>`, so the app still installs on a cameraless device),
+    without which `getUserMedia` cannot be granted inside the Capacitor WebView at all — the source
+    app's own manifest already carries this permission; the Capacitor shell inherited from PR #84 did
+    not need it before this phase, since nothing in the app touched the camera until now.
+  - **A real integration gap surfaced while wiring this up, not assumed away**: unlike the source app
+    (which stores the suitcase as free-form length/width/height text fields), this port's suitcase
+    selection is a `selectedSuitcase: string` key into the 64-model `MODELS` catalog
+    (`src/app/page.tsx`) — there was no state slot for "a suitcase I just measured that isn't any of
+    the 64 models" until this phase. `page.tsx` gains a `customSuitcase: SuitcaseModel | null` state
+    that takes priority over the catalog lookup at all three places that resolve "the current
+    suitcase" (Analyze, an outfit swap's physics recompute, and the Knapsack panel's render), via one
+    `resolveSuitcase()` helper so the three call sites can't drift out of sync with each other. Picking
+    a catalog model afterwards (`SuitcaseFinder`, the dropdown, or a barcode/brand match inside the
+    scanner) clears it — a preset pick means "use this instead," not "in addition to." When a custom
+    measurement is active, the dropdown is replaced by a status line naming the measured dimensions and
+    a Clear button, rather than leaving the dropdown showing a stale preset name while a different
+    suitcase is actually being priced — the same "a closed section says nothing" discipline
+    `.agents/AGENTS.md` §6 already applies to collapsed panels. **Left undone**: a custom measurement
+    is not encoded into the Share Trip link (`src/utils/share.ts` never serialized `selectedSuitcase`
+    even before this phase, so this is a pre-existing gap this phase does not close) — sharing a trip
+    with a custom-measured suitcase active shares the fallback preset only, unchanged from today's
+    behavior for the catalog dropdown.
 - [x] Digital Closet (IndexedDB + Client-side AI Background Removal) — a manager panel
   (`WardrobeManager`) lets a user build a real custom wardrobe by hand: add a garment (name, role,
   color, evening flag), attach a photo per item with on-device background removal, and delete items.
