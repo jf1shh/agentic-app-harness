@@ -47,7 +47,7 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
    - **Dead Weight** — items that never appear in any scheduled outfit.
    - **Smart Swap Suggestions** — targeted item replacements that would most reduce dead weight.
 2. **Knapsack physics report** (`calculateKnapsackPhysics()`)
-   - Total weight and volume vs. the selected suitcase's real capacity (`MODELS` in `src/utils/suitcaseDatabase.ts` — 64 models across 25 brands). `SuitcaseFinder` lets you search by brand/model text or paste a barcode number (`lookupByBarcode`) instead of scrolling the full dropdown.
+   - Total weight and volume vs. the selected suitcase's real capacity (`MODELS` in `src/utils/suitcaseDatabase.ts` — 64 models across 25 brands). `SuitcaseFinder` lets you search by brand/model text or paste a barcode number (`lookupByBarcode`) instead of scrolling the full dropdown, and the "📷 Scan" button next to it opens `SuitcaseScanner` — a live-camera modal that either scans a barcode (native `BarcodeDetector`, Chromium only) against the same catalog, or walks you through a credit-card-calibrated tap-to-measure flow (`src/utils/measurement.ts`) for a bag that isn't in the catalog at all.
    - Airline compliance against the chosen airline's carry-on limits (`src/utils/airlineBaggage.ts` — 77 carriers across 7 regions, with `searchAirlines`/`getAllAirlines`/`getRegions` for lookup).
    - **Packed volume by category** — a hand-rolled SVG donut chart (`VolumeDonutChart`, no charting
      library) breaks the packed volume down by each garment's `category` field, driven by a pure
@@ -155,6 +155,7 @@ src/
     LocalInfoPanel.tsx             # typical-cost currency conversion + travel advisory
     DailyActivityPicker.tsx        # per-day activity tagging (Beach/Hike/Ski/Formal/...)
     SuitcaseFinder.tsx             # brand/model text search + barcode lookup
+    SuitcaseScanner.tsx            # live-camera barcode scan + credit-card tap-to-measure
     VolumeDonutChart.tsx           # 2D SVG donut chart of packed volume by category
     Volume3DPanel.tsx              # accessible wrapper: aria-label/description + text fallback
     Volume3DScene.tsx              # the Three.js/WebGL canvas, loaded via next/dynamic({ssr:false})
@@ -184,6 +185,7 @@ src/
     suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
     airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)
     measurement.ts                 # credit-card-calibrated measurement math (pure, camera-free)
+    barcodeDetector.ts             # native BarcodeDetector feature-detection wrapper (no wasm ponyfill)
     volumeBlocks.ts                # computeVolumeBlocks() — 3D box geometry over an existing breakdown
   schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, TripShare, ...)
   types.ts

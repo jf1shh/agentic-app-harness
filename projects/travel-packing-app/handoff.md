@@ -61,11 +61,12 @@ This script runs:
 5. `playwright` (E2E & Axe-core A11y scans in `e2e/`)
 
 ## 📝 Current Status & TODOs
-_Last updated 2026-08-10 (Phase 17)._ The app has successfully ported all legacy V3 rules into
+_Last updated 2026-08-10 (Phase 21)._ The app has successfully ported all legacy V3 rules into
 Next.js V4, **and** closed out every gap identified in the source-repo audit
-(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app). Phases 11–15 and 19 are merged
-to `master`; Phase 17 (3D luggage visualization) ships in the PR that added this line — see that
-PR for its own verification output before treating it as merged:
+(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app), including one — the camera
+suitcase scanner — that the earlier pass of that audit itself missed. Phases 11–18 and 20 are
+merged to `master`; Phase 21 (camera-based suitcase scanner) ships in the PR that added this line —
+see that PR for its own verification output before treating it as merged:
 
 - **Phase 11 — Packed volume by category (donut chart)**: `src/utils/volumeBreakdown.ts` +
   `VolumeDonutChart.tsx`, wired into the Knapsack Engine panel. PR #163.
@@ -130,7 +131,7 @@ PR for its own verification output before treating it as merged:
   rather than a violation — `e2e/light-theme-contrast.spec.ts` neutralizes the gradient with an
   injected test-only stylesheet so axe can actually evaluate it. No follow-up item.
 
-All Phase 11–20 branches were deliberately opened independently off `master` (not
+All Phase 11–21 branches were deliberately opened independently off `master` (not
 stacked) per this session's pattern, since GitHub auto-merge was enabled and landed them in an
 unpredictable order — each required at least one conflict-resolution merge
 (`git merge origin/master --no-edit`) against the others before it could land clean.
@@ -154,8 +155,24 @@ Pages-subpath URL baked into the bundle; this is the E2E-level proof behind
 `[guardrail: capacitor-absolute-base]`, mutation-verified by temporarily forcing the Pages basePath
 into the Capacitor build and confirming the new spec goes red (see PR body). No app code changed.
 
-**Known follow-ups explicitly left undone (see each PR body for the full reasoning):** none — the
-prior list (SuitcaseLayout, Mobile Port, Expanded Archetypes, 3D Luggage, per-leg LocalInfo/activity
-guessing, and the light-theme contrast audit) is now fully closed across Phases 15–20 above.
+**Phase 21 — Camera-based suitcase scanner**: a real gap the earlier "port it all" audit missed —
+diffing this app against the source repo (github.com/jf1shh/Travel-Packing-Optimizer) turned up
+`SuitcaseScanner.jsx`, a 1,084-line live-camera barcode scanner + credit-card-calibrated
+tap-to-measure flow, that had never been ported; only its pure lookup/math (`suitcaseDatabase.ts`,
+`measurement.ts`) made it into `SuitcaseFinder`'s text-only stand-in. `SuitcaseScanner.tsx` now
+layers a `getUserMedia` camera modal on top of `SuitcaseFinder`, in two modes: Barcode (native
+`BarcodeDetector` only — no wasm ponyfill, see the spec bullet's interpretation notes for why — with
+the existing brand-search text field as the always-available fallback) and Measure (capture a
+photo, tap two points on a credit card then two on each suitcase edge; `measureFromTaps` — already
+shipped, already tested — does the arithmetic unchanged). Surfaced a real architecture gap while
+wiring it up: this port's suitcase selection is a catalog-key lookup (`selectedSuitcase: string` into
+`MODELS`), with no slot for a camera-measured suitcase outside the catalog — `page.tsx` gained a
+`customSuitcase: SuitcaseModel | null` state, resolved ahead of the catalog lookup at all three
+places "the current suitcase" is read, via one `resolveSuitcase()` helper. Android gains the
+`CAMERA` permission it never needed before this phase. **Left undone**: a custom measurement isn't
+encoded into the Share Trip link — `share.ts` never serialized the suitcase selection at all, even
+for the catalog dropdown, so this is a pre-existing gap, not a regression.
+
+**Known follow-ups explicitly left undone (see each PR body for the full reasoning):** none.
 
 Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.

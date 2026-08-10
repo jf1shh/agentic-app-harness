@@ -26,11 +26,17 @@ import { fetchLegItinerary } from '../services/weatherApi';
 import DailyActivityPicker from '../components/DailyActivityPicker';
 import WardrobeManager from '../components/WardrobeManager';
 import SuitcaseFinder from '../components/SuitcaseFinder';
+import SuitcaseScanner from '../components/SuitcaseScanner';
 import { clearAllLocalData } from '../services/db';
 
 // Model names alone collide across brands (e.g. Away, Arlo Skye and Roam all
 // sell "The Carry-On"), so selection is keyed by brand+model together.
 const suitcaseKey = (m: SuitcaseModel) => `${m.brand} — ${m.model}`;
+
+// A custom, camera-measured suitcase (no catalog entry) always wins over
+// the dropdown/finder selection when one is active -- see `customSuitcase`.
+const resolveSuitcase = (selectedSuitcase: string, customSuitcase: SuitcaseModel | null): SuitcaseModel =>
+  customSuitcase || MODELS.find((m) => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
 
 
 
@@ -56,6 +62,13 @@ export default function Home() {
   // distinct plug type across the whole trip, not just the first leg.
   const [legCountryCodes, setLegCountryCodes] = useState<(string | null)[]>([]);
   const [selectedSuitcase, setSelectedSuitcase] = useState(suitcaseKey(MODELS[0]));
+  // A camera-measured suitcase that doesn't match any catalog model. Takes
+  // priority over `selectedSuitcase` (a MODELS lookup key) when set; picking
+  // a catalog model afterwards (via SuitcaseFinder, the dropdown, or a
+  // barcode/brand match in the scanner) clears it, since choosing a preset
+  // means "use this instead," not "in addition to."
+  const [customSuitcase, setCustomSuitcase] = useState<SuitcaseModel | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [selectedAirline, setSelectedAirline] = useState('EK'); // Emirates
 
   const [archetype, setArchetype] = useState('quiet-luxury');
@@ -227,7 +240,7 @@ export default function Home() {
       setReport(result);
 
       // Run Knapsack Physics
-      const suitcase = MODELS.find(m => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
+      const suitcase = resolveSuitcase(selectedSuitcase, customSuitcase);
       const physicsResult = calculateKnapsackPhysics(result, garmentsToUse, suitcase, selectedAirline);
       setPhysics(physicsResult);
     } catch (err: unknown) {
@@ -255,7 +268,7 @@ export default function Home() {
     // schedule at Analyze time -- a manual swap can change which garments
     // are actually packed, so it must be recomputed here or it goes stale
     // relative to the schedule the reader is now looking at.
-    const suitcase = MODELS.find((m) => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
+    const suitcase = resolveSuitcase(selectedSuitcase, customSuitcase);
     setPhysics(calculateKnapsackPhysics(updated, activeGarments, suitcase, selectedAirline));
 
     return true;
@@ -474,13 +487,53 @@ export default function Home() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
-              <SuitcaseFinder onSelect={(m) => setSelectedSuitcase(suitcaseKey(m))} />
-              <label htmlFor="suitcase" className="label" style={{ marginTop: '12px', display: 'block' }}>{t('trip.suitcase')}</label>
-              <select id="suitcase" className="input-field" value={selectedSuitcase} onChange={e => setSelectedSuitcase(e.target.value)}>
-                {MODELS.map(m => (
-                  <option key={suitcaseKey(m)} value={suitcaseKey(m)}>{m.brand} - {m.model}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <SuitcaseFinder onSelect={(m) => { setCustomSuitcase(null); setSelectedSuitcase(suitcaseKey(m)); }} />
+                </div>
+                <button type="button" className="btn-secondary" onClick={() => setScannerOpen(true)} style={{ whiteSpace: 'nowrap' }}>
+                  📷 Scan
+                </button>
+              </div>
+              {customSuitcase ? (
+                <div style={{ marginTop: '12px', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.9rem' }}>
+                    Using measured dimensions: {customSuitcase.l}×{customSuitcase.w}×{customSuitcase.h} cm
+                  </span>
+                  <button type="button" className="btn-secondary" onClick={() => setCustomSuitcase(null)}>Clear</button>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="suitcase" className="label" style={{ marginTop: '12px', display: 'block' }}>{t('trip.suitcase')}</label>
+                  <select id="suitcase" className="input-field" value={selectedSuitcase} onChange={e => setSelectedSuitcase(e.target.value)}>
+                    {MODELS.map(m => (
+                      <option key={suitcaseKey(m)} value={suitcaseKey(m)}>{m.brand} - {m.model}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+              <SuitcaseScanner
+                isOpen={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onDimensionsReady={(dims) => {
+                  if (dims.model) {
+                    // A barcode/brand match already resolved to a real
+                    // catalog model -- use the same path as SuitcaseFinder
+                    // so a custom override never masks a known-model pick.
+                    const matched = MODELS.find((m) => `${m.brand} ${m.model}` === dims.model);
+                    if (matched) {
+                      setCustomSuitcase(null);
+                      setSelectedSuitcase(suitcaseKey(matched));
+                      return;
+                    }
+                  }
+                  const l = parseFloat(dims.length);
+                  const w = parseFloat(dims.width);
+                  const h = parseFloat(dims.height);
+                  if (!Number.isFinite(l) || !Number.isFinite(w) || !Number.isFinite(h)) return;
+                  setCustomSuitcase({ brand: 'Custom', model: 'Measured', l, w, h, type: 'carry-on', preset: 'custom' });
+                }}
+              />
             </div>
             <div>
               <label htmlFor="airline" className="label">{t('trip.airline')}</label>
@@ -507,7 +560,7 @@ export default function Home() {
             // the physics engine above was already computed against, not a
             // second, independent lookup.
             const packedVolumeSlices = computeVolumeBreakdown(getPackedGarments(report, activeGarments));
-            const selectedSuitcaseModel = MODELS.find((m) => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
+            const selectedSuitcaseModel = resolveSuitcase(selectedSuitcase, customSuitcase);
             return (
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>{t('knapsack.title')}</h2>
