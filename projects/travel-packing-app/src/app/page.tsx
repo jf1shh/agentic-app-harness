@@ -9,6 +9,7 @@ import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../s
 import { calculateKnapsackPhysics, getPackedGarments, PackingPhysicsReport } from '../utils/knapsackEngine';
 import { computeVolumeBreakdown } from '../utils/volumeBreakdown';
 import VolumeDonutChart from '../components/VolumeDonutChart';
+import Volume3DPanel from '../components/Volume3DPanel';
 import SuitcaseLayout from '../components/SuitcaseLayout';
 import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
@@ -499,6 +500,15 @@ export default function Home() {
 
       {report && physics && (
         <>
+          {(() => {
+            // Resolved once so the donut chart and the 3D view read the exact
+            // same breakdown -- they can never disagree about a category's
+            // share. The suitcase dims come from the same selectedSuitcase
+            // the physics engine above was already computed against, not a
+            // second, independent lookup.
+            const packedVolumeSlices = computeVolumeBreakdown(getPackedGarments(report, activeGarments));
+            const selectedSuitcaseModel = MODELS.find((m) => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
+            return (
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>{t('knapsack.title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
@@ -523,13 +533,22 @@ export default function Home() {
               </div>
               <div style={{ padding: '16px', border: '2px solid var(--primary)', borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeByCategory')}</h3>
-                <VolumeDonutChart slices={computeVolumeBreakdown(getPackedGarments(report, activeGarments))} />
+                <VolumeDonutChart slices={packedVolumeSlices} />
+              </div>
+              <div style={{ padding: '16px', border: '2px solid var(--primary)', borderRadius: '8px' }}>
+                <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volume3D')}</h3>
+                <Volume3DPanel
+                  slices={packedVolumeSlices}
+                  suitcase={{ l: selectedSuitcaseModel.l, w: selectedSuitcaseModel.w, h: selectedSuitcaseModel.h }}
+                />
               </div>
             </div>
             <div style={{ marginTop: '24px' }}>
               <SuitcaseLayout garments={getPackedGarments(report, activeGarments)} />
             </div>
           </div>
+            );
+          })()}
 
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>{t('itinerary.title', { destination })}</h2>

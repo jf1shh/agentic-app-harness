@@ -150,6 +150,49 @@
   unchanged — so this only changes behavior for genuinely long trips. Unchecking the box (no laundry
   access assumed, e.g. an off-grid trip) reverts to the pre-existing behavior of scaling with the full
   trip length, capped only by the archetype's palette size as before.
+- [x] 3D luggage volume visualization — alongside the existing 2D donut chart (previous bullet), the
+  Knapsack Engine panel also renders a 3D bounding-box view of the selected suitcase with each packed
+  garment category shown as a proportionally-sized stacked layer inside it, so "where does my volume
+  go" is answerable spatially as well as by percentage. Scope, and the interpretations made where the
+  brief left a detail open:
+  - **Geometry is new logic; the volume math is not re-derived.** `src/utils/volumeBlocks.ts` is a
+    pure function, `computeVolumeBlocks(slices, suitcaseCm)`, that turns the *existing*
+    `VolumeBreakdownSlice[]` from `computeVolumeBreakdown()` (unchanged, still the single source of
+    truth for volume-by-category) into 3D box sizes/positions. It never recomputes a cm³ figure —
+    only geometry (stacking, centering, clamping) is new, per the "Explain the Arithmetic Without
+    Re-implementing It" lesson in `.agents/AGENTS.md` §6.
+  - **Suitcase dimensions come from the same suitcase the physics engine already uses** — the
+    `SuitcaseModel` resolved from the trip's `selectedSuitcase` (via `SuitcaseFinder` or the suitcase
+    dropdown, both already backed by `src/utils/suitcaseDatabase.ts`), not a second, independent
+    lookup into `airlineBaggage.ts`. That model is strictly more specific to what the user is actually
+    packing than a generic carry-on constant would be, which is the "if one is more specific" case the
+    brief called out; `airlineBaggage.ts`'s dimensions describe airline *limits*, not luggage, and are
+    not a suitcase-geometry source in the first place.
+  - **Layout interpretation (stated, since the brief left the exact geometry open):** each category
+    becomes one horizontal layer spanning the suitcase's full length × width footprint, stacked
+    bottom-up in the same largest-first order `computeVolumeBreakdown()` already sorts in, with layer
+    height proportional to that category's share of *packed* volume. Total stack height is capped at
+    the suitcase's own height — `usedFraction = min(1, totalPackedVolumeCm3 / suitcaseVolumeCm3)` — so
+    an over-capacity pack (already flagged by the existing Airline Compliance panel) renders as a full
+    box rather than geometry that bursts through its own walls; `computeVolumeBlocks` also returns the
+    unclamped `usedFraction` and an `overCapacity` flag so the view can say so explicitly rather than
+    silently drawing a full box that looks identical to an exact fit.
+  - **Rendering is Three.js, client-only.** `Volume3DScene.tsx` owns the WebGL canvas (scene, camera,
+    orbit controls, box meshes) and is loaded exclusively via `next/dynamic(..., { ssr: false })` from
+    the always-server-renderable `Volume3DPanel.tsx` wrapper — this app is a static export
+    (`output: 'export'`), and importing a WebGL/`window`-touching module at module-eval time (rather
+    than lazily, client-side) fails `next build` outright, per the "Next.js Static Export Server Action
+    Scoping" lesson in `.agents/AGENTS.md` §6. Interaction is deliberately minimal: orbit/zoom/pan via
+    `OrbitControls`, no drag-to-repack — this is a visualization of an already-computed packing
+    result, not a new packing algorithm or a second, competing outfit/packing editor.
+  - **Accessibility**: a WebGL `<canvas>` is invisible to assistive tech by default. The panel wraps
+    the canvas in a `role="img"` region carrying an `aria-label`/`aria-description` built from the same
+    slices the scene renders (category, volume, percent — never a re-derived figure), and always
+    renders a visible text/table fallback of the identical breakdown (`aria-describedby` points at it,
+    so it doubles as the long description), adapting the existing donut-chart legend pattern. This
+    view supplements the 2D donut chart rather than replacing it; both read from one
+    `computeVolumeBreakdown()` call so they can never disagree with each other about a category's
+    share.
 - [x] Native Android shell (Capacitor) — the existing Next.js static export ships unmodified inside a
   Capacitor WebView container so the app installs and runs as a real Android app, with zero rebuilt
   screens. See §3a for the architecture and why this app needs two separate builds, not one.

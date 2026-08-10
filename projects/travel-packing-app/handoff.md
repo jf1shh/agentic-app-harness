@@ -61,12 +61,11 @@ This script runs:
 5. `playwright` (E2E & Axe-core A11y scans in `e2e/`)
 
 ## 📝 Current Status & TODOs
-_Last updated 2026-08-10._ The app has successfully ported all legacy V3 rules into Next.js V4,
-**and** closed out every gap identified in the source-repo audit
-(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app), including the five large
-architectural items that were the last of that backlog. Phases 11–14 are merged to `master`;
-Phase 15 (SuitcaseLayout) ships in the PR that added this line — see that PR for its own
-verification output before treating it as merged:
+_Last updated 2026-08-10 (Phase 17)._ The app has successfully ported all legacy V3 rules into
+Next.js V4, **and** closed out every gap identified in the source-repo audit
+(github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app). Phases 11–15 and 19 are merged
+to `master`; Phase 17 (3D luggage visualization) ships in the PR that added this line — see that
+PR for its own verification output before treating it as merged:
 
 - **Phase 11 — Packed volume by category (donut chart)**: `src/utils/volumeBreakdown.ts` +
   `VolumeDonutChart.tsx`, wired into the Knapsack Engine panel. PR #163.
@@ -83,6 +82,15 @@ verification output before treating it as merged:
   day's Top/Bottom/Layer slot; a drop only succeeds if the wardrobe engine's own
   `generateAllValidOutfits()` already recognizes the resulting combo, so manual overrides can never
   diverge from the automatic scheduler's own rules. Uses `@dnd-kit/core`. PR #166.
+- **Phase 17 — 3D luggage volume visualization**: `src/utils/volumeBlocks.ts`
+  (`computeVolumeBlocks()`) turns the *existing* `computeVolumeBreakdown()` slices (Phase 11, never
+  re-derived) plus the selected suitcase's own dimensions into stacked 3D box geometry;
+  `Volume3DScene.tsx` renders it with Three.js/`OrbitControls`, loaded exclusively via
+  `next/dynamic(..., { ssr: false })` from `Volume3DPanel.tsx` so the WebGL-touching module never
+  reaches server-rendered code in this static export. Accessible via a `role="img"`
+  aria-label/aria-describedby built from the same slices, plus a visible text-fallback list.
+  Supplements the Phase 11 donut chart rather than replacing it — both read one
+  `computeVolumeBreakdown()` call so they can't disagree.
 - Phases 9–10 (weather-reactive packing essentials, Travel Mode preference) landed earlier in the
   same audit effort — see PRs #161/#162.
 - **Phase 15 — SuitcaseLayout**: `src/utils/suitcaseLayout.ts` (`buildSuitcaseLayout`/
@@ -110,11 +118,14 @@ verification output before treating it as merged:
   always guessing from the trip's primary destination, so a day in a later leg no longer inherits
   an earlier leg's guess.
 
-All five Phase 11–15 branches were deliberately opened independently off `master` (not stacked) per
-this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
-order — each required at least one conflict-resolution merge (`git merge origin/master --no-edit`)
-against the others before it could land clean. `specs/travel-packing-app-spec.md` now carries every
-feature bullet checked off, including the native Android shell (Phase 20, below).
+All Phase 11–17, 19, and 20 branches were deliberately opened independently off `master` (not
+stacked) per this session's pattern, since GitHub auto-merge was enabled and landed them in an
+unpredictable order — each required at least one conflict-resolution merge
+(`git merge origin/master --no-edit`) against the others before it could land clean.
+`specs/travel-packing-app-spec.md` now carries every feature bullet checked off, including 3D
+luggage and the native Android shell (Phase 20, below). (The 3D suitcase view built in Phase 17 is a
+read-only visualization of an already-computed pack, distinct from Phase 15's drag-to-reorder
+`SuitcaseLayout` editor.)
 
 **Phase 20 — Native Android shell (Capacitor), spec + E2E-proof closure**: the actual Capacitor
 wrap — `capacitor.config.ts`, the committed `android/` native container, the two-export
@@ -132,8 +143,6 @@ Pages-subpath URL baked into the bundle; this is the E2E-level proof behind
 into the Capacitor build and confirming the new spec goes red (see PR body). No app code changed.
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
-- **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)
-  covers the "where does my volume go" question without this.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
   surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
 

@@ -59,7 +59,11 @@
     "percentFull": "{percent}% Cheio",
     "airlineCompliance": "Conformidade com a Companhia Aérea",
     "compliantWith": "✔ Em conformidade com os limites de bagagem de mão da {airline}",
-    "volumeByCategory": "Volume Empacotado por Categoria"
+    "volumeByCategory": "Volume Empacotado por Categoria",
+    "volume3D": "Visualização 3D da mala",
+    "volume3DHint": "Arraste para girar, role para dar zoom. A lista abaixo repete esta divisão em forma de texto.",
+    "volume3DOverCapacity": "Esta seleção excede o volume da mala — a visualização abaixo está limitada a 100% de preenchimento.",
+    "volume3DLoading": "Carregando visualização 3D…"
   },
   "suitcaseLayout": {
     "title": "Disposição da mala",
