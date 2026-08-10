@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import WardrobeAnalyzer from '../components/WardrobeAnalyzer';
 import { Garment, DayItinerary, WearabilityReport } from '../types';
 import { analyzeWardrobe } from '../utils/wardrobeEngine';
+import { applyGarmentSwap, OutfitRole } from '../utils/outfitEditor';
 import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../services/weatherApi';
 import { calculateKnapsackPhysics, getPackedGarments, PackingPhysicsReport } from '../utils/knapsackEngine';
 import { computeVolumeBreakdown } from '../utils/volumeBreakdown';
@@ -178,6 +179,26 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOutfitSwap = (day: number, role: OutfitRole, garmentId: string): boolean => {
+    if (!report) return false;
+    const replacement = activeGarments.find((g) => g.id === garmentId);
+    if (!replacement) return false;
+
+    const updated = applyGarmentSwap(report, day, role, replacement, activeGarments);
+    if (!updated) return false;
+
+    setReport(updated);
+
+    // The knapsack physics (weight/volume) were computed from the outfit
+    // schedule at Analyze time -- a manual swap can change which garments
+    // are actually packed, so it must be recomputed here or it goes stale
+    // relative to the schedule the reader is now looking at.
+    const suitcase = MODELS.find((m) => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
+    setPhysics(calculateKnapsackPhysics(updated, activeGarments, suitcase, selectedAirline));
+
+    return true;
   };
 
   const handleStartOver = () => {
@@ -419,7 +440,7 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCode={destinationCountryCode} />
+          <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCode={destinationCountryCode} onOutfitSwap={handleOutfitSwap} />
           <LocalInfoPanel countryCode={destinationCountryCode} />
 
           <div className="no-print" style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>

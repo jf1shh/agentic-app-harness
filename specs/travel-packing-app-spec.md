@@ -87,6 +87,19 @@
   both consumers share one definition of "what's actually packed"). The source app's cube-based
   packing-list categories (plane/main/base/liquid/dry/tech) have no equivalent in this app's data
   model, so the chart groups by the categories this app actually tracks rather than inventing them.
+- [x] Drag-and-drop Outfit Editor — any garment in the Digital Closet can be dragged onto a scheduled
+  day's Top/Bottom/Layer slot to manually override the auto-scheduler's choice for that one day
+  (`@dnd-kit/core`). A drop is only accepted if it produces a combination `generateAllValidOutfits()` —
+  the wardrobe engine's own source of truth for valid pairings — already recognizes as valid
+  (`findValidSwap`/`applyGarmentSwap` in `src/utils/outfitEditor.ts`); an invalid drop (a role
+  mismatch, a color clash) is rejected with an on-screen message and the day is left unchanged, so a
+  manual override can never introduce a combination the automatic scheduler itself would reject. A
+  successful swap re-derives MVP item, dead weight, and the swap suggestion from the edited schedule
+  (`deriveUsageStats`, shared with `analyzeWardrobe()` so the two never drift), and recomputes the
+  knapsack physics (weight/volume) so the packed-garment set stays consistent with what's now
+  scheduled. Deliberately scoped to swapping an existing role's garment for another of the same
+  role — adding a topper to a day that has none is not supported (there is no drop target for a role
+  the outfit doesn't already have).
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

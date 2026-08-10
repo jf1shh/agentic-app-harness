@@ -165,16 +165,17 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
                   alignItems: 'center',
                   gap: '12px',
                   textDecoration: checkedItems[g.id] ? 'line-through' : 'none',
-                  color: checkedItems[g.id] ? '#94a3b8' : 'inherit'
+                  color: checkedItems[g.id] ? '#94a3b8' : '#e2e8f0'
                 }}
               >
-                <input 
-                  type="checkbox" 
-                  checked={!!checkedItems[g.id]} 
+                <input
+                  type="checkbox"
+                  aria-label={g.name}
+                  checked={!!checkedItems[g.id]}
                   onChange={() => {}} // handled by parent li click
                   style={{ cursor: 'pointer' }}
                 />
-                <span>{g.name} <small style={{ color: '#64748b' }}>({g.category})</small></span>
+                <span>{g.name} <small style={{ color: '#94a3b8' }}>({g.category})</small></span>
               </li>
             ))}
           </ul>
@@ -199,12 +200,13 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
                   alignItems: 'center',
                   gap: '12px',
                   textDecoration: checkedItems[item.id] ? 'line-through' : 'none',
-                  color: checkedItems[item.id] ? '#94a3b8' : 'inherit'
+                  color: checkedItems[item.id] ? '#94a3b8' : '#e2e8f0'
                 }}
               >
-                <input 
-                  type="checkbox" 
-                  checked={!!checkedItems[item.id]} 
+                <input
+                  type="checkbox"
+                  aria-label={item.name}
+                  checked={!!checkedItems[item.id]}
                   onChange={() => {}} // handled by parent li click
                   style={{ cursor: 'pointer' }}
                 />
