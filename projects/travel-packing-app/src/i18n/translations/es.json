@@ -54,7 +54,8 @@
     "volumeLine": "Volumen: {volume}L / {capacity}L",
     "percentFull": "{percent}% Lleno",
     "airlineCompliance": "Cumplimiento de la Aerolínea",
-    "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}"
+    "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}",
+    "volumeByCategory": "Volumen Empacado por Categoría"
   },
   "itinerary": {
     "title": "Itinerario en Vivo ({destination})",

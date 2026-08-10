@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateKnapsackPhysics } from '../src/utils/knapsackEngine';
+import { calculateKnapsackPhysics, getPackedGarments } from '../src/utils/knapsackEngine';
 import { Garment, WearabilityReport } from '../src/types';
 import { MODELS } from '../src/utils/suitcaseDatabase';
 
@@ -37,5 +37,10 @@ describe('knapsackEngine', () => {
     // Should fit and be compliant with 7kg limit
     expect(result.fitsInSuitcase).toBe(true);
     expect(result.airlineCompliant).toBe(true);
+  });
+
+  it('Given a report scheduling outfits from a larger wardrobe, When the packed garments are derived, Then only the garments actually used across the scheduled outfits are returned, deduplicated', () => {
+    const packed = getPackedGarments(mockReport, mockGarments);
+    expect(packed.map((g) => g.id).sort()).toEqual(['bottom1', 'top1', 'top2']);
   });
 });

@@ -54,7 +54,8 @@
     "volumeLine": "容量：{volume}L／{capacity}L",
     "percentFull": "{percent}％使用",
     "airlineCompliance": "航空会社の規定への適合",
-    "compliantWith": "✔ {airline} の手荷物制限に適合しています"
+    "compliantWith": "✔ {airline} の手荷物制限に適合しています",
+    "volumeByCategory": "カテゴリー別の梱包容量"
   },
   "itinerary": {
     "title": "リアルタイム旅程（{destination}）",

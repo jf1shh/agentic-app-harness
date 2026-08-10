@@ -54,7 +54,8 @@
     "volumeLine": "体积：{volume}L / {capacity}L",
     "percentFull": "已装 {percent}%",
     "airlineCompliance": "航空公司合规性",
-    "compliantWith": "✔ 符合 {airline} 的随身行李限制"
+    "compliantWith": "✔ 符合 {airline} 的随身行李限制",
+    "volumeByCategory": "按类别划分的打包体积"
   },
   "itinerary": {
     "title": "实时行程（{destination}）",

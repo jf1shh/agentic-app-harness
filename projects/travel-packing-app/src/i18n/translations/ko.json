@@ -54,7 +54,8 @@
     "volumeLine": "부피: {volume}L / {capacity}L",
     "percentFull": "{percent}% 참",
     "airlineCompliance": "항공사 규정 준수",
-    "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다"
+    "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다",
+    "volumeByCategory": "카테고리별 포장 부피"
   },
   "itinerary": {
     "title": "실시간 일정 ({destination})",
