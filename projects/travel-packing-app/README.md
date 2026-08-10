@@ -64,6 +64,11 @@ another of the same role; there's no drop target for adding a topper to a day th
 
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
+Every status/callout color (error text, success confirmations, dead-weight and airline-warning
+callouts, checked-off checklist rows) uses a themed `--danger-text`/`--warning-text`/
+`--success-text`/`--checked-item-text` CSS variable rather than a fixed hex value, so each meets
+WCAG AA's 4.5:1 text contrast in both themes — `e2e/light-theme-contrast.spec.ts` audits every
+major page state in light theme with `@axe-core/playwright`.
 
 ### Internationalization
 A language switcher in the header covers 11 languages — English, Arabic, German, Spanish, French,

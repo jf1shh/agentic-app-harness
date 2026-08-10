@@ -123,7 +123,7 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
       </div>
       <h2 className="print-only-heading" style={{ display: 'none' }}>🎒 Packing Checklist</h2>
 
-      <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '16px' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '16px' }}>
         {t('checklist.instructions')}
       </p>
 
@@ -165,7 +165,12 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
                   alignItems: 'center',
                   gap: '12px',
                   textDecoration: checkedItems[g.id] ? 'line-through' : 'none',
-                  color: checkedItems[g.id] ? '#94a3b8' : '#e2e8f0'
+                  // Unchecked sits on the fixed-dark placeholder box above
+                  // (#1e293b, the same regardless of theme), so '#e2e8f0'
+                  // stays a literal -- checked swaps to a translucent green
+                  // tint over the *current* theme's surface, so its text
+                  // must follow the theme via --checked-item-text instead.
+                  color: checkedItems[g.id] ? 'var(--checked-item-text)' : '#e2e8f0'
                 }}
               >
                 <input
@@ -175,7 +180,7 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
                   onChange={() => {}} // handled by parent li click
                   style={{ cursor: 'pointer' }}
                 />
-                <span>{g.name} <small style={{ color: '#94a3b8' }}>({g.category})</small></span>
+                <span>{g.name} <small style={{ color: checkedItems[g.id] ? 'var(--checked-item-text)' : '#94a3b8' }}>({g.category})</small></span>
               </li>
             ))}
           </ul>
@@ -200,7 +205,7 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
                   alignItems: 'center',
                   gap: '12px',
                   textDecoration: checkedItems[item.id] ? 'line-through' : 'none',
-                  color: checkedItems[item.id] ? '#94a3b8' : '#e2e8f0'
+                  color: checkedItems[item.id] ? 'var(--checked-item-text)' : '#e2e8f0'
                 }}
               >
                 <input

@@ -306,7 +306,7 @@ export default function Home() {
       <div className="glass-panel no-print" style={{ padding: '24px' }}>
         <h2 style={{ marginBottom: '16px' }}>{t('trip.detailsTitle')}</h2>
 
-        {error && <div style={{ color: 'red', marginBottom: '16px' }}>{error}</div>}
+        {error && <div style={{ color: 'var(--danger-text)', marginBottom: '16px' }}>{error}</div>}
 
         <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
           <div>
@@ -441,7 +441,7 @@ export default function Home() {
                   style={{ cursor: 'pointer' }}
                 />
                 {customGarments.length > 0 && customFileName && (
-                  <p style={{ marginTop: '8px', color: '#22c55e', fontSize: '0.9rem' }}>
+                  <p style={{ marginTop: '8px', color: 'var(--success-text)', fontSize: '0.9rem' }}>
                     {t('trip.loadedGarments', { count: customGarments.length, file: customFileName })}
                   </p>
                 )}
@@ -487,19 +487,19 @@ export default function Home() {
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>{t('knapsack.title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
-              <div style={{ padding: '16px', border: `2px solid ${physics.fitsInSuitcase ? 'var(--primary)' : 'red'}`, borderRadius: '8px' }}>
+              <div style={{ padding: '16px', border: `2px solid ${physics.fitsInSuitcase ? 'var(--primary)' : 'var(--danger-text)'}`, borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeWeight')}</h3>
                 <p>{t('knapsack.weightLine', { weight: physics.totalWeightKg.toFixed(2), limit: physics.weightLimitKg ?? 0 })}</p>
                 <p>{t('knapsack.volumeLine', { volume: physics.totalVolumeLiters.toFixed(2), capacity: physics.suitcaseCapacityLiters.toFixed(2) })}</p>
                 <div style={{ width: '100%', backgroundColor: '#334155', height: '12px', borderRadius: '6px', marginTop: '12px', overflow: 'hidden' }}>
-                  <div style={{ width: `${Math.min(physics.volumeUsedPercent, 100)}%`, backgroundColor: physics.volumeUsedPercent > 100 ? 'red' : 'var(--primary)', height: '100%' }}></div>
+                  <div style={{ width: `${Math.min(physics.volumeUsedPercent, 100)}%`, backgroundColor: physics.volumeUsedPercent > 100 ? 'var(--danger-text)' : 'var(--primary)', height: '100%' }}></div>
                 </div>
-                <p style={{ marginTop: '4px', fontSize: '0.9rem', color: '#94a3b8' }}>{t('knapsack.percentFull', { percent: physics.volumeUsedPercent.toFixed(1) })}</p>
+                <p style={{ marginTop: '4px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>{t('knapsack.percentFull', { percent: physics.volumeUsedPercent.toFixed(1) })}</p>
               </div>
-              <div style={{ padding: '16px', border: `2px solid ${physics.airlineCompliant ? 'var(--primary)' : 'orange'}`, borderRadius: '8px' }}>
+              <div style={{ padding: '16px', border: `2px solid ${physics.airlineCompliant ? 'var(--primary)' : 'var(--warning-text)'}`, borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.airlineCompliance')}</h3>
                 {physics.airlineWarnings.length > 0 ? (
-                  <ul style={{ paddingLeft: '20px', color: 'orange' }}>
+                  <ul style={{ paddingLeft: '20px', color: 'var(--warning-text)' }}>
                     {physics.airlineWarnings.map((w, i) => <li key={i}>{w}</li>)}
                   </ul>
                 ) : (
@@ -535,7 +535,7 @@ export default function Home() {
             <button
               onClick={handleStartOver}
               className="btn-secondary"
-              style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', padding: '10px 24px' }}
+              style={{ background: 'transparent', color: 'var(--danger-text)', border: '1px solid var(--danger-text)', padding: '10px 24px' }}
             >
               {t('app.startOver')}
             </button>
@@ -554,7 +554,7 @@ export default function Home() {
         <button
           onClick={handleDeleteAllData}
           className="btn-secondary"
-          style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', fontSize: '0.85rem', padding: '8px 16px' }}
+          style={{ background: 'transparent', color: 'var(--danger-text)', border: '1px solid var(--danger-text)', fontSize: '0.85rem', padding: '8px 16px' }}
         >
           {t('app.deleteAllData')}
         </button>

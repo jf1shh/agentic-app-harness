@@ -122,6 +122,16 @@
   unchanged — so this only changes behavior for genuinely long trips. Unchecking the box (no laundry
   access assumed, e.g. an off-grid trip) reverts to the pre-existing behavior of scaling with the full
   trip length, capped only by the archetype's palette size as before.
+- [x] Light-theme WCAG AA color contrast — every status/callout color (error text, success
+  confirmations, dead-weight and airline-warning callouts, checked-off Packing Checklist rows) uses
+  a themed CSS custom property (`--danger-text`/`--warning-text`/`--success-text`/
+  `--checked-item-text` in `globals.css`) rather than a fixed hex value or the background-tint
+  `--secondary`/`--success` variables, so light theme meets the same 4.5:1 minimum dark theme
+  already did. `e2e/light-theme-contrast.spec.ts` audits every major page state (trip form,
+  Knapsack Engine panel, Digital Closet, Packing Checklist) in forced light theme via
+  `@axe-core/playwright`, with the page's decorative `radial-gradient` body background neutralized
+  in the test only so axe can actually compute contrast through it rather than reporting the
+  gradient-covered majority of the page as "incomplete."
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** Next.js (App Router)

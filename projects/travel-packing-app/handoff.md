@@ -82,6 +82,18 @@ architectural items that were the last of that backlog — all merged to `master
   diverge from the automatic scheduler's own rules. Uses `@dnd-kit/core`. PR #166.
 - Phases 9–10 (weather-reactive packing essentials, Travel Mode preference) landed earlier in the
   same audit effort — see PRs #161/#162.
+- **Phase 18 — Broader light-theme WCAG AA contrast audit**: swept every major page state (trip
+  form, error/success messages, Knapsack Engine cards, dead-weight/swap-suggestion callouts,
+  Digital Closet "+ Photo" placeholder, Packing Checklist checked-off rows) in forced light theme
+  with `@axe-core/playwright`, fixing every hardcoded color that resolved to a sub-4.5:1 contrast
+  ratio. Introduced themed `--danger-text`/`--warning-text`/`--success-text`/`--checked-item-text`
+  CSS custom properties (`globals.css`) distinct from the existing `--secondary`/`--success`
+  background-tint variables, since the same bright hue that's fine for a border or a background
+  tint often fails AA when used as the text color itself. Also fixed a real gap in the existing
+  a11y suite: axe-core cannot compute contrast through this app's `radial-gradient` body
+  background, so it silently reported the gradient-covered majority of the page as "incomplete"
+  rather than a violation — `e2e/light-theme-contrast.spec.ts` neutralizes the gradient with an
+  injected test-only stylesheet so axe can actually evaluate it. No follow-up item.
 
 All four Phase 11–14 branches were deliberately opened independently off `master` (not stacked) per
 this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
@@ -98,8 +110,6 @@ against the others before it could land clean. `specs/travel-packing-app-spec.md
 - **Expanded Archetypes** (e.g. "Boho Chic", "Business") — not started.
 - **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)
   covers the "where does my volume go" question without this.
-- A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
-  surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
 - `LocalInfoPanel` (typical costs / travel advisory) and `DailyActivityPicker`'s pre-selected pill
   guess still scope to the *primary* destination only on a multi-destination trip — the itinerary
   and packing math themselves are correctly per-leg, but these two secondary panels are not.
