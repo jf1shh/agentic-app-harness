@@ -43,3 +43,27 @@ export function resolveActivity(explicit: string | null | undefined, destination
   if (explicit !== null && explicit !== undefined) return explicit;
   return guessActivityFromDestination(destination);
 }
+
+/**
+ * Resolve the activity pill for one specific day of a (possibly
+ * multi-destination) trip: an explicit per-day choice always wins, same
+ * rule as resolveActivity. Otherwise the guess is made from THIS day's own
+ * destination -- the value DayItinerary.destinationName carries for a
+ * multi-destination leg (src/schemas.ts, set by fetchLegItinerary) -- and
+ * only falls back to the trip's primary destination when the day has no
+ * leg-specific destination yet (a single-destination trip, or a day whose
+ * leg hasn't been resolved). Without this, a day belonging to a later leg
+ * guessed off the trip's primary destination alone -- a Maui-then-Whistler
+ * trip guessed "beach" for every Whistler day too.
+ */
+export function resolveDayActivity(
+  explicit: string | null | undefined,
+  dayDestinationName: string | null | undefined,
+  primaryDestination: string
+): string {
+  if (explicit !== null && explicit !== undefined) return explicit;
+  const effectiveDestination = dayDestinationName && dayDestinationName.trim().length > 0
+    ? dayDestinationName
+    : primaryDestination;
+  return guessActivityFromDestination(effectiveDestination);
+}

@@ -91,6 +91,13 @@ architectural items that were the last of that backlog — all merged to `master
   `computeVolumeBreakdown()` call so they can't disagree.
 - Phases 9–10 (weather-reactive packing essentials, Travel Mode preference) landed earlier in the
   same audit effort — see PRs #161/#162.
+- **Phase 19 — Per-leg Local Info and activity guessing**: `LocalInfoPanel` now shows typical
+  costs/travel-advisory info for **every** destination leg on a multi-destination trip, clearly
+  labeled by leg, instead of only the primary destination; `DailyActivityPicker`'s pre-selected
+  pill guess uses each day's own leg destination (`buildDayDestinations` in
+  `src/utils/multiDestination.ts`, `resolveDayActivity` in `src/utils/activity.ts`) rather than
+  always guessing from the trip's primary destination, so a day in a later leg no longer inherits
+  an earlier leg's guess.
 
 All Phase 11–14 (and 17) branches were deliberately opened independently off `master` (not
 stacked) per this session's pattern, since GitHub auto-merge was enabled and landed them in an
@@ -109,8 +116,5 @@ luggage.
 - **Expanded Archetypes** (e.g. "Boho Chic", "Business") — not started.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
   surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
-- `LocalInfoPanel` (typical costs / travel advisory) and `DailyActivityPicker`'s pre-selected pill
-  guess still scope to the *primary* destination only on a multi-destination trip — the itinerary
-  and packing math themselves are correctly per-leg, but these two secondary panels are not.
 
 Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.
