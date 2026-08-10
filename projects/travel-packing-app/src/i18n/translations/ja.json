@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "クワイエットラグジュアリー",
     "gorpcore": "ゴープコア",
-    "scandi": "北欧ミニマリスト"
+    "scandi": "北欧ミニマリスト",
+    "corporate": "コーポレートパワー",
+    "oldMoney": "オールドマネー",
+    "balletcore": "バレエコア"
   },
   "strategy": {
     "standard": "標準（快適重視）",

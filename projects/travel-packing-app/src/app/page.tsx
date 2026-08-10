@@ -413,6 +413,9 @@ export default function Home() {
                     <option value="whimsigoth">Whimsigoth</option>
                     <option value="coastal">Coastal Maritime</option>
                     <option value="cottagecore">Cottagecore</option>
+                    <option value="corporate">{t('archetype.corporate')}</option>
+                    <option value="old-money">{t('archetype.oldMoney')}</option>
+                    <option value="balletcore">{t('archetype.balletcore')}</option>
                   </select>
                 </div>
                 <div>

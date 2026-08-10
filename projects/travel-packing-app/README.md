@@ -24,7 +24,13 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
 - **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. On a multi-destination trip, each day's guess is made from that day's own leg destination (`buildDayDestinations`/`resolveDayActivity`), not always the primary destination. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.
 
 ### Wardrobe source — two paths
-- **Style archetype preset** — pick one of 12 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+- **Style archetype preset** — pick one of 15 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`, `corporate`, `old-money`, `balletcore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+  - **Expanded archetypes (Phase 16)** — `corporate` (Corporate Power, business/boardroom formal),
+    `old-money` (heritage/equestrian-adjacent), and `balletcore` (soft pastel) round out the original
+    twelve, each chosen for genuine distinctiveness from its nearest neighbour (Corporate Power vs.
+    Quiet Luxury's off-duty cashmere; Old Money vs. Ivy League Prep's collegiate stripes and Dark
+    Academia's tweed; Balletcore vs. Bohemian/Resort's earthy linen and Cottagecore's prairie
+    palette). Same data shape as the original twelve — no special-casing in the wardrobe engine.
   - **Laundry-cycle-aware packing** — an "Assume laundry access on longer trips (weekly)" checkbox
     (on by default) caps the trip length used to size the wardrobe at one laundry cycle
     (`LAUNDRY_CYCLE_DAYS = 7`, `src/utils/laundryCycle.ts`) once the trip runs longer than that,

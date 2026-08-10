@@ -60,10 +60,25 @@
 - [x] Internationalization: 11 languages (English, Arabic, German, Spanish, French, Hindi, Italian,
       Japanese, Korean, Portuguese, Chinese) with automatic browser-language detection, a persisted
       user override, and right-to-left layout for Arabic.
-- [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
+- [x] 15 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
-  Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
-  palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
+  Chic, Whimsigoth, Coastal Maritime, Cottagecore, Corporate Power, Old Money, Balletcore — each a
+  `tops`/`bottoms`/`outerwear`/`colors` palette in `src/utils/generator.ts`'s `PALETTES`, consumed
+  the same way regardless of key. Phase 16 added the last three, chosen to be genuinely distinct
+  from every existing archetype rather than a restyled duplicate: Corporate Power is
+  business/boardroom formal (structured shirting, suit trousers, wool overcoats — distinct from
+  Quiet Luxury's softer off-duty cashmere); Old Money is heritage/equestrian-adjacent (hunter
+  green quilting, camel wool, cashmere, houndstooth — distinct from Ivy League Prep's collegiate
+  stripes-and-chinos and from Dark Academia's tweed-and-plaid); Balletcore is soft pastel
+  (blush/lilac/ivory satin, silk and tulle — distinct from Bohemian/Resort's earthy linen palette
+  and Cottagecore's cream/olive prairie palette). Each new archetype carries the same data shape as
+  the original twelve (no `exclusionTags` on any archetype-generated garment, matching existing
+  behaviour), colours drawn only from `COLOR_MATCHES`' known key set so colour-clash and hot-weather
+  exclusion behave identically without special-casing, and at least one `time: 'evening'` top or
+  bottom so a formal/night-out day is always schedulable. The dropdown in `src/app/page.tsx` lists
+  archetypes as individual `<option>`s (not auto-enumerated from `PALETTES`, matching the existing
+  nine non-i18n'd archetypes' convention) — the three new options are i18n'd via
+  `archetype.corporate`/`archetype.oldMoney`/`archetype.balletcore` across all 11 languages.
 - [x] Destination-aware travel adapter — the packing checklist's essentials always include one travel
   adapter; `getAdapterPlugType` (`src/utils/plugs.ts`) resolves the destination's IEC wall-plug type
   from its resolved country code (e.g. Germany → "Type C/F"), and the checklist names the specific

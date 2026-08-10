@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Quiet Luxury",
     "gorpcore": "Gorpcore",
-    "scandi": "Scandi Minimalist"
+    "scandi": "Scandi Minimalist",
+    "corporate": "Corporate Power",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Standard (Comfortable)",

@@ -20,7 +20,8 @@ Welcome, fellow Agent! This document will quickly get you up to speed on the **P
    - Cross-references totals against `src/utils/airlineBaggage.ts` limits to flag compliance issues.
 
 3. **Generator & Thermals (`src/utils/generator.ts`)**:
-   - Holds the legacy `PALETTES` (e.g. "Quiet Luxury", "Gorpcore").
+   - Holds `PALETTES` — 15 fashion archetypes (e.g. "Quiet Luxury", "Gorpcore", and Phase 16's
+     "Corporate Power", "Old Money", "Balletcore").
    - `getThermalValue(name)` dynamically assigns warmth scores (1-10) by parsing string names for fabrics (Cashmere, Linen, Wool).
 
 4. **Digital Closet (`src/services/db.ts` & `@imgly/background-removal`)**:
@@ -91,6 +92,16 @@ verification output before treating it as merged:
   succeeds, since this only changes how a plan is arranged, not what's packed, unlike the
   rule-validated Outfit Editor. This was the follow-up the Phase 14 PR split out and left explicitly
   undone; see this phase's own PR body.
+- **Phase 16 — Expanded style archetypes**: three new fashion archetypes join the original twelve in
+  `src/utils/generator.ts`'s `PALETTES` — `corporate` (Corporate Power, business/boardroom formal),
+  `old-money` (heritage/equestrian-adjacent), and `balletcore` (soft pastel) — each chosen for
+  genuine distinctiveness from its nearest existing neighbour rather than a restyled duplicate, and
+  each matching the existing data shape exactly (no `exclusionTags` on archetype-generated garments,
+  colours drawn only from `COLOR_MATCHES`'s known keys, at least one `time: 'evening'` piece). The
+  dropdown in `src/app/page.tsx` gained three `<option>`s (i18n'd across all 11 languages via new
+  `archetype.corporate`/`archetype.oldMoney`/`archetype.balletcore` keys); `generator.test.ts` gained
+  a dedicated sweep proving `generateAllValidOutfits()` finds real schedulable (including
+  evening-appropriate) outfits for each new archetype, not just that the data exists.
 - **Phase 19 — Per-leg Local Info and activity guessing**: `LocalInfoPanel` now shows typical
   costs/travel-advisory info for **every** destination leg on a multi-destination trip, clearly
   labeled by leg, instead of only the primary destination; `DailyActivityPicker`'s pre-selected
@@ -107,7 +118,6 @@ against the others before it could land clean. `specs/travel-packing-app-spec.md
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
 - **Mobile Port** (React Native) — not started.
-- **Expanded Archetypes** (e.g. "Boho Chic", "Business") — not started.
 - **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)
   covers the "where does my volume go" question without this.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
