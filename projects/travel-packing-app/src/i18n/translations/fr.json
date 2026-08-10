@@ -56,7 +56,11 @@
     "percentFull": "{percent}% Plein",
     "airlineCompliance": "Conformité avec la Compagnie Aérienne",
     "compliantWith": "✔ Conforme aux limites de bagage cabine de {airline}",
-    "volumeByCategory": "Volume Emballé par Catégorie"
+    "volumeByCategory": "Volume Emballé par Catégorie",
+    "volume3D": "Vue 3D du remplissage de la valise",
+    "volume3DHint": "Faites glisser pour pivoter, faites défiler pour zoomer. La liste ci-dessous reprend cette répartition sous forme de texte.",
+    "volume3DOverCapacity": "Cette sélection dépasse le volume de la valise — la vue ci-dessous est plafonnée à 100 % de remplissage.",
+    "volume3DLoading": "Chargement de la vue 3D…"
   },
   "itinerary": {
     "title": "Itinéraire en Direct ({destination})",

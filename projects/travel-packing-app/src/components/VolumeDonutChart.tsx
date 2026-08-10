@@ -1,14 +1,13 @@
 "use client";
 
 import React from 'react';
-import { VolumeBreakdownSlice } from '../utils/volumeBreakdown';
+import { VolumeBreakdownSlice, SLICE_COLORS } from '../utils/volumeBreakdown';
 import { useT } from '../i18n/context';
 
 interface Props {
   slices: VolumeBreakdownSlice[];
 }
 
-const SLICE_COLORS = ['#6366f1', '#22c55e', '#f97316', '#ec4899', '#06b6d4', '#eab308', '#8b5cf6', '#ef4444'];
 const RADIUS = 60;
 const STROKE_WIDTH = 24;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;

@@ -56,7 +56,11 @@
     "percentFull": "{percent}% Pieno",
     "airlineCompliance": "Conformità con la Compagnia Aerea",
     "compliantWith": "✔ Conforme ai limiti del bagaglio a mano di {airline}",
-    "volumeByCategory": "Volume Imballato per Categoria"
+    "volumeByCategory": "Volume Imballato per Categoria",
+    "volume3D": "Vista 3D del carico della valigia",
+    "volume3DHint": "Trascina per ruotare, scorri per ingrandire. L'elenco sottostante ripete questa ripartizione come testo.",
+    "volume3DOverCapacity": "Questa selezione supera il volume della valigia: la vista sottostante è limitata al 100% di riempimento.",
+    "volume3DLoading": "Caricamento vista 3D…"
   },
   "itinerary": {
     "title": "Itinerario in Tempo Reale ({destination})",

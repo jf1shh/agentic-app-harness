@@ -56,7 +56,11 @@
     "percentFull": "{percent}٪ ممتلئة",
     "airlineCompliance": "مطابقة شركة الطيران",
     "compliantWith": "✔ متوافقة مع حدود حقيبة اليد لشركة {airline}",
-    "volumeByCategory": "الحجم المعبأ حسب الفئة"
+    "volumeByCategory": "الحجم المعبأ حسب الفئة",
+    "volume3D": "عرض ثلاثي الأبعاد لحقيبة السفر",
+    "volume3DHint": "اسحب للتدوير، ومرر للتكبير. تكرر القائمة أدناه هذا التفصيل كنص.",
+    "volume3DOverCapacity": "يتجاوز هذا الاختيار سعة الحقيبة — تم تحديد العرض أدناه عند امتلاء 100%.",
+    "volume3DLoading": "جارٍ تحميل العرض ثلاثي الأبعاد…"
   },
   "itinerary": {
     "title": "خط سير الرحلة المباشر ({destination})",

@@ -49,6 +49,20 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
      `computeVolumeBreakdown()` (`src/utils/volumeBreakdown.ts`) over the same packed-garment set the
      physics numbers above come from (`getPackedGarments()`, shared by both so there's one definition
      of "what's actually packed").
+   - **3D suitcase packing view** — alongside the donut chart, a Three.js bounding-box view
+     (`Volume3DPanel.tsx` / `Volume3DScene.tsx`) shows the selected suitcase as a wireframe box with
+     each packed category rendered as a proportionally-sized stacked layer inside it — orbit/zoom via
+     `OrbitControls`, no drag-to-repack. The layer geometry (`computeVolumeBlocks()` in
+     `src/utils/volumeBlocks.ts`) is pure and reads its cm³ figures straight from the same
+     `computeVolumeBreakdown()` slices the donut chart uses (never re-derived), and is sized to the
+     same suitcase model (`selectedSuitcase`) the physics numbers above are already computed against.
+     Three.js/WebGL is client-only, so `Volume3DScene` is loaded exclusively via
+     `next/dynamic(..., { ssr: false })` — this app is a static export (`output: 'export'`), and a
+     module that touches `window`/WebGL at eval time fails `next build` outright. Accessibility: the
+     canvas is invisible to assistive tech, so the view is wrapped in a `role="img"` region with an
+     `aria-label` built from the same slices (never a re-derived figure) and an `aria-describedby`
+     text-fallback list repeating the identical breakdown — adapted from the donut chart's own legend
+     pattern, so the two visualizations can never disagree.
 
 ### Drag-and-drop Outfit Editor (`@dnd-kit/core`)
 Drag any item out of the Digital Closet and drop it onto a scheduled day's Top/Bottom/Layer slot to
@@ -121,6 +135,9 @@ src/
     LocalInfoPanel.tsx             # typical-cost currency conversion + travel advisory
     DailyActivityPicker.tsx        # per-day activity tagging (Beach/Hike/Ski/Formal/...)
     SuitcaseFinder.tsx             # brand/model text search + barcode lookup
+    VolumeDonutChart.tsx           # 2D SVG donut chart of packed volume by category
+    Volume3DPanel.tsx              # accessible wrapper: aria-label/description + text fallback
+    Volume3DScene.tsx              # the Three.js/WebGL canvas, loaded via next/dynamic({ssr:false})
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
     weatherApi.ts                  # geocode + autocomplete + Open-Meteo forecast + itinerary transform
@@ -147,6 +164,7 @@ src/
     suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
     airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)
     measurement.ts                 # credit-card-calibrated measurement math (pure, camera-free)
+    volumeBlocks.ts                # computeVolumeBlocks() — 3D box geometry over an existing breakdown
   schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, TripShare, ...)
   types.ts
 __tests__/                         # Vitest coverage for engines
@@ -164,7 +182,7 @@ The packing checklist is persisted in `localStorage`; the wardrobe *media librar
 
 ## Tech stack
 
-Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast), Zod 4. Heavy compute lives client-side. **`@imgly/background-removal`** runs client-side AI for removing backgrounds from uploaded garment photos, and **`onnxruntime-web`** is wired up for any future local model. Open-Meteo is the only remote dependency, and only for geocoding + forecast.
+Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast), Zod 4. Heavy compute lives client-side. **`@imgly/background-removal`** runs client-side AI for removing backgrounds from uploaded garment photos, **`onnxruntime-web`** is wired up for any future local model, and **`three`** (client-only, dynamically imported) renders the 3D suitcase packing view. Open-Meteo is the only remote dependency, and only for geocoding + forecast.
 
 ## Persistence and privacy
 

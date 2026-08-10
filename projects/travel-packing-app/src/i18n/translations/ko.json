@@ -56,7 +56,11 @@
     "percentFull": "{percent}% 참",
     "airlineCompliance": "항공사 규정 준수",
     "compliantWith": "✔ {airline} 기내 수하물 제한을 준수합니다",
-    "volumeByCategory": "카테고리별 포장 부피"
+    "volumeByCategory": "카테고리별 포장 부피",
+    "volume3D": "여행 가방 3D 패킹 보기",
+    "volume3DHint": "드래그하여 회전하고 스크롤하여 확대하세요. 아래 목록은 이 내역을 텍스트로 반복해서 보여줍니다.",
+    "volume3DOverCapacity": "이 선택 항목은 여행 가방의 부피를 초과합니다 — 아래 보기는 100% 채움으로 제한됩니다.",
+    "volume3DLoading": "3D 보기를 불러오는 중…"
   },
   "itinerary": {
     "title": "실시간 일정 ({destination})",

@@ -56,7 +56,11 @@
     "percentFull": "{percent}% Voll",
     "airlineCompliance": "Konformität mit der Fluggesellschaft",
     "compliantWith": "✔ Erfüllt die Handgepäck-Limits von {airline}",
-    "volumeByCategory": "Gepacktes Volumen nach Kategorie"
+    "volumeByCategory": "Gepacktes Volumen nach Kategorie",
+    "volume3D": "3D-Kofferpackansicht",
+    "volume3DHint": "Zum Drehen ziehen, zum Zoomen scrollen. Die Liste unten wiederholt diese Aufschlüsselung als Text.",
+    "volume3DOverCapacity": "Diese Auswahl überschreitet das Koffervolumen — die Ansicht unten ist auf 100% Füllstand begrenzt.",
+    "volume3DLoading": "3D-Ansicht wird geladen…"
   },
   "itinerary": {
     "title": "Live-Reiseplan ({destination})",

@@ -60,8 +60,8 @@ This script runs:
 5. `playwright` (E2E & Axe-core A11y scans in `e2e/`)
 
 ## 📝 Current Status & TODOs
-_Last updated 2026-08-10._ The app has successfully ported all legacy V3 rules into Next.js V4,
-**and** closed out every gap identified in the source-repo audit
+_Last updated 2026-08-10 (Phase 17)._ The app has successfully ported all legacy V3 rules into
+Next.js V4, **and** closed out every gap identified in the source-repo audit
 (github.com/jf1shh/Travel-Packing-Optimizer vs. this monorepo app), including the four large
 architectural items that were the last of that backlog — all merged to `master`:
 
@@ -80,24 +80,33 @@ architectural items that were the last of that backlog — all merged to `master
   day's Top/Bottom/Layer slot; a drop only succeeds if the wardrobe engine's own
   `generateAllValidOutfits()` already recognizes the resulting combo, so manual overrides can never
   diverge from the automatic scheduler's own rules. Uses `@dnd-kit/core`. PR #166.
+- **Phase 17 — 3D luggage volume visualization**: `src/utils/volumeBlocks.ts`
+  (`computeVolumeBlocks()`) turns the *existing* `computeVolumeBreakdown()` slices (Phase 11, never
+  re-derived) plus the selected suitcase's own dimensions into stacked 3D box geometry;
+  `Volume3DScene.tsx` renders it with Three.js/`OrbitControls`, loaded exclusively via
+  `next/dynamic(..., { ssr: false })` from `Volume3DPanel.tsx` so the WebGL-touching module never
+  reaches server-rendered code in this static export. Accessible via a `role="img"`
+  aria-label/aria-describedby built from the same slices, plus a visible text-fallback list.
+  Supplements the Phase 11 donut chart rather than replacing it — both read one
+  `computeVolumeBreakdown()` call so they can't disagree.
 - Phases 9–10 (weather-reactive packing essentials, Travel Mode preference) landed earlier in the
   same audit effort — see PRs #161/#162.
 
-All four Phase 11–14 branches were deliberately opened independently off `master` (not stacked) per
-this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
-order — each required at least one conflict-resolution merge (`git merge origin/master --no-edit`)
-against the others before it could land clean. `specs/travel-packing-app-spec.md` now carries all
-21 feature bullets checked off.
+All Phase 11–14 (and 17) branches were deliberately opened independently off `master` (not
+stacked) per this session's pattern, since GitHub auto-merge was enabled and landed them in an
+unpredictable order — each required at least one conflict-resolution merge
+(`git merge origin/master --no-edit`) against the others before it could land clean.
+`specs/travel-packing-app-spec.md` now carries every feature bullet checked off, including 3D
+luggage.
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):**
 - **`SuitcaseLayout`** — a visual, drag-to-reorder packing-cube layout view — was bundled with the
   outfit editor in the original audit but deliberately split out as a separate, undelivered
   feature; it's a materially different (decorative/organizational) surface from the rule-validated
-  outfit editor that *was* built.
+  outfit editor that *was* built. (The 3D suitcase view built in Phase 17 is a read-only
+  visualization of an already-computed pack, not this drag-to-reorder editor.)
 - **Mobile Port** (React Native) — not started.
 - **Expanded Archetypes** (e.g. "Boho Chic", "Business") — not started.
-- **3D Luggage** (Three.js volume visualization) — not started; the 2D SVG donut chart (Phase 11)
-  covers the "where does my volume go" question without this.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
   surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
 - `LocalInfoPanel` (typical costs / travel advisory) and `DailyActivityPicker`'s pre-selected pill

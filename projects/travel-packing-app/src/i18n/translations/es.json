@@ -56,7 +56,11 @@
     "percentFull": "{percent}% Lleno",
     "airlineCompliance": "Cumplimiento de la Aerolínea",
     "compliantWith": "✔ Cumple con los límites de equipaje de mano de {airline}",
-    "volumeByCategory": "Volumen Empacado por Categoría"
+    "volumeByCategory": "Volumen Empacado por Categoría",
+    "volume3D": "Vista 3D del empaque de la maleta",
+    "volume3DHint": "Arrastra para girar, desplázate para acercar. La lista de abajo repite este desglose como texto.",
+    "volume3DOverCapacity": "Esta selección supera el volumen de la maleta; la vista de abajo está limitada al 100% de llenado.",
+    "volume3DLoading": "Cargando vista 3D…"
   },
   "itinerary": {
     "title": "Itinerario en Vivo ({destination})",
