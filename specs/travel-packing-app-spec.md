@@ -60,10 +60,25 @@
 - [x] Internationalization: 11 languages (English, Arabic, German, Spanish, French, Hindi, Italian,
       Japanese, Korean, Portuguese, Chinese) with automatic browser-language detection, a persisted
       user override, and right-to-left layout for Arabic.
-- [x] 12 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
+- [x] 15 fashion archetypes for the style-preset wardrobe source — Quiet Luxury, Gorpcore, Scandi
   Minimalist, Y2K Streetwear, Dark Academia, Athleisure, Bohemian / Resort, Ivy League Prep, Rock
-  Chic, Whimsigoth, Coastal Maritime, Cottagecore — each a `tops`/`bottoms`/`outerwear`/`colors`
-  palette in `src/utils/generator.ts`'s `PALETTES`, consumed the same way regardless of key.
+  Chic, Whimsigoth, Coastal Maritime, Cottagecore, Corporate Power, Old Money, Balletcore — each a
+  `tops`/`bottoms`/`outerwear`/`colors` palette in `src/utils/generator.ts`'s `PALETTES`, consumed
+  the same way regardless of key. Phase 16 added the last three, chosen to be genuinely distinct
+  from every existing archetype rather than a restyled duplicate: Corporate Power is
+  business/boardroom formal (structured shirting, suit trousers, wool overcoats — distinct from
+  Quiet Luxury's softer off-duty cashmere); Old Money is heritage/equestrian-adjacent (hunter
+  green quilting, camel wool, cashmere, houndstooth — distinct from Ivy League Prep's collegiate
+  stripes-and-chinos and from Dark Academia's tweed-and-plaid); Balletcore is soft pastel
+  (blush/lilac/ivory satin, silk and tulle — distinct from Bohemian/Resort's earthy linen palette
+  and Cottagecore's cream/olive prairie palette). Each new archetype carries the same data shape as
+  the original twelve (no `exclusionTags` on any archetype-generated garment, matching existing
+  behaviour), colours drawn only from `COLOR_MATCHES`' known key set so colour-clash and hot-weather
+  exclusion behave identically without special-casing, and at least one `time: 'evening'` top or
+  bottom so a formal/night-out day is always schedulable. The dropdown in `src/app/page.tsx` lists
+  archetypes as individual `<option>`s (not auto-enumerated from `PALETTES`, matching the existing
+  nine non-i18n'd archetypes' convention) — the three new options are i18n'd via
+  `archetype.corporate`/`archetype.oldMoney`/`archetype.balletcore` across all 11 languages.
 - [x] Destination-aware travel adapter — the packing checklist's essentials always include one travel
   adapter; `getAdapterPlugType` (`src/utils/plugs.ts`) resolves the destination's IEC wall-plug type
   from its resolved country code (e.g. Germany → "Type C/F"), and the checklist names the specific
@@ -114,6 +129,19 @@
   scheduled. Deliberately scoped to swapping an existing role's garment for another of the same
   role — adding a topper to a day that has none is not supported (there is no drop target for a role
   the outfit doesn't already have).
+- [x] SuitcaseLayout — a visual, drag-to-reorder packing-cube layout view showing every packed
+  garment as a draggable tile the user can reorder by priority within the suitcase, purely
+  decorative/organizational (unlike the rule-validated Outfit Editor above, a drop here always
+  succeeds — there is no combination to invalidate). Built on the same packed-garment set the
+  Knapsack Engine panel already derives (`getPackedGarments` from `src/utils/knapsackEngine.ts`)
+  and each tile's own `category`/`volumeCm3` fields; `src/utils/suitcaseLayout.ts`
+  (`buildSuitcaseLayout`/`reorderSuitcaseLayout`) only orders that existing data — it never
+  recomputes weight or volume, per the "Explain the Arithmetic Without Re-implementing It" lesson
+  in `.agents/AGENTS.md` §6. `SuitcaseLayout.tsx` renders the ordered tiles with `@dnd-kit/core`,
+  following the same `DndContext`/`useDraggable`/`useDroppable` idiom as the Outfit Editor
+  (`WardrobeAnalyzer.tsx`). The order lives in component state for the current analysis run only —
+  it is not persisted across a reload or a new Analyze — since this view is about arranging an
+  already-computed plan, not a second source of truth for it.
 - [x] Laundry-cycle-aware packing math — a "Assume laundry access on longer trips (weekly)" checkbox
   (on by default) caps the trip length actually used to size the wardrobe at one laundry cycle
   (`LAUNDRY_CYCLE_DAYS = 7` in `src/utils/laundryCycle.ts`) once the trip runs longer than that, since
@@ -122,6 +150,61 @@
   unchanged — so this only changes behavior for genuinely long trips. Unchecking the box (no laundry
   access assumed, e.g. an off-grid trip) reverts to the pre-existing behavior of scaling with the full
   trip length, capped only by the archetype's palette size as before.
+- [x] 3D luggage volume visualization — alongside the existing 2D donut chart (previous bullet), the
+  Knapsack Engine panel also renders a 3D bounding-box view of the selected suitcase with each packed
+  garment category shown as a proportionally-sized stacked layer inside it, so "where does my volume
+  go" is answerable spatially as well as by percentage. Scope, and the interpretations made where the
+  brief left a detail open:
+  - **Geometry is new logic; the volume math is not re-derived.** `src/utils/volumeBlocks.ts` is a
+    pure function, `computeVolumeBlocks(slices, suitcaseCm)`, that turns the *existing*
+    `VolumeBreakdownSlice[]` from `computeVolumeBreakdown()` (unchanged, still the single source of
+    truth for volume-by-category) into 3D box sizes/positions. It never recomputes a cm³ figure —
+    only geometry (stacking, centering, clamping) is new, per the "Explain the Arithmetic Without
+    Re-implementing It" lesson in `.agents/AGENTS.md` §6.
+  - **Suitcase dimensions come from the same suitcase the physics engine already uses** — the
+    `SuitcaseModel` resolved from the trip's `selectedSuitcase` (via `SuitcaseFinder` or the suitcase
+    dropdown, both already backed by `src/utils/suitcaseDatabase.ts`), not a second, independent
+    lookup into `airlineBaggage.ts`. That model is strictly more specific to what the user is actually
+    packing than a generic carry-on constant would be, which is the "if one is more specific" case the
+    brief called out; `airlineBaggage.ts`'s dimensions describe airline *limits*, not luggage, and are
+    not a suitcase-geometry source in the first place.
+  - **Layout interpretation (stated, since the brief left the exact geometry open):** each category
+    becomes one horizontal layer spanning the suitcase's full length × width footprint, stacked
+    bottom-up in the same largest-first order `computeVolumeBreakdown()` already sorts in, with layer
+    height proportional to that category's share of *packed* volume. Total stack height is capped at
+    the suitcase's own height — `usedFraction = min(1, totalPackedVolumeCm3 / suitcaseVolumeCm3)` — so
+    an over-capacity pack (already flagged by the existing Airline Compliance panel) renders as a full
+    box rather than geometry that bursts through its own walls; `computeVolumeBlocks` also returns the
+    unclamped `usedFraction` and an `overCapacity` flag so the view can say so explicitly rather than
+    silently drawing a full box that looks identical to an exact fit.
+  - **Rendering is Three.js, client-only.** `Volume3DScene.tsx` owns the WebGL canvas (scene, camera,
+    orbit controls, box meshes) and is loaded exclusively via `next/dynamic(..., { ssr: false })` from
+    the always-server-renderable `Volume3DPanel.tsx` wrapper — this app is a static export
+    (`output: 'export'`), and importing a WebGL/`window`-touching module at module-eval time (rather
+    than lazily, client-side) fails `next build` outright, per the "Next.js Static Export Server Action
+    Scoping" lesson in `.agents/AGENTS.md` §6. Interaction is deliberately minimal: orbit/zoom/pan via
+    `OrbitControls`, no drag-to-repack — this is a visualization of an already-computed packing
+    result, not a new packing algorithm or a second, competing outfit/packing editor.
+  - **Accessibility**: a WebGL `<canvas>` is invisible to assistive tech by default. The panel wraps
+    the canvas in a `role="img"` region carrying an `aria-label`/`aria-description` built from the same
+    slices the scene renders (category, volume, percent — never a re-derived figure), and always
+    renders a visible text/table fallback of the identical breakdown (`aria-describedby` points at it,
+    so it doubles as the long description), adapting the existing donut-chart legend pattern. This
+    view supplements the 2D donut chart rather than replacing it; both read from one
+    `computeVolumeBreakdown()` call so they can never disagree with each other about a category's
+    share.
+- [x] Native Android shell (Capacitor) — the existing Next.js static export ships unmodified inside a
+  Capacitor WebView container so the app installs and runs as a real Android app, with zero rebuilt
+  screens. See §3a for the architecture and why this app needs two separate builds, not one.
+- [x] Per-leg Local Info and activity guessing — closes the "deliberately scoped" gap the
+  multi-destination bullet above left open. `LocalInfoPanel` now renders a labeled section per
+  destination leg (typical costs + travel advisory), each tied to that leg's own resolved country,
+  never one leg's figures under another leg's heading. `DailyActivityPicker`'s pre-selected pill
+  guess is made from each day's own leg destination (`buildDayDestinations` in
+  `src/utils/multiDestination.ts`, consumed by `resolveDayActivity` in `src/utils/activity.ts`)
+  rather than always the trip's primary destination, so a day belonging to a later leg no longer
+  inherits an earlier leg's guess (e.g. a Maui-then-Whistler trip no longer guesses "beach" for
+  every Whistler day).
 - [x] Light-theme WCAG AA color contrast — every status/callout color (error text, success
   confirmations, dead-weight and airline-warning callouts, checked-off Packing Checklist rows) uses
   a themed CSS custom property (`--danger-text`/`--warning-text`/`--success-text`/
@@ -138,7 +221,62 @@
 - **Styling:** Vanilla CSS (Glassmorphism, High Contrast)
 - **Backend/API:** Next.js API Routes (Logic Engine operates on client for MVP)
 - **Database:** LocalStorage
-- **Deployment:** Vercel
+- **Deployment:** GitHub Pages (static export) + Capacitor Android (native shell, §3a).
+
+## 3a. Mobile Packaging (Capacitor Android Shell)
+
+The app wraps the existing Next.js static export in a native Capacitor container rather than being
+rebuilt as React Native — every screen, engine, and test in this spec is reused unmodified; the
+native shell adds only packaging, not new UI. This mirrors `mood-diner`'s existing Capacitor
+precedent (see `.agents/AGENTS.md` §6, "Capacitor Absolute Base Path"), with one structural
+difference this app's stack forces.
+
+**Why one bundle can't serve both origins.** `mood-diner` is a Vite app, and Vite's `base` accepts a
+relative value (`'./'`), so one build resolves correctly whether it's served from the GitHub Pages
+subpath or from `https://localhost/` inside the Android WebView. Next.js's `basePath` cannot be
+relative — it is always resolved against the document root — so this app ships **two separate static
+exports** instead of one universal bundle:
+
+| Build | Command | Output dir | `basePath` |
+|---|---|---|---|
+| GitHub Pages | `npm run build` | `.next` | the Pages subpath (`deploy.config.ts`) |
+| Capacitor (Android) | `npm run build:capacitor` | `.next-capacitor` | empty (root) |
+
+`CAPACITOR_BUILD=1` (set by `build:capacitor`) is the switch `next.config.ts` reads to pick the empty
+`basePath` — see the guardrail comment on that line. `capacitor.config.ts`'s `webDir` points at
+`.next-capacitor`, so `npx cap sync android` always syncs the Capacitor-target export, never the
+Pages one, and a `next.config.ts` change that hardcodes the Pages subpath into the Capacitor build's
+`basePath` is exactly the regression `[guardrail: capacitor-absolute-base]` in
+`scripts/harness-status.mjs` blocks at the harness gate — the WebView origin is `https://localhost/`,
+not the Pages subpath, so a hardcoded absolute subpath there 404s every asset and boots to a blank
+screen, silently, because the GitHub Pages deploy of the *other* export stays correct throughout.
+
+**Native project.** `android/` is the Capacitor-generated native container, committed to the repo (as
+`mood-diner`'s is) so CI can build it without re-running `npx cap add android`. App ID
+`com.harness.travelpacking`, following this repo's `com.harness.<appname>` convention. Release
+signing follows the same env-var/`keystore.properties` pattern documented in
+`projects/travel-packing-app/README.md`'s "Android release signing" section — neither the keystore
+nor its passwords are ever committed.
+
+**CI.** `.github/workflows/android-release-travel-packing-app.yml` builds the Capacitor export,
+syncs it into `android/`, and runs `./gradlew bundleRelease`, uploading the resulting AAB as a build
+artifact on every push/PR that touches this app — unsigned when the release secrets are absent (so
+the native build is still verified on forks and PRs), signed when they're present. This is the
+"Build AAB" check mirrored from `mood-diner`'s workflow.
+
+**Testing.** Unit/lint/type-check/Vitest/axe coverage is unchanged — the shell adds no new
+application logic to test that way. What the shell *does* need, and what a config file alone cannot
+prove, is that the Capacitor-target build's asset URLs actually resolve at the WebView's origin:
+`e2e/capacitor-bundle.spec.ts` serves the real `.next-capacitor` export at a bare origin root
+(`scripts/serve-dist.mjs`, no `--prefix`) — the same shape `https://localhost/` presents inside the
+WebView — and fails on any 404 or on an asset URL still carrying the Pages subpath. This is the
+same "test the artifact you ship, at every origin it ships to" discipline
+`e2e/production-bundle.spec.ts` already applies to the Pages export (`.agents/AGENTS.md` §6).
+
+**Out of scope.** No iOS shell (Capacitor supports one, but this repo has no macOS CI runner to
+build or sign it, and no app-store account to ship it to — the same reasoning `mood-diner` already
+applies). No React Native rewrite — explicitly rejected in favor of reusing 100% of the existing
+UI/logic.
 
 ## 4. Data Models
 ```typescript

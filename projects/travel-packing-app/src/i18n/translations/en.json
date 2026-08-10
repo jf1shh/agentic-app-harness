@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Quiet Luxury",
     "gorpcore": "Gorpcore",
-    "scandi": "Scandi Minimalist"
+    "scandi": "Scandi Minimalist",
+    "corporate": "Corporate Power",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Standard (Comfortable)",
@@ -56,7 +59,17 @@
     "percentFull": "{percent}% Full",
     "airlineCompliance": "Airline Compliance",
     "compliantWith": "✔ Compliant with {airline} carry-on limits",
-    "volumeByCategory": "Packed Volume by Category"
+    "volumeByCategory": "Packed Volume by Category",
+    "volume3D": "3D Suitcase Packing View",
+    "volume3DHint": "Drag to rotate, scroll to zoom. The list below repeats this breakdown as text.",
+    "volume3DOverCapacity": "This selection exceeds the suitcase's volume — the view below is capped at 100% full.",
+    "volume3DLoading": "Loading 3D view…"
+  },
+  "suitcaseLayout": {
+    "title": "Suitcase Layout",
+    "dragHint": "Drag any tile to reorder how you'll prioritize packing it — this doesn't change what's packed, just how you arrange it.",
+    "position": "#{n}",
+    "moved": "Moved {name} to position {position}"
   },
   "itinerary": {
     "title": "Live Itinerary ({destination})",

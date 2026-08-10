@@ -19,13 +19,18 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
   `src/services/weatherApi.ts`), tagged onto its `DayItinerary`s as `destinationName`. The combined
   itinerary numbers days continuously (1..N) across every leg, and the packing checklist lists one
   adapter per unique plug type across the whole trip rather than only the first destination's.
-  `LocalInfoPanel` stays scoped to the primary destination only (see "Left undone" in the phase's PR).
 - Start & end dates → fetch daily forecast → `transformWeatherToItinerary()` produces `DayItinerary[]` with `weatherWarmthTarget` (0–10) and `maxTempC` per day.
-- **Local Info** — once Analyze resolves a destination country, `LocalInfoPanel` shows a few typical tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter API) and a GOV.UK travel-advisory summary with a link to the full advisory (`src/services/advisory.ts`).
-- **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.
+- **Local Info** — once Analyze resolves a destination country, `LocalInfoPanel` shows a few typical tourist costs converted to the local currency (`src/services/currency.ts`, Frankfurter API) and a GOV.UK travel-advisory summary with a link to the full advisory (`src/services/advisory.ts`). On a multi-destination trip it renders one labeled section per leg, each tied to that leg's own resolved country.
+- **Day-by-Day Activities** — a `DailyActivityPicker` (`src/components/DailyActivityPicker.tsx`) lets you tag each day (Beach/Hike/Ski/Formal/Business/Night Out/Gym/Transit/Casual) instead of one activity for the whole trip; an untagged day pre-selects a destination-guessed activity (`guessActivityFromDestination()` in `src/utils/activity.ts`) that you can override. On a multi-destination trip, each day's guess is made from that day's own leg destination (`buildDayDestinations`/`resolveDayActivity`), not always the primary destination. The resolved per-day activities feed `transformWeatherToItinerary()`'s third argument, so `analyzeWardrobe()`'s existing per-day evening-outfit and hot-weather rules actually vary day to day.
 
 ### Wardrobe source — two paths
-- **Style archetype preset** — pick one of 12 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+- **Style archetype preset** — pick one of 15 fashion archetypes (`quiet-luxury`, `gorpcore`, `scandi`, `streetwear`, `dark-academia`, `athleisure`, `bohemian`, `preppy`, `rock`, `whimsigoth`, `coastal`, `cottagecore`, `corporate`, `old-money`, `balletcore`), one of three packing strategies (`standard`, `flexible`, `minimalist`), and one default activity (`sightseeing`, `transit`, `formal`, `casual`). `generateWardrobeFromArchetype()` produces a starter `Garment[]` you can immediately analyze.
+  - **Expanded archetypes (Phase 16)** — `corporate` (Corporate Power, business/boardroom formal),
+    `old-money` (heritage/equestrian-adjacent), and `balletcore` (soft pastel) round out the original
+    twelve, each chosen for genuine distinctiveness from its nearest neighbour (Corporate Power vs.
+    Quiet Luxury's off-duty cashmere; Old Money vs. Ivy League Prep's collegiate stripes and Dark
+    Academia's tweed; Balletcore vs. Bohemian/Resort's earthy linen and Cottagecore's prairie
+    palette). Same data shape as the original twelve — no special-casing in the wardrobe engine.
   - **Laundry-cycle-aware packing** — an "Assume laundry access on longer trips (weekly)" checkbox
     (on by default) caps the trip length used to size the wardrobe at one laundry cycle
     (`LAUNDRY_CYCLE_DAYS = 7`, `src/utils/laundryCycle.ts`) once the trip runs longer than that,
@@ -49,6 +54,20 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
      `computeVolumeBreakdown()` (`src/utils/volumeBreakdown.ts`) over the same packed-garment set the
      physics numbers above come from (`getPackedGarments()`, shared by both so there's one definition
      of "what's actually packed").
+   - **3D suitcase packing view** — alongside the donut chart, a Three.js bounding-box view
+     (`Volume3DPanel.tsx` / `Volume3DScene.tsx`) shows the selected suitcase as a wireframe box with
+     each packed category rendered as a proportionally-sized stacked layer inside it — orbit/zoom via
+     `OrbitControls`, no drag-to-repack. The layer geometry (`computeVolumeBlocks()` in
+     `src/utils/volumeBlocks.ts`) is pure and reads its cm³ figures straight from the same
+     `computeVolumeBreakdown()` slices the donut chart uses (never re-derived), and is sized to the
+     same suitcase model (`selectedSuitcase`) the physics numbers above are already computed against.
+     Three.js/WebGL is client-only, so `Volume3DScene` is loaded exclusively via
+     `next/dynamic(..., { ssr: false })` — this app is a static export (`output: 'export'`), and a
+     module that touches `window`/WebGL at eval time fails `next build` outright. Accessibility: the
+     canvas is invisible to assistive tech, so the view is wrapped in a `role="img"` region with an
+     `aria-label` built from the same slices (never a re-derived figure) and an `aria-describedby`
+     text-fallback list repeating the identical breakdown — adapted from the donut chart's own legend
+     pattern, so the two visualizations can never disagree.
 
 ### Drag-and-drop Outfit Editor (`@dnd-kit/core`)
 Drag any item out of the Digital Closet and drop it onto a scheduled day's Top/Bottom/Layer slot to
@@ -61,6 +80,16 @@ suggestion from the edited schedule via `deriveUsageStats()` — the same functi
 calls, extracted so the two paths can't drift — and recomputes the knapsack physics so weight/volume
 stay consistent with what's actually scheduled. Scoped to swapping an existing role's garment for
 another of the same role; there's no drop target for adding a topper to a day that doesn't have one.
+
+### SuitcaseLayout (`@dnd-kit/core`)
+A decorative/organizational companion to the Outfit Editor, in the Knapsack Engine panel: every
+packed garment renders as a numbered, draggable tile, and dragging one tile onto another reorders
+them by priority. Unlike the Outfit Editor, there's no combination to validate — a drop always
+succeeds, since this view only changes how you arrange an already-computed plan, not what's packed.
+`buildSuitcaseLayout()`/`reorderSuitcaseLayout()` (`src/utils/suitcaseLayout.ts`) only order the
+same packed-garment set `getPackedGarments()` already derives — category and volume are read off
+each `Garment`, never recomputed. The order lives in component state for the current analysis run
+only; it isn't persisted across a reload or a new Analyze.
 
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
@@ -126,6 +155,9 @@ src/
     LocalInfoPanel.tsx             # typical-cost currency conversion + travel advisory
     DailyActivityPicker.tsx        # per-day activity tagging (Beach/Hike/Ski/Formal/...)
     SuitcaseFinder.tsx             # brand/model text search + barcode lookup
+    VolumeDonutChart.tsx           # 2D SVG donut chart of packed volume by category
+    Volume3DPanel.tsx              # accessible wrapper: aria-label/description + text fallback
+    Volume3DScene.tsx              # the Three.js/WebGL canvas, loaded via next/dynamic({ssr:false})
     LoggerInit.tsx                 # bootstraps src/services/logger
   services/
     weatherApi.ts                  # geocode + autocomplete + Open-Meteo forecast + itinerary transform
@@ -152,6 +184,7 @@ src/
     suitcaseDatabase.ts            # MODELS (64 real-world suitcase specs) + lookupByBarcode()
     airlineBaggage.ts              # AIRLINES (77 real-world carry-on policies)
     measurement.ts                 # credit-card-calibrated measurement math (pure, camera-free)
+    volumeBlocks.ts                # computeVolumeBlocks() — 3D box geometry over an existing breakdown
   schemas.ts                       # Zod contracts (Garment, Outfit, DayItinerary, TripShare, ...)
   types.ts
 __tests__/                         # Vitest coverage for engines
@@ -169,7 +202,7 @@ The packing checklist is persisted in `localStorage`; the wardrobe *media librar
 
 ## Tech stack
 
-Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast), Zod 4. Heavy compute lives client-side. **`@imgly/background-removal`** runs client-side AI for removing backgrounds from uploaded garment photos, and **`onnxruntime-web`** is wired up for any future local model. Open-Meteo is the only remote dependency, and only for geocoding + forecast.
+Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast), Zod 4. Heavy compute lives client-side. **`@imgly/background-removal`** runs client-side AI for removing backgrounds from uploaded garment photos, **`onnxruntime-web`** is wired up for any future local model, and **`three`** (client-only, dynamically imported) renders the 3D suitcase packing view. Open-Meteo is the only remote dependency, and only for geocoding + forecast.
 
 ## Persistence and privacy
 

@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "静奢风",
     "gorpcore": "户外机能风",
-    "scandi": "北欧极简风"
+    "scandi": "北欧极简风",
+    "corporate": "商务通勤风",
+    "oldMoney": "老钱风",
+    "balletcore": "芭蕾风"
   },
   "strategy": {
     "standard": "标准（舒适）",
@@ -56,7 +59,17 @@
     "percentFull": "已装 {percent}%",
     "airlineCompliance": "航空公司合规性",
     "compliantWith": "✔ 符合 {airline} 的随身行李限制",
-    "volumeByCategory": "按类别划分的打包体积"
+    "volumeByCategory": "按类别划分的打包体积",
+    "volume3D": "行李箱三维装箱视图",
+    "volume3DHint": "拖动可旋转，滚动可缩放。下方列表以文字形式重复了该分布。",
+    "volume3DOverCapacity": "此选择已超过行李箱容积——下方视图已按100%装满封顶显示。",
+    "volume3DLoading": "正在加载三维视图……"
+  },
+  "suitcaseLayout": {
+    "title": "行李箱布局",
+    "dragHint": "拖动任意方块以重新排列打包优先级——这不会改变已打包的物品，只会改变排列方式。",
+    "position": "#{n}",
+    "moved": "已将{name}移动到位置{position}"
   },
   "itinerary": {
     "title": "实时行程（{destination}）",

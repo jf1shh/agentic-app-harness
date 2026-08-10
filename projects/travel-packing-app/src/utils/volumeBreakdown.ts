@@ -7,6 +7,11 @@ export interface VolumeBreakdownSlice {
   percent: number;
 }
 
+// Single shared palette for every packed-volume-by-category visualization
+// (the 2D donut chart and the 3D suitcase view) -- one array so the two
+// views can never assign a different color to the same category.
+export const SLICE_COLORS = ['#6366f1', '#22c55e', '#f97316', '#ec4899', '#06b6d4', '#eab308', '#8b5cf6', '#ef4444'];
+
 export function computeVolumeBreakdown(garments: Garment[]): VolumeBreakdownSlice[] {
   const totalVolumeCm3 = garments.reduce((sum, g) => sum + (g.volumeCm3 || 0), 0);
   if (totalVolumeCm3 <= 0) return [];

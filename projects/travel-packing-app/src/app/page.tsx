@@ -9,6 +9,8 @@ import { geocodeLocation, fetchWeather, transformWeatherToItinerary } from '../s
 import { calculateKnapsackPhysics, getPackedGarments, PackingPhysicsReport } from '../utils/knapsackEngine';
 import { computeVolumeBreakdown } from '../utils/volumeBreakdown';
 import VolumeDonutChart from '../components/VolumeDonutChart';
+import Volume3DPanel from '../components/Volume3DPanel';
+import SuitcaseLayout from '../components/SuitcaseLayout';
 import { MODELS, SuitcaseModel } from '../utils/suitcaseDatabase';
 import { AIRLINES } from '../utils/airlineBaggage';
 import { generateWardrobeFromArchetype } from '../utils/generator';
@@ -16,7 +18,7 @@ import { parseClosetFile } from '../utils/fileImporter';
 import { useT } from '../i18n/context';
 import { buildShareUrl, parseShareFromHash } from '../utils/share';
 import DestinationAutocomplete from '../components/DestinationAutocomplete';
-import LocalInfoPanel from '../components/LocalInfoPanel';
+import LocalInfoPanel, { LocalInfoLeg } from '../components/LocalInfoPanel';
 import { resolveActivity } from '../utils/activity';
 import { tripDurationFromDates } from '../utils/tripDuration';
 import { buildDestinationLegs } from '../utils/multiDestination';
@@ -43,10 +45,12 @@ export default function Home() {
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // The primary destination's country code — feeds LocalInfoPanel, which is
-  // deliberately scoped to one destination's local-cost/advisory lookup even
-  // on a multi-destination trip (see the "Left undone" PR note).
-  const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
+  // One (destination, country code) pair per leg — feeds LocalInfoPanel,
+  // which shows typical costs and a travel advisory for EVERY leg of the
+  // trip, each labeled by its own destination (a single-destination trip
+  // is a one-element array, rendered without a leg label since there's no
+  // ambiguity to disambiguate).
+  const [localInfoLegs, setLocalInfoLegs] = useState<LocalInfoLeg[]>([]);
   // One country code per leg (a single-destination trip is a one-element
   // array) — feeds the packing checklist, which needs an adapter per
   // distinct plug type across the whole trip, not just the first leg.
@@ -168,6 +172,11 @@ export default function Home() {
       const validAdditionalDestinations = additionalDestinations.map((d) => d.trim()).filter((d) => d.length > 0);
       let generatedItinerary: DayItinerary[];
       let legCodes: (string | null)[];
+      // Destination name for each entry in legCodes, same order — one
+      // definition of "which leg is which," consumed by both legCountryCodes
+      // (the checklist's adapter lookup) and localInfoLegs (Local Info's
+      // per-leg cost/advisory sections) rather than each recomputing it.
+      let legNames: string[];
 
       if (validAdditionalDestinations.length === 0) {
         // Single destination: unchanged from before multi-destination trips
@@ -178,6 +187,7 @@ export default function Home() {
         const resolvedDailyActivities = dailyActivities.map((a) => resolveActivity(a, destination));
         generatedItinerary = transformWeatherToItinerary(weather, activity, resolvedDailyActivities);
         legCodes = [primaryCountryCode];
+        legNames = [destination];
       } else {
         // Multi-destination: split the trip's total days across every
         // destination in order, fetch each leg's own weather, and number
@@ -187,6 +197,7 @@ export default function Home() {
         const legs = buildDestinationLegs([destination, ...validAdditionalDestinations], totalTripDays, startDate);
         generatedItinerary = [];
         legCodes = [];
+        legNames = [];
         let dayOffset = 0;
         for (const leg of legs) {
           const legDailyActivities = dailyActivities
@@ -195,11 +206,12 @@ export default function Home() {
           const legResult = await fetchLegItinerary(leg, dayOffset, activity, legDailyActivities);
           generatedItinerary.push(...legResult.itinerary);
           legCodes.push(legResult.countryCode);
+          legNames.push(leg.destination);
           dayOffset += leg.days;
         }
       }
 
-      setDestinationCountryCode(legCodes[0] ?? null);
+      setLocalInfoLegs(legNames.map((name, i) => ({ destination: name, countryCode: legCodes[i] ?? null })));
       setLegCountryCodes(legCodes);
       setItinerary(generatedItinerary);
 
@@ -357,6 +369,7 @@ export default function Home() {
           <DailyActivityPicker
             duration={tripDurationFromDates(startDate, endDate)}
             destination={destination}
+            additionalDestinations={additionalDestinations}
             dailyActivities={dailyActivities}
             setDailyActivities={setDailyActivities}
           />
@@ -401,6 +414,9 @@ export default function Home() {
                     <option value="whimsigoth">Whimsigoth</option>
                     <option value="coastal">Coastal Maritime</option>
                     <option value="cottagecore">Cottagecore</option>
+                    <option value="corporate">{t('archetype.corporate')}</option>
+                    <option value="old-money">{t('archetype.oldMoney')}</option>
+                    <option value="balletcore">{t('archetype.balletcore')}</option>
                   </select>
                 </div>
                 <div>
@@ -484,6 +500,15 @@ export default function Home() {
 
       {report && physics && (
         <>
+          {(() => {
+            // Resolved once so the donut chart and the 3D view read the exact
+            // same breakdown -- they can never disagree about a category's
+            // share. The suitcase dims come from the same selectedSuitcase
+            // the physics engine above was already computed against, not a
+            // second, independent lookup.
+            const packedVolumeSlices = computeVolumeBreakdown(getPackedGarments(report, activeGarments));
+            const selectedSuitcaseModel = MODELS.find((m) => suitcaseKey(m) === selectedSuitcase) || MODELS[0];
+            return (
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>{t('knapsack.title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px', marginTop: '16px' }}>
@@ -508,10 +533,22 @@ export default function Home() {
               </div>
               <div style={{ padding: '16px', border: '2px solid var(--primary)', borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volumeByCategory')}</h3>
-                <VolumeDonutChart slices={computeVolumeBreakdown(getPackedGarments(report, activeGarments))} />
+                <VolumeDonutChart slices={packedVolumeSlices} />
+              </div>
+              <div style={{ padding: '16px', border: '2px solid var(--primary)', borderRadius: '8px' }}>
+                <h3 style={{ marginBottom: '8px' }}>{t('knapsack.volume3D')}</h3>
+                <Volume3DPanel
+                  slices={packedVolumeSlices}
+                  suitcase={{ l: selectedSuitcaseModel.l, w: selectedSuitcaseModel.w, h: selectedSuitcaseModel.h }}
+                />
               </div>
             </div>
+            <div style={{ marginTop: '24px' }}>
+              <SuitcaseLayout garments={getPackedGarments(report, activeGarments)} />
+            </div>
           </div>
+            );
+          })()}
 
           <div className="glass-panel no-print" style={{ padding: '24px', marginTop: '32px' }}>
             <h2>{t('itinerary.title', { destination })}</h2>
@@ -529,7 +566,7 @@ export default function Home() {
             </ul>
           </div>
           <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCodes={legCountryCodes} onOutfitSwap={handleOutfitSwap} />
-          <LocalInfoPanel countryCode={destinationCountryCode} />
+          <LocalInfoPanel legs={localInfoLegs} />
 
           <div className="no-print" style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
             <button
