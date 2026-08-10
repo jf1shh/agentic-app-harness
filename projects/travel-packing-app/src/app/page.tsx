@@ -16,7 +16,7 @@ import { parseClosetFile } from '../utils/fileImporter';
 import { useT } from '../i18n/context';
 import { buildShareUrl, parseShareFromHash } from '../utils/share';
 import DestinationAutocomplete from '../components/DestinationAutocomplete';
-import LocalInfoPanel from '../components/LocalInfoPanel';
+import LocalInfoPanel, { LocalInfoLeg } from '../components/LocalInfoPanel';
 import { resolveActivity } from '../utils/activity';
 import { tripDurationFromDates } from '../utils/tripDuration';
 import { buildDestinationLegs } from '../utils/multiDestination';
@@ -43,10 +43,12 @@ export default function Home() {
   const [itinerary, setItinerary] = useState<DayItinerary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // The primary destination's country code — feeds LocalInfoPanel, which is
-  // deliberately scoped to one destination's local-cost/advisory lookup even
-  // on a multi-destination trip (see the "Left undone" PR note).
-  const [destinationCountryCode, setDestinationCountryCode] = useState<string | null>(null);
+  // One (destination, country code) pair per leg — feeds LocalInfoPanel,
+  // which shows typical costs and a travel advisory for EVERY leg of the
+  // trip, each labeled by its own destination (a single-destination trip
+  // is a one-element array, rendered without a leg label since there's no
+  // ambiguity to disambiguate).
+  const [localInfoLegs, setLocalInfoLegs] = useState<LocalInfoLeg[]>([]);
   // One country code per leg (a single-destination trip is a one-element
   // array) — feeds the packing checklist, which needs an adapter per
   // distinct plug type across the whole trip, not just the first leg.
@@ -168,6 +170,11 @@ export default function Home() {
       const validAdditionalDestinations = additionalDestinations.map((d) => d.trim()).filter((d) => d.length > 0);
       let generatedItinerary: DayItinerary[];
       let legCodes: (string | null)[];
+      // Destination name for each entry in legCodes, same order — one
+      // definition of "which leg is which," consumed by both legCountryCodes
+      // (the checklist's adapter lookup) and localInfoLegs (Local Info's
+      // per-leg cost/advisory sections) rather than each recomputing it.
+      let legNames: string[];
 
       if (validAdditionalDestinations.length === 0) {
         // Single destination: unchanged from before multi-destination trips
@@ -178,6 +185,7 @@ export default function Home() {
         const resolvedDailyActivities = dailyActivities.map((a) => resolveActivity(a, destination));
         generatedItinerary = transformWeatherToItinerary(weather, activity, resolvedDailyActivities);
         legCodes = [primaryCountryCode];
+        legNames = [destination];
       } else {
         // Multi-destination: split the trip's total days across every
         // destination in order, fetch each leg's own weather, and number
@@ -187,6 +195,7 @@ export default function Home() {
         const legs = buildDestinationLegs([destination, ...validAdditionalDestinations], totalTripDays, startDate);
         generatedItinerary = [];
         legCodes = [];
+        legNames = [];
         let dayOffset = 0;
         for (const leg of legs) {
           const legDailyActivities = dailyActivities
@@ -195,11 +204,12 @@ export default function Home() {
           const legResult = await fetchLegItinerary(leg, dayOffset, activity, legDailyActivities);
           generatedItinerary.push(...legResult.itinerary);
           legCodes.push(legResult.countryCode);
+          legNames.push(leg.destination);
           dayOffset += leg.days;
         }
       }
 
-      setDestinationCountryCode(legCodes[0] ?? null);
+      setLocalInfoLegs(legNames.map((name, i) => ({ destination: name, countryCode: legCodes[i] ?? null })));
       setLegCountryCodes(legCodes);
       setItinerary(generatedItinerary);
 
@@ -357,6 +367,7 @@ export default function Home() {
           <DailyActivityPicker
             duration={tripDurationFromDates(startDate, endDate)}
             destination={destination}
+            additionalDestinations={additionalDestinations}
             dailyActivities={dailyActivities}
             setDailyActivities={setDailyActivities}
           />
@@ -532,7 +543,7 @@ export default function Home() {
             </ul>
           </div>
           <WardrobeAnalyzer report={report} garments={activeGarments} destinationCountryCodes={legCountryCodes} onOutfitSwap={handleOutfitSwap} />
-          <LocalInfoPanel countryCode={destinationCountryCode} />
+          <LocalInfoPanel legs={localInfoLegs} />
 
           <div className="no-print" style={{ marginTop: '32px', display: 'flex', justifyContent: 'center' }}>
             <button

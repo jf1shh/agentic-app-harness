@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { splitTripDays, buildDestinationLegs } from '../src/utils/multiDestination';
+import { splitTripDays, buildDestinationLegs, buildDayDestinations } from '../src/utils/multiDestination';
 
 describe('splitTripDays', () => {
   it('Given 7 days across 3 legs, When split, Then the remainder is given to the earliest legs so counts differ by at most one', () => {
@@ -48,5 +48,31 @@ describe('buildDestinationLegs', () => {
 
   it('Given no destinations, When legs are built, Then an empty array is returned', () => {
     expect(buildDestinationLegs([], 5, '2026-08-01')).toEqual([]);
+  });
+});
+
+describe('buildDayDestinations', () => {
+  it('Given a 7-day trip across three destinations, When each day is mapped, Then day indexes fall in their own leg\'s destination -- never the previous leg\'s -- using the same 3/2/2 split as buildDestinationLegs', () => {
+    expect(buildDayDestinations(['Tokyo', 'Kyoto', 'Osaka'], 7)).toEqual([
+      'Tokyo', 'Tokyo', 'Tokyo',
+      'Kyoto', 'Kyoto',
+      'Osaka', 'Osaka',
+    ]);
+  });
+
+  it('Given a single destination, When each day is mapped, Then every day maps to that one destination', () => {
+    expect(buildDayDestinations(['Hawaii'], 4)).toEqual(['Hawaii', 'Hawaii', 'Hawaii', 'Hawaii']);
+  });
+
+  it('Given blank destination entries mixed in, When each day is mapped, Then they are dropped before the split so they never own a day', () => {
+    expect(buildDayDestinations(['Tokyo', '  ', 'Osaka'], 4)).toEqual(['Tokyo', 'Tokyo', 'Osaka', 'Osaka']);
+  });
+
+  it('Given no destinations, When each day is mapped, Then an empty array is returned rather than throwing', () => {
+    expect(buildDayDestinations([], 5)).toEqual([]);
+  });
+
+  it('Given fewer trip days than destinations, When each day is mapped, Then legs assigned zero days own no day rather than an empty-string placeholder', () => {
+    expect(buildDayDestinations(['Tokyo', 'Kyoto', 'Osaka'], 2)).toEqual(['Tokyo', 'Kyoto']);
   });
 });

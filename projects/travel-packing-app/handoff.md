@@ -93,6 +93,13 @@ architectural items that were the last of that backlog — all merged to `master
   `archetype.corporate`/`archetype.oldMoney`/`archetype.balletcore` keys); `generator.test.ts` gained
   a dedicated sweep proving `generateAllValidOutfits()` finds real schedulable (including
   evening-appropriate) outfits for each new archetype, not just that the data exists.
+- **Phase 19 — Per-leg Local Info and activity guessing**: `LocalInfoPanel` now shows typical
+  costs/travel-advisory info for **every** destination leg on a multi-destination trip, clearly
+  labeled by leg, instead of only the primary destination; `DailyActivityPicker`'s pre-selected
+  pill guess uses each day's own leg destination (`buildDayDestinations` in
+  `src/utils/multiDestination.ts`, `resolveDayActivity` in `src/utils/activity.ts`) rather than
+  always guessing from the trip's primary destination, so a day in a later leg no longer inherits
+  an earlier leg's guess.
 
 All four Phase 11–14 branches were deliberately opened independently off `master` (not stacked) per
 this session's pattern, since GitHub auto-merge was enabled and landed them in an unpredictable
@@ -110,8 +117,5 @@ against the others before it could land clean. `specs/travel-packing-app-spec.md
   covers the "where does my volume go" question without this.
 - A broader light-theme color-contrast audit — Phase 14 fixed two contrast bugs it happened to
   surface via the app's first post-Analyze a11y scan, but didn't audit the rest of the app.
-- `LocalInfoPanel` (typical costs / travel advisory) and `DailyActivityPicker`'s pre-selected pill
-  guess still scope to the *primary* destination only on a multi-destination trip — the itinerary
-  and packing math themselves are correctly per-leg, but these two secondary panels are not.
 
 Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.
