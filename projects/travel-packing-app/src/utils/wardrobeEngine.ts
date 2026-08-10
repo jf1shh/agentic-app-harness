@@ -82,12 +82,78 @@ export function generateAllValidOutfits(garments: Garment[]): Outfit[] {
   return validOutfits;
 }
 
+/**
+ * Derives MVP item, dead weight, and the swap suggestion from a schedule of
+ * outfits -- the part of a WearabilityReport that depends on *which* outfit
+ * was picked for each day, not on how the schedule was produced. Shared by
+ * analyzeWardrobe (the automatic scheduler) and outfitEditor.ts's manual
+ * override (applyGarmentSwap), so a hand-edited schedule's stats are derived
+ * by the exact same rules as an automatically-scheduled one, not a second,
+ * separately-maintained copy of this logic.
+ */
+export function deriveUsageStats(
+  scheduledOutfits: { day: number; outfit: Outfit }[],
+  garments: Garment[]
+): Pick<WearabilityReport, 'mvpItemId' | 'deadWeightIds' | 'swapSuggestion'> {
+  const usedGarmentIds = new Set<string>();
+  const garmentUsageCount: Record<string, number> = {};
+
+  scheduledOutfits.forEach(({ outfit }) => {
+    const ids = [outfit.top.id, outfit.bottom.id];
+    if (outfit.topper) ids.push(outfit.topper.id);
+    ids.forEach(id => {
+      usedGarmentIds.add(id);
+      garmentUsageCount[id] = (garmentUsageCount[id] || 0) + 1;
+    });
+  });
+
+  let mvpItemId: string | null = null;
+  let maxUsage = 0;
+  for (const [id, count] of Object.entries(garmentUsageCount)) {
+    if (count > maxUsage) {
+      maxUsage = count;
+      mvpItemId = id;
+    }
+  }
+
+  const deadWeightIds = garments
+    .map(g => g.id)
+    .filter(id => !usedGarmentIds.has(id));
+
+  let swapSuggestion;
+  if (deadWeightIds.length > 0) {
+    const removeId = deadWeightIds[0];
+    const item = garments.find(g => g.id === removeId);
+    if (item) {
+      if (item.roles.includes('topper')) {
+        swapSuggestion = {
+          removeId,
+          suggestion: 'A versatile mid-layer (like a neutral Cardigan)',
+          reason: 'This layer is dead weight. A lighter layer would provide better warmth flexibility.'
+        };
+      } else if (item.roles.includes('top')) {
+        swapSuggestion = {
+          removeId,
+          suggestion: 'A versatile Light-colored Top',
+          reason: 'This top clashed or was too warm. A lighter option would increase your outfit permutations on hot days.'
+        };
+      } else {
+        swapSuggestion = {
+          removeId,
+          suggestion: 'Neutral Shorts or lightweight pants',
+          reason: 'This bottom was never worn. A lighter or neutral-colored option would increase flexibility.'
+        };
+      }
+    }
+  }
+
+  return { mvpItemId, deadWeightIds, swapSuggestion };
+}
+
 export function analyzeWardrobe(garments: Garment[], itinerary: DayItinerary[]): WearabilityReport {
   const allOutfits = generateAllValidOutfits(garments);
   
   const scheduledOutfits: { day: number; outfit: Outfit }[] = [];
-  const usedGarmentIds = new Set<string>();
-  const garmentUsageCount: Record<string, number> = {};
 
   let previousBaseId = '';
 
@@ -141,66 +207,15 @@ export function analyzeWardrobe(garments: Garment[], itinerary: DayItinerary[]):
 
     if (selectedOutfit) {
       scheduledOutfits.push({ day: day.dayNumber, outfit: selectedOutfit });
-      
-      const ids = [selectedOutfit.top.id, selectedOutfit.bottom.id];
-      if (selectedOutfit.topper) ids.push(selectedOutfit.topper.id);
-
-      ids.forEach(id => {
-        usedGarmentIds.add(id);
-        garmentUsageCount[id] = (garmentUsageCount[id] || 0) + 1;
-      });
     }
   }
-
-  // Calculate MVP
-  let mvpItemId: string | null = null;
-  let maxUsage = 0;
-  for (const [id, count] of Object.entries(garmentUsageCount)) {
-    if (count > maxUsage) {
-      maxUsage = count;
-      mvpItemId = id;
-    }
-  }
-
-  // Calculate Dead Weight
-  const deadWeightIds = garments
-    .map(g => g.id)
-    .filter(id => !usedGarmentIds.has(id));
 
   const flexibilityScore = allOutfits.length > 0 ? allOutfits.length / garments.length : 0;
-
-  let swapSuggestion;
-  if (deadWeightIds.length > 0) {
-    const removeId = deadWeightIds[0];
-    const item = garments.find(g => g.id === removeId);
-    if (item) {
-      if (item.roles.includes('topper')) {
-        swapSuggestion = {
-          removeId,
-          suggestion: 'A versatile mid-layer (like a neutral Cardigan)',
-          reason: 'This layer is dead weight. A lighter layer would provide better warmth flexibility.'
-        };
-      } else if (item.roles.includes('top')) {
-        swapSuggestion = {
-          removeId,
-          suggestion: 'A versatile Light-colored Top',
-          reason: 'This top clashed or was too warm. A lighter option would increase your outfit permutations on hot days.'
-        };
-      } else {
-        swapSuggestion = {
-          removeId,
-          suggestion: 'Neutral Shorts or lightweight pants',
-          reason: 'This bottom was never worn. A lighter or neutral-colored option would increase flexibility.'
-        };
-      }
-    }
-  }
+  const usageStats = deriveUsageStats(scheduledOutfits, garments);
 
   return {
     flexibilityScore,
-    mvpItemId,
-    deadWeightIds,
     scheduledOutfits,
-    swapSuggestion
+    ...usageStats
   };
 }

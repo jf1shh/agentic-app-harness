@@ -44,6 +44,18 @@ A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forec
      physics numbers above come from (`getPackedGarments()`, shared by both so there's one definition
      of "what's actually packed").
 
+### Drag-and-drop Outfit Editor (`@dnd-kit/core`)
+Drag any item out of the Digital Closet and drop it onto a scheduled day's Top/Bottom/Layer slot to
+manually override the auto-scheduler's pick for that one day. A drop only succeeds if
+`generateAllValidOutfits()` — the same function the automatic scheduler itself uses — already
+recognizes the resulting combination as valid; an invalid drop (wrong role, a color clash) is rejected
+with an on-screen message rather than silently accepted (`findValidSwap`/`applyGarmentSwap` in
+`src/utils/outfitEditor.ts`). A successful swap re-derives MVP item, dead weight, and the swap
+suggestion from the edited schedule via `deriveUsageStats()` — the same function `analyzeWardrobe()`
+calls, extracted so the two paths can't drift — and recomputes the knapsack physics so weight/volume
+stay consistent with what's actually scheduled. Scoped to swapping an existing role's garment for
+another of the same role; there's no drop target for adding a topper to a day that doesn't have one.
+
 ### Theme toggle
 Light/dark, persisted under `packright_theme` in `localStorage`. Respects `prefers-color-scheme: dark` on first visit.
 
