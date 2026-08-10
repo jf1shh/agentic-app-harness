@@ -6,6 +6,7 @@ import {
   getThermalValue,
   generateWardrobeFromArchetype,
 } from '../src/utils/generator';
+import { generateAllValidOutfits } from '../src/utils/wardrobeEngine';
 
 // Backfilled coverage (.agents/AGENTS.md §5): no Red step; every case was proved
 // by mutation — see the PR body.
@@ -226,11 +227,14 @@ describe('fashion archetype catalog', () => {
   // happens without error).
   const EXPECTED_ARCHETYPES = [
     'athleisure',
+    'balletcore',
     'bohemian',
     'coastal',
+    'corporate',
     'cottagecore',
     'dark-academia',
     'gorpcore',
+    'old-money',
     'preppy',
     'quiet-luxury',
     'rock',
@@ -239,7 +243,7 @@ describe('fashion archetype catalog', () => {
     'whimsigoth',
   ];
 
-  it('Given the fashion archetype catalog, When its keys are listed, Then all 12 styles are present', () => {
+  it('Given the fashion archetype catalog, When its keys are listed, Then all 15 styles are present', () => {
     expect(Object.keys(PALETTES).sort()).toEqual(EXPECTED_ARCHETYPES);
   });
 
@@ -278,5 +282,113 @@ describe('fashion archetype catalog', () => {
     const garments = generateWardrobeFromArchetype('streetwear', 'balanced', 3);
     const topper = garments.find((g) => g.roles.includes('topper'));
     expect(topper?.name).toBe('Black Cropped Puffer');
+  });
+});
+
+// Phase 16: expanded style archetypes -- corporate (business/corporate-formal),
+// old-money (heritage/equestrian-adjacent, deliberately distinct from preppy's
+// collegiate stripes and dark-academia's tweed) and balletcore (soft pastel,
+// deliberately distinct from bohemian's earthy resort palette and
+// cottagecore's cream/olive prairie palette).
+describe('expanded archetypes (Phase 16)', () => {
+  const NEW_ARCHETYPES = ['corporate', 'old-money', 'balletcore'];
+
+  it.each(NEW_ARCHETYPES)(
+    'Given the %s archetype, When a wardrobe is generated, Then generateAllValidOutfits finds at least one schedulable outfit',
+    (archetypeKey) => {
+      // This is the real proof the archetype "works": not just that its
+      // garments exist, but that the wardrobe engine's own pairing rules
+      // (color match, exclusion tags) actually accept at least one
+      // top+bottom combination from the ported data.
+      const garments = generateWardrobeFromArchetype(archetypeKey, 'balanced', 5);
+      const outfits = generateAllValidOutfits(garments);
+      expect(outfits.length).toBeGreaterThan(0);
+    }
+  );
+
+  it.each(NEW_ARCHETYPES)(
+    'Given the %s archetype, When a wardrobe is generated, Then at least one evening-appropriate outfit is schedulable',
+    (archetypeKey) => {
+      // Every existing archetype carries at least one evening-tagged top or
+      // bottom that colour-matches a same-time-or-untimed counterpart, so a
+      // "formal"/"nightout" day can always be scheduled. Prove the same
+      // holds for each new archetype.
+      const garments = generateWardrobeFromArchetype(archetypeKey, 'balanced', 5);
+      const outfits = generateAllValidOutfits(garments);
+      const eveningOutfits = outfits.filter(
+        (o) => o.top.time === 'evening' || o.bottom.time === 'evening'
+      );
+      expect(eveningOutfits.length).toBeGreaterThan(0);
+    }
+  );
+
+  it.each(NEW_ARCHETYPES)(
+    'Given the %s archetype, When a wardrobe is generated, Then it yields real tops, bottoms and a topper with valid warmth',
+    (archetypeKey) => {
+      const garments = generateWardrobeFromArchetype(archetypeKey, 'balanced', 5);
+      const tops = garments.filter((g) => g.roles.includes('top'));
+      const bottoms = garments.filter((g) => g.roles.includes('bottom'));
+      const toppers = garments.filter((g) => g.roles.includes('topper'));
+
+      expect(tops.length).toBeGreaterThan(0);
+      expect(bottoms.length).toBeGreaterThan(0);
+      expect(toppers).toHaveLength(1);
+
+      for (const g of garments) {
+        expect(g.warmth).toBeGreaterThanOrEqual(1);
+        expect(g.warmth).toBeLessThanOrEqual(10);
+        expect(g.colors.length).toBeGreaterThan(0);
+        // Every colour used must be one doColorsMatch actually knows about,
+        // or the outfit-pairing logic above degrades to "matches everything".
+        expect(Object.keys(COLOR_MATCHES)).toContain(g.colors[0]);
+      }
+    }
+  );
+
+  it('Given the new archetypes and their nearest existing neighbours, When their wardrobes are generated, Then the garment names actually differ', () => {
+    // corporate is business-formal (nearest neighbour: quiet-luxury), old-money
+    // is heritage/equestrian (nearest neighbours: preppy and dark-academia),
+    // balletcore is soft pastel (nearest neighbours: bohemian and cottagecore).
+    // Proves each new archetype carries its own ported data rather than
+    // reusing an existing palette under a different key.
+    const pairs: [string, string][] = [
+      ['corporate', 'quiet-luxury'],
+      ['old-money', 'preppy'],
+      ['old-money', 'dark-academia'],
+      ['balletcore', 'bohemian'],
+      ['balletcore', 'cottagecore'],
+    ];
+
+    for (const [a, b] of pairs) {
+      const namesA = new Set(generateWardrobeFromArchetype(a, 'balanced', 4).map((g) => g.name));
+      const namesB = new Set(generateWardrobeFromArchetype(b, 'balanced', 4).map((g) => g.name));
+      const overlap = [...namesA].filter((n) => namesB.has(n));
+      expect(overlap).toHaveLength(0);
+    }
+  });
+
+  it('Given the corporate archetype, When its outerwear is generated, Then it matches the ported business-formal palette rather than a placeholder', () => {
+    const garments = generateWardrobeFromArchetype('corporate', 'balanced', 3);
+    const topper = garments.find((g) => g.roles.includes('topper'));
+    expect(topper?.name).toBe('Charcoal Wool Overcoat');
+  });
+
+  it('Given the old-money archetype, When its evening bottom is generated, Then its fabric name (cashmere) drives a warmth above the base value', () => {
+    // Mutation target: if the fabric name were changed to something
+    // getThermalValue does not recognise (e.g. dropping "Cashmere"), this
+    // would fall back to the base warmth and the assertion below would fail.
+    const garments = generateWardrobeFromArchetype('old-money', 'balanced', 5);
+    const eveningBottom = garments.find(
+      (g) => g.roles.includes('bottom') && g.name === 'Black Cashmere Evening Trousers'
+    );
+    expect(eveningBottom).toBeDefined();
+    expect(eveningBottom?.warmth).toBeGreaterThan(3);
+  });
+
+  it('Given the balletcore archetype, When a lightweight silk/satin top is generated, Then its warmth is below the base value', () => {
+    const garments = generateWardrobeFromArchetype('balletcore', 'balanced', 5);
+    const camisole = garments.find((g) => g.name === 'Lilac Silk Camisole');
+    expect(camisole).toBeDefined();
+    expect(camisole?.warmth).toBeLessThan(3);
   });
 });

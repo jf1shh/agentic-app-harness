@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "Lusso Silenzioso",
     "gorpcore": "Gorpcore",
-    "scandi": "Minimalista Scandinavo"
+    "scandi": "Minimalista Scandinavo",
+    "corporate": "Eleganza Corporate",
+    "oldMoney": "Old Money",
+    "balletcore": "Balletcore"
   },
   "strategy": {
     "standard": "Standard (Comodo)",

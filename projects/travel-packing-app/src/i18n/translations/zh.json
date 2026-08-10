@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "静奢风",
     "gorpcore": "户外机能风",
-    "scandi": "北欧极简风"
+    "scandi": "北欧极简风",
+    "corporate": "商务通勤风",
+    "oldMoney": "老钱风",
+    "balletcore": "芭蕾风"
   },
   "strategy": {
     "standard": "标准（舒适）",

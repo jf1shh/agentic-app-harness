@@ -35,7 +35,10 @@
   "archetype": {
     "quietLuxury": "الفخامة الهادئة",
     "gorpcore": "جوربكور",
-    "scandi": "الإسكندنافي البسيط"
+    "scandi": "الإسكندنافي البسيط",
+    "corporate": "الأناقة المؤسسية",
+    "oldMoney": "أولد موني",
+    "balletcore": "باليكور"
   },
   "strategy": {
     "standard": "قياسي (مريح)",

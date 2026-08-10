@@ -239,6 +239,54 @@ export const PALETTES: Record<string, { name: string; tops: LegacyGarment[]; bot
     ],
     outerwear: [{ name: 'Beige Cable-Knit Cardigan', color: 'beige' }, { name: 'Brown Corduroy Jacket', color: 'brown' }],
     colors: ['#f8fafc', '#4d7c0f', '#a0522d']
+  },
+  'corporate': {
+    name: 'Corporate Power',
+    tops: [
+      { name: 'White Structured Poplin Shirt', color: 'white', time: 'day' },
+      { name: 'Navy Pinstripe Vest', color: 'navy', time: 'day' },
+      { name: 'Light Grey Cotton Button-down', color: 'grey', time: 'day' },
+      { name: 'Black Silk Wrap Blouse', color: 'black', time: 'evening' }
+    ],
+    bottoms: [
+      { name: 'Charcoal Wool Suit Trousers', color: 'grey', time: 'day' },
+      { name: 'Black Tailored Suit Trousers', color: 'black', time: 'day' },
+      { name: 'Navy Pencil Skirt', color: 'navy', time: 'evening' }
+    ],
+    outerwear: [{ name: 'Charcoal Wool Overcoat', color: 'grey' }, { name: 'Black Structured Trench Coat', color: 'black' }],
+    colors: ['#1f2937', '#f8fafc', '#9ca3af']
+  },
+  'old-money': {
+    name: 'Old Money',
+    tops: [
+      { name: 'Ivory Cable-Knit Cashmere Sweater', color: 'white', time: 'day' },
+      { name: 'Hunter Green Quilted Vest', color: 'green', time: 'day' },
+      { name: 'Ivory Pinpoint Oxford Shirt', color: 'white', time: 'day' },
+      { name: 'Navy Silk Ascot Blouse', color: 'navy', time: 'evening' }
+    ],
+    bottoms: [
+      { name: 'Camel Wool Jodhpur Trousers', color: 'beige', time: 'day' },
+      { name: 'Houndstooth Wool Trousers', color: 'grey', time: 'day' },
+      { name: 'Black Cashmere Evening Trousers', color: 'black', time: 'evening' }
+    ],
+    outerwear: [{ name: 'Hunter Green Quilted Barn Jacket', color: 'green' }, { name: 'Camel Cashmere Overcoat', color: 'beige' }],
+    colors: ['#014421', '#c19a6b', '#0b0b0b']
+  },
+  'balletcore': {
+    name: 'Balletcore',
+    tops: [
+      { name: 'Blush Satin Wrap Top', color: 'pink', time: 'evening' },
+      { name: 'Ivory Ribbed Ballet Cardigan', color: 'white', time: 'day' },
+      { name: 'Lilac Silk Camisole', color: 'purple', time: 'evening' },
+      { name: 'Pale Pink Cotton Leotard Top', color: 'pink', time: 'day' }
+    ],
+    bottoms: [
+      { name: 'Blush Tulle Wrap Skirt', color: 'pink', time: 'evening' },
+      { name: 'Ivory Wide-leg Trousers', color: 'white', time: 'day' },
+      { name: 'Lilac Satin Midi Skirt', color: 'purple', time: 'day' }
+    ],
+    outerwear: [{ name: 'Blush Wool Wrap Cardigan Coat', color: 'pink' }, { name: 'Ivory Cropped Cardigan', color: 'white' }],
+    colors: ['#f8c8dc', '#e6d7ff', '#fdf6f0']
   }
 };
 
