@@ -8,9 +8,19 @@ work orders, and gates merges in CI — with no embedded LLM. Every app is held 
 a spec in `specs/` before code, Zod schemas for every data model, BDD-style Vitest + Playwright +
 axe tests, and a green `node scripts/test-app.mjs <AppName>` before any push.
 
-This file (Layer 0) and `CONTEXT.md` (Layer 1) are an [ICM](https://github.com/ktnCodes/icm-template)
-orientation layer laid on top of the repo's own rulebook — they route you to the right place, they
-do not replace `AGENTS.md`. Read the routing table in `CONTEXT.md` next.
+This repo runs the **full** [ICM](https://github.com/ktnCodes/icm-template) layer stack on top of
+the existing rulebook — it routes you to the right place, it does not replace `AGENTS.md`:
+
+| Layer | Where | Question |
+|---|---|---|
+| 0 | `IDENTITY.md` (this file) | "Where am I?" |
+| 1 | `CONTEXT.md` | "Where do I go?" |
+| 2 | `stages/<stage>/CONTEXT.md` | "What do I do, in this stage of the loop?" |
+| 3 | `_config/` | "What rules/terms apply?" |
+| 4 | `stages/<stage>/output/` | "Where does this stage's output actually live?" |
+
+Layer 2/4 map onto the one real pipeline this repo already has: the harness's own
+Sense → Propose → Act → Verify → Learn loop (`.agents/AGENTS.md` §8) — see `stages/`.
 
 ---
 
@@ -36,6 +46,12 @@ agentic-app-harness/
 ├── specs/                    # specs/<app-name>-spec.md — source of truth, read before coding;
 │   └── templates/            #   specs/templates/ holds the spec format itself
 ├── scripts/                  # The harness: Sense → Propose → Act → Verify → Learn (zero-dep Node ESM)
+├── stages/                   # ICM Layer 2/4 — one folder per harness-loop stage:
+│   ├── sense/                #   CONTEXT.md contract + output/ (→ harness-status.json)
+│   ├── propose/              #   CONTEXT.md contract + output/ (→ tasks/*.md)
+│   ├── act/                  #   CONTEXT.md contract + output/ (→ a PR)
+│   ├── verify/               #   CONTEXT.md contract + output/ (→ CI status)
+│   └── learn/                #   CONTEXT.md contract + output/ (→ harness-history.json)
 ├── tasks/                    # Work orders emitted by scripts/emit-tasks.mjs; tasks/README.md is the contract
 ├── .github/workflows/        # ci.yml, sdd-sentinel.yml, mutation-testing.yml, deploy-pages.yml,
 │                              #   android-release*.yml, codeql.yml

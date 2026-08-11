@@ -7,7 +7,8 @@
 | Add/change a feature in an app | `projects/<app-name>/` | `specs/<app-name>-spec.md`, `.agents/AGENTS.md` |
 | Understand the rules for any change | `AGENTS.md` | `.agents/AGENTS.md` (the authoritative rulebook) |
 | Run the full per-app gate | `scripts/test-app.mjs` | `.agents/AGENTS.md` §5 |
-| Run/understand the harness loop | `scripts/harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs` | `.agents/AGENTS.md` §8 |
+| Understand one stage of the harness loop in depth | `stages/{sense,propose,act,verify,learn}/CONTEXT.md` | `.agents/AGENTS.md` §8 |
+| Run the harness loop | `scripts/harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs` | `stages/*/CONTEXT.md` |
 | Add or fix a guardrail | `scripts/harness-status.mjs` (`GUARDRAILS`) + `scripts/harness-status.test.mjs` | `.agents/AGENTS.md` §8 "Protocol: adding a learned lesson" |
 | Claim an open work order | `tasks/*.md` | `tasks/README.md` |
 | Look up a repo convention or term | `_config/conventions.md`, `_config/glossary.md` | — |

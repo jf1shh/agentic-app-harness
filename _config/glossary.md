@@ -7,14 +7,16 @@
   of a multi-agent framework. See [ktnCodes/icm-template](https://github.com/ktnCodes/icm-template).
 - **Layer 0 (`IDENTITY.md`)** — "Where am I?": the workspace map.
 - **Layer 1 (`CONTEXT.md`)** — "Where do I go?": task routing.
-- **Layer 2 (stage `CONTEXT.md`)** — "What do I do?": not used in this repo (quick mode only —
-  see below).
+- **Layer 2 (stage `CONTEXT.md`)** — "What do I do, in this stage?": `stages/<stage>/CONTEXT.md`,
+  one per stage of the harness's Sense → Propose → Act → Verify → Learn loop.
 - **Layer 3 (`_config/`)** — "What rules apply?": conventions, glossary, voice — this folder.
-- **Layer 4 (`output/`)** — working artifacts of a staged pipeline; not applicable here.
-- **Quick mode** — the ICM adoption path used in this repo: layers 0/1/3 only, laid on top of the
-  existing structure without restructuring it. (As opposed to "full mode," which adds physical
-  stage folders with contracts and output directories — appropriate for a from-scratch pipeline,
-  not a monorepo of six already-structured apps.)
+- **Layer 4 (`output/`)** — "Where does this stage's output actually live?":
+  `stages/<stage>/output/README.md` points at the real artifact (`harness-status.json`,
+  `tasks/*.md`, a PR, CI status, `harness-history.json`) rather than duplicating it.
+- **Full mode** — the ICM adoption path used in this repo: all five layers. Layer 2/4 are mapped
+  onto the harness's own five-stage loop (`.agents/AGENTS.md` §8) — the one process in this repo
+  that is already staged with defined inputs and outputs — rather than onto the six apps under
+  `projects/`, which are independent products, not pipeline stages of one workflow.
 
 ## Repo terms
 
