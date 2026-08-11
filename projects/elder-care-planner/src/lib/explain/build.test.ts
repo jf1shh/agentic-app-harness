@@ -16,6 +16,7 @@ import {
   type PlannerState,
 } from '../plannerState';
 import { computePlan, breakEvenBetween, aideHourlyRateCents } from '../engine/plan';
+import { computeBreakEven } from '../engine/breakeven';
 import { summariseLedger } from '../engine/ledger';
 import { compareFacilities } from '../engine/fit';
 import { FacilityNoteSchema, type CareScenario, type LedgerEntry, type Plan } from '../schemas';
@@ -928,5 +929,197 @@ describe('Given home sale proceeds entered for the runway projection (spec §11.
     const runway = set.runway as Explanation;
 
     expect(runway.steps.some((s) => s.label.includes('Home sale proceeds'))).toBe(false);
+  });
+});
+
+/**
+ * Mutation testing (`node scripts/run-mutation.mjs elder-care-planner --mutate
+ * "src/lib/explain/build.ts"`) found five branches at `NoCoverage` — not just
+ * weakly asserted, but never executed by any fixture in the sweep above at
+ * all. `PlannerState` cannot express any of the four that need a `Plan`
+ * (there is no UI path yet to an annual-cadence ancillary item, a scheduled
+ * care-level increase, or an illiquid asset), so these build `CareScenario`/
+ * `Plan` objects directly, the same way `ilExplanations` above does for the
+ * buy-in path `PlannerState` also cannot reach.
+ */
+describe('Given branches no fixture above ever executed (mutation-found gaps)', () => {
+  it('Given an annual (not monthly) ancillary cost, When the all-in derivation is read, Then it is spread over 12 months and shown as its own part', () => {
+    const scenario: CareScenario = {
+      id: 'primary',
+      label: 'Current plan',
+      careType: 'assisted_living',
+      stateCode: 'US',
+      fees: { communityFeeCents: 0, careLevelTierCents: 0, annualEscalatorRate: 0.04, addOns: [] },
+      ancillary: [
+        {
+          id: 'insurance',
+          label: 'Long-term care insurance premium',
+          category: 'other',
+          amountCents: 120_000,
+          cadence: 'annual',
+          taxDeductibleCandidate: false,
+        },
+      ],
+    };
+    const plan: Plan = {
+      schemaVersion: 1,
+      careRecipientLabel: 'Mom',
+      scenarios: [scenario],
+      activeScenarioId: 'primary',
+      income: [],
+      assets: [],
+      contributors: [],
+      ledger: [],
+      caregiverImpacts: [],
+      assumptions: { careInflationRate: 0.04, generalInflationRate: 0.03, projectionYears: 5, splitMethod: 'equal' },
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    const planResult = computePlan(plan);
+    const set = buildExplanations({
+      plan,
+      result: planResult.active!,
+      breakEven: null,
+      breakEvenHourlyRateCents: aideHourlyRateCents('US'),
+      breakEvenHoursPerWeek: 40,
+      split: planResult.split,
+      contributors: [],
+      ledger: null,
+      monthsElapsed: 0,
+      facilityFit: null,
+    });
+
+    const allIn = set['all-in']!;
+    // $1,200/year ÷ 12 = $100/month, exactly.
+    const step = allIn.steps.find((s) => s.label.includes('spread over the year'));
+    expect(step?.valueCents).toBe(10_000);
+    expect(additiveTotalCents(allIn)).toBe(resultStep(allIn)?.valueCents);
+  });
+
+  it('Given a care-level increase already in effect by month one, When the monthly-gap derivation is read, Then the increase already inside month one is shown as its own part', () => {
+    const scenario: CareScenario = {
+      id: 'primary',
+      label: 'Current plan',
+      careType: 'assisted_living',
+      stateCode: 'US',
+      fees: {
+        communityFeeCents: 0,
+        careLevelTierCents: 0,
+        annualEscalatorRate: 0.04,
+        addOns: [],
+        careLevelIncreaseAtMonth: 1,
+        careLevelIncreaseCents: 80_000,
+      },
+      ancillary: [],
+    };
+    const plan: Plan = {
+      schemaVersion: 1,
+      careRecipientLabel: 'Mom',
+      scenarios: [scenario],
+      activeScenarioId: 'primary',
+      income: [],
+      assets: [
+        { id: 'cash', label: 'Cash', kind: 'cash', balanceCents: 50_000_000, annualReturnRate: 0.04, liquid: true },
+      ],
+      contributors: [],
+      ledger: [],
+      caregiverImpacts: [],
+      assumptions: { careInflationRate: 0.04, generalInflationRate: 0.03, projectionYears: 5, splitMethod: 'equal' },
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    const planResult = computePlan(plan);
+    const set = buildExplanations({
+      plan,
+      result: planResult.active!,
+      breakEven: null,
+      breakEvenHourlyRateCents: aideHourlyRateCents('US'),
+      breakEvenHoursPerWeek: 40,
+      split: planResult.split,
+      contributors: [],
+      ledger: null,
+      monthsElapsed: 0,
+      facilityFit: null,
+    });
+
+    const monthlyGap = set['monthly-gap']!;
+    const step = monthlyGap.steps.find((s) => s.label.includes('already in effect'));
+    expect(step?.valueCents).toBe(80_000);
+    expect(additiveTotalCents(monthlyGap)).toBe(resultStep(monthlyGap)?.valueCents);
+  });
+
+  it('Given a plan holding an illiquid asset such as home equity, When the runway derivation is read, Then it notes that illiquid assets are excluded from the money available', () => {
+    const basePlan = buildPlan(INITIAL_STATE);
+    const plan: Plan = {
+      ...basePlan,
+      assets: [
+        ...basePlan.assets,
+        { id: 'home', label: 'Home equity', kind: 'home_equity', balanceCents: 30_000_000, annualReturnRate: 0.03, liquid: false },
+      ],
+    };
+    const planResult = computePlan(plan);
+    const set = buildExplanations({
+      plan,
+      result: planResult.active!,
+      breakEven: null,
+      breakEvenHourlyRateCents: aideHourlyRateCents(INITIAL_STATE.stateCode),
+      breakEvenHoursPerWeek: 40,
+      split: planResult.split,
+      contributors: [],
+      ledger: null,
+      monthsElapsed: 0,
+      facilityFit: null,
+    });
+
+    const runway = set.runway as Explanation;
+    expect(
+      runway.assumptions.some((a) => a.includes('Home equity is excluded from the money available')),
+    ).toBe(true);
+  });
+
+  it('Given running the home already costs more than residential care before any paid help, When the break-even derivation is read, Then the crossover is reported as zero rather than a negative number of hours', () => {
+    const breakEven = computeBreakEven({
+      hourlyRateCents: 3_000,
+      currentHoursPerWeek: 20,
+      housingCarryMonthlyCents: 900_000,
+      inHomeAncillaryMonthlyCents: 0,
+      residentialAllInMonthlyCents: 500_000,
+    });
+    // Sanity check on the fixture itself before trusting the derivation.
+    expect(breakEven.residentialAlwaysCheaper).toBe(true);
+
+    const { planResult } = explanationsFor(INITIAL_STATE);
+    const set = buildExplanations({
+      plan: buildPlan(INITIAL_STATE),
+      result: planResult.active!,
+      breakEven,
+      breakEvenHourlyRateCents: 3_000,
+      breakEvenHoursPerWeek: 20,
+      split: planResult.split,
+      contributors: [],
+      ledger: null,
+      monthsElapsed: 0,
+      facilityFit: null,
+    });
+
+    const be = set['break-even']!;
+    expect(
+      be.steps.some((s) => s.label.includes('already exceeds the residential rate')),
+    ).toBe(true);
+    const resultLine = be.steps.find((s) => s.label === 'The two options cost the same at');
+    expect(resultLine?.valueText).toContain('0 hours a week');
+  });
+
+  it('Given an income-proportional split with income missing for a contributor, When the split derivation is read, Then it says the split fell back to equal shares', () => {
+    const { set } = explanationsFor({
+      ...INITIAL_STATE,
+      splitMethod: 'income_proportional',
+      contributorCount: 2,
+      contributors: makeContributors(2), // nobody's income has been entered
+    });
+
+    const split = set.split!;
+    expect(
+      split.steps.some((s) => s.label.includes('income is missing for at least one person')),
+    ).toBe(true);
+    expect(additiveTotalCents(split)).toBe(resultStep(split)?.valueCents);
   });
 });
