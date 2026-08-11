@@ -66,15 +66,17 @@ looked like a mutation-testing bug and wasn't — it was a missing `npm install`
 testing (or anything else) fails identically at the very first step in a fresh container, check
 for `node_modules` at the repo root before debugging the tool itself.
 
-**Mutation scores** (`node scripts/run-mutation.mjs --all`, incremental, ~45 min total):
+**Mutation scores** (`node scripts/run-mutation.mjs --all`, incremental, ~45 min total; the
+`legal-financial-rag` figure below is the *original* sweep number — see "Fixed this pass" further
+down for where it stands now):
 
-| App | Score | Notes |
+| App | Score (original sweep) | Notes |
 |---|---|---|
-| elder-care-planner | 52.9% | |
-| legal-financial-rag | 50.6% | |
-| travel-packing-app | 42.6% | |
-| mood-diner | 33.6% | |
-| smart-recipe-app | 29.3% | |
+| elder-care-planner | 52.9% | Not yet touched — see target #1 below. |
+| legal-financial-rag | 50.6% → **54.9% after this pass** | sanitizer.ts/piiRedactor.ts done; schemas.ts still open. |
+| travel-packing-app | 42.6% | Not yet touched. |
+| mood-diner | 33.6% | Not yet touched. |
+| smart-recipe-app | 29.3% | Not yet touched. |
 | portfolio-hub | **n/a — cannot run** | See below. |
 
 `portfolio-hub` cannot be mutation-tested as-is: `caseStudiesData.test.ts` and
@@ -100,12 +102,19 @@ implementation)**, ranked by how much it matters here:
    the largest single gap in the sweep. This is the "explain the arithmetic" derivation panel
    `.agents/AGENTS.md` §6 already flags as trust-critical (parts-must-sum-to-total, clamps shown
    as steps). Start here.
-2. **`legal-financial-rag/src/lib/security/sanitizer.ts`** (45%) and **`piiRedactor.ts`** (66%)
-   — ~55 survived mutants combined. Highest *risk* finding of the sweep: this is the input
-   sanitization and PII redaction layer in an app whose whole premise is client-side
-   legal/financial document handling.
+2. ~~**`legal-financial-rag/src/lib/security/sanitizer.ts`** (45%) and **`piiRedactor.ts`**
+   (66%)~~ — **done this pass.** sanitizer.ts 44.83%→81.03% (28→11 survived), piiRedactor.ts
+   66.25%→82.50% (27→14 survived). The single biggest gap was that piiRedactor's EIN/Tax-ID
+   detection branch had **zero** test coverage at all — nothing in the suite ever exercised it.
+   New tests are in `sanitizer.test.ts`/`piiRedactor.test.ts`; verified by re-running mutation
+   testing after adding them (not just by reading the diff). **Found in passing, not fixed**:
+   the bank/IBAN regex caps the matched value at 18 characters, so a real full-length IBAN
+   (15-34 chars per ISO 13616) is silently never detected or redacted at all — a genuine gap,
+   but widening the cap is a product decision (how long is too long before it starts
+   over-matching), not a drive-by fix, so it's flagged in a test comment and left for a human
+   call.
 3. **`legal-financial-rag/src/lib/schemas.ts`** — 4.7% score, 61 survived. Zod schemas with
-   almost no mutation coverage at all.
+   almost no mutation coverage at all. Not yet touched.
 4. **`travel-packing-app/src/utils/airlineBaggage.ts`** — 29%, 618 survived mutants, the
    largest raw count in the entire sweep. Real rules-based domain logic (per-airline
    weight/dimension limits) — should be very testable, not just "give it more tests."
@@ -130,12 +139,13 @@ file Stryker writes directly under `reports/`. Fixed by broadening the rule to `
 **No known outstanding harness findings**: `node scripts/harness-status.mjs --gate` reports 0
 findings across all 6 apps as of this pass.
 
+**Also fixed this pass:** `portfolio-hub`'s `loopStats.generated.test.ts` was failing
+(`lessonCount` recomputed to `44` against a committed fixture of `43`, first found while
+babysitting an earlier PR and left open since). Ran `node scripts/generate-loop-stats.mjs` from
+`projects/portfolio-hub/`, committed the regenerated `src/data/loopStats.generated.ts`, confirmed
+green (`60/60` unit tests). Done.
+
 **Still outstanding from before this pass, not touched:**
-- **`portfolio-hub`'s `loopStats.generated.test.ts` still fails** — `lessonCount` recomputes to
-  `44` but the committed fixture says `43`. Re-verified this pass (`npx vitest run -t "recomputed
-  independently"` in `projects/portfolio-hub`, still red). **Fix**: from `projects/portfolio-hub/`,
-  run `node scripts/generate-loop-stats.mjs`, then commit the regenerated
-  `src/data/loopStats.generated.ts`. One command, still not done.
 - **Dependabot backlog** — a large number of open `dependabot/*` PRs (dependency bumps across all
   6 apps' peer sets) has been sitting untriaged across multiple passes; don't let it grow further
   unattended. Per `.agents/AGENTS.md` §6, treat any linter/compiler/icon-set major bump as an API
@@ -158,21 +168,29 @@ findings across all 6 apps as of this pass.
 - Checked-in docs match what they claim: `node scripts/check-doc-claims.mjs --gate`.
 
 ## 5. Next Steps for the Next Agent
-1. **Write targeted tests to kill the surviving mutants listed in §3**, in priority order:
-   `elder-care-planner/explain/build.ts` first (biggest gap, trust-critical), then
-   `legal-financial-rag`'s `sanitizer.ts`/`piiRedactor.ts` (highest risk), then `schemas.ts`,
-   then `travel-packing-app/airlineBaggage.ts` (biggest raw count). For each: read the Stryker
-   HTML/JSON report to see the exact surviving mutant (which line, which mutation — e.g. `<`
-   flipped to `<=`), write the assertion that would have killed it, confirm the mutation score
-   improves. This is the same discipline as `.agents/AGENTS.md` §9.4 ("prove a new test can
-   fail"), just machine-verified instead of hand-verified. State the before/after score in the
-   PR body.
-2. **Fix the portfolio-hub `loopStats` drift** described in §3 — one command
-   (`node scripts/generate-loop-stats.mjs` from `projects/portfolio-hub/`) plus a commit.
-3. Triage the Dependabot backlog — don't let it re-accumulate.
-4. Consider whether `legal-financial-rag`'s vault lock should extend to actually encrypting
+1. **Keep working down the surviving-mutant list in §3**, in priority order. `sanitizer.ts` and
+   `piiRedactor.ts` are done (see §3). Next up:
+   - `elder-care-planner/explain/build.ts` (37%, 484 survived — biggest single gap, trust-critical,
+     not yet started; this is a big file, budget real time for it).
+   - `legal-financial-rag/src/lib/schemas.ts` (4.7%, 61 survived).
+   - `travel-packing-app/src/utils/airlineBaggage.ts` (29%, 618 survived — biggest raw count).
+   - `smart-recipe-app/src/lib/recommend.ts`, `elder-care-planner/engine/plan.ts` +
+     `plannerState.ts`, `travel-packing-app/generator.ts` + `wardrobeEngine.ts`.
+   For each: rerun `node scripts/run-mutation.mjs <AppName> --full` (or reuse a fresh JSON report)
+   to pull the exact surviving mutants (see the `node -e` snippet used this pass — reads
+   `reports/mutation/mutation.json`, filters to the target file, prints status/mutator/location),
+   write the assertion that pins down that exact behavior, then re-run mutation testing after —
+   not just the unit suite — to confirm the score actually moved, and state the before/after
+   numbers in the PR body. Watch for the sanitizer.ts/piiRedactor.ts pattern repeating: an entire
+   branch with literally zero test coverage is more likely than uniformly-weak assertions.
+2. Triage the Dependabot backlog — don't let it re-accumulate.
+3. Consider whether `legal-financial-rag`'s vault lock should extend to actually encrypting
    document content at rest — needs a spec update first per `.agents/AGENTS.md` §1's "no vibe
    coding" rule, not a drive-by fix.
+4. Consider whether the bank/IBAN regex's 18-character cap in `piiRedactor.ts` (found this pass,
+   not fixed — see §3 item 2) should widen to cover real IBAN lengths (15-34 chars) without
+   over-matching unrelated long alphanumeric runs. Needs a deliberate decision on the new bound,
+   not a quick edit.
 5. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
    guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
 6. If a top-level folder is added or removed, run `/icm-sync` (`.claude/skills/icm-sync/`) to keep
