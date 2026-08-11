@@ -31,7 +31,16 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
-
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      No <uses-permission> block. This app makes zero network requests — see
+      public/privacy.html and store-listing/README.md's Data Safety section —
+      and its outbound resource links (StartingGuidePanel, LedgerReceipt) are
+      external http(s) URLs that Capacitor's default WebViewClient hands off
+      to the system browser via an ACTION_VIEW intent rather than loading
+      in-app, so they need the browser's own INTERNET permission, not this
+      app's. Requesting INTERNET here (the unmodified Capacitor scaffold
+      default) would contradict the privacy policy's "no outbound network
+      requests" claim in front of both Play's Data Safety reviewers and
+      anyone who reads the manifest.
+    -->
 </manifest>

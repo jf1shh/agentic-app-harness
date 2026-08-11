@@ -556,6 +556,29 @@ As an AI agent operating within this repository, you must strictly adhere to the
   and auto-scroll never has a reason to engage. Not tagged as a guardrail: whether a given page's
   height will later outgrow a fixed test viewport is a property of future, unrelated changes to
   that same page, not something a line-level regex can see coming.
+- **A Monetization UI That Shows Real Prices Needs a Real Purchase Behind It**: A full Play Store
+  readiness audit across all five native apps found `mood-diner`'s `ProPaywallModal.tsx` presenting
+  specific currency amounts ("$4.99/mo", "$39.99/yr"), a "Start 7-Day Free Trial" call to action,
+  and "Cancel anytime with 1-click in Google Play / Web Settings" — while `upgradeToPro()` in
+  `MonetizationContext.tsx` does nothing but flip a `localStorage` flag. Tapping the button grants
+  Pro instantly, charges nothing, and starts no trial; the "Cancel... in Google Play" line
+  references a Play Billing subscription that was never created. This is exactly the shape Play's
+  Monetization and Payments policy exists to catch: a purchase-shaped UI that does not do what it
+  visually claims is a rejection/removal risk independent of whether the underlying feature-gating
+  logic (free daily credits, Pro-only unlocks) is itself fine — and it was, per §11 of this app's
+  spec, which only requires the *gate* to be well-behaved (opt-in, non-interrupting), not that the
+  UI behind it be truthful about billing. The store-listing kit's own README had already flagged
+  this exact defect and explicitly declined to fix it, reasoning it was "a UX mismatch... I didn't
+  change this since it wasn't part of what was asked" — correct scope discipline for a listing-copy
+  pass, but the flag sat unresolved through a subsequent full audit pass too, which is why it's
+  captured here rather than assumed caught. The fix is a product decision, not a mechanical one —
+  either wire up real Google Play Billing for the subscription, or rewrite the modal to stop
+  asserting currency amounts, a trial period, and a cancellation mechanism it cannot back. Not
+  tagged as a guardrail: distinguishing a truthful mock-data label ("Preview pricing — coming
+  soon") from a deceptive one ("$4.99/mo... Cancel anytime in Google Play") is a judgment about
+  what the copy claims, not a pattern a line-level regex can express, and the giveaway (a `Start...
+  Trial` button wired to a synchronous local-state setter instead of any billing SDK call) spans
+  two files a regex would never look at together.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.

@@ -131,7 +131,7 @@ const DEFAULT_ICON_SRC = join(
   dirname(fileURLToPath(import.meta.url)),
   'fixtures', 'capacitor-default-ic_launcher-hdpi.png');
 
-function buildFixture(root, { signed, versionCode, appName, icon, manifestIcons, privacy, ci }) {
+function buildFixture(root, { signed, versionCode, appName, icon, manifestIcons, privacy, ci, ciApp }) {
   const res = join(root, 'android', 'app', 'src', 'main', 'res');
   mkdirSync(join(res, 'values'), { recursive: true });
   mkdirSync(join(res, 'mipmap-hdpi'), { recursive: true });
@@ -160,7 +160,8 @@ function buildFixture(root, { signed, versionCode, appName, icon, manifestIcons,
 
   const wf = join(root, 'wf');
   mkdirSync(wf, { recursive: true });
-  writeFileSync(join(wf, 'ci.yml'), ci ? 'run: ./gradlew bundleRelease' : 'run: npm test');
+  writeFileSync(join(wf, 'ci.yml'),
+    ci ? `working-directory: projects/${ciApp}\nrun: ./gradlew bundleRelease` : 'run: npm test');
   return wf;
 }
 
@@ -188,7 +189,7 @@ try {
   mkdirSync(goodRoot, { recursive: true });
   const goodWf = buildFixture(goodRoot, {
     signed: true, versionCode: 12, appName: 'Mood Diner', icon: 'custom',
-    manifestIcons: 'present', privacy: true, ci: true });
+    manifestIcons: 'present', privacy: true, ci: true, ciApp: 'good-app' });
   const goodIds = senseMobileRelease('good-app', goodRoot, goodWf, [goodRoot]).map((f) => f.id);
   if (goodIds.length) {
     console.error(`✗ mobile-readiness: false-positive on a release-ready fixture: ${goodIds.join(', ')}`); failures++;
@@ -200,7 +201,7 @@ try {
   mkdirSync(pubRoot, { recursive: true });
   const pubWf = buildFixture(pubRoot, {
     signed: true, versionCode: 12, appName: 'Mood Diner', icon: 'custom',
-    manifestIcons: 'present', privacy: false, ci: true });
+    manifestIcons: 'present', privacy: false, ci: true, ciApp: 'pub-app' });
   writeFileSync(join(pubRoot, 'public', 'privacy.html'), '<h1>Privacy Policy</h1>');
   const pubIds = senseMobileRelease('pub-app', pubRoot, pubWf, [pubRoot, join(pubRoot, 'public')])
     .map((f) => f.id);
@@ -213,6 +214,18 @@ try {
   mkdirSync(join(webRoot, 'src'), { recursive: true });
   if (senseMobileRelease('web-app', webRoot, goodWf, [webRoot]).length) {
     console.error('✗ mobile-readiness: fired on a web-only app with no native container'); failures++;
+  }
+
+  // (e) The CI check must be scoped per app: a sibling app's Android workflow
+  // living in the same shared workflows/ directory (the real repo's layout —
+  // every app's android-release-*.yml sits in .github/workflows/ alongside
+  // every other app's) must not silently satisfy this app's own check. Reuses
+  // goodWf, which only references 'projects/good-app', for a *different* app id.
+  const otherAppIds = senseMobileRelease('other-app', goodRoot, goodWf, [goodRoot])
+    .map((f) => f.id.replace('other-app-mobile-', ''));
+  if (!otherAppIds.includes('no-android-ci')) {
+    console.error("✗ mobile-readiness: a sibling app's CI workflow falsely satisfied this app's no-android-ci check (unscoped regression)");
+    failures++;
   }
 
   // (d) Every finding must be non-blocking — this sensor informs, never gates.
