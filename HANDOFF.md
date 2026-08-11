@@ -72,8 +72,8 @@ down for where it stands now):
 
 | App | Score (original sweep) | Notes |
 |---|---|---|
-| elder-care-planner | 52.9% → **app score not yet re-swept** | `explain/build.ts` alone: 35.5%→40.2%, see below; other files untouched. |
-| legal-financial-rag | 50.6% → **54.9% after this pass** | sanitizer.ts/piiRedactor.ts done; schemas.ts still open. |
+| elder-care-planner | 52.9% → **app score not yet re-swept** | `explain/build.ts` alone: 35.5%→45.3% across two batches, see below; other files untouched. |
+| legal-financial-rag | 50.6% → **62.7% (app re-swept, confirmed)** | sanitizer.ts, piiRedactor.ts, schemas.ts all done. |
 | travel-packing-app | 42.6% | Not yet touched. |
 | mood-diner | 33.6% | Not yet touched. |
 | smart-recipe-app | 29.3% | Not yet touched. |
@@ -99,24 +99,28 @@ tests — meaning the tests run but their assertions are too weak to catch a bro
 implementation)**, ranked by how much it matters here:
 
 1. ~~**`elder-care-planner/src/lib/explain/build.ts`** — 37% file score, 484 survived
-   mutants~~ — **partially done this pass**: 35.49%→40.22% (484→470 survived, NoCoverage
-   34→10). This file's own tests deliberately check arithmetic balance rather than prose
+   mutants~~ — **two batches done this pass**: 35.49%→45.33% (484→432 survived, NoCoverage
+   34→7). This file's own tests deliberately check arithmetic balance rather than prose
    wording, so most remaining survivors are `StringLiteral` mutations of caveat/assumption
-   text — expected, not a real gap (mirrors the "ignore pure-data files" caveat above but for
-   narrative strings instead of datasets). Found and killed the 5 branches that were
-   **`NoCoverage`** — never executed by any of the 13 fixtures in the sweep, not just weakly
-   asserted: an annual-cadence ancillary item, a care-level increase already in effect by month
-   one (the source's own comment calls this required "or the parts stop adding up"), an
-   illiquid asset's exclusion note, `residentialAlwaysCheaper` in the break-even comparison, and
-   the income-proportional split's fallback-to-equal-shares note. `PlannerState` can't express 4
-   of these (no UI path yet to those inputs), so the new tests build `CareScenario`/`Plan`
-   objects directly, same as `ilExplanations()` already does for the buy-in path. **Still open**:
-   the remaining ~95 `ConditionalExpression` and ~49 `EqualityOperator` survivors are mostly
-   branches that *do* execute under some fixture but whose specific behavior isn't pinned
-   (e.g. `cost.confidence === 'needs_verification'` vs `'derived'` vs `'verified'` — only
-   `'derived'` has a direct test). Re-run `cd projects/elder-care-planner && npx stryker run
-   --mutate "src/lib/explain/build.ts"` (~2 min, much faster than the full-app sweep) to get a
-   fresh mutant list before picking the next batch.
+   text (229 of them) — expected, not a real gap (mirrors the "ignore pure-data files" caveat
+   above but for narrative strings instead of datasets). Batch 1 killed the 5 branches that
+   were **`NoCoverage`** — never executed by any of the 13 fixtures, not just weakly asserted:
+   an annual-cadence ancillary item, a care-level increase already in effect by month one (the
+   source's own comment calls this required "or the parts stop adding up"), an illiquid asset's
+   exclusion note, `residentialAlwaysCheaper` in the break-even comparison, and the
+   income-proportional split's fallback-to-equal-shares note. Batch 2 killed 10 more —
+   `costSourceLines`' confidence/provenance text (national-fallback caveat,
+   verified/needs_verification lines, entry notes), both `cheaperOption` branches in the
+   break-even note, the monthly-gap "no income" note and an elimination-period case, and the
+   facility-fit weighted-at-zero + no-scores-at-all cases. `PlannerState` can't express several
+   of these (no UI path yet to an annual ancillary item, a scheduled care-level increase, or an
+   illiquid asset), so those tests build `CareScenario`/`Plan` objects directly, same as
+   `ilExplanations()` already does for the buy-in path. **Still open**: ~79
+   `ConditionalExpression` and ~38 `EqualityOperator` survivors remain (down from ~95/~49) —
+   diminishing returns from here, mostly narrower permutations of branches already partly
+   covered. Re-run `cd projects/elder-care-planner && npx stryker run --mutate
+   "src/lib/explain/build.ts"` (~2 min) for a fresh mutant list before picking the next batch,
+   or consider this file done-enough and move to a fresh one.
 2. ~~**`legal-financial-rag/src/lib/security/sanitizer.ts`** (45%) and **`piiRedactor.ts`**
    (66%)~~ — **done this pass.** sanitizer.ts 44.83%→81.03% (28→11 survived), piiRedactor.ts
    66.25%→82.50% (27→14 survived). The single biggest gap was that piiRedactor's EIN/Tax-ID
@@ -128,8 +132,15 @@ implementation)**, ranked by how much it matters here:
    but widening the cap is a product decision (how long is too long before it starts
    over-matching), not a drive-by fix, so it's flagged in a test comment and left for a human
    call.
-3. **`legal-financial-rag/src/lib/schemas.ts`** — 4.7% score, 61 survived. Zod schemas with
-   almost no mutation coverage at all. Not yet touched.
+3. ~~**`legal-financial-rag/src/lib/schemas.ts`** — 4.7% score, 61 survived~~ — **done this
+   pass, fully: 4.69%→100.00%, 0 survived.** There was no test for this file at all —
+   `unit.test.ts` only exercised 2 of 5 `SecurityPrivilegeLevelSchema` members and asserted one
+   valid `DocumentChunkSchema` object didn't throw. New `schemas.test.ts` covers every enum's
+   full member list (accept + reject-one-outside-it), boundary tests for `topK`/`hybridWeight`/
+   `confidence`, defaults (`isMasked`, `isSample`, the audit chain's genesis-hash sentinel), a
+   missing-field rejection, a wrong-type rejection, and nested-schema enforcement. This alone
+   moved the whole app's score from 50.6% to a confirmed 62.7% (full app re-swept, not just this
+   file).
 4. **`travel-packing-app/src/utils/airlineBaggage.ts`** — 29%, 618 survived mutants, the
    largest raw count in the entire sweep. Real rules-based domain logic (per-airline
    weight/dimension limits) — should be very testable, not just "give it more tests."
@@ -183,16 +194,23 @@ green (`60/60` unit tests). Done.
 - Checked-in docs match what they claim: `node scripts/check-doc-claims.mjs --gate`.
 
 ## 5. Next Steps for the Next Agent
-1. **Keep working down the surviving-mutant list in §3**, in priority order. `sanitizer.ts` and
-   `piiRedactor.ts` are done; `explain/build.ts` is partially done (5 zero-coverage branches
-   killed, 40.2% and climbing — see §3 for exactly which mutator categories are left and why the
-   `StringLiteral` ones are expected noise, not a gap). Next up:
-   - Finish `elder-care-planner/explain/build.ts`'s `ConditionalExpression`/`EqualityOperator`
-     survivors (the confidence-tier branches, `cheaperOption` branches, etc. — see §3).
-   - `legal-financial-rag/src/lib/schemas.ts` (4.7%, 61 survived).
-   - `travel-packing-app/src/utils/airlineBaggage.ts` (29%, 618 survived — biggest raw count).
+1. **Keep working down the surviving-mutant list in §3**, in priority order. `sanitizer.ts`,
+   `piiRedactor.ts`, and `schemas.ts` are all done in `legal-financial-rag` (app score
+   50.6%→62.7%, confirmed by a full re-sweep). `explain/build.ts` in `elder-care-planner` had
+   two batches (35.5%→45.3%) and is at the point of diminishing returns — the next agent should
+   judge whether a third batch is worth it or whether to move on. Next up, in roughly
+   descending value:
+   - `travel-packing-app/src/utils/airlineBaggage.ts` (29%, 618 survived — biggest raw count in
+     the whole repo-wide sweep, real per-airline rules logic, not yet touched).
+   - `legal-financial-rag/src/lib/rag/queryProcessor.ts` (18.6%, 32 survived — worst ratio left
+     in that app now that schemas.ts is fixed) and `export/auditExporter.ts` (12.8%, 27
+     survived — a tamper-evident audit export, worth checking given the app's whole security
+     premise).
    - `smart-recipe-app/src/lib/recommend.ts`, `elder-care-planner/engine/plan.ts` +
      `plannerState.ts`, `travel-packing-app/generator.ts` + `wardrobeEngine.ts`.
+   - Full app-wide re-sweeps for `elder-care-planner`, `mood-diner`, `smart-recipe-app`, and
+     `travel-packing-app` are still the *original* sweep numbers from earlier in this document —
+     only `legal-financial-rag`'s has been confirmed post-fix.
    For each: rerun `node scripts/run-mutation.mjs <AppName> --full` (or reuse a fresh JSON report)
    to pull the exact surviving mutants (see the `node -e` snippet used this pass — reads
    `reports/mutation/mutation.json`, filters to the target file, prints status/mutator/location),
