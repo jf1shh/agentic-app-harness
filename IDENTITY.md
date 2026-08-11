@@ -28,6 +28,10 @@ Sense → Propose → Act → Verify → Learn loop (`.agents/AGENTS.md` §8) �
 
 ```
 agentic-app-harness/
+├── README.md                 # Public-facing project overview, live links, engineering standards
+├── CONTRIBUTING.md           # Contributor workflow (SDD, PR process)
+├── HANDOFF.md                # Rewritten (not appended) each session — current repo state for agents
+├── SECURITY.md, CODE_OF_CONDUCT.md, LICENSE  # Standard repo docs
 ├── AGENTS.md                # Universal agent entry point (imports .agents/AGENTS.md)
 ├── CLAUDE.md                # Claude-specific command/architecture map (imports AGENTS.md)
 ├── GEMINI.md                # Gemini-specific adapter

@@ -18,6 +18,13 @@ agent work orders, and gates merges in CI — deterministically, with no embedde
 to the same enforced bar: a spec in `specs/` before code, Zod schemas for every data model, BDD-style
 Vitest + Playwright + axe tests, and a green `node scripts/test-app.mjs <AppName>` before any push.
 
+**Before exploring the tree yourself**, `IDENTITY.md` and `CONTEXT.md` at the repo root are an
+[ICM](https://github.com/ktnCodes/icm-template) orientation layer — a workspace map and a
+task-routing table sitting on top of this file's own command/architecture map, not replacing it.
+`stages/<stage>/CONTEXT.md` mirrors the loop below one folder per stage
+(sense/propose/act/verify/learn); `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}`
+maintain that layer as the repo evolves.
+
 ## Commands
 
 Root install (npm workspaces — one lockfile for all six apps' shared deps):
@@ -152,6 +159,16 @@ on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own i
 `continue-on-error` matrix job; `deploy-pages.yml` and `android-release.yml` build and ship
 the live artifacts (GitHub Pages, and the `mood-diner` Android APK) — both already run on `ubuntu-latest`,
 which is why `ci.yml` does too rather than paying for a Windows runner to exercise the `.ps1` wrapper.
+
+**ICM navigation layer** (`IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`): a five-layer
+[Interpretable Context Methodology](https://github.com/ktnCodes/icm-template) overlay, additive to
+everything above it. `stages/{sense,propose,act,verify,learn}/CONTEXT.md` restates the Agentic Loop
+above as per-stage contracts (reads/runs/writes), and each stage's `output/README.md` points at
+that stage's real artifact (`harness-status.json`, `tasks/*.md`, a PR, CI status,
+`harness-history.json`) instead of duplicating it. `_config/{conventions,glossary,voice}.md` link
+back to this file and `.agents/AGENTS.md` rather than restating them. Run `/icm-sync` (a project-scoped
+skill in `.claude/skills/`) after any change that adds/removes a top-level folder, to keep
+`IDENTITY.md`'s folder map and `CONTEXT.md`'s routing table from drifting out of sync with disk.
 
 ## Conventions worth knowing before you open a PR
 

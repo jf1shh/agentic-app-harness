@@ -8,6 +8,10 @@ alwaysApply: true
 This repo's rules are the same for every agent. The portable entry point is [`AGENTS.md`](../../AGENTS.md);
 the full authoritative rulebook is [`.agents/AGENTS.md`](../../.agents/AGENTS.md). Read them before editing.
 
+**Orientation first**: [`IDENTITY.md`](../../IDENTITY.md)/[`CONTEXT.md`](../../CONTEXT.md) at the repo
+root are this repo's [ICM](https://github.com/ktnCodes/icm-template) navigation layer — a workspace
+map and task-routing table on top of the rules below. Read them first.
+
 Binding essentials (the linked files govern):
 
 1. **Spec is the single source of truth.** Read the matching spec in `specs/` before writing code; it

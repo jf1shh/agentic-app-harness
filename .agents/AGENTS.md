@@ -2,6 +2,13 @@
 
 As an AI agent operating within this repository, you must strictly adhere to the following Spec-Driven Development (SDD) rules:
 
+> **Navigation layer**: [`IDENTITY.md`](../IDENTITY.md) and [`CONTEXT.md`](../CONTEXT.md) at the repo
+> root (plus `_config/` and `stages/`) are a five-layer [ICM](https://github.com/ktnCodes/icm-template)
+> orientation layer sitting on top of this rulebook, not a substitute for it — read them first for a
+> workspace map and a task-routing table, then come back here for the rules themselves. `stages/`
+> restates §8's loop as one `CONTEXT.md` contract per stage; maintain the layer with the project-scoped
+> `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}` skills as the repo evolves.
+
 ## 1. Spec is the Single Source of Truth
 - **NEVER** write code or generate new features without first reading the corresponding specification in the `specs/` directory.
 - The specification dictates architecture, data models, and acceptance criteria.

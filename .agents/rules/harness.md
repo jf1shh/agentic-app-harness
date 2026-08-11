@@ -9,6 +9,10 @@ canonical file the harness itself parses. The portable, tool-neutral entry point
 
 @../AGENTS.md
 
+**Orientation first**: [`IDENTITY.md`](../../IDENTITY.md)/[`CONTEXT.md`](../../CONTEXT.md) at the repo
+root are this repo's [ICM](https://github.com/ktnCodes/icm-template) navigation layer — a workspace
+map and task-routing table on top of the rules below. Read them first.
+
 Binding essentials (the linked file governs):
 
 1. **Spec is the single source of truth** — read the matching spec in `specs/` before writing code.
