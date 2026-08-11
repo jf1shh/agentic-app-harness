@@ -112,9 +112,15 @@
 
       <h2>Permissions</h2>
       <p>
-        On Android the app requests only <code>INTERNET</code>, required for the location and
-        weather lookups above. Adding a wardrobe photo uses the system photo picker, which does
-        not require a storage or camera permission from the app.
+        On Android the app requests <code>INTERNET</code>, required for the location and weather
+        lookups above, and <code>CAMERA</code>, used only by the suitcase scanner's "📷 Scan"
+        button. That camera stream is read on-device to detect a barcode, or — for the
+        tap-to-measure flow — to capture a single still frame held only in memory so you can tap
+        two points on it against a credit card for scale. Nothing from the camera is written to
+        storage or sent anywhere, in either mode; the still frame is discarded and the camera
+        released the moment the scanner closes. Adding a wardrobe
+        photo is separate and uses the system photo picker, which does not require the camera
+        permission.
       </p>
 
       <h2>Children</h2>
