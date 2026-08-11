@@ -94,8 +94,9 @@ android {
                         "will be UNSIGNED and cannot be uploaded to Play. Provide keystore.properties " +
                         "or the ANDROID_KEYSTORE_* environment variables to sign it.")
             }
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
