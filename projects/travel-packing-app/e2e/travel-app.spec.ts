@@ -23,7 +23,7 @@ test.describe('Travel Packing App V3', () => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
 
-    const title = page.locator('h1:has-text("PackRight V4")');
+    const title = page.locator('h1:has-text("PackRight")');
     const toggle = page.getByRole('button', { name: /Dark Mode|Light Mode/ });
     await expect(title).toBeVisible();
     await expect(toggle).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Travel Packing App V3', () => {
 
     // Given the app is loaded with its default wardrobe source
     await page.goto('/');
-    await expect(page.locator('h1:has-text("PackRight V4")')).toBeVisible();
+    await expect(page.locator('h1:has-text("PackRight")')).toBeVisible();
     await expect(page.locator('text=Wardrobe Source')).toBeVisible();
 
     // When the user clicks Analyze

@@ -48,7 +48,7 @@ test.describe('BDD Spec: Capacitor bundle boots at the WebView origin', () => {
     await page.goto(CAPACITOR_URL, { waitUntil: 'networkidle' });
 
     // Then the app actually mounted — not a blank screen
-    await expect(page.locator('h1')).toContainText('PackRight V4');
+    await expect(page.locator('h1')).toContainText('PackRight');
 
     // And every asset the document referenced resolved at the bare root
     expect(failed, `failed requests at the WebView origin:\n${failed.join('\n')}`).toEqual([]);

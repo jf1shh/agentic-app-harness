@@ -49,7 +49,7 @@ test.describe('BDD Spec: Production bundle boots at its deploy origin', () => {
     await page.goto(PAGES_URL, { waitUntil: 'networkidle' });
 
     // Then the app actually mounted — not a blank screen
-    await expect(page.locator('h1')).toContainText('PackRight V4');
+    await expect(page.locator('h1')).toContainText('PackRight');
 
     // And every asset the document referenced resolved
     expect(failed, `failed requests under the deploy subpath:\n${failed.join('\n')}`).toEqual([]);

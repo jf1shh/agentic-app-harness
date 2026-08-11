@@ -1,7 +1,7 @@
-# Project Specification: Travel Packing App (PackRight V4)
+# Project Specification: Travel Packing App (PackRight)
 
 ## 1. Product Overview
-**Name:** Travel Packing App (PackRight V4 - Wardrobe Analyzer)
+**Name:** Travel Packing App (PackRight - Wardrobe Analyzer)
 **Description:** An intelligent wardrobe analyzer and outfit scheduler. It calculates valid outfits based on strict pairing rules (color math, material thermals, daily weather/activity constraints). It outputs a "Wearability Report" and "Knapsack Physics Report" and schedules outfits across the trip without consecutive-day repeats.
 **Target Audience:** Advanced travelers who want flexible, highly interchangeable capsule wardrobes rather than just piece counts.
 
