@@ -74,7 +74,7 @@ down for where it stands now):
 |---|---|---|
 | elder-care-planner | 52.9% → **app score not yet re-swept** | `explain/build.ts` alone: 35.5%→45.3% across two batches, see below; other files untouched. |
 | legal-financial-rag | 50.6% → **62.7% (app re-swept, confirmed)** | sanitizer.ts, piiRedactor.ts, schemas.ts all done. |
-| travel-packing-app | 42.6% | Not yet touched. |
+| travel-packing-app | 42.6% → **app score not yet re-swept** | `airlineBaggage.ts` fixed (see below — was misprioritized, was mostly data noise). |
 | mood-diner | 33.6% | Not yet touched. |
 | smart-recipe-app | 29.3% | Not yet touched. |
 | portfolio-hub | **n/a — cannot run** | See below. |
@@ -141,14 +141,29 @@ implementation)**, ranked by how much it matters here:
    missing-field rejection, a wrong-type rejection, and nested-schema enforcement. This alone
    moved the whole app's score from 50.6% to a confirmed 62.7% (full app re-swept, not just this
    file).
-4. **`travel-packing-app/src/utils/airlineBaggage.ts`** — 29%, 618 survived mutants, the
-   largest raw count in the entire sweep. Real rules-based domain logic (per-airline
-   weight/dimension limits) — should be very testable, not just "give it more tests."
-5. **`smart-recipe-app/src/lib/recommend.ts`** — 49%/53%, 74 survived — the app's core
+4. ~~**`travel-packing-app/src/utils/airlineBaggage.ts`** — 29%, 618 survived mutants, the
+   largest raw count in the entire sweep~~ — **this ranking was WRONG, corrected this pass.**
+   Checked before writing tests (filtered the mutant list by line number) and found 612 of the
+   618 are in the static `AIRLINES` data table (lines 25-432, ~77 airlines' names/dimensions) —
+   the exact same "ignore pure-data files" noise already flagged elsewhere in this document, not
+   a real gap. Only 6 survivors were in actual logic, all in `searchAirlines`. Fixed 3
+   (615 survived now) and found the existing "capped at 12" test was vacuous — it queried `'a'`
+   (length 1), which the `length < 2` guard rejects before ever reaching `.slice(0, 12)`, so the
+   test never exercised what it claimed to. The remaining 3 are **structurally unkillable**: the
+   exact-code-match clause (`a.code.toLowerCase() === q`) is always redundant with the substring
+   clause two lines below it (a string always contains itself), so no test input can ever
+   distinguish disabling one from the other without changing the implementation. Left as dead
+   code, documented rather than chased. **Lesson for whoever picks the next target: filter a
+   file's mutant list by line number before estimating its value from the raw survived count** —
+   a big number can be almost entirely a data table, and the real logic gap can be tiny.
+5. **`legal-financial-rag/src/lib/rag/queryProcessor.ts`** (18.6%, 32 survived) and
+   **`export/auditExporter.ts`** (12.8%, 27 survived) — now the worst real ratios left in that
+   app (schemas.ts is done). Not yet checked for the data-vs-logic split above; do that first.
+6. **`smart-recipe-app/src/lib/recommend.ts`** — 49%/53%, 74 survived — the app's core
    recommendation engine.
-6. **`elder-care-planner/src/lib/engine/plan.ts`** (32%) and **`plannerState.ts`** (36%) —
+7. **`elder-care-planner/src/lib/engine/plan.ts`** (32%) and **`plannerState.ts`** (36%) —
    core planning engine and state logic.
-7. **`travel-packing-app/src/utils/generator.ts`** (39%) and **`wardrobeEngine.ts`** (34%) —
+8. **`travel-packing-app/src/utils/generator.ts`** (39%) and **`wardrobeEngine.ts`** (34%) —
    core itinerary/outfit generation.
 
 Full per-file tables (all 6 apps) are in this session's transcript if needed again; they were
@@ -194,18 +209,22 @@ green (`60/60` unit tests). Done.
 - Checked-in docs match what they claim: `node scripts/check-doc-claims.mjs --gate`.
 
 ## 5. Next Steps for the Next Agent
-1. **Keep working down the surviving-mutant list in §3**, in priority order. `sanitizer.ts`,
-   `piiRedactor.ts`, and `schemas.ts` are all done in `legal-financial-rag` (app score
-   50.6%→62.7%, confirmed by a full re-sweep). `explain/build.ts` in `elder-care-planner` had
-   two batches (35.5%→45.3%) and is at the point of diminishing returns — the next agent should
-   judge whether a third batch is worth it or whether to move on. Next up, in roughly
-   descending value:
-   - `travel-packing-app/src/utils/airlineBaggage.ts` (29%, 618 survived — biggest raw count in
-     the whole repo-wide sweep, real per-airline rules logic, not yet touched).
+1. **Before picking a target from this list, filter its mutant list by line number first** (see
+   the `node -e` snippet used throughout this session — reads `reports/mutation/mutation.json`,
+   filters to the file, prints status/mutator/location). `airlineBaggage.ts` looked like the
+   single biggest gap in the repo (618 survived) and turned out to be 612 pure-data mutants and
+   6 real ones — the raw survived count is not a reliable value signal on its own, and skipping
+   this check would have wasted real time writing tests against airline name/dimension literals.
+2. **Keep working down the surviving-mutant list in §3**, in priority order. Done this session:
+   `sanitizer.ts`, `piiRedactor.ts`, `schemas.ts` (all in `legal-financial-rag`, app score
+   50.6%→62.7%, confirmed by a full re-sweep), `explain/build.ts` in `elder-care-planner` (two
+   batches, 35.5%→45.3%, now at the point of diminishing returns), and `airlineBaggage.ts` in
+   `travel-packing-app` (its real logic gaps, 3 of 6, the other 3 are dead code — see §3). Next
+   up, in roughly descending value:
    - `legal-financial-rag/src/lib/rag/queryProcessor.ts` (18.6%, 32 survived — worst ratio left
-     in that app now that schemas.ts is fixed) and `export/auditExporter.ts` (12.8%, 27
-     survived — a tamper-evident audit export, worth checking given the app's whole security
-     premise).
+     in that app) and `export/auditExporter.ts` (12.8%, 27 survived — a tamper-evident audit
+     export, worth checking given the app's whole security premise). Check the data-vs-logic
+     split on `chunker.ts` (48%, 65 survived) too before assuming it's all real gap.
    - `smart-recipe-app/src/lib/recommend.ts`, `elder-care-planner/engine/plan.ts` +
      `plannerState.ts`, `travel-packing-app/generator.ts` + `wardrobeEngine.ts`.
    - Full app-wide re-sweeps for `elder-care-planner`, `mood-diner`, `smart-recipe-app`, and
@@ -218,19 +237,19 @@ green (`60/60` unit tests). Done.
    not just the unit suite — to confirm the score actually moved, and state the before/after
    numbers in the PR body. Watch for the sanitizer.ts/piiRedactor.ts pattern repeating: an entire
    branch with literally zero test coverage is more likely than uniformly-weak assertions.
-2. Triage the Dependabot backlog — don't let it re-accumulate.
-3. Consider whether `legal-financial-rag`'s vault lock should extend to actually encrypting
+3. Triage the Dependabot backlog — don't let it re-accumulate.
+4. Consider whether `legal-financial-rag`'s vault lock should extend to actually encrypting
    document content at rest — needs a spec update first per `.agents/AGENTS.md` §1's "no vibe
    coding" rule, not a drive-by fix.
-4. Consider whether the bank/IBAN regex's 18-character cap in `piiRedactor.ts` (found this pass,
+5. Consider whether the bank/IBAN regex's 18-character cap in `piiRedactor.ts` (found this pass,
    not fixed — see §3 item 2) should widen to cover real IBAN lengths (15-34 chars) without
    over-matching unrelated long alphanumeric runs. Needs a deliberate decision on the new bound,
    not a quick edit.
-5. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
+6. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
    guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
-6. If a top-level folder is added or removed, run `/icm-sync` (`.claude/skills/icm-sync/`) to keep
+7. If a top-level folder is added or removed, run `/icm-sync` (`.claude/skills/icm-sync/`) to keep
    `IDENTITY.md`'s folder map and `CONTEXT.md`'s routing table from drifting.
-7. Separately (lower priority, not urgent): the two self-test-less scripts noted earlier this
+8. Separately (lower priority, not urgent): the two self-test-less scripts noted earlier this
    session — `scripts/harness-learn.mjs` (the LEARN blocking gate itself) and
    `scripts/emit-tasks.mjs` (the PROPOSE step) — have no `*.test.mjs` counterpart, unlike every
    sibling script in `scripts/`. Cheap, fixture-based, pure-Node tests to add whenever there's a
