@@ -15,6 +15,7 @@
 | Scaffold a brand-new app | `scripts/scaffold-app.ps1` | `specs/templates/`, `.agents/AGENTS.md` §4 |
 | Touch CI / workflows | `.github/workflows/` | `AGENTS.md` "CI" section |
 | Open a PR | — | `.agents/AGENTS.md` §9 (report what you ran, widen-a-type blast radius, prove-a-test-can-fail) |
+| Maintain this ICM layer as the repo evolves | `/icm-sync`, `/icm-context-scaffold` | `.claude/skills/icm-sync/SKILL.md`, `.claude/skills/icm-context-scaffold/SKILL.md` |
 
 ---
 

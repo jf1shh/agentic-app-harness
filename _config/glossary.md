@@ -17,6 +17,10 @@
   onto the harness's own five-stage loop (`.agents/AGENTS.md` §8) — the one process in this repo
   that is already staged with defined inputs and outputs — rather than onto the six apps under
   `projects/`, which are independent products, not pipeline stages of one workflow.
+- **`/icm-scaffold`, `/icm-sync`, `/icm-context-scaffold`** — Claude Code skills installed at
+  `.claude/skills/`, sourced from [ktnCodes/icm-template](https://github.com/ktnCodes/icm-template),
+  that generate and maintain this ICM layer: scaffold it from scratch, re-sync `IDENTITY.md`/
+  `CONTEXT.md` against the folders actually on disk, or backfill a missing `CONTEXT.md`.
 
 ## Repo terms
 

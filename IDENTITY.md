@@ -32,6 +32,7 @@ agentic-app-harness/
 ├── CLAUDE.md                # Claude-specific command/architecture map (imports AGENTS.md)
 ├── GEMINI.md                # Gemini-specific adapter
 ├── .cursor/rules/           # Cursor adapter (harness.mdc)
+├── .claude/skills/          # /icm-scaffold, /icm-sync, /icm-context-scaffold — maintain this layer
 ├── .agents/
 │   ├── AGENTS.md            # THE authoritative rulebook — read before changing any code
 │   ├── rules/harness.md     # Source rule text shared by the adapters above
