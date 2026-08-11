@@ -220,7 +220,15 @@ export default function Home() {
           generatedItinerary.push(...legResult.itinerary);
           legCodes.push(legResult.countryCode);
           legNames.push(leg.destination);
-          dayOffset += leg.days;
+          // Advance by what this leg's weather fetch actually returned, not
+          // by the day count it was asked for -- if the forecast API ever
+          // returns a different number of entries than requested (a gap, a
+          // truncated response near its forecast horizon), trusting the
+          // *intended* leg.days here would offset the next leg incorrectly
+          // and produce two legs sharing a dayNumber, which React then
+          // reports as a duplicate list key in the itinerary and outfit
+          // schedule.
+          dayOffset += legResult.itinerary.length;
         }
       }
 

@@ -1,4 +1,4 @@
-# PackRight V4 — Travel Packing App (`travel-packing-app`)
+# PackRight — Travel Packing App (`travel-packing-app`)
 
 A Next.js wardrobe analyzer and packing optimizer. It pulls a live weather forecast for the trip dates, generates daily warmth targets, schedules non-repeating outfits across the trip, then weighs and dimensions the resulting wardrobe against a real suitcase model and a specific airline's carry-on limits. Ships as a static web app and as a Capacitor Android WebView wrapper.
 

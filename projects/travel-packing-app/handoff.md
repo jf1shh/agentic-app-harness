@@ -1,6 +1,6 @@
-# 🤝 PackRight V4 - Agent Handoff Document
+# 🤝 PackRight - Agent Handoff Document
 
-Welcome, fellow Agent! This document will quickly get you up to speed on the **PackRight V4** repository. This is an intelligent travel packing optimizer that enforces strict mathematical rules for styling, weather, and luggage physics.
+Welcome, fellow Agent! This document will quickly get you up to speed on the **PackRight** repository. This is an intelligent travel packing optimizer that enforces strict mathematical rules for styling, weather, and luggage physics.
 
 ## 📁 Repository Context
 - **Path**: `projects/travel-packing-app`
@@ -174,5 +174,25 @@ encoded into the Share Trip link — `share.ts` never serialized the suitcase se
 for the catalog dropdown, so this is a pre-existing gap, not a regression.
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):** none.
+
+**Phase 22 — Rename to PackRight, and a multi-destination day-numbering fix**: dropped the
+"V4" suffix everywhere user-facing (`<h1>`/i18n `app.title` in all 11 locales, the browser-tab
+`<title>` in `layout.tsx`, which had never been branded at all and still said "Create Next App",
+plus README/handoff/spec headings and every e2e assertion that checked the old text). Also fixed a
+real bug found while checking the app for an "array error" per the session's request:
+`handleAnalyze`'s multi-destination branch advanced its running `dayOffset` by each leg's
+*requested* day count (`leg.days`) rather than by how many entries `fetchLegItinerary` actually
+returned for that leg. If a forecast response is ever one entry longer or shorter than requested
+(a truncation near the API's forecast horizon, a date-range edge case), the next leg's days start
+at the wrong offset and two different legs can render the same `dayNumber` — React logs that as a
+duplicate list key in both the itinerary and the outfit-schedule panel (`key={day}` in
+`WardrobeAnalyzer.tsx`). Fixed by advancing `dayOffset` with `legResult.itinerary.length` instead;
+regression-proven in `e2e/multi-destination.spec.ts` with a stub that deliberately returns one
+extra forecast day for the first leg, asserting every rendered day number is unique and no
+duplicate-key console error fires — mutation-verified by reverting to `leg.days` and confirming
+that exact test goes red (`Expected: 6, Received: 5` on the day-number count) before restoring the
+fix. Not a defect anyone had already hit in this sandbox (the live weather API isn't reachable from
+here), but the failure mode reproduced cleanly with a controlled stub and the fix is a one-line,
+low-risk hardening either way.
 
 Good luck! Read `specs/travel-packing-app-spec.md` for formal requirements.
