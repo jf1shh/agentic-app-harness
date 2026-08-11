@@ -8,6 +8,10 @@ workspace rules from [`.agents/rules/`](.agents/rules/). Read them before changi
 
 @AGENTS.md
 
+**Orientation first**: `IDENTITY.md`/`CONTEXT.md` at the repo root are this repo's
+[ICM](https://github.com/ktnCodes/icm-template) navigation layer — a workspace map and
+task-routing table on top of the rules below. Read them first.
+
 Binding essentials (the links above govern):
 
 1. **Spec-driven** — read the matching spec in `specs/` first; it is the single source of truth for

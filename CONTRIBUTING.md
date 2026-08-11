@@ -2,6 +2,11 @@
 
 Thank you for your interest in contributing to the **Agentic App Harness**! This monorepo enforces strict **Spec-Driven Development (SDD)**, **Contract-First Schema Validation**, and **Behavior-Driven Development (BDD)** testing.
 
+**New here?** [`IDENTITY.md`](IDENTITY.md) is a one-page workspace map and [`CONTEXT.md`](CONTEXT.md)
+is a task-routing table ("what do you want to do → where do you go") — read those before digging
+through the tree by hand. Both are part of this repo's [ICM](https://github.com/ktnCodes/icm-template)
+navigation layer, additive on top of the rules below, not a replacement for them.
+
 ---
 
 ## 🚀 SDD Workflow Guidelines

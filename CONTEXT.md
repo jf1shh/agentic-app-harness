@@ -4,6 +4,7 @@
 
 | Task | Go to | Load first |
 |------|-------|------------|
+| Get oriented as a new contributor | `README.md`, `CONTRIBUTING.md` | `IDENTITY.md` (this layer), then `HANDOFF.md` for current state |
 | Add/change a feature in an app | `projects/<app-name>/` | `specs/<app-name>-spec.md`, `.agents/AGENTS.md` |
 | Understand the rules for any change | `AGENTS.md` | `.agents/AGENTS.md` (the authoritative rulebook) |
 | Run the full per-app gate | `scripts/test-app.mjs` | `.agents/AGENTS.md` §5 |

@@ -1,6 +1,6 @@
 # Agentic App Harness — AI Agent Handoff Document
 
-_Last updated 2026-08-10. This file describes the state of the repo **right now** —
+_Last updated 2026-08-11. This file describes the state of the repo **right now** —
 it is rewritten, not appended to, each time it's updated. Session-by-session
 history belongs in git log and PR descriptions, not here._
 
@@ -17,6 +17,18 @@ history belongs in git log and PR descriptions, not here._
   and CI gates that keep AI-assisted app development rigorous and drift-free. The
   quality bar (Zod contracts, BDD tests, accessibility, spec coverage) is enforced
   in CI, not just documented. Full rulebook: `.agents/AGENTS.md`.
+- **Navigation layer (new this pass):** `IDENTITY.md` and `CONTEXT.md` at the repo root are a
+  full five-layer [ICM](https://github.com/ktnCodes/icm-template) (Interpretable Context
+  Methodology) overlay — a workspace map, a task-routing table, and (Layer 2/4) a
+  `stages/{sense,propose,act,verify,learn}/` folder per stage of the Agentic Loop below, each
+  with a `CONTEXT.md` contract and an `output/README.md` pointing at that stage's real artifact
+  location rather than duplicating it. `_config/{conventions,glossary,voice}.md` (Layer 3) link
+  back to `.agents/AGENTS.md`/`CLAUDE.md` instead of restating them. Maintained via three
+  project-scoped Claude Code skills at `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}`
+  — run `/icm-sync` after adding/removing a top-level folder so the map doesn't drift. Every other
+  agent-facing doc (`AGENTS.md`, `.agents/AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+  `.cursor/rules/harness.mdc`, `.agents/rules/harness.md`, `CONTRIBUTING.md`, `README.md`) now
+  points to `IDENTITY.md`/`CONTEXT.md` as the place to start.
 
 ## 2. The Agentic Loop (harness self-improvement)
 The harness closes its own improvement loop **with no embedded LLM and no API
@@ -31,6 +43,11 @@ The loop core is zero-dependency Node ESM and runs anywhere Node does.
 | **Verify** | `node scripts/harness-status.mjs --gate` | Blocking CI gate: fails on guardrail regressions + missing specs (drift only informs). Guardrails are self-tested (`harness-status.test.mjs`). |
 | **Learn** | `node scripts/harness-learn.mjs` | Enforces a closed `Lesson ⇄ Guardrail ⇄ Self-test` loop so new guardrails must trace to a documented lesson. |
 
+Each stage above now also has a physical folder — `stages/sense/`, `stages/propose/`,
+`stages/act/`, `stages/verify/`, `stages/learn/` — with its own `CONTEXT.md` restating this table
+as a contract (reads/runs/writes) and an `output/README.md` pointing at where that stage's real
+output lives. See §1.
+
 Currently: **7 blocking guardrails**, all traced to `.agents/AGENTS.md` §6 lessons
 (`node scripts/harness-learn.mjs` verifies this). Three sensors run alongside them:
 `senseMobileRelease` and `senseProductionBundleTest` (non-blocking), and
@@ -38,58 +55,44 @@ Currently: **7 blocking guardrails**, all traced to `.agents/AGENTS.md` §6 less
 As of this writing, `node scripts/harness-status.mjs --gate` reports **0 findings**
 across all 6 apps.
 
-**CI runner note (resolved):** every workflow — `ci.yml`, `sdd-sentinel.yml`,
-`deploy-pages.yml`, and all `android-release*.yml` — now runs on `ubuntu-latest`.
-The previous handoff flagged `sdd-sentinel.yml` as still on `windows-latest`
-disagreeing with the README's claim; that was fixed in PR #93 (`ci(sdd-sentinel):
-move SDD Sentinel to ubuntu-latest, matching the standing claim`) and is confirmed
-in the workflow file as of this pass — nothing left to reconcile there.
-
 `.\scripts\harness.ps1` exposes `status`, `tasks`, `verify`, and `learn` as a thin
 wrapper. See `.agents/AGENTS.md` §8 and `tasks/README.md` for the bring-your-own-agent
 contract.
 
 ## 3. Current State / Open Work
 
-**This pass (2026-08-10): closed out `travel-packing-app`'s full "port it all" gap-audit
-backlog against the source repo** (github.com/jf1shh/Travel-Packing-Optimizer) — eleven phases in
-total across this and prior passes (#163–#166, then Phases 15–21), each an independent branch/PR,
-TDD red→green with a stated mutation-proof, full `node scripts/test-app.mjs travel-packing-app`
-green before every push. GitHub auto-merge was enabled throughout, landing PRs in an unpredictable
-order relative to each other, so nearly every one needed at least one conflict-resolution merge
-(`git merge origin/master --no-edit`) against still-open siblings before it could land clean.
+**This pass (2026-08-11): added the ICM navigation layer** described in §1 (PR #180, merged) —
+`IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`, and the three `.claude/skills/` that maintain
+them — then propagated pointers to it into every other agent-facing doc in the repo (this file
+included). Purely additive: no app code, spec, guardrail, or existing doc content changed.
 
-The last three phases, merged this pass: **Phase 17** (3D luggage volume visualization, Three.js),
-**Phase 18** (broader light-theme WCAG AA contrast audit), and **Phase 21** (camera-based suitcase
-scanner). Phase 21 is worth flagging specifically: it was found by re-diffing this app against the
-source repo *after* the prior "gap-audit backlog" was declared closed — the source's 1,084-line
-`SuitcaseScanner.jsx` (live barcode scan + credit-card-calibrated tap-to-measure) had never been
-ported, only its pure lookup/math. The lesson: "closed the backlog" claims from an audit are only as
-complete as the audit was, and a stated completion is worth re-verifying against the actual source
-before trusting it, not just against the prior pass's own summary of itself. Full detail on every
-phase, including the architecture decisions Phase 21 forced (a `customSuitcase` state extension in
-`page.tsx` for suitcase dimensions with no catalog match), is in
-`projects/travel-packing-app/handoff.md`, not duplicated here.
+**Found while babysitting PR #180's CI, not yet fixed — needs a follow-up:**
+`test (portfolio-hub)` fails on `master` right now. `projects/portfolio-hub/src/data/
+loopStats.generated.test.ts` recomputes `lessonCount` live from `.agents/AGENTS.md` §6 and compares
+it against the committed `projects/portfolio-hub/src/data/loopStats.generated.ts` fixture
+(`44` recomputed vs. `43` committed). Verified by checking out `origin/master` standalone (no PR
+#180 changes applied) and re-running `node scripts/generate-loop-stats.mjs` from
+`projects/portfolio-hub/` — it independently reproduces `44`, so this predates PR #180 and isn't
+caused by the ICM changes. Most likely PR #179 (mood-diner paywall rewrite, the prior master merge)
+added a new §6 lesson without regenerating this fixture. **Fix**: from
+`projects/portfolio-hub/`, run `node scripts/generate-loop-stats.mjs`, then commit the regenerated
+`src/data/loopStats.generated.ts`.
 
 **No known outstanding harness findings**: `node scripts/harness-status.mjs --gate` reports 0
-findings across all 6 apps as of this pass.
-
-**Resolved since the 2026-08-07 pass** (not touched by this session — already done by the time
-this pass started): the two previously-flagged stale `claude/*` branches and
-`feat/11.11-starting-guide` no longer exist on `origin`; issues #69 and #70 are both closed, and
-the repo currently has zero open issues.
+findings across all 6 apps as of this pass (the portfolio-hub item above is a per-app Vitest
+fixture, not a harness guardrail finding — it wouldn't show up in that gate).
 
 **Still outstanding, not touched this pass:**
 - **GitHub repo description** (Settings → General) — unverified whether it still undersells the
   app count; no repo-settings API is exposed to this session, so this needs a human check.
 - **Dependabot backlog** — a large number of open `dependabot/*` PRs (dependency bumps across all
-  6 apps' peer sets) sat untriaged through this pass; don't let it grow further unattended. Per
-  `.agents/AGENTS.md` §6, treat any linter/compiler/icon-set major bump as an API change to
-  verify, and never let a split peer pair (e.g. `eslint`/`@typescript-eslint/*`,
+  6 apps' peer sets) has been sitting untriaged across multiple passes; don't let it grow further
+  unattended. Per `.agents/AGENTS.md` §6, treat any linter/compiler/icon-set major bump as an API
+  change to verify, and never let a split peer pair (e.g. `eslint`/`@typescript-eslint/*`,
   `react`/`react-dom`) land only half-bumped.
-- **`legal-financial-rag`'s vault lock** (see the 2026-08-07 pass) gates the UI with real
-  passphrase verification but doesn't encrypt document content at rest in React state — a larger
-  redesign that needs a spec update first, not a drive-by fix.
+- **`legal-financial-rag`'s vault lock** gates the UI with real passphrase verification but doesn't
+  encrypt document content at rest in React state — a larger redesign that needs a spec update
+  first, not a drive-by fix.
 
 ## 4. How to Verify
 - Whole-repo sense + gates: `node scripts/harness-status.mjs --gate`, then
@@ -99,13 +102,13 @@ the repo currently has zero open issues.
   push, not just on CI.
 - Spec/schema coverage: `.\scripts\validate-specs.ps1 -Strict`.
 - Enum/union widening blast radius: `node scripts/check-enum-blast-radius.mjs`.
+- Checked-in docs match what they claim: `node scripts/check-doc-claims.mjs --gate`.
 
 ## 5. Next Steps for the Next Agent
-1. Triage the Dependabot backlog — don't let it re-accumulate.
-2. Verify the GitHub repo description reflects six apps and fix manually if not.
-3. If picking up `travel-packing-app` again, read its own `handoff.md` first. As of this pass its
-   own "known follow-ups" list is empty — but see the note above about re-verifying that kind of
-   claim against the actual source repo rather than trusting it at face value.
+1. **Fix the portfolio-hub `loopStats` drift** described in §3 — one command
+   (`node scripts/generate-loop-stats.mjs` from `projects/portfolio-hub/`) plus a commit.
+2. Triage the Dependabot backlog — don't let it re-accumulate.
+3. Verify the GitHub repo description reflects six apps and fix manually if not.
 4. Consider whether `legal-financial-rag`'s vault lock should extend to
    actually encrypting document content at rest (currently: real passphrase
    verification gates the UI, but `SAMPLE_DOCUMENTS`/chunks are held as plain
@@ -115,3 +118,5 @@ the repo currently has zero open issues.
    `.agents/AGENTS.md` §1's "no vibe coding" rule.
 5. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
    guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
+6. If a top-level folder is added or removed, run `/icm-sync` (`.claude/skills/icm-sync/`) to keep
+   `IDENTITY.md`'s folder map and `CONTEXT.md`'s routing table from drifting.

@@ -40,6 +40,7 @@ It hosts six real, deployed applications and holds every one of them to the same
 - `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `harness-history.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform).
 - `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).
 - `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo.
+- `IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`: an [ICM](https://github.com/ktnCodes/icm-template) (Interpretable Context Methodology) navigation layer for AI agents — a workspace map (`IDENTITY.md`) and task-routing table (`CONTEXT.md`) at the repo root, plus a `CONTEXT.md` contract and `output/` pointer per stage of the Agentic Loop below (`stages/sense/`, `stages/propose/`, `stages/act/`, `stages/verify/`, `stages/learn/`). It sits **on top of** `.agents/AGENTS.md`, not in place of it — every rule-bearing statement in it links back to the rulebook rather than restating it. Maintained via the project-scoped `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}` skills.
 
 ---
 

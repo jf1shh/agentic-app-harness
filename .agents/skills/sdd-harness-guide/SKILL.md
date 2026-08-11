@@ -9,6 +9,8 @@ As an AI Agent operating within this monorepo (`jf1shh/agentic-app-harness`), fo
 
 ## 1. Primary Workflow Execution Order
 
+0. **Orient via ICM**: Read `IDENTITY.md` (workspace map) and `CONTEXT.md` (task-routing table) at
+   the repo root first — they're a navigation layer on top of this guide, not a substitute for it.
 1. **Read Spec First**: Never generate code without reading `specs/<app-name>-spec.md`.
 2. **Contract-First Schemas**: Define data models in `src/lib/schemas.ts` or `src/schemas.ts` using `zod`. Infer TypeScript types (`z.infer<typeof Schema>`).
 3. **BDD Specification Standard**: Format test scenarios in `Given [Context] -> When [User Action] -> Then [Expected Outcome]`.

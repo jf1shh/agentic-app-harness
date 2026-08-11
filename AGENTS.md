@@ -10,6 +10,11 @@
 
 @.agents/AGENTS.md
 
+**Orientation first.** [`IDENTITY.md`](IDENTITY.md) and [`CONTEXT.md`](CONTEXT.md) at the repo root are
+an [ICM](https://github.com/ktnCodes/icm-template) navigation layer — a workspace map and a
+task-routing table sitting on top of the rulebook above, not replacing it. Read them before exploring
+the tree by hand.
+
 ---
 
 ## The non-negotiables (summary — the link above governs)
