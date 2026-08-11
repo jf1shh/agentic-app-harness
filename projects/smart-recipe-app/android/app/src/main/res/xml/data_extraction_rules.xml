@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+) backup/transfer rules — see backup_rules.xml for why
+  the WebView storage directory is excluded from both cloud backup and
+  device-to-device transfer.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="app_webview/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="app_webview/" />
+    </device-transfer>
+</data-extraction-rules>

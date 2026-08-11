@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Legacy Auto Backup rules (Android 6.0–11, API 23–30; superseded by
+  data_extraction_rules.xml on API 31+, but minSdkVersion is below 31 so both
+  are needed for full coverage).
+
+  Excludes the WebView's own storage directory, where Capacitor's web layer
+  keeps localStorage/IndexedDB — this app's local data (see its privacy
+  policy) is not meant to leave the device. Without this exclusion, Android's
+  automatic cloud backup would copy that data to the user's Google account.
+-->
+<full-backup-content>
+    <exclude domain="file" path="app_webview/" />
+</full-backup-content>
