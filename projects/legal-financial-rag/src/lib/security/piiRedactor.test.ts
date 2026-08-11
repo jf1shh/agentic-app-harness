@@ -91,6 +91,93 @@ describe('detectAndRedactPII', () => {
   });
 });
 
+describe('detectAndRedactPII — tax ID / EIN (previously zero coverage)', () => {
+  // Mutation testing (node scripts/run-mutation.mjs legal-financial-rag) found
+  // this file at 66% with 27 survived mutants. The single biggest gap: no test
+  // anywhere in this suite ever exercised the EIN/TAX_ID branch (the einRegex
+  // block and its `type: 'TAX_ID'` tag) at all — every mutant in that whole
+  // branch survived by default, because nothing ran the code path.
+  it('Given an EIN formatted as XX-XXXXXXX, When PII redaction runs, Then it is tagged as TAX_ID and redacted', () => {
+    const rawText = 'Employer Identification Number: 47-1234567 on the W-9.';
+    const result = detectAndRedactPII(rawText);
+
+    const taxTag = result.tags.find((t) => t.type === 'TAX_ID');
+    expect(taxTag).toBeDefined();
+    expect(taxTag?.originalText).toBe('47-1234567');
+    expect(taxTag?.redactedPlaceholder).toBe('[REDACTED_TAX_ID_1]');
+    expect(result.redactedText).toContain('[REDACTED_TAX_ID_1]');
+    expect(result.redactedText).not.toContain('47-1234567');
+  });
+
+  it('Given two different EINs in the text, When PII redaction runs, Then each gets its own distinct, incrementing placeholder', () => {
+    const rawText = 'Borrower EIN 12-3456789; guarantor EIN 98-7654321.';
+    const result = detectAndRedactPII(rawText);
+
+    const taxTags = result.tags.filter((t) => t.type === 'TAX_ID');
+    expect(taxTags).toHaveLength(2);
+    expect(result.redactedText).toContain('[REDACTED_TAX_ID_1]');
+    expect(result.redactedText).toContain('[REDACTED_TAX_ID_2]');
+    expect(result.redactedText).not.toContain('12-3456789');
+    expect(result.redactedText).not.toContain('98-7654321');
+  });
+});
+
+describe('detectAndRedactPII — tag field correctness', () => {
+  // Nothing in this suite ever asserted on tag.id, tag.startIndex, tag.endIndex
+  // or tag.isMasked — every mutant touching those fields survived regardless of
+  // which type's branch produced them.
+  it('Given a single SSN, When PII redaction runs, Then the tag carries the correct id, position and mask flag', () => {
+    const rawText = 'SSN on file: 453-92-1084.';
+    const result = detectAndRedactPII(rawText);
+
+    const ssnTag = result.tags.find((t) => t.type === 'SSN')!;
+    expect(ssnTag.id).toBe('tag-ssn-1');
+    expect(ssnTag.isMasked).toBe(true);
+    expect(ssnTag.startIndex).toBe(rawText.indexOf('453-92-1084'));
+    expect(ssnTag.endIndex).toBe(rawText.indexOf('453-92-1084') + '453-92-1084'.length);
+  });
+});
+
+describe('detectAndRedactPII — bank/routing duplicates and IBAN', () => {
+  it('Given two different bank account numbers in the text, When PII redaction runs, Then each gets its own distinct, incrementing placeholder', () => {
+    const rawText = 'Wire to Account Number: 84729104822. Backup: Account Number: 55566677788.';
+    const result = detectAndRedactPII(rawText);
+
+    const bankTags = result.tags.filter((t) => t.type === 'BANK_ACCOUNT');
+    expect(bankTags).toHaveLength(2);
+    expect(result.redactedText).toContain('[REDACTED_BANK_ACCT_1]');
+    expect(result.redactedText).toContain('[REDACTED_BANK_ACCT_2]');
+  });
+
+  // The bank regex alternation is `Routing|Account|IBAN` — every existing case
+  // used "Account" or "Routing", so the IBAN branch of the alternation had no
+  // case of its own. Note: the regex caps the captured value at 18 characters
+  // ({8,18}), so a real full-length IBAN (15-34 chars per ISO 13616) is too
+  // long to match at all — a separate, genuine gap this test doesn't paper
+  // over by using a value short enough to fit the existing cap.
+  it('Given a bank code labelled with the word "IBAN", When PII redaction runs, Then it is detected and masked', () => {
+    const rawText = 'IBAN: NWBK60161331 for the wire transfer.';
+    const result = detectAndRedactPII(rawText);
+
+    const bankTag = result.tags.find((t) => t.type === 'BANK_ACCOUNT');
+    expect(bankTag).toBeDefined();
+    expect(result.redactedText).not.toContain('NWBK60161331');
+  });
+});
+
+describe('detectAndRedactPII — duplicate email addresses', () => {
+  it('Given the same email address appearing twice, When PII redaction runs, Then each occurrence gets its own distinct placeholder', () => {
+    const rawText = 'Primary: jane.doe@lexivault-client.example. CC: jane.doe@lexivault-client.example.';
+    const result = detectAndRedactPII(rawText);
+
+    const emailTags = result.tags.filter((t) => t.type === 'EMAIL');
+    expect(emailTags).toHaveLength(2);
+    expect(result.redactedText).toContain('[REDACTED_EMAIL_1]');
+    expect(result.redactedText).toContain('[REDACTED_EMAIL_2]');
+    expect(result.redactedText).not.toContain('jane.doe@lexivault-client.example');
+  });
+});
+
 describe('togglePIIMask', () => {
   it('Given two distinct redacted tags, When only one is unmasked, Then the other stays hidden', () => {
     const rawText = 'SSN: 453-92-1084. Contact: jane.doe@lexivault-client.example.';
