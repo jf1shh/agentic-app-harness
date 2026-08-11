@@ -304,10 +304,18 @@ export function senseMobileRelease(app, projPath, workflowsDir,
   }
 
   // 7. CI produces no installable artifact, so nothing verifies the native build.
-  const wf = workflowsDir && existsSync(workflowsDir)
-    ? readdirSync(workflowsDir).map((f) => readSafe(join(workflowsDir, f))).join('\n')
-    : '';
-  if (!/gradlew|bundleRelease|assembleRelease|cap\s+sync/.test(wf)) {
+  // Scoped per-app: a workflow file only counts if it both runs an Android build
+  // step AND references this app's own projects/<app> path. Without the second
+  // half, one app's android-release.yml (e.g. mood-diner's) would silently
+  // satisfy this check for every other app in the repo too, since they all share
+  // the same workflows directory — this sensor would then never fire again even
+  // for a brand-new native app added with no CI of its own.
+  const wfFiles = workflowsDir && existsSync(workflowsDir) ? readdirSync(workflowsDir) : [];
+  const hasAndroidCi = wfFiles.some((f) => {
+    const c = readSafe(join(workflowsDir, f));
+    return /gradlew|bundleRelease|assembleRelease|cap\s+sync/.test(c) && c.includes(`projects/${app}`);
+  });
+  if (!hasAndroidCi) {
     add('no-android-ci', 'medium',
       `No CI job builds the ${app} Android artifact`,
       'The workflows only build and test the web bundle, so a broken native build reaches a release unnoticed. Add a job that runs the Capacitor sync and a Gradle release build, and uploads the AAB.');

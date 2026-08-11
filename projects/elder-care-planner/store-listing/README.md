@@ -92,12 +92,11 @@ Straight from `public/privacy.html`: **"No data collected"** across every catego
 load an image or call a search API. Everything (`elder-care-planner:plan:v1` in localStorage,
 facility photos and receipts in IndexedDB) stays on-device and is never transmitted.
 
-One thing worth knowing before you submit the form, though it doesn't change the answer: the
-Android manifest (`android/app/src/main/AndroidManifest.xml`) declares the `INTERNET` permission
-even though the app never uses it — it's the unmodified Capacitor scaffold default, not something
-added for a feature. Play's Data Safety form asks about data actually collected, not permissions
-declared, so this doesn't affect the "No data collected" answer. It's a harmless discrepancy
-between the manifest and the privacy policy's "makes no outbound network requests" claim, not a
-policy risk, but tightening the manifest to drop the unused permission would make the two agree
-outright — flagging it rather than changing it, since it's a manifest edit outside what this
-listing pass was asked to do.
+The Android manifest (`android/app/src/main/AndroidManifest.xml`) no longer declares the
+`INTERNET` permission — it shipped as the unmodified Capacitor scaffold default, unused by the app
+and in tension with the privacy policy's "no outbound network requests" claim, so it was dropped
+during the Play Store readiness audit. Confirmed unused first: no `fetch`/`XMLHttpRequest`, no
+remote fonts or images, and the only external URLs in the app (`StartingGuidePanel`,
+`LedgerReceipt`) are plain `<a target="_blank">` links, which Capacitor's default WebViewClient
+hands off to the system browser via an `ACTION_VIEW` intent rather than loading in-app — so they
+need the browser's own INTERNET permission, not this app's.

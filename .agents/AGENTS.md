@@ -556,6 +556,37 @@ As an AI agent operating within this repository, you must strictly adhere to the
   and auto-scroll never has a reason to engage. Not tagged as a guardrail: whether a given page's
   height will later outgrow a fixed test viewport is a property of future, unrelated changes to
   that same page, not something a line-level regex can see coming.
+- **A Monetization UI That Shows Real Prices Needs a Real Purchase Behind It**: A full Play Store
+  readiness audit across all five native apps found `mood-diner`'s `ProPaywallModal.tsx` presenting
+  specific currency amounts ("$4.99/mo", "$39.99/yr"), a "Start 7-Day Free Trial" call to action,
+  and "Cancel anytime with 1-click in Google Play / Web Settings" — while `upgradeToPro()` in
+  `MonetizationContext.tsx` does nothing but flip a `localStorage` flag. Tapping the button grants
+  Pro instantly, charges nothing, and starts no trial; the "Cancel... in Google Play" line
+  references a Play Billing subscription that was never created. This is exactly the shape Play's
+  Monetization and Payments policy exists to catch: a purchase-shaped UI that does not do what it
+  visually claims is a rejection/removal risk independent of whether the underlying feature-gating
+  logic (free daily credits, Pro-only unlocks) is itself fine — and it was, per §11 of this app's
+  spec, which only requires the *gate* to be well-behaved (opt-in, non-interrupting), not that the
+  UI behind it be truthful about billing. The store-listing kit's own README had already flagged
+  this exact defect and explicitly declined to fix it, reasoning it was "a UX mismatch... I didn't
+  change this since it wasn't part of what was asked" — correct scope discipline for a listing-copy
+  pass, but the flag sat unresolved through a subsequent full audit pass too. **Resolved**: the
+  product decision landed on rewriting the copy rather than wiring up real Play Billing — the
+  billing-cycle selector (the whole Annual/Monthly-with-prices toggle) is gone, the CTA is now
+  "Unlock Pro Features" with no price or trial period attached, and the footer states plainly
+  what actually happens ("No payment, no account — this preview switches your device to the Pro
+  feature set at no cost") instead of claiming a cancellable Google Play subscription. Verifying
+  this by reading the component alone would have been incomplete: `ProPaywallModal` was fully
+  built and wired to `MonetizationContext` but **never mounted anywhere** — `App.tsx` rendered
+  `BookingsModal`, `WeatherWidgetModal`, and `AddRealRestaurantModal` but not this one, so
+  `openPaywall()` silently did nothing and no user could ever have seen the deceptive copy in the
+  first place. A Playwright smoke check against the running dev server (click `#upgrade-pro-btn`,
+  wait for `.modal-content`) timed out until `<ProPaywallModal />` was added to `App.tsx`'s render
+  tree alongside its sibling modals — the same "assert on the rendered page, not the source" habit
+  the other lessons in this section already insist on. Not tagged as a guardrail: distinguishing a
+  truthful mock-data label from a deceptive one is a judgment about what copy claims, not a
+  line-level pattern, and "is this component actually mounted" requires resolving an import graph
+  a regex over one file cannot see.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.
