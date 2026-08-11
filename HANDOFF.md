@@ -72,7 +72,7 @@ down for where it stands now):
 
 | App | Score (original sweep) | Notes |
 |---|---|---|
-| elder-care-planner | 52.9% | Not yet touched — see target #1 below. |
+| elder-care-planner | 52.9% → **app score not yet re-swept** | `explain/build.ts` alone: 35.5%→40.2%, see below; other files untouched. |
 | legal-financial-rag | 50.6% → **54.9% after this pass** | sanitizer.ts/piiRedactor.ts done; schemas.ts still open. |
 | travel-packing-app | 42.6% | Not yet touched. |
 | mood-diner | 33.6% | Not yet touched. |
@@ -98,10 +98,25 @@ authenticSampleDocs.ts`, `travel-packing-app/utils/suitcaseDatabase.ts`,
 tests — meaning the tests run but their assertions are too weak to catch a broken
 implementation)**, ranked by how much it matters here:
 
-1. **`elder-care-planner/src/lib/explain/build.ts`** — 37% file score, 484 survived mutants,
-   the largest single gap in the sweep. This is the "explain the arithmetic" derivation panel
-   `.agents/AGENTS.md` §6 already flags as trust-critical (parts-must-sum-to-total, clamps shown
-   as steps). Start here.
+1. ~~**`elder-care-planner/src/lib/explain/build.ts`** — 37% file score, 484 survived
+   mutants~~ — **partially done this pass**: 35.49%→40.22% (484→470 survived, NoCoverage
+   34→10). This file's own tests deliberately check arithmetic balance rather than prose
+   wording, so most remaining survivors are `StringLiteral` mutations of caveat/assumption
+   text — expected, not a real gap (mirrors the "ignore pure-data files" caveat above but for
+   narrative strings instead of datasets). Found and killed the 5 branches that were
+   **`NoCoverage`** — never executed by any of the 13 fixtures in the sweep, not just weakly
+   asserted: an annual-cadence ancillary item, a care-level increase already in effect by month
+   one (the source's own comment calls this required "or the parts stop adding up"), an
+   illiquid asset's exclusion note, `residentialAlwaysCheaper` in the break-even comparison, and
+   the income-proportional split's fallback-to-equal-shares note. `PlannerState` can't express 4
+   of these (no UI path yet to those inputs), so the new tests build `CareScenario`/`Plan`
+   objects directly, same as `ilExplanations()` already does for the buy-in path. **Still open**:
+   the remaining ~95 `ConditionalExpression` and ~49 `EqualityOperator` survivors are mostly
+   branches that *do* execute under some fixture but whose specific behavior isn't pinned
+   (e.g. `cost.confidence === 'needs_verification'` vs `'derived'` vs `'verified'` — only
+   `'derived'` has a direct test). Re-run `cd projects/elder-care-planner && npx stryker run
+   --mutate "src/lib/explain/build.ts"` (~2 min, much faster than the full-app sweep) to get a
+   fresh mutant list before picking the next batch.
 2. ~~**`legal-financial-rag/src/lib/security/sanitizer.ts`** (45%) and **`piiRedactor.ts`**
    (66%)~~ — **done this pass.** sanitizer.ts 44.83%→81.03% (28→11 survived), piiRedactor.ts
    66.25%→82.50% (27→14 survived). The single biggest gap was that piiRedactor's EIN/Tax-ID
@@ -169,9 +184,11 @@ green (`60/60` unit tests). Done.
 
 ## 5. Next Steps for the Next Agent
 1. **Keep working down the surviving-mutant list in §3**, in priority order. `sanitizer.ts` and
-   `piiRedactor.ts` are done (see §3). Next up:
-   - `elder-care-planner/explain/build.ts` (37%, 484 survived — biggest single gap, trust-critical,
-     not yet started; this is a big file, budget real time for it).
+   `piiRedactor.ts` are done; `explain/build.ts` is partially done (5 zero-coverage branches
+   killed, 40.2% and climbing — see §3 for exactly which mutator categories are left and why the
+   `StringLiteral` ones are expected noise, not a gap). Next up:
+   - Finish `elder-care-planner/explain/build.ts`'s `ConditionalExpression`/`EqualityOperator`
+     survivors (the confidence-tier branches, `cheaperOption` branches, etc. — see §3).
    - `legal-financial-rag/src/lib/schemas.ts` (4.7%, 61 survived).
    - `travel-packing-app/src/utils/airlineBaggage.ts` (29%, 618 survived — biggest raw count).
    - `smart-recipe-app/src/lib/recommend.ts`, `elder-care-planner/engine/plan.ts` +
