@@ -570,15 +570,23 @@ As an AI agent operating within this repository, you must strictly adhere to the
   UI behind it be truthful about billing. The store-listing kit's own README had already flagged
   this exact defect and explicitly declined to fix it, reasoning it was "a UX mismatch... I didn't
   change this since it wasn't part of what was asked" — correct scope discipline for a listing-copy
-  pass, but the flag sat unresolved through a subsequent full audit pass too, which is why it's
-  captured here rather than assumed caught. The fix is a product decision, not a mechanical one —
-  either wire up real Google Play Billing for the subscription, or rewrite the modal to stop
-  asserting currency amounts, a trial period, and a cancellation mechanism it cannot back. Not
-  tagged as a guardrail: distinguishing a truthful mock-data label ("Preview pricing — coming
-  soon") from a deceptive one ("$4.99/mo... Cancel anytime in Google Play") is a judgment about
-  what the copy claims, not a pattern a line-level regex can express, and the giveaway (a `Start...
-  Trial` button wired to a synchronous local-state setter instead of any billing SDK call) spans
-  two files a regex would never look at together.
+  pass, but the flag sat unresolved through a subsequent full audit pass too. **Resolved**: the
+  product decision landed on rewriting the copy rather than wiring up real Play Billing — the
+  billing-cycle selector (the whole Annual/Monthly-with-prices toggle) is gone, the CTA is now
+  "Unlock Pro Features" with no price or trial period attached, and the footer states plainly
+  what actually happens ("No payment, no account — this preview switches your device to the Pro
+  feature set at no cost") instead of claiming a cancellable Google Play subscription. Verifying
+  this by reading the component alone would have been incomplete: `ProPaywallModal` was fully
+  built and wired to `MonetizationContext` but **never mounted anywhere** — `App.tsx` rendered
+  `BookingsModal`, `WeatherWidgetModal`, and `AddRealRestaurantModal` but not this one, so
+  `openPaywall()` silently did nothing and no user could ever have seen the deceptive copy in the
+  first place. A Playwright smoke check against the running dev server (click `#upgrade-pro-btn`,
+  wait for `.modal-content`) timed out until `<ProPaywallModal />` was added to `App.tsx`'s render
+  tree alongside its sibling modals — the same "assert on the rendered page, not the source" habit
+  the other lessons in this section already insist on. Not tagged as a guardrail: distinguishing a
+  truthful mock-data label from a deceptive one is a judgment about what copy claims, not a
+  line-level pattern, and "is this component actually mounted" requires resolving an import graph
+  a regex over one file cannot see.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.

@@ -6,6 +6,7 @@ import { RestaurantModal } from './components/RestaurantModal';
 import { BookingsModal } from './components/BookingsModal';
 import { WeatherWidgetModal } from './components/WeatherWidget';
 import { AddRealRestaurantModal } from './components/AddRealRestaurantModal';
+import { ProPaywallModal } from './components/ProPaywallModal';
 import { PRESET_WEATHER } from './utils/weatherEngine';
 import { INITIAL_RESTAURANTS } from './data/restaurantsData';
 import { Restaurant, WeatherCondition, Reservation, TransportMode } from './types';
@@ -236,6 +237,8 @@ export const App: React.FC = () => {
         onClose={() => setIsAddRealModalOpen(false)}
         onAddRestaurant={handleAddCustomRestaurant}
       />
+
+      <ProPaywallModal />
 
     </div>
   );

@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
-import { Crown, Check, Sparkles, X, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import { Crown, Check, Sparkles, X, Info } from 'lucide-react';
 import { useMonetization } from '../lib/monetization/MonetizationContext';
 
 export const ProPaywallModal: React.FC = () => {
   const { isPaywallOpen, closePaywall, upgradeToPro } = useMonetization();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
 
   if (!isPaywallOpen) return null;
 
-  const handleSubscribe = () => {
+  const handleUnlock = () => {
     upgradeToPro();
   };
 
@@ -79,49 +78,6 @@ export const ProPaywallModal: React.FC = () => {
           </p>
         </div>
 
-        {/* Billing Selector */}
-        <div style={{
-          display: 'flex',
-          background: 'rgba(15, 23, 42, 0.6)',
-          borderRadius: '0.75rem',
-          padding: '4px',
-          marginBottom: '1.5rem',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          <button
-            onClick={() => setBillingCycle('annual')}
-            style={{
-              flex: 1,
-              padding: '0.6rem',
-              borderRadius: '0.5rem',
-              border: 'none',
-              background: billingCycle === 'annual' ? 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)' : 'transparent',
-              color: billingCycle === 'annual' ? '#ffffff' : '#94a3b8',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '0.85rem'
-            }}
-          >
-            Annual ($3.33/mo) <span style={{ color: '#10b981', fontSize: '0.75rem', marginLeft: '4px' }}>Save 33%</span>
-          </button>
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            style={{
-              flex: 1,
-              padding: '0.6rem',
-              borderRadius: '0.5rem',
-              border: 'none',
-              background: billingCycle === 'monthly' ? 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)' : 'transparent',
-              color: billingCycle === 'monthly' ? '#ffffff' : '#94a3b8',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '0.85rem'
-            }}
-          >
-            Monthly ($4.99/mo)
-          </button>
-        </div>
-
         {/* Feature List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.75rem' }}>
           {[
@@ -147,7 +103,7 @@ export const ProPaywallModal: React.FC = () => {
 
         {/* Action Button */}
         <button
-          onClick={handleSubscribe}
+          onClick={handleUnlock}
           style={{
             width: '100%',
             padding: '0.85rem',
@@ -166,11 +122,11 @@ export const ProPaywallModal: React.FC = () => {
           }}
         >
           <Sparkles size={18} />
-          {billingCycle === 'annual' ? 'Start 7-Day Free Trial ($39.99/yr)' : 'Start 7-Day Free Trial ($4.99/mo)'}
+          Unlock Pro Features
         </button>
 
         <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-          <ShieldCheck size={14} color="#10b981" /> Cancel anytime with 1-click in Google Play / Web Settings
+          <Info size={14} color="#64748b" /> No payment, no account — this preview switches your device to the Pro feature set at no cost.
         </p>
       </div>
     </div>
