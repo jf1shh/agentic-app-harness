@@ -10,5 +10,9 @@
   },
   "workspaces": [
     "projects/*"
-  ]
+  ],
+  "overrides": {
+    "sharp": "^0.35.0",
+    "adm-zip": "^0.6.0"
+  }
 }
