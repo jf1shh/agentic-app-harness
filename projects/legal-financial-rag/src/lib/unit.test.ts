@@ -195,8 +195,15 @@ describe('LexiVault Hardened Engine Unit Test Suite', () => {
       });
 
       expect(chunks.length).toBeGreaterThanOrEqual(2);
-      expect(chunks[0].sectionTitle).toContain('Section 4.02');
+      // chunks[0]'s own content is just the "CREDIT AGREEMENT" title line --
+      // no section marker appears until the next paragraph, so it correctly
+      // carries the default section title rather than borrowing the next
+      // chunk's "Section 4.02" (see chunker.test.ts for the regression test
+      // covering the attribution bug this used to have).
+      expect(chunks[0].sectionTitle).toBe('General Terms & Provisions');
       expect(chunks[0].tokens.length).toBeGreaterThan(0);
+      expect(chunks[1].sectionTitle).toContain('Section 4.02');
+      expect(chunks[1].pageNumber).toBe(1);
     });
 
     it('Given a passage of text, When it is embedded, Then the vector is 128-dimensional and normalized', () => {

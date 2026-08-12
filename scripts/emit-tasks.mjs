@@ -27,30 +27,13 @@ const repoRoot = join(__dirname, '..');
 const statusPath = join(repoRoot, 'harness-status.json');
 const tasksDir = join(repoRoot, 'tasks');
 
-const args = new Set(process.argv.slice(2));
-const noSense = args.has('--no-sense');
-const prune = args.has('--prune');
-
-// Refresh the senses unless told to reuse the existing snapshot.
-if (!noSense) {
-  execFileSync(process.execPath, [join(__dirname, 'harness-status.mjs'), '--quiet'], { stdio: 'inherit' });
-}
-
-if (!existsSync(statusPath)) {
-  console.error('harness-status.json not found. Run: node scripts/harness-status.mjs');
-  process.exit(1);
-}
-
-const status = JSON.parse(readFileSync(statusPath, 'utf8'));
-if (!existsSync(tasksDir)) mkdirSync(tasksDir, { recursive: true });
-
-function evidenceBlock(f) {
+export function evidenceBlock(f) {
   if (!f.evidence?.length) return '';
   const rows = f.evidence.map((e) => `- \`${e.file}:${e.line}\` — \`${e.snippet}\``).join('\n');
   return `\n## Evidence\n\n${rows}\n`;
 }
 
-function workOrder(f) {
+export function workOrder(f) {
   const spec = f.specRef ? `\n- **Spec:** [\`${f.specRef}\`](../${f.specRef})` : '';
   return `# Work Order: ${f.title}
 
@@ -86,28 +69,56 @@ so the harness catches it automatically next time._
 `;
 }
 
-const liveIds = new Set(status.findings.map((f) => f.id));
-let created = 0, skipped = 0;
-for (const f of status.findings) {
-  const file = join(tasksDir, `${f.id}.md`);
-  if (existsSync(file)) { skipped++; continue; }
-  writeFileSync(file, workOrder(f));
-  created++;
-  console.log(`  + tasks/${f.id}.md`);
+// Task files (excluding README.md) whose finding id is no longer live —
+// i.e. the finding was resolved but the work order was never pruned.
+export function findStale(existingFilenames, liveIds) {
+  return existingFilenames
+    .filter((n) => n.endsWith('.md') && n !== 'README.md')
+    .filter((n) => !liveIds.has(n.replace(/\.md$/, '')));
 }
 
-// Detect (and optionally prune) task files whose finding is resolved.
-const existing = readdirSync(tasksDir).filter((n) => n.endsWith('.md') && n !== 'README.md');
-const stale = existing.filter((n) => !liveIds.has(n.replace(/\.md$/, '')));
-let pruned = 0;
-for (const n of stale) {
-  if (prune) { rmSync(join(tasksDir, n)); pruned++; console.log(`  - tasks/${n} (resolved, pruned)`); }
-}
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (invokedDirectly) {
+  const args = new Set(process.argv.slice(2));
+  const noSense = args.has('--no-sense');
+  const prune = args.has('--prune');
 
-console.log(`\nWork orders: ${created} created, ${skipped} already open, ${status.findings.length} live finding(s).`);
-if (stale.length && !prune) {
-  console.log(`${stale.length} task file(s) have no live finding (resolved): ${stale.join(', ')}`);
-  console.log(`Run 'node scripts/emit-tasks.mjs --prune' to retire them.`);
-} else if (prune && pruned) {
-  console.log(`Pruned ${pruned} resolved work order(s).`);
+  // Refresh the senses unless told to reuse the existing snapshot.
+  if (!noSense) {
+    execFileSync(process.execPath, [join(__dirname, 'harness-status.mjs'), '--quiet'], { stdio: 'inherit' });
+  }
+
+  if (!existsSync(statusPath)) {
+    console.error('harness-status.json not found. Run: node scripts/harness-status.mjs');
+    process.exit(1);
+  }
+
+  const status = JSON.parse(readFileSync(statusPath, 'utf8'));
+  if (!existsSync(tasksDir)) mkdirSync(tasksDir, { recursive: true });
+
+  const liveIds = new Set(status.findings.map((f) => f.id));
+  let created = 0, skipped = 0;
+  for (const f of status.findings) {
+    const file = join(tasksDir, `${f.id}.md`);
+    if (existsSync(file)) { skipped++; continue; }
+    writeFileSync(file, workOrder(f));
+    created++;
+    console.log(`  + tasks/${f.id}.md`);
+  }
+
+  // Detect (and optionally prune) task files whose finding is resolved.
+  const existing = readdirSync(tasksDir);
+  const stale = findStale(existing, liveIds);
+  let pruned = 0;
+  for (const n of stale) {
+    if (prune) { rmSync(join(tasksDir, n)); pruned++; console.log(`  - tasks/${n} (resolved, pruned)`); }
+  }
+
+  console.log(`\nWork orders: ${created} created, ${skipped} already open, ${status.findings.length} live finding(s).`);
+  if (stale.length && !prune) {
+    console.log(`${stale.length} task file(s) have no live finding (resolved): ${stale.join(', ')}`);
+    console.log(`Run 'node scripts/emit-tasks.mjs --prune' to retire them.`);
+  } else if (prune && pruned) {
+    console.log(`Pruned ${pruned} resolved work order(s).`);
+  }
 }

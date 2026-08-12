@@ -173,6 +173,39 @@ describe('generateWardrobeFromArchetype', () => {
       expect(garments.filter((g) => g.roles.includes('top'))).toHaveLength(expectedTops as number);
     });
 
+  // Mutation testing (node scripts/run-mutation.mjs travel-packing-app
+  // --mutate "src/utils/generator.ts") found bottomsNeeded's three division
+  // constants (/2, /5, /3) all survived: the tops test above pins every
+  // strategy's top count, but nothing pinned the parallel bottom count for
+  // any of them.
+  it.each([
+    ['minimalist', 6, 2],
+    ['flexible', 6, 2],
+    ['balanced', 3, 2],
+  ])('Given the %s strategy over %i days, When a wardrobe is generated, Then it yields the expected number of bottoms',
+    (strategy, days, expectedBottoms) => {
+      const garments = generateWardrobeFromArchetype('quiet-luxury', strategy as string, days as number);
+      expect(garments.filter((g) => g.roles.includes('bottom'))).toHaveLength(expectedBottoms as number);
+    });
+
+  it('Given a generated wardrobe, When ids are inspected, Then the counter is shared and continues across tops, bottoms and outerwear rather than resetting per category', () => {
+    const garments = generateWardrobeFromArchetype('quiet-luxury', 'minimalist', 3);
+    const tops = garments.filter((g) => g.roles.includes('top'));
+    const bottoms = garments.filter((g) => g.roles.includes('bottom'));
+    const outerwear = garments.filter((g) => g.roles.includes('topper'));
+
+    // minimalist/3-days: 1 top, then bottoms continue from 2, then outerwear
+    // continues from wherever bottoms left off.
+    expect(tops.map((g) => g.id)).toEqual(['top-1']);
+    expect(bottoms[0]?.id).toBe('bot-2');
+    expect(outerwear[0]?.id).toBe(`out-${1 + tops.length + bottoms.length}`);
+  });
+
+  it('Given any generated garment, When inspected, Then it carries no exclusion tags at all', () => {
+    const garments = generateWardrobeFromArchetype('quiet-luxury', 'balanced', 5);
+    expect(garments.every((g) => g.exclusionTags.length === 0)).toBe(true);
+  });
+
   it('Given a trip longer than the palette, When a wardrobe is generated, Then it caps at the available garments instead of repeating', () => {
     // quiet-luxury has 4 tops and 3 bottoms; a 30-day trip must not emit 30 tops.
     const garments = generateWardrobeFromArchetype('quiet-luxury', 'balanced', 30);
