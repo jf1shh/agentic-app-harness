@@ -56,6 +56,38 @@ orders).
 
 ## 3. Current State / Open Work
 
+### Dependabot backlog: triaged and closed out (this pass)
+
+All 25 open `dependabot/*` PRs were checked against their actual CI results (not just
+categorized by dependency name — three PRs flagged a-priori as highest-risk turned out fully
+green, and several "safe-looking" single-app-scoped bumps broke a *sibling* app instead of
+their own, via npm workspace hoisting — exactly the `.agents/AGENTS.md` §6 "Workspace Hoisting"
+lesson, now with fresh evidence).
+
+- **11 merged** (all-green CI): #130, #131, #135, #136, #137, #138, #143, #144, #148, #149, #150.
+- **14 closed**, each with a comment citing the exact failing CI job(s) and why:
+  - *Workspace-wide catastrophic* (a major bump splits a peer set across the whole monorepo):
+    #134 and #141 (react 18→19, two different directories, same failure), #145 (zod 4), #146 /
+    #151 / #142 (testing-library/jest-dom + jsdom majors).
+  - *Cross-app breakage from a single-app-scoped bump* (hoisting cracks a sibling app that never
+    touched the file): #127, #128, #129, #132, #133, #147, #139, #140.
+- **Coordinated follow-up, done in this same pass**: `eslint-config-next` bumped to `16.3.0` in
+  `smart-recipe-app` and `travel-packing-app` together (elder-care-planner was already on
+  16.3.0 via #144) — the individual per-app Dependabot PRs for this exact bump (#129, #133) had
+  each broken a *different* sibling app, so it was done by hand across both remaining apps in
+  one commit instead. Full `node scripts/test-app.mjs <App>` gate run for both: unit/lint/
+  type-check green for both; E2E 5/5 green for smart-recipe-app, 55/57 for travel-packing-app
+  (the one failure, `destination-autocomplete.spec.ts`, reproduces green in isolation with
+  `--workers=1` — sandbox worker-contention flake, not a regression; `eslint-config-next` is a
+  lint-only devDependency with zero runtime footprint, so it cannot be the cause).
+- The `typescript-eslint` 7→8 coordinated bump this document used to recommend as follow-up
+  work turned out to already be done: Dependabot's own grouped PR **#135** bumped
+  `@typescript-eslint/eslint-plugin`/`parser` to `8.66.0` across all three apps that use it
+  (`legal-financial-rag`, `mood-diner`, `portfolio-hub`) in one PR, and it was CI-green — the
+  earlier ungrouped single-app PRs (#127/#128/#132) were stale duplicates, closed above.
+- **Still open, deliberately deferred** (real breaking-API migrations, not routine bumps): react
+  18→19, zod 4, and the testing-library/jest-dom + jsdom majors. See §5.
+
 This has been a multi-pass mutation-testing sweep across every app in the repo — the first
 time `node scripts/run-mutation.mjs --all` was run with real results (the container had no
 `node_modules` installed initially; see the gotcha below). Every fix followed the same
@@ -174,10 +206,11 @@ regenerated fixture. Confirmed green.
 - **`legal-financial-rag`'s vault lock** gates the UI with real passphrase verification but
   doesn't encrypt document content at rest in React state — a larger redesign needing a spec
   update first per `.agents/AGENTS.md` §1's "no vibe coding" rule.
-- **Dependabot backlog** — a large number of open `dependabot/*` PRs (dependency bumps across
-  all 6 apps' peer sets) has been sitting untriaged across multiple passes; don't let it grow
-  further unattended. Per `.agents/AGENTS.md` §6, treat any linter/compiler/icon-set major bump
-  as an API change to verify, and never let a split peer pair land only half-bumped.
+- **Three deferred major-version migrations** (see the Dependabot section above) — react
+  18→19, zod 4, and the testing-library/jest-dom + jsdom majors. Each needs real code changes
+  for breaking APIs, not just a version bump; each PR's `dependabot/*` branch is still open on
+  GitHub for reference but was closed as a merge candidate. Scope each as its own deliberate
+  piece of work rather than folding into a routine dependency pass.
 - **`portfolio-hub`'s Stryker-sandbox incompatibility** (above) — would need Stryker config
   changes (e.g. a custom sandbox that mirrors the repo root, not just the app directory) outside
   the scope of a normal test-writing pass.
@@ -224,7 +257,9 @@ regenerated fixture. Confirmed green.
      are all real logic (no data-table trap expected, but check anyway).
    - `travel-packing-app/generator.ts`'s real (non-`PALETTES`) logic is now close to fully
      covered; not worth another pass.
-4. Triage the Dependabot backlog — don't let it re-accumulate.
+4. Scope and execute the three deferred major-version migrations (react 18→19, zod 4,
+   testing-library/jest-dom + jsdom) as separate, deliberate pieces of work — see §3. Watch for
+   new Dependabot PRs re-accumulating and triage by actual CI result, not by dependency name.
 5. Make the two deliberately-deferred product decisions in §3 (IBAN cap width, whether the
    audit ledger table should show `details`) or explicitly decide "not now" and say so.
 6. Consider whether `legal-financial-rag`'s vault lock should extend to actually encrypting
