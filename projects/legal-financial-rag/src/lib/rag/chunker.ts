@@ -85,22 +85,15 @@ export function chunkDocument(
     const trimmed = p.trim();
     if (!trimmed) continue;
 
-    // Check for page markers
-    const pageMatch = pageMarkerRegex.exec(trimmed);
-    if (pageMatch) {
-      currentPage = parseInt(pageMatch[1] || pageMatch[2], 10) || currentPage;
-    }
-
-    // Check lines inside paragraph for legal clause headers
-    const lines = trimmed.split('\n');
-    for (const line of lines) {
-      const headerMatch = clauseHeaderRegex.exec(line.trim());
-      if (headerMatch) {
-        currentSectionTitle = headerMatch[0].trim().slice(0, 80);
-        break;
-      }
-    }
-
+    // Flush any pending buffer BEFORE reading this paragraph's own page/section
+    // markers. The buffer's content is entirely from EARLIER paragraphs, so it
+    // must be stamped with the page/section that were in effect for THEM — not
+    // with this paragraph's markers, which describe content that hasn't been
+    // added to the buffer yet. Updating currentPage/currentSectionTitle first
+    // (the original order) mislabeled every non-final chunk with the next
+    // paragraph's page and section: e.g. a chunk containing only page-1,
+    // Section 4.02 text would be tagged "page 2, Section 6.08" the moment
+    // paragraph 2 (which triggers the flush) supplied new markers.
     if ((chunkBuffer + '\n' + trimmed).length > maxChunkSize && chunkBuffer.length > 0) {
       const { redactedText } = detectAndRedactPII(chunkBuffer);
       const tokens = tokenizeText(chunkBuffer);
@@ -123,10 +116,26 @@ export function chunkDocument(
         },
       });
 
-      chunkBuffer = trimmed;
-    } else {
-      chunkBuffer = chunkBuffer ? `${chunkBuffer}\n\n${trimmed}` : trimmed;
+      chunkBuffer = '';
     }
+
+    // Check for page markers
+    const pageMatch = pageMarkerRegex.exec(trimmed);
+    if (pageMatch) {
+      currentPage = parseInt(pageMatch[1] || pageMatch[2], 10) || currentPage;
+    }
+
+    // Check lines inside paragraph for legal clause headers
+    const lines = trimmed.split('\n');
+    for (const line of lines) {
+      const headerMatch = clauseHeaderRegex.exec(line.trim());
+      if (headerMatch) {
+        currentSectionTitle = headerMatch[0].trim().slice(0, 80);
+        break;
+      }
+    }
+
+    chunkBuffer = chunkBuffer ? `${chunkBuffer}\n\n${trimmed}` : trimmed;
   }
 
   if (chunkBuffer.trim().length > 0) {
