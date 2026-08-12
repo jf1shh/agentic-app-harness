@@ -36,6 +36,35 @@ test.describe('Travel Packing App V3', () => {
     expect(verticallyOverlaps).toBe(false);
   });
 
+  test('Given a narrow phone viewport, When the header loads, Then the Share Trip button does not overlap the language/theme controls', async ({ page }) => {
+    // Share Trip is absolutely positioned in the header's top-left corner
+    // and the language/theme controls in the top-right; at 375px both
+    // corner groups are wide enough to collide with each other before
+    // either one runs out of room to wrap.
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto('/');
+
+    const shareBtn = page.getByRole('button', { name: /Share Trip/ });
+    const languageSelect = page.locator('#language-switcher');
+    await expect(shareBtn).toBeVisible();
+    await expect(languageSelect).toBeVisible();
+
+    const shareBox = await shareBtn.boundingBox();
+    const langBox = await languageSelect.boundingBox();
+    if (!shareBox || !langBox) throw new Error('expected both elements to have a layout box');
+
+    const overlaps =
+      shareBox.x < langBox.x + langBox.width &&
+      shareBox.x + shareBox.width > langBox.x &&
+      shareBox.y < langBox.y + langBox.height &&
+      shareBox.y + shareBox.height > langBox.y;
+    expect(overlaps).toBe(false);
+
+    // And the page itself never grows wider than the viewport.
+    const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(375);
+  });
+
   test('Given the default wardrobe, When the user runs Analyze, Then a wearability report and dead weight are shown', async ({ page }) => {
     // handleAnalyze() calls geocodeLocation() and fetchWeather(), which hit
     // real third-party APIs (Open-Meteo, and Nominatim as a fallback). A

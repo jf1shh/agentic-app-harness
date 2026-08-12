@@ -28,6 +28,7 @@ import WardrobeManager from '../components/WardrobeManager';
 import SuitcaseFinder from '../components/SuitcaseFinder';
 import SuitcaseScanner from '../components/SuitcaseScanner';
 import { clearAllLocalData } from '../services/db';
+import { formatTemperature } from '../utils/temperature';
 
 // Model names alone collide across brands (e.g. Away, Arlo Skye and Roam all
 // sell "The Carry-On"), so selection is keyed by brand+model together.
@@ -306,12 +307,12 @@ export default function Home() {
       <header className="page-header no-print" style={{ textAlign: 'center', marginBottom: '40px', position: 'relative' }}>
         <button
           onClick={handleShare}
-          className="btn-secondary"
-          style={{ position: 'absolute', left: 0, top: 0, fontSize: '0.9rem', padding: '6px 12px' }}
+          className="btn-secondary header-share-btn"
+          style={{ fontSize: '0.9rem', padding: '6px 12px' }}
         >
           {shareCopied ? '✔ Copied!' : '🔗 Share Trip'}
         </button>
-        <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div className="header-controls">
           <select
             id="language-switcher"
             aria-label={t('language.label')}
@@ -619,7 +620,7 @@ export default function Home() {
                   {t(day.destinationName ? 'itinerary.dayLineForDestination' : 'itinerary.dayLine', {
                     n: day.dayNumber,
                     destination: day.destinationName ?? '',
-                    temp: day.maxTempC !== undefined ? `${day.maxTempC}°C` : t('itinerary.notAvailable'),
+                    temp: day.maxTempC !== undefined ? formatTemperature(day.maxTempC) : t('itinerary.notAvailable'),
                     warmth: day.weatherWarmthTarget,
                   })}
                 </li>

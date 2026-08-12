@@ -57,7 +57,16 @@ export default function Volume3DScene({ blocks, suitcaseSize }: Props) {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(width, height, false);
+    // updateStyle defaults to true here deliberately: it sets the canvas's
+    // CSS width/height to match the container while the drawing buffer
+    // itself is still scaled up by pixelRatio for sharpness. Passing
+    // `false` (as this used to) leaves the canvas with no CSS size at all,
+    // so the browser falls back to its `width`/`height` attributes -- which
+    // setSize sets to width*pixelRatio/height*pixelRatio -- as the layout
+    // box. On a common phone (devicePixelRatio 2-3) that renders the canvas
+    // up to 2x too large and the container's `overflow: hidden` crops it to
+    // a zoomed-in corner instead of the whole suitcase.
+    renderer.setSize(width, height);
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -109,7 +118,7 @@ export default function Volume3DScene({ blocks, suitcaseSize }: Props) {
       if (!container.clientWidth || !container.clientHeight) return;
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight, false);
+      renderer.setSize(container.clientWidth, container.clientHeight);
     });
     resizeObserver.observe(container);
 

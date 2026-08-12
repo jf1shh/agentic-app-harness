@@ -77,4 +77,43 @@ test.describe('Print stylesheet', () => {
     await page.getByRole('button', { name: '🖨️ Print' }).click();
     await expect.poll(() => printCalled).toBe(true);
   });
+
+  test('Given a narrow phone viewport, When the packing checklist renders, Then its Print/Reset button row does not overflow the page horizontally', async ({ page }) => {
+    // The checklist header is a `justifyContent: space-between` flex row
+    // with the title on the left and the Print/Reset Checkmarks buttons on
+    // the right; without flexWrap that row doesn't fit at 375px and pushes
+    // the whole page wider than the viewport, clipping the Reset button.
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.route('https://geocoding-api.open-meteo.com/v1/search**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ results: [{ latitude: 21.3069, longitude: -157.8583, name: 'Hawaii' }] }),
+      })
+    );
+    await page.route('https://api.open-meteo.com/v1/forecast**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          daily: {
+            time: ['2026-08-01', '2026-08-02', '2026-08-03'],
+            temperature_2m_max: [30, 31, 29],
+            temperature_2m_min: [24, 25, 23],
+            precipitation_sum: [0, 0, 2],
+          },
+        }),
+      })
+    );
+
+    await page.goto('/');
+    await page.click('button.btn-primary');
+    const resetBtn = page.getByRole('button', { name: /Reset Checkmarks/ });
+    await expect(resetBtn).toBeVisible();
+
+    const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(375);
+
+    const resetBox = await resetBtn.boundingBox();
+    if (!resetBox) throw new Error('expected the Reset Checkmarks button to have a layout box');
+    expect(resetBox.x + resetBox.width).toBeLessThanOrEqual(375);
+  });
 });
