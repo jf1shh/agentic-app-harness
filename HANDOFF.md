@@ -80,11 +80,20 @@ lesson, now with fresh evidence).
   (the one failure, `destination-autocomplete.spec.ts`, reproduces green in isolation with
   `--workers=1` — sandbox worker-contention flake, not a regression; `eslint-config-next` is a
   lint-only devDependency with zero runtime footprint, so it cannot be the cause).
-- The `typescript-eslint` 7→8 coordinated bump this document used to recommend as follow-up
-  work turned out to already be done: Dependabot's own grouped PR **#135** bumped
-  `@typescript-eslint/eslint-plugin`/`parser` to `8.66.0` across all three apps that use it
-  (`legal-financial-rag`, `mood-diner`, `portfolio-hub`) in one PR, and it was CI-green — the
-  earlier ungrouped single-app PRs (#127/#128/#132) were stale duplicates, closed above.
+- **#135 (`typescript-eslint` 7→8, grouped across `legal-financial-rag`/`mood-diner`/
+  `portfolio-hub`) was CI-green on its own PR branch but broke `master` immediately on
+  merge**: all three apps' `Lint & static analysis` step started failing with `TypeError:
+  Cannot read properties of undefined (reading 'allowShortCircuit')` — the exact dual-package-
+  instance failure `.agents/AGENTS.md` §6's "Workspace Hoisting" lesson already documents,
+  now reproduced by a *grouped* Dependabot PR instead of a single-app one. These three apps are
+  still on `eslint ^8.57.0`; `@typescript-eslint/eslint-plugin` 8.x's rule loader doesn't pair
+  with ESLint 8's under this workspace's hoisted tree. **Fixed in this pass** by reverting
+  `@typescript-eslint/eslint-plugin`/`parser` back to `^7.18.0` in all three apps (not a
+  partial fix — moving the whole peer set back together, per the lesson). Full
+  `test-app.mjs --skip-e2e` gate green for all three afterward. This was caught by directly
+  checking master's own CI after the merges landed, not by trusting each PR's own green
+  check — the PR-level check and the post-merge state can disagree once several lockfile-
+  touching merges land back to back.
 - **Still open, deliberately deferred** (real breaking-API migrations, not routine bumps): react
   18→19, zod 4, and the testing-library/jest-dom + jsdom majors. See §5.
 
