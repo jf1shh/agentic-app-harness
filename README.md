@@ -106,12 +106,19 @@ addition, deliberately kept outside the harness:
 - **Local-only, regenerated per machine.** `.repowise/` (its index/db/cache) and `.claude/CLAUDE.md`
   (its generated tool-usage notes) are both gitignored — same reasoning as `harness-status.json`:
   they're point-in-time snapshots ("1 bug fix, last fix yesterday") that go stale the moment they're
-  committed. Run `repowise init --no-prose -y` locally to regenerate them; `--no-prose` keeps
-  indexing LLM-free, consistent with the harness's own no-embedded-LLM design.
-- **Before you run it — back up `~/.claude/settings.json` first.** On this pass, `repowise init`
-  overwrote (not merged) that file, replacing whatever hooks/MCP config were already there with no
-  backup made. If you have other Claude Code config on the machine you're running it on, copy that
-  file aside before continuing.
-- **Setup**: `pip install repowise && repowise init --no-prose -y` from the repo root, then restart
-  Claude Code (or run `/mcp`) to pick up the server declared in `.mcp.json`. VS Code users get the
-  same wiring via `.vscode/mcp.json`.
+  committed. `--no-prose` keeps indexing LLM-free, consistent with the harness's own
+  no-embedded-LLM design.
+- **Never let `repowise init` touch anything outside the repo.** Its default (`--editor-setup`)
+  *overwrites* — not merges — the machine-wide `~/.claude/settings.json`, replacing whatever hooks
+  or MCP config were already registered there with no backup. `REPOWISE_SKIP_EDITOR_SETUP=1` is the
+  fix: set it before running any `repowise` command against this repo (it wins even over an explicit
+  `--editor-setup`, so it can't be defeated by a forgotten flag). Project-local files — `.mcp.json`,
+  `.vscode/mcp.json`, `.claude/CLAUDE.md` — are generated either way; only the machine-wide
+  registration is skipped.
+- **Setup**: `export REPOWISE_SKIP_EDITOR_SETUP=1 && pip install repowise && repowise init --no-prose -y`
+  from the repo root, then restart Claude Code (or run `/mcp`) to pick up the server already
+  declared in `.mcp.json`. VS Code users get the same wiring via `.vscode/mcp.json`.
+- **Re-running `init`/`update` rewrites `.mcp.json` and `.vscode/mcp.json` from scratch, absolute
+  path included** — there's no flag to keep them relative, unlike `--no-claude-md` for the wiki.
+  Before committing a re-index, diff those two files and strip any `"<absolute-path-to-repo>"` arg
+  that reappears between `"mcp"` and `"--transport"`, the same fix applied here.
