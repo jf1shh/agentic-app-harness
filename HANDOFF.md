@@ -73,7 +73,7 @@ down for where it stands now):
 | App | Score (original sweep) | Notes |
 |---|---|---|
 | elder-care-planner | 52.9% → **app score not yet re-swept** | `explain/build.ts` alone: 35.5%→45.3% across two batches, see below; other files untouched. |
-| legal-financial-rag | 50.6% → **62.7% (app re-swept, confirmed)** | sanitizer.ts, piiRedactor.ts, schemas.ts all done. |
+| legal-financial-rag | 50.6% → **67.5% (app re-swept, confirmed)** | sanitizer.ts, piiRedactor.ts, schemas.ts, queryProcessor.ts, auditExporter.ts all done. |
 | travel-packing-app | 42.6% → **app score not yet re-swept** | `airlineBaggage.ts` fixed (see below — was misprioritized, was mostly data noise). |
 | mood-diner | 33.6% | Not yet touched. |
 | smart-recipe-app | 29.3% | Not yet touched. |
@@ -156,11 +156,25 @@ implementation)**, ranked by how much it matters here:
    code, documented rather than chased. **Lesson for whoever picks the next target: filter a
    file's mutant list by line number before estimating its value from the raw survived count** —
    a big number can be almost entirely a data table, and the real logic gap can be tiny.
-5. **`legal-financial-rag/src/lib/rag/queryProcessor.ts`** (18.6%, 32 survived) and
-   **`export/auditExporter.ts`** (12.8%, 27 survived) — now the worst real ratios left in that
-   app (schemas.ts is done). Not yet checked for the data-vs-logic split above; do that first.
+5. ~~**`legal-financial-rag/src/lib/rag/queryProcessor.ts`** (18.6%, 32 survived) and
+   **`export/auditExporter.ts`** (12.8%, 27 survived)~~ — **done this pass.** Both files' only
+   coverage was one shared happy-path test in `unit.test.ts`. `queryProcessor.ts`'s entire
+   "no citations found" branch (the answer every user sees on a query matching nothing) was
+   `NoCoverage`; `auditExporter.ts`'s whole audit-ledger-table loop (the `.slice(0, 10)` cap) and
+   all of `downloadFile` were too, in the function whose job is producing this app's compliance
+   record. `queryProcessor.ts` 18.6%→58.1% (32→18 survived), `auditExporter.ts` 12.8%→30.8% (all
+   7 `NoCoverage` mutants now covered+killed). Confirmed jsdom supports `Blob`/
+   `URL.createObjectURL` natively before writing the `downloadFile` test rather than assuming it
+   — worth remembering for any other browser-API function that looks untestable at a glance.
+   Bonus: this incidentally lifted `chunker.ts` (48%→52%) and `vectorEngine.ts` (61%→68%) too,
+   since the new fixtures exercise `searchHybrid` more. **Caught by the full gate, not just
+   `vitest run`**: `node scripts/test-app.mjs legal-financial-rag` (type-check step) found two
+   real TS errors in the new tests — a fixture missing `AuditLogEntry`'s required
+   `previousHash` field, and an implicit `this` type — that plain `vitest run` had let through
+   silently. Remaining survivors are mostly markdown-header/prose `StringLiteral` mutants,
+   same low-value category as `explain/build.ts`'s caveat text.
 6. **`smart-recipe-app/src/lib/recommend.ts`** — 49%/53%, 74 survived — the app's core
-   recommendation engine.
+   recommendation engine. Check the data-vs-logic line-number split first (see item 4's lesson).
 7. **`elder-care-planner/src/lib/engine/plan.ts`** (32%) and **`plannerState.ts`** (36%) —
    core planning engine and state logic.
 8. **`travel-packing-app/src/utils/generator.ts`** (39%) and **`wardrobeEngine.ts`** (34%) —
@@ -216,20 +230,27 @@ green (`60/60` unit tests). Done.
    6 real ones — the raw survived count is not a reliable value signal on its own, and skipping
    this check would have wasted real time writing tests against airline name/dimension literals.
 2. **Keep working down the surviving-mutant list in §3**, in priority order. Done this session:
-   `sanitizer.ts`, `piiRedactor.ts`, `schemas.ts` (all in `legal-financial-rag`, app score
-   50.6%→62.7%, confirmed by a full re-sweep), `explain/build.ts` in `elder-care-planner` (two
+   `sanitizer.ts`, `piiRedactor.ts`, `schemas.ts`, `queryProcessor.ts`, `auditExporter.ts` (all in
+   `legal-financial-rag`, app score 50.6%→**67.5%**, confirmed by a full re-sweep — this app has
+   had the deepest pass of the six by far), `explain/build.ts` in `elder-care-planner` (two
    batches, 35.5%→45.3%, now at the point of diminishing returns), and `airlineBaggage.ts` in
    `travel-packing-app` (its real logic gaps, 3 of 6, the other 3 are dead code — see §3). Next
    up, in roughly descending value:
-   - `legal-financial-rag/src/lib/rag/queryProcessor.ts` (18.6%, 32 survived — worst ratio left
-     in that app) and `export/auditExporter.ts` (12.8%, 27 survived — a tamper-evident audit
-     export, worth checking given the app's whole security premise). Check the data-vs-logic
-     split on `chunker.ts` (48%, 65 survived) too before assuming it's all real gap.
+   - `legal-financial-rag/src/lib/rag/chunker.ts` (52% after this pass's incidental lift, still
+     60 survived) — check the data-vs-logic split first, but this app has consistently rewarded
+     the effort so far and is worth finishing.
    - `smart-recipe-app/src/lib/recommend.ts`, `elder-care-planner/engine/plan.ts` +
      `plannerState.ts`, `travel-packing-app/generator.ts` + `wardrobeEngine.ts`.
    - Full app-wide re-sweeps for `elder-care-planner`, `mood-diner`, `smart-recipe-app`, and
-     `travel-packing-app` are still the *original* sweep numbers from earlier in this document —
-     only `legal-financial-rag`'s has been confirmed post-fix.
+     `travel-packing-app` (partially, for the airlineBaggage.ts fix) are still the *original*
+     sweep numbers from earlier in this document — only `legal-financial-rag`'s has been
+     confirmed post-fix, three times over now.
+   - **When writing a browser-API test (Blob, URL.createObjectURL, DOM events, etc.), check
+     what the test environment actually supports before assuming it needs a mock** — jsdom
+     handled `Blob`/`URL.createObjectURL` natively here with no setup at all.
+   - **Run the full `node scripts/test-app.mjs <AppName>` gate, not just `vitest run`, before
+     considering a batch done** — this session's `auditExporter.test.ts` passed under `vitest
+     run` with two real type errors that only `tsc` (via the gate's type-check step) caught.
    For each: rerun `node scripts/run-mutation.mjs <AppName> --full` (or reuse a fresh JSON report)
    to pull the exact surviving mutants (see the `node -e` snippet used this pass — reads
    `reports/mutation/mutation.json`, filters to the target file, prints status/mutator/location),
