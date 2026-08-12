@@ -95,7 +95,7 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
 
   return (
     <div className="glass-panel print-section" style={{ padding: '24px', marginTop: '32px' }}>
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h2>{t('checklist.title')}</h2>
           {syncSupported && (

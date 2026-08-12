@@ -136,13 +136,42 @@ body {
   margin-bottom: 8px;
 }
 
-/* On narrow viewports the centered <h1> is wide enough to run underneath the
-   absolutely-positioned theme-toggle button in the header's top-right
-   corner. Reserve vertical space above the title so the two stack instead
-   of overlapping, rather than fighting the title's horizontal centering. */
+/* Desktop: the share button and the language/theme controls sit in the
+   header's top-left and top-right corners respectively, independent of the
+   centered title beneath them. */
+.header-share-btn {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.header-controls {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* On narrow viewports the two absolutely-positioned corner groups above are
+   wide enough to collide with each other (and with the centered <h1>
+   beneath them) instead of leaving room to wrap. Drop them out of absolute
+   positioning entirely so they flow as normal stacked, centered blocks
+   above the title -- avoiding the overlap by construction rather than
+   guessing how much extra space to reserve for it. */
 @media (max-width: 480px) {
-  .page-header {
-    padding-top: 44px;
+  .header-share-btn {
+    position: static;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .header-controls {
+    position: static;
+    justify-content: center;
+    margin-bottom: 8px;
   }
 
   .theme-toggle-btn {
