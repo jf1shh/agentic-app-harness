@@ -33,3 +33,11 @@ tsconfig.tsbuildinfo
 **/reports/
 stryker.log
 **/stryker.log
+
+# repowise (optional MCP exploration aid, see README) — local index/db/cache,
+# regenerated per-machine by `repowise init`/`repowise update`. Never commit:
+# it embeds a point-in-time snapshot (bug-fix counts, "last fix yesterday",
+# etc.) that goes stale immediately, the same reason harness-status.json above
+# is gitignored rather than committed.
+.repowise/
+.claude/CLAUDE.md

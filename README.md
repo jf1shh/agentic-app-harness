@@ -87,3 +87,40 @@ non-blocking sensors have gone quiet for long enough to be a **promotion candida
 guardrails have **never once fired** — the same judgment call that promoted `unit-test-coverage`
 in §8, now surfaced by a command instead of a memory. It decides nothing on its own; `isBlocking()`
 still only changes by a human-reviewed PR.
+
+---
+
+## Optional: repowise MCP (agent exploration aid, not part of the gate)
+
+[`.mcp.json`](.mcp.json) wires in [repowise](https://github.com/repowise-dev/repowise) — a
+codebase-intelligence MCP server (dependency graph, git hotspots/ownership, dead-code and
+change-risk scoring) that gives an AI agent precomputed answers to "who calls this?" /
+"what's risky here?" instead of it re-exploring the tree from scratch. It's a **pilot, opt-in**
+addition, deliberately kept outside the harness:
+
+- **Not wired into `harness-status.mjs` or CI.** It cannot fail a build, gate a merge, or disagree
+  with an existing guardrail — `check-enum-blast-radius.mjs` remains the authoritative,
+  self-tested check for blast-radius analysis (§9.2). If repowise's signals prove useful enough to
+  formalize, that's a separate, later decision, following the same sensor-before-guardrail,
+  non-blocking-first path §8 already prescribes for everything else in this repo.
+- **Local-only, regenerated per machine.** `.repowise/` (its index/db/cache) and `.claude/CLAUDE.md`
+  (its generated tool-usage notes) are both gitignored — same reasoning as `harness-status.json`:
+  they're point-in-time snapshots ("1 bug fix, last fix yesterday") that go stale the moment they're
+  committed. `--no-prose` keeps indexing LLM-free, consistent with the harness's own
+  no-embedded-LLM design.
+- **Never let `repowise init` touch anything outside the repo.** Its default (`--editor-setup`)
+  *overwrites* — not merges — the machine-wide `~/.claude/settings.json`, replacing whatever hooks
+  or MCP config were already registered there with no backup. `REPOWISE_SKIP_EDITOR_SETUP=1` is the
+  fix: set it before running any `repowise` command against this repo (it wins even over an explicit
+  `--editor-setup`, so it can't be defeated by a forgotten flag). Project-local files — `.mcp.json`,
+  `.vscode/mcp.json`, `.claude/CLAUDE.md` — are generated either way; only the machine-wide
+  registration is skipped.
+- **Setup**: `export REPOWISE_SKIP_EDITOR_SETUP=1 && pip install repowise && repowise init --no-prose -y`
+  from the repo root, then restart Claude Code (or run `/mcp`) to pick up the server already
+  declared in `.mcp.json`. VS Code users get the same wiring via `.vscode/mcp.json`.
+- **Re-running `init`/`update` rewrites `.mcp.json` and `.vscode/mcp.json` from scratch, absolute
+  path included** — there's no flag to keep them relative, unlike `--no-claude-md` for the wiki. Run
+  `node scripts/fix-repowise-mcp-paths.mjs` after any re-index, before committing it — it strips the
+  reinjected path back out of both files. Idempotent and self-tested
+  (`scripts/fix-repowise-mcp-paths.test.mjs`), scoped to the `repowise` server entry only so it can't
+  touch some other MCP server's own legitimate absolute-path argument.
