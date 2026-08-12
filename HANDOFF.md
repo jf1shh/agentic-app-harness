@@ -17,7 +17,7 @@ history belongs in git log and PR descriptions, not here._
   and CI gates that keep AI-assisted app development rigorous and drift-free. The
   quality bar (Zod contracts, BDD tests, accessibility, spec coverage) is enforced
   in CI, not just documented. Full rulebook: `.agents/AGENTS.md`.
-- **Navigation layer (new this pass):** `IDENTITY.md` and `CONTEXT.md` at the repo root are a
+- **Navigation layer:** `IDENTITY.md` and `CONTEXT.md` at the repo root are a
   full five-layer [ICM](https://github.com/ktnCodes/icm-template) (Interpretable Context
   Methodology) overlay — a workspace map, a task-routing table, and (Layer 2/4) a
   `stages/{sense,propose,act,verify,learn}/` folder per stage of the Agentic Loop below, each
@@ -25,10 +25,7 @@ history belongs in git log and PR descriptions, not here._
   location rather than duplicating it. `_config/{conventions,glossary,voice}.md` (Layer 3) link
   back to `.agents/AGENTS.md`/`CLAUDE.md` instead of restating them. Maintained via three
   project-scoped Claude Code skills at `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}`
-  — run `/icm-sync` after adding/removing a top-level folder so the map doesn't drift. Every other
-  agent-facing doc (`AGENTS.md`, `.agents/AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-  `.cursor/rules/harness.mdc`, `.agents/rules/harness.md`, `CONTRIBUTING.md`, `README.md`) now
-  points to `IDENTITY.md`/`CONTEXT.md` as the place to start.
+  — run `/icm-sync` after adding/removing a top-level folder so the map doesn't drift.
 
 ## 2. The Agentic Loop (harness self-improvement)
 The harness closes its own improvement loop **with no embedded LLM and no API
@@ -43,48 +40,167 @@ The loop core is zero-dependency Node ESM and runs anywhere Node does.
 | **Verify** | `node scripts/harness-status.mjs --gate` | Blocking CI gate: fails on guardrail regressions + missing specs (drift only informs). Guardrails are self-tested (`harness-status.test.mjs`). |
 | **Learn** | `node scripts/harness-learn.mjs` | Enforces a closed `Lesson ⇄ Guardrail ⇄ Self-test` loop so new guardrails must trace to a documented lesson. |
 
-Each stage above now also has a physical folder — `stages/sense/`, `stages/propose/`,
-`stages/act/`, `stages/verify/`, `stages/learn/` — with its own `CONTEXT.md` restating this table
-as a contract (reads/runs/writes) and an `output/README.md` pointing at where that stage's real
-output lives. See §1.
-
 Currently: **7 blocking guardrails**, all traced to `.agents/AGENTS.md` §6 lessons
-(`node scripts/harness-learn.mjs` verifies this). Three sensors run alongside them:
+(`node scripts/harness-learn.mjs` verifies this). Sensors run alongside them:
 `senseMobileRelease` and `senseProductionBundleTest` (non-blocking), and
 `senseUnitTests` (blocking — every logic module needs a unit test reaching it).
-As of this writing, `node scripts/harness-status.mjs --gate` reports **0 findings**
-across all 6 apps.
+`run-mutation.mjs` (Stryker, informational — see §3 below) measures *depth*, which
+none of the above sensors can see: reach ≠ well-tested.
 
-`.\scripts\harness.ps1` exposes `status`, `tasks`, `verify`, and `learn` as a thin
-wrapper. See `.agents/AGENTS.md` §8 and `tasks/README.md` for the bring-your-own-agent
-contract.
+As of this pass: `node scripts/harness-status.mjs --gate` reports **0 findings**
+across all 6 apps, `harness-learn.mjs` passes, `check-doc-claims.mjs --gate` passes.
+`tasks/` is empty (no open work orders).
 
 ## 3. Current State / Open Work
 
-**This pass (2026-08-11): added the ICM navigation layer** described in §1 (PR #180, merged) —
-`IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`, and the three `.claude/skills/` that maintain
-them — then propagated pointers to it into every other agent-facing doc in the repo (this file
-included). Purely additive: no app code, spec, guardrail, or existing doc content changed.
+**This pass (2026-08-11): ran a full mutation-testing sweep (`node scripts/run-mutation.mjs
+--all`) for the first time with real results**, and fixed one small bug it exposed. No app code
+or tests were changed yet — this pass was measurement + one infra fix, and the actual
+test-writing is next session's work (see §5).
 
-**Found while babysitting PR #180's CI, not yet fixed — needs a follow-up:**
-`test (portfolio-hub)` fails on `master` right now. `projects/portfolio-hub/src/data/
-loopStats.generated.test.ts` recomputes `lessonCount` live from `.agents/AGENTS.md` §6 and compares
-it against the committed `projects/portfolio-hub/src/data/loopStats.generated.ts` fixture
-(`44` recomputed vs. `43` committed). Verified by checking out `origin/master` standalone (no PR
-#180 changes applied) and re-running `node scripts/generate-loop-stats.mjs` from
-`projects/portfolio-hub/` — it independently reproduces `44`, so this predates PR #180 and isn't
-caused by the ICM changes. Most likely PR #179 (mood-diner paywall rewrite, the prior master merge)
-added a new §6 lesson without regenerating this fixture. **Fix**: from
-`projects/portfolio-hub/`, run `node scripts/generate-loop-stats.mjs`, then commit the regenerated
-`src/data/loopStats.generated.ts`.
+**Environment gotcha, worth remembering:** the container this ran in had **no root
+`node_modules` at all** — `npm install` had never been run. Because of that, `npx stryker`
+silently resolved to an unrelated, wrong npm package literally named `stryker` (not
+`@stryker-mutator/core`'s bin) and failed with `Cannot find module 'rx'` on every app. This
+looked like a mutation-testing bug and wasn't — it was a missing `npm install`. If mutation
+testing (or anything else) fails identically at the very first step in a fresh container, check
+for `node_modules` at the repo root before debugging the tool itself.
+
+**Mutation scores** (`node scripts/run-mutation.mjs --all`, incremental, ~45 min total; the
+`legal-financial-rag` figure below is the *original* sweep number — see "Fixed this pass" further
+down for where it stands now):
+
+| App | Score (original sweep) | Notes |
+|---|---|---|
+| elder-care-planner | 52.9% → **app score not yet re-swept** | `explain/build.ts` alone: 35.5%→45.3% across two batches, see below; other files untouched. |
+| legal-financial-rag | 50.6% → **67.5% (app re-swept, confirmed)** | sanitizer.ts, piiRedactor.ts, schemas.ts, queryProcessor.ts, auditExporter.ts all done. |
+| travel-packing-app | 42.6% → **app score not yet re-swept** | `airlineBaggage.ts` fixed (see below — was misprioritized, was mostly data noise). |
+| mood-diner | 33.6% | Not yet touched. |
+| smart-recipe-app | 29.3% | Not yet touched. |
+| portfolio-hub | **n/a — cannot run** | See below. |
+
+`portfolio-hub` cannot be mutation-tested as-is: `caseStudiesData.test.ts` and
+`loopStats.generated.test.ts` deliberately read the real root-level `scripts/harness-status.mjs`
+and `.agents/AGENTS.md` (via a `REPO_ROOT` climb) to keep the hub's displayed stats honest, but
+Stryker's per-app sandbox (`.stryker-tmp`) only mirrors that app's own directory, so the dry run
+fails with `ENOENT` on `projects/portfolio-hub/scripts/harness-status.mjs` (the repo-root file,
+misresolved inside the sandbox). This is a real structural limitation, not a bug in the app's
+tests — no action taken; flagging so nobody re-diagnoses it from scratch.
+
+**Caveat on the numbers above:** a meaningful chunk of every score is noise from pure-data
+modules Stryker mutates because they're `src/**/*.ts` but that were never meant to be
+logic-tested — `mood-diner/data/restaurantsData.ts`, `legal-financial-rag/lib/datasets/
+authenticSampleDocs.ts`, `travel-packing-app/utils/suitcaseDatabase.ts`,
+`smart-recipe-app/lib/data.ts`. Mutating a hardcoded string literal in a dataset and reporting
+"no test caught it" is not a real gap. Ignore those files when picking where to add tests.
+
+**Real, high-value targets identified (survived mutants on files with actual logic + existing
+tests — meaning the tests run but their assertions are too weak to catch a broken
+implementation)**, ranked by how much it matters here:
+
+1. ~~**`elder-care-planner/src/lib/explain/build.ts`** — 37% file score, 484 survived
+   mutants~~ — **two batches done this pass**: 35.49%→45.33% (484→432 survived, NoCoverage
+   34→7). This file's own tests deliberately check arithmetic balance rather than prose
+   wording, so most remaining survivors are `StringLiteral` mutations of caveat/assumption
+   text (229 of them) — expected, not a real gap (mirrors the "ignore pure-data files" caveat
+   above but for narrative strings instead of datasets). Batch 1 killed the 5 branches that
+   were **`NoCoverage`** — never executed by any of the 13 fixtures, not just weakly asserted:
+   an annual-cadence ancillary item, a care-level increase already in effect by month one (the
+   source's own comment calls this required "or the parts stop adding up"), an illiquid asset's
+   exclusion note, `residentialAlwaysCheaper` in the break-even comparison, and the
+   income-proportional split's fallback-to-equal-shares note. Batch 2 killed 10 more —
+   `costSourceLines`' confidence/provenance text (national-fallback caveat,
+   verified/needs_verification lines, entry notes), both `cheaperOption` branches in the
+   break-even note, the monthly-gap "no income" note and an elimination-period case, and the
+   facility-fit weighted-at-zero + no-scores-at-all cases. `PlannerState` can't express several
+   of these (no UI path yet to an annual ancillary item, a scheduled care-level increase, or an
+   illiquid asset), so those tests build `CareScenario`/`Plan` objects directly, same as
+   `ilExplanations()` already does for the buy-in path. **Still open**: ~79
+   `ConditionalExpression` and ~38 `EqualityOperator` survivors remain (down from ~95/~49) —
+   diminishing returns from here, mostly narrower permutations of branches already partly
+   covered. Re-run `cd projects/elder-care-planner && npx stryker run --mutate
+   "src/lib/explain/build.ts"` (~2 min) for a fresh mutant list before picking the next batch,
+   or consider this file done-enough and move to a fresh one.
+2. ~~**`legal-financial-rag/src/lib/security/sanitizer.ts`** (45%) and **`piiRedactor.ts`**
+   (66%)~~ — **done this pass.** sanitizer.ts 44.83%→81.03% (28→11 survived), piiRedactor.ts
+   66.25%→82.50% (27→14 survived). The single biggest gap was that piiRedactor's EIN/Tax-ID
+   detection branch had **zero** test coverage at all — nothing in the suite ever exercised it.
+   New tests are in `sanitizer.test.ts`/`piiRedactor.test.ts`; verified by re-running mutation
+   testing after adding them (not just by reading the diff). **Found in passing, not fixed**:
+   the bank/IBAN regex caps the matched value at 18 characters, so a real full-length IBAN
+   (15-34 chars per ISO 13616) is silently never detected or redacted at all — a genuine gap,
+   but widening the cap is a product decision (how long is too long before it starts
+   over-matching), not a drive-by fix, so it's flagged in a test comment and left for a human
+   call.
+3. ~~**`legal-financial-rag/src/lib/schemas.ts`** — 4.7% score, 61 survived~~ — **done this
+   pass, fully: 4.69%→100.00%, 0 survived.** There was no test for this file at all —
+   `unit.test.ts` only exercised 2 of 5 `SecurityPrivilegeLevelSchema` members and asserted one
+   valid `DocumentChunkSchema` object didn't throw. New `schemas.test.ts` covers every enum's
+   full member list (accept + reject-one-outside-it), boundary tests for `topK`/`hybridWeight`/
+   `confidence`, defaults (`isMasked`, `isSample`, the audit chain's genesis-hash sentinel), a
+   missing-field rejection, a wrong-type rejection, and nested-schema enforcement. This alone
+   moved the whole app's score from 50.6% to a confirmed 62.7% (full app re-swept, not just this
+   file).
+4. ~~**`travel-packing-app/src/utils/airlineBaggage.ts`** — 29%, 618 survived mutants, the
+   largest raw count in the entire sweep~~ — **this ranking was WRONG, corrected this pass.**
+   Checked before writing tests (filtered the mutant list by line number) and found 612 of the
+   618 are in the static `AIRLINES` data table (lines 25-432, ~77 airlines' names/dimensions) —
+   the exact same "ignore pure-data files" noise already flagged elsewhere in this document, not
+   a real gap. Only 6 survivors were in actual logic, all in `searchAirlines`. Fixed 3
+   (615 survived now) and found the existing "capped at 12" test was vacuous — it queried `'a'`
+   (length 1), which the `length < 2` guard rejects before ever reaching `.slice(0, 12)`, so the
+   test never exercised what it claimed to. The remaining 3 are **structurally unkillable**: the
+   exact-code-match clause (`a.code.toLowerCase() === q`) is always redundant with the substring
+   clause two lines below it (a string always contains itself), so no test input can ever
+   distinguish disabling one from the other without changing the implementation. Left as dead
+   code, documented rather than chased. **Lesson for whoever picks the next target: filter a
+   file's mutant list by line number before estimating its value from the raw survived count** —
+   a big number can be almost entirely a data table, and the real logic gap can be tiny.
+5. ~~**`legal-financial-rag/src/lib/rag/queryProcessor.ts`** (18.6%, 32 survived) and
+   **`export/auditExporter.ts`** (12.8%, 27 survived)~~ — **done this pass.** Both files' only
+   coverage was one shared happy-path test in `unit.test.ts`. `queryProcessor.ts`'s entire
+   "no citations found" branch (the answer every user sees on a query matching nothing) was
+   `NoCoverage`; `auditExporter.ts`'s whole audit-ledger-table loop (the `.slice(0, 10)` cap) and
+   all of `downloadFile` were too, in the function whose job is producing this app's compliance
+   record. `queryProcessor.ts` 18.6%→58.1% (32→18 survived), `auditExporter.ts` 12.8%→30.8% (all
+   7 `NoCoverage` mutants now covered+killed). Confirmed jsdom supports `Blob`/
+   `URL.createObjectURL` natively before writing the `downloadFile` test rather than assuming it
+   — worth remembering for any other browser-API function that looks untestable at a glance.
+   Bonus: this incidentally lifted `chunker.ts` (48%→52%) and `vectorEngine.ts` (61%→68%) too,
+   since the new fixtures exercise `searchHybrid` more. **Caught by the full gate, not just
+   `vitest run`**: `node scripts/test-app.mjs legal-financial-rag` (type-check step) found two
+   real TS errors in the new tests — a fixture missing `AuditLogEntry`'s required
+   `previousHash` field, and an implicit `this` type — that plain `vitest run` had let through
+   silently. Remaining survivors are mostly markdown-header/prose `StringLiteral` mutants,
+   same low-value category as `explain/build.ts`'s caveat text.
+6. **`smart-recipe-app/src/lib/recommend.ts`** — 49%/53%, 74 survived — the app's core
+   recommendation engine. Check the data-vs-logic line-number split first (see item 4's lesson).
+7. **`elder-care-planner/src/lib/engine/plan.ts`** (32%) and **`plannerState.ts`** (36%) —
+   core planning engine and state logic.
+8. **`travel-packing-app/src/utils/generator.ts`** (39%) and **`wardrobeEngine.ts`** (34%) —
+   core itinerary/outfit generation.
+
+Full per-file tables (all 6 apps) are in this session's transcript if needed again; they were
+not saved to a file in the repo (regenerate with `node scripts/run-mutation.mjs --all`, ~45 min,
+or `node scripts/run-mutation.mjs <AppName>` for one app at a time, a few minutes each).
+
+**Infra fix made this pass (committed + pushed to
+`claude/harness-repo-recruiter-summary-i7sll2`):** running mutation testing left
+`projects/<app>/reports/stryker-incremental.json` untracked in every app — the existing
+`.gitignore` only excluded `**/reports/mutation/` (one level down), not the incremental-cache
+file Stryker writes directly under `reports/`. Fixed by broadening the rule to `**/reports/`
+(nothing under any app's `reports/` was ever tracked or meant to be).
 
 **No known outstanding harness findings**: `node scripts/harness-status.mjs --gate` reports 0
-findings across all 6 apps as of this pass (the portfolio-hub item above is a per-app Vitest
-fixture, not a harness guardrail finding — it wouldn't show up in that gate).
+findings across all 6 apps as of this pass.
 
-**Still outstanding, not touched this pass:**
-- **GitHub repo description** (Settings → General) — unverified whether it still undersells the
-  app count; no repo-settings API is exposed to this session, so this needs a human check.
+**Also fixed this pass:** `portfolio-hub`'s `loopStats.generated.test.ts` was failing
+(`lessonCount` recomputed to `44` against a committed fixture of `43`, first found while
+babysitting an earlier PR and left open since). Ran `node scripts/generate-loop-stats.mjs` from
+`projects/portfolio-hub/`, committed the regenerated `src/data/loopStats.generated.ts`, confirmed
+green (`60/60` unit tests). Done.
+
+**Still outstanding from before this pass, not touched:**
 - **Dependabot backlog** — a large number of open `dependabot/*` PRs (dependency bumps across all
   6 apps' peer sets) has been sitting untriaged across multiple passes; don't let it grow further
   unattended. Per `.agents/AGENTS.md` §6, treat any linter/compiler/icon-set major bump as an API
@@ -100,23 +216,62 @@ fixture, not a harness guardrail finding — it wouldn't show up in that gate).
 - A single app: `node scripts/test-app.mjs <AppName>` (security, lint, type-check,
   Vitest, Playwright + a11y) — this is the authoritative gate; run it before every
   push, not just on CI.
+- Mutation score for one app: `node scripts/run-mutation.mjs <AppName>` (informational, never
+  blocks; incremental by default, add `--full` to ignore the cache).
 - Spec/schema coverage: `.\scripts\validate-specs.ps1 -Strict`.
 - Enum/union widening blast radius: `node scripts/check-enum-blast-radius.mjs`.
 - Checked-in docs match what they claim: `node scripts/check-doc-claims.mjs --gate`.
 
 ## 5. Next Steps for the Next Agent
-1. **Fix the portfolio-hub `loopStats` drift** described in §3 — one command
-   (`node scripts/generate-loop-stats.mjs` from `projects/portfolio-hub/`) plus a commit.
-2. Triage the Dependabot backlog — don't let it re-accumulate.
-3. Verify the GitHub repo description reflects six apps and fix manually if not.
-4. Consider whether `legal-financial-rag`'s vault lock should extend to
-   actually encrypting document content at rest (currently: real passphrase
-   verification gates the UI, but `SAMPLE_DOCUMENTS`/chunks are held as plain
-   strings in React state, matching the app's "session-only, nothing persists"
-   design — see its README). That's a larger redesign than fixing the
-   passphrase check was, and would need a spec update first per
-   `.agents/AGENTS.md` §1's "no vibe coding" rule.
-5. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
+1. **Before picking a target from this list, filter its mutant list by line number first** (see
+   the `node -e` snippet used throughout this session — reads `reports/mutation/mutation.json`,
+   filters to the file, prints status/mutator/location). `airlineBaggage.ts` looked like the
+   single biggest gap in the repo (618 survived) and turned out to be 612 pure-data mutants and
+   6 real ones — the raw survived count is not a reliable value signal on its own, and skipping
+   this check would have wasted real time writing tests against airline name/dimension literals.
+2. **Keep working down the surviving-mutant list in §3**, in priority order. Done this session:
+   `sanitizer.ts`, `piiRedactor.ts`, `schemas.ts`, `queryProcessor.ts`, `auditExporter.ts` (all in
+   `legal-financial-rag`, app score 50.6%→**67.5%**, confirmed by a full re-sweep — this app has
+   had the deepest pass of the six by far), `explain/build.ts` in `elder-care-planner` (two
+   batches, 35.5%→45.3%, now at the point of diminishing returns), and `airlineBaggage.ts` in
+   `travel-packing-app` (its real logic gaps, 3 of 6, the other 3 are dead code — see §3). Next
+   up, in roughly descending value:
+   - `legal-financial-rag/src/lib/rag/chunker.ts` (52% after this pass's incidental lift, still
+     60 survived) — check the data-vs-logic split first, but this app has consistently rewarded
+     the effort so far and is worth finishing.
+   - `smart-recipe-app/src/lib/recommend.ts`, `elder-care-planner/engine/plan.ts` +
+     `plannerState.ts`, `travel-packing-app/generator.ts` + `wardrobeEngine.ts`.
+   - Full app-wide re-sweeps for `elder-care-planner`, `mood-diner`, `smart-recipe-app`, and
+     `travel-packing-app` (partially, for the airlineBaggage.ts fix) are still the *original*
+     sweep numbers from earlier in this document — only `legal-financial-rag`'s has been
+     confirmed post-fix, three times over now.
+   - **When writing a browser-API test (Blob, URL.createObjectURL, DOM events, etc.), check
+     what the test environment actually supports before assuming it needs a mock** — jsdom
+     handled `Blob`/`URL.createObjectURL` natively here with no setup at all.
+   - **Run the full `node scripts/test-app.mjs <AppName>` gate, not just `vitest run`, before
+     considering a batch done** — this session's `auditExporter.test.ts` passed under `vitest
+     run` with two real type errors that only `tsc` (via the gate's type-check step) caught.
+   For each: rerun `node scripts/run-mutation.mjs <AppName> --full` (or reuse a fresh JSON report)
+   to pull the exact surviving mutants (see the `node -e` snippet used this pass — reads
+   `reports/mutation/mutation.json`, filters to the target file, prints status/mutator/location),
+   write the assertion that pins down that exact behavior, then re-run mutation testing after —
+   not just the unit suite — to confirm the score actually moved, and state the before/after
+   numbers in the PR body. Watch for the sanitizer.ts/piiRedactor.ts pattern repeating: an entire
+   branch with literally zero test coverage is more likely than uniformly-weak assertions.
+3. Triage the Dependabot backlog — don't let it re-accumulate.
+4. Consider whether `legal-financial-rag`'s vault lock should extend to actually encrypting
+   document content at rest — needs a spec update first per `.agents/AGENTS.md` §1's "no vibe
+   coding" rule, not a drive-by fix.
+5. Consider whether the bank/IBAN regex's 18-character cap in `piiRedactor.ts` (found this pass,
+   not fixed — see §3 item 2) should widen to cover real IBAN lengths (15-34 chars) without
+   over-matching unrelated long alphanumeric runs. Needs a deliberate decision on the new bound,
+   not a quick edit.
+6. When adding a mechanical lesson, follow the `.agents/AGENTS.md` §6 protocol:
    guardrail + self-test + `[guardrail: <id>]` tag, or the Learn gate fails the build.
-6. If a top-level folder is added or removed, run `/icm-sync` (`.claude/skills/icm-sync/`) to keep
+7. If a top-level folder is added or removed, run `/icm-sync` (`.claude/skills/icm-sync/`) to keep
    `IDENTITY.md`'s folder map and `CONTEXT.md`'s routing table from drifting.
+8. Separately (lower priority, not urgent): the two self-test-less scripts noted earlier this
+   session — `scripts/harness-learn.mjs` (the LEARN blocking gate itself) and
+   `scripts/emit-tasks.mjs` (the PROPOSE step) — have no `*.test.mjs` counterpart, unlike every
+   sibling script in `scripts/`. Cheap, fixture-based, pure-Node tests to add whenever there's a
+   quiet moment.

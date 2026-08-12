@@ -67,9 +67,33 @@ describe('searchAirlines', () => {
     expect(searchAirlines('E')).toEqual([]);
   });
 
-  it('Given a broad query, When searched, Then results are capped at 12', () => {
-    const results = searchAirlines('a');
-    expect(results.length).toBeLessThanOrEqual(12);
+  // Mutation testing (node scripts/run-mutation.mjs travel-packing-app --mutate
+  // "src/utils/airlineBaggage.ts") found this test vacuous: 'a' is a single
+  // character, so it never reaches the filter/slice at all -- it is rejected
+  // by the length-guard above before the cap it claims to test ever runs.
+  // Confirmed by checking match counts directly: 'a' matches nothing because
+  // it is too short, while a real 2+ character query ('ir') matches 52 of the
+  // 77 airlines in the table without a cap, which is what actually exercises
+  // .slice(0, 12).
+  it('Given a broad two-character query, When searched, Then results are capped at 12', () => {
+    const results = searchAirlines('ir');
+    expect(results.length).toBe(12);
+  });
+
+  // The length guard reads `query.trim().length`, not `query.length` -- a
+  // query that is all whitespace around a single character passes a raw
+  // length check but fails the trimmed one. Distinguishing the two requires
+  // padding, which 'E' above does not have.
+  it('Given a query that is only whitespace around a single character, When searched, Then no results are returned', () => {
+    expect(searchAirlines('  e  ')).toEqual([]);
+  });
+
+  // `q` itself is built with `.toLowerCase().trim()` -- a query padded with
+  // whitespace has to still match by code/name, which only holds if that
+  // trim is applied to `q`, not just used to decide whether to search at all.
+  it('Given a query padded with whitespace around a valid IATA code, When searched, Then the exact code still matches', () => {
+    const results = searchAirlines('  FR  ');
+    expect(results.some((a) => a.code === 'FR')).toBe(true);
   });
 });
 
