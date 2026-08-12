@@ -108,10 +108,10 @@ addition, deliberately kept outside the harness:
   they're point-in-time snapshots ("1 bug fix, last fix yesterday") that go stale the moment they're
   committed. Run `repowise init --no-prose -y` locally to regenerate them; `--no-prose` keeps
   indexing LLM-free, consistent with the harness's own no-embedded-LLM design.
+- **Before you run it — back up `~/.claude/settings.json` first.** On this pass, `repowise init`
+  overwrote (not merged) that file, replacing whatever hooks/MCP config were already there with no
+  backup made. If you have other Claude Code config on the machine you're running it on, copy that
+  file aside before continuing.
 - **Setup**: `pip install repowise && repowise init --no-prose -y` from the repo root, then restart
   Claude Code (or run `/mcp`) to pick up the server declared in `.mcp.json`. VS Code users get the
   same wiring via `.vscode/mcp.json`.
-- **Know before you run `repowise init` yourself**: on this pass, it overwrote (not merged)
-  `~/.claude/settings.json` on the host machine, replacing whatever hooks/MCP config were already
-  there. Back that file up first if you have other Claude Code config on the machine you're running
-  it on.

@@ -4,7 +4,6 @@
       "command": "repowise",
       "args": [
         "mcp",
-        "/home/user/agentic-app-harness",
         "--transport",
         "stdio"
       ],
