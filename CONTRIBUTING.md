@@ -7,6 +7,11 @@ is a task-routing table ("what do you want to do → where do you go") — read 
 through the tree by hand. Both are part of this repo's [ICM](https://github.com/ktnCodes/icm-template)
 navigation layer, additive on top of the rules below, not a replacement for them.
 
+**Building something end-to-end?** [`docs/APP_DEVELOPMENT_CYCLE.md`](docs/APP_DEVELOPMENT_CYCLE.md)
+sequences the rules below — spec, scaffold, contract-first schemas, test-first build, E2E/a11y, the
+gate, PR discipline, and the harness loop that takes over after merge — into the order you'd
+actually follow, with a one-page checklist at the end.
+
 ---
 
 ## 🚀 SDD Workflow Guidelines

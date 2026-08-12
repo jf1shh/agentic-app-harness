@@ -50,6 +50,8 @@ agentic-app-harness/
 │   └── elder-care-planner     #   Next.js 16 + React 19 — cost/runway planner
 ├── specs/                    # specs/<app-name>-spec.md — source of truth, read before coding;
 │   └── templates/            #   specs/templates/ holds the spec format itself
+├── docs/
+│   └── APP_DEVELOPMENT_CYCLE.md  # Sequenced walkthrough: idea → spec → build → gate → PR → harness loop
 ├── scripts/                  # The harness: Sense → Propose → Act → Verify → Learn (zero-dep Node ESM)
 ├── stages/                   # ICM Layer 2/4 — one folder per harness-loop stage:
 │   ├── sense/                #   CONTEXT.md contract + output/ (→ harness-status.json)
