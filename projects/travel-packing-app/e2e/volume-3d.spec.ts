@@ -79,3 +79,33 @@ test.describe('3D suitcase packing volume view', () => {
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 });
+
+// A separate describe block because deviceScaleFactor is a browser-context
+// option, set once via test.use() rather than per-test.
+test.describe('3D suitcase packing volume view on a high-DPI phone', () => {
+  test.use({ viewport: { width: 375, height: 700 }, deviceScaleFactor: 3 });
+
+  test('Given a phone-typical devicePixelRatio, When the 3D view renders, Then its canvas is sized to match its container instead of overflowing and being cropped by it', async ({ page }) => {
+    // renderer.setSize(w, h, false) never sets the canvas's CSS size, so the
+    // browser falls back to the canvas's width/height attributes -- which
+    // Three.js sets to w*pixelRatio/h*pixelRatio -- as its layout box. At
+    // devicePixelRatio 3 (capped to 2 by this component) that rendered the
+    // canvas 2x too large, and the container's overflow:hidden cropped it
+    // to a zoomed-in corner instead of showing the whole suitcase.
+    await stubWeather(page);
+    await page.goto('/');
+    await page.click('button.btn-primary');
+
+    const view = page.getByRole('img', { name: /3D Suitcase Packing View:/ });
+    await expect(view).toBeVisible();
+    const canvas = view.locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: 15000 });
+
+    const canvasBox = await canvas.boundingBox();
+    const containerBox = await view.boundingBox();
+    if (!canvasBox || !containerBox) throw new Error('expected both the canvas and its container to have a layout box');
+
+    expect(canvasBox.width).toBeCloseTo(containerBox.width, 0);
+    expect(canvasBox.height).toBeCloseTo(containerBox.height, 0);
+  });
+});
