@@ -119,6 +119,8 @@ addition, deliberately kept outside the harness:
   from the repo root, then restart Claude Code (or run `/mcp`) to pick up the server already
   declared in `.mcp.json`. VS Code users get the same wiring via `.vscode/mcp.json`.
 - **Re-running `init`/`update` rewrites `.mcp.json` and `.vscode/mcp.json` from scratch, absolute
-  path included** — there's no flag to keep them relative, unlike `--no-claude-md` for the wiki.
-  Before committing a re-index, diff those two files and strip any `"<absolute-path-to-repo>"` arg
-  that reappears between `"mcp"` and `"--transport"`, the same fix applied here.
+  path included** — there's no flag to keep them relative, unlike `--no-claude-md` for the wiki. Run
+  `node scripts/fix-repowise-mcp-paths.mjs` after any re-index, before committing it — it strips the
+  reinjected path back out of both files. Idempotent and self-tested
+  (`scripts/fix-repowise-mcp-paths.test.mjs`), scoped to the `repowise` server entry only so it can't
+  touch some other MCP server's own legitimate absolute-path argument.
