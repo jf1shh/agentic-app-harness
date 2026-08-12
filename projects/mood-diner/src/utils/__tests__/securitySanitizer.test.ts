@@ -32,4 +32,38 @@ describe('Security Input Sanitizer Suite', () => {
     expect(sanitized.tags[0]).not.toContain('onerror');
     expect(sanitized.tags[1]).toBe('Romantic');
   });
+
+  // Mutation testing (node scripts/run-mutation.mjs mood-diner --mutate
+  // "src/utils/securitySanitizer.ts") found the empty/non-string early
+  // return and sanitizeObject's nested-object recursion both NoCoverage.
+
+  it('Given an empty string, When sanitized, Then it returns an empty string rather than throwing', () => {
+    expect(sanitizeInput('')).toBe('');
+  });
+
+  it('Given a javascript: protocol with no surrounding tag, When sanitized, Then it is neutralized', () => {
+    expect(sanitizeInput('javascript:alert(1)')).toContain('no-javascript:');
+  });
+
+  it('Given text containing a literal ">" with no tag around it, When sanitized, Then it is HTML-entity encoded', () => {
+    expect(sanitizeInput('5 > 3')).toBe('5 &gt; 3');
+  });
+
+  it('Given a payload with a nested object value (not just a string or array), When sanitized, Then the nested object is recursively cleaned too', () => {
+    const payload = {
+      name: 'Gary Danko',
+      location: { address: '<script>steal()</script>800 North Point St' },
+    };
+    const sanitized = sanitizeObject(payload);
+    expect((sanitized.location as { address: string }).address).not.toContain('<script>');
+    expect((sanitized.location as { address: string }).address).toContain('800 North Point St');
+  });
+
+  it('Given a payload with a non-string, non-array, non-object value, When sanitized, Then it passes through unchanged', () => {
+    const payload = { name: 'Gary Danko', rating: 4.8, isOpen: true, closedUntil: null };
+    const sanitized = sanitizeObject(payload);
+    expect(sanitized.rating).toBe(4.8);
+    expect(sanitized.isOpen).toBe(true);
+    expect(sanitized.closedUntil).toBeNull();
+  });
 });

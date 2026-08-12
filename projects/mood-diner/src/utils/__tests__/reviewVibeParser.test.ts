@@ -65,4 +65,32 @@ describe('reviewVibeParser', () => {
     const result = parseReviewCommentsForMood(sampleRestaurant, 'All');
     expect(result.vibeMatchScore).toBe(90);
   });
+
+  // Mutation testing (node scripts/run-mutation.mjs mood-diner --mutate
+  // "src/utils/reviewVibeParser.ts") found the reviewComments-undefined
+  // fallback, the unknown-mood keyword fallback, and the no-match fallback
+  // paths for both matchingQuotes and summaryText all NoCoverage.
+
+  it('Given a restaurant whose reviewComments field is undefined (not just empty), When parsed for a specific mood, Then it still returns the neutral baseline rather than throwing', () => {
+    const noComments = {
+      ...sampleRestaurant,
+      aggregateScore: { ...sampleRestaurant.aggregateScore, reviewComments: undefined },
+    };
+    const result = parseReviewCommentsForMood(noComments, 'Romantic');
+    expect(result.vibeMatchScore).toBe(90);
+  });
+
+  it('Given a mood that is not one of the predefined keyword sets, When parsed, Then the mood name itself is used as the only keyword', () => {
+    const result = parseReviewCommentsForMood(sampleRestaurant, 'Quirky');
+    // Neither review comment mentions "quirky" and neither is tagged Quirky,
+    // so nothing should match -- proving the fallback keyword (not a crash
+    // on an undefined lookup) is what actually ran.
+    expect(result.extractedKeywords).toEqual([]);
+  });
+
+  it('Given a mood with no matching keywords or tags in any review, When parsed, Then it falls back to the first two comments and a generic summary rather than an empty result', () => {
+    const result = parseReviewCommentsForMood(sampleRestaurant, 'Outdoor Patio');
+    expect(result.matchingQuotes.length).toBeGreaterThan(0);
+    expect(result.summaryText).toBe('Diners rate this venue as a strong match for Outdoor Patio.');
+  });
 });
