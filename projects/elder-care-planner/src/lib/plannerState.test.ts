@@ -11,12 +11,14 @@ import {
   primaryScenario,
   breakEvenScenarios,
   makeContributors,
+  makeFacility,
+  withFacilityAdopted,
   ilScenarios,
   makeILOption,
   US_STATES,
   type PlannerState,
 } from './plannerState';
-import { PlanSchema } from './schemas';
+import { PlanSchema, FacilityNoteSchema } from './schemas';
 import { housingCarryMonthlyCents } from './engine/cost';
 
 describe('Given the initial triage state', () => {
@@ -347,5 +349,129 @@ describe('Given home sale proceeds entered in the planner state (spec §11.16)',
 
     expect(plan.homeSaleProceeds).toBeUndefined();
     expect(PlanSchema.safeParse(plan).success).toBe(true);
+  });
+});
+
+/**
+ * Mutation testing (node scripts/run-mutation.mjs elder-care-planner --mutate
+ * "src/lib/engine/plan.ts","src/lib/plannerState.ts") found makeFacility and
+ * withFacilityAdopted entirely NoCoverage -- neither had ever been called by
+ * any test, despite withFacilityAdopted being the join that lets a shortlist
+ * community's quote drive every downstream engine (its own doc comment calls
+ * it "the join that makes the shortlist worth building").
+ */
+describe('Given a blank facility card is created', () => {
+  it('When made, Then every figure starts empty rather than at an invented default', () => {
+    const facility = makeFacility(0, 'assisted_living');
+    expect(facility.id).toBe('f1');
+    expect(facility.label).toBe('Community 1');
+    expect(facility.careType).toBe('assisted_living');
+    expect(facility.waitlist).toBe('unknown');
+    expect(facility.ratings).toEqual([]);
+    expect(facility.photoIds).toEqual([]);
+    expect(FacilityNoteSchema.safeParse(facility).success).toBe(true);
+  });
+
+  it('When made at a non-zero index, Then the id and label number correctly rather than colliding with the first card', () => {
+    const facility = makeFacility(2, 'memory_care');
+    expect(facility.id).toBe('f3');
+    expect(facility.label).toBe('Community 3');
+  });
+});
+
+describe('Given a community quote is adopted into the planner state', () => {
+  it('When all three figures are quoted, Then the override, community fee and care-level tier all switch to the quote', () => {
+    const facility = FacilityNoteSchema.parse({
+      id: 'f1',
+      label: 'Oakmont',
+      careType: 'assisted_living',
+      quotedMonthlyCents: 690_000,
+      quotedCommunityFeeCents: 400_000,
+      quotedTierCents: 120_000,
+    });
+
+    const next = withFacilityAdopted(INITIAL_STATE, facility);
+
+    expect(next.costOverrideCents).toBe(690_000);
+    expect(next.communityFeeCents).toBe(400_000);
+    expect(next.careLevelTierCents).toBe(120_000);
+    expect(next.careType).toBe('assisted_living');
+  });
+
+  it('When a figure was not quoted, Then it falls back to zero (or no override) rather than carrying over the previous community\'s figure', () => {
+    // The doc comment is explicit: adopting replaces all three, and an
+    // absent quote is zero, never a leftover from whatever was there before.
+    const stateWithPriorQuote: PlannerState = {
+      ...INITIAL_STATE,
+      costOverrideCents: 999_999,
+      communityFeeCents: 999_999,
+      careLevelTierCents: 999_999,
+    };
+    const facility = FacilityNoteSchema.parse({
+      id: 'f2',
+      label: 'Brookside',
+      careType: 'assisted_living',
+      // No quoted figures at all.
+    });
+
+    const next = withFacilityAdopted(stateWithPriorQuote, facility);
+
+    expect(next.costOverrideCents).toBeNull();
+    expect(next.communityFeeCents).toBe(0);
+    expect(next.careLevelTierCents).toBe(0);
+  });
+
+  it('When the facility\'s care type is not one the triage picker can show, Then the state keeps its existing care type rather than stranding the form', () => {
+    const facility = FacilityNoteSchema.parse({
+      id: 'f3',
+      label: 'Sunrise Independent Living',
+      careType: 'independent_living', // deliberately withheld from SELECTABLE_CARE_TYPES
+    });
+
+    const next = withFacilityAdopted(INITIAL_STATE, facility);
+
+    expect(next.careType).toBe(INITIAL_STATE.careType);
+  });
+});
+
+describe('Given every residential and every hourly care type (isResidential/isHourly boundaries)', () => {
+  // independent_living is deliberately excluded here: it's priced from a
+  // buy-in contract via ilScenarios(), not through primaryScenario()'s fees
+  // path, so it is not one of isResidential()'s four members.
+  it.each(['assisted_living', 'memory_care', 'nursing_home_semi', 'nursing_home_private'])(
+    'Given care type "%s", When the scenario is built, Then it is treated as residential (fees attached, no housing carry)',
+    (careType) => {
+      const state: PlannerState = { ...INITIAL_STATE, careType: careType as PlannerState['careType'] };
+      const scenario = primaryScenario(state);
+      expect(scenario.fees).toBeDefined();
+      expect(scenario.housingCarry).toBeUndefined();
+    },
+  );
+
+  it.each(['in_home_homemaker', 'in_home_health_aide'])(
+    'Given care type "%s", When the scenario is built, Then it is treated as hourly (housing carry attached, no fees)',
+    (careType) => {
+      const state: PlannerState = { ...INITIAL_STATE, careType: careType as PlannerState['careType'], hoursPerWeek: 20 };
+      const scenario = primaryScenario(state);
+      expect(scenario.housingCarry).toBeDefined();
+      expect(scenario.fees).toBeUndefined();
+    },
+  );
+});
+
+describe('Given zero-value optional figures in the planner state', () => {
+  it('When ancillary monthly cost is zero, When built, Then the ancillary array is empty rather than a zero-value line item', () => {
+    const state: PlannerState = { ...INITIAL_STATE, ancillaryMonthlyCents: 0 };
+    expect(primaryScenario(state).ancillary).toEqual([]);
+  });
+
+  it('When monthly income is zero, When built, Then the income array is empty rather than a zero-value source', () => {
+    const state: PlannerState = { ...INITIAL_STATE, monthlyIncomeCents: 0 };
+    expect(buildPlan(state).income).toEqual([]);
+  });
+
+  it('When liquid assets are zero, When built, Then the assets array is empty rather than a zero-balance account', () => {
+    const state: PlannerState = { ...INITIAL_STATE, liquidAssetsCents: 0 };
+    expect(buildPlan(state).assets).toEqual([]);
   });
 });
