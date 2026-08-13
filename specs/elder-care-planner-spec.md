@@ -239,8 +239,11 @@ combination plus **local-only, no-account privacy**.
   stored and why it is not a `Plan`.
 - **Deployment:** GitHub Pages at `/agentic-app-harness/elder-care-planner` via
   `deploy-pages.yml`; `basePath` applied only when `isProd`.
-- **Container:** Web only — **no Capacitor**, so the `capacitor-absolute-base` guardrail does not
-  apply and an absolute prod `basePath` is correct here.
+- **Container:** GitHub Pages **and** a Capacitor Android shell (`android/`), mirroring
+  `travel-packing-app`'s §3a pattern: since Next's `basePath` can't be relative, the app ships two
+  separate static exports — `CAPACITOR_BUILD=1` forces an empty (root) `basePath` for the Capacitor
+  build, while the Pages build keeps the absolute prod subpath from `deploy.config.ts`. See
+  `next.config.ts` and `[guardrail: capacitor-absolute-base]`.
 - **Dependencies:** `next`, `react`, `react-dom`, `zod` only. No charting library — the runway
   chart is hand-rolled inline SVG, keeping the bundle small and every chart paired with an
   equivalent data table for a11y.
