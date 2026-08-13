@@ -76,22 +76,18 @@ Standard category: **Restaurant / Lifestyle utility**, so most sections are "Non
 | Gambling / simulated gambling | None | — |
 | User-generated content shared with other users | No | Custom-added restaurants and reservation notes are local-only, never shared or published — there is no multi-user or social surface at all |
 | Shares user's location | No | App requests no location permission (`AndroidManifest.xml` declares only `INTERNET`) |
-| Digital purchases | **No** — see caveat below | No Play Billing / real payment integration exists in the codebase |
+| Digital purchases | **No** | No Play Billing / real payment integration exists in the codebase |
 
 A reference to alcohol alone typically keeps the app in the lowest tier (e.g., PEGI 3 / Everyone
 with an alcohol-reference note) rather than pushing it into a restricted bracket, but let the
 questionnaire's own scoring decide rather than assuming.
 
-**Caveat worth fixing before you answer "No digital purchases" and move on:** `ProPaywallModal.tsx`
-shows real-looking pricing ("$4.99/mo", "$39.99/yr", "Start 7-Day Free Trial") and a plan/credits
-system, but nothing in the code actually charges a card or integrates Play Billing — per
-`privacy.html`, "No payment details are collected or stored; the app does not process payments."
-Answering "No" on the questionnaire is accurate to what the code does, but a reviewer (or a user)
-who taps "Start 7-Day Free Trial" and gets a local flag flip instead of a real trial is a UX
-mismatch independent of the rating form — Play's monetization policy expects a purchase flow to do
-what it visually claims. Worth deciding whether to wire up real Play Billing or reword the paywall
-to stop presenting currency amounts and a "trial" before submission; I didn't change this since it
-wasn't part of what was asked, but flagging it here so it doesn't ship by accident.
+**Resolved:** `ProPaywallModal.tsx` previously showed real-looking pricing ("$4.99/mo", "$39.99/yr",
+"Start 7-Day Free Trial"), which would have been a Play Monetization policy mismatch — a purchase-
+shaped UI with no real billing behind it. The modal has since been rewritten: no currency amounts,
+no trial claim, CTA reads "Unlock Pro Features" with an explicit "No payment, no account — this
+preview switches your device to the Pro feature set at no cost" disclosure. Answering "No" on
+Digital purchases is now accurate to both the code and the UI a reviewer or user actually sees.
 
 ## Data safety form — answers to select
 Straight from `public/privacy.html`, which already states this precisely:
