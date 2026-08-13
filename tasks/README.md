@@ -63,3 +63,32 @@ Or via the harness CLI: `.\scripts\harness.ps1 status` and `.\scripts\harness.ps
 `harness-status.json` is a generated snapshot (git-ignored). The `tasks/*.md`
 work orders **are** committed, so an open task is visible to every agent and in
 every PR diff until it's resolved and pruned.
+
+## Optional: bulk-import as GitHub Issues
+
+`tasks/*.md` work orders are the primary, committed contract — every agent
+should read those. If your team also wants findings tracked as real GitHub
+Issues, `scripts/emit-github-issues.mjs` renders the same findings as a
+bulk-importable JSON file instead:
+
+```bash
+node scripts/emit-github-issues.mjs             # sense, then write tasks/issues.json
+node scripts/emit-github-issues.mjs --no-sense  # reuse existing harness-status.json
+node scripts/emit-github-issues.mjs --upload    # also print the gh CLI upload loop
+```
+
+`tasks/issues.json` is git-ignored (a derived snapshot, same as
+`harness-status.json`), and the `gh` CLI has no native bulk-JSON-import
+subcommand, so upload is a loop — one `gh issue create` per array element:
+
+```bash
+jq -c '.[]' tasks/issues.json | while read -r issue; do
+  gh issue create \
+    --title "$(echo "$issue" | jq -r '.title')" \
+    --body "$(echo "$issue" | jq -r '.body')" \
+    --label "$(echo "$issue" | jq -r '.labels | join(",")')"
+done
+```
+
+This is optional tooling, not part of the blocking gate — nothing in
+`scripts/test-app.mjs` or `sdd-sentinel.yml` calls it.

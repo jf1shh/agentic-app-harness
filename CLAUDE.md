@@ -95,12 +95,22 @@ node scripts/run-mutation.mjs --all       # informational: Stryker mutation scor
 node scripts/run-mutation.test.mjs        # self-test the mutation-scoring logic
 node scripts/harness-status-rdjson.mjs    # bridges guardrail hits to reviewdog rdjsonl (inline PR comments)
 node scripts/harness-status-rdjson.test.mjs  # self-test the rdjsonl bridge
+node scripts/check-secrets.mjs --base origin/master --head HEAD
+                                           # diff-shaped: blocks a committed credential on an added line
+node scripts/check-secrets.mjs --tree     # one-time full-tree audit (not diff-shaped)
+node scripts/check-secrets.test.mjs       # self-test the secret-pattern matching
+node scripts/emit-github-issues.mjs       # propose (alternate output): findings -> tasks/issues.json
+node scripts/emit-github-issues.mjs --upload  # also print the gh CLI bulk-upload loop
+node scripts/emit-github-issues.test.mjs  # self-test the issue-shaping logic
 ```
 
 Mutation testing (`run-mutation.mjs`) and the reviewdog inline-annotation bridge
 (`harness-status-rdjson.mjs`) are both informational/additive — see `.agents/AGENTS.md` §8's
 "Mutation testing" and "Inline PR annotations" subsections for why each stays outside
 `harness-status.mjs`'s fast sense loop and never blocks a merge on its own.
+`check-secrets.mjs` is diff-shaped like `check-enum-blast-radius.mjs` but **is** blocking, with no
+PR-body escape hatch — see `.agents/AGENTS.md` §11. `emit-github-issues.mjs` is optional tooling, not
+part of any gate — see `tasks/README.md`'s "Optional: bulk-import as GitHub Issues" section.
 
 `.\scripts\harness.ps1 {status|tasks|verify|learn|history}` wraps the same five in one entry point.
 `harness-history.json` (git-tracked, unlike the gitignored `harness-status.json` snapshot) is the
