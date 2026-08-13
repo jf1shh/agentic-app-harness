@@ -66,6 +66,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/harness-history.test.mjs
 
+      - name: Secret-Scanning Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-secrets.test.mjs
+
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
       # naming a file in the blast-radius table counts as handling it — "no
@@ -88,6 +92,16 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: node ./scripts/check-guardrail-integrity.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Blocks a PR that introduces a high-confidence credential pattern
+      # (Anthropic/OpenAI/Google/xAI/AWS/GitHub/Slack keys, PEM private-key
+      # blocks) on a line it added — see check-secrets.mjs's header for why
+      # this stayed unwired until now and why there is no PR-body escape
+      # hatch, unlike the two gates above.
+      - name: Secret-Scanning Gate (no committed credentials on added lines)
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: node ./scripts/check-secrets.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh
@@ -155,7 +169,7 @@ jobs:
 
             ✅ **All required spec & quality gates passed on this PR.**
             - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
-            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), and the guardrail-integrity gate (the gates themselves weren't silently weakened) all passed.
+            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), the guardrail-integrity gate (the gates themselves weren't silently weakened), and the secret-scanning gate (no committed credentials on added lines) all passed.
             - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 
             *The full per-app suite (lint, type-check, Vitest, Playwright + \`@axe-core\`) runs in parallel in the Harness Testing Suite workflow.*

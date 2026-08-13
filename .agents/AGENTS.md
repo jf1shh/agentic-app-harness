@@ -918,3 +918,92 @@ summary, not a separate source of truth.
 A red suite or a "not run, because …" is an honest Definition of Done failure and belongs in the PR
 body verbatim (§9.1) — it is not a reason to skip opening the PR. It is a claimed green that was
 never run that this checklist exists to prevent.
+
+## 11. Security & Privacy Baseline
+
+Generic web-app security checklists (server authZ, rate limiting, audit logs) mostly don't apply
+here: `portfolio-hub` and `elder-care-planner` make zero runtime network calls at all, and none of
+the six apps run a backend this repo owns. What follows is scoped to what these apps actually are —
+a mix of fully offline apps, apps that call a handful of external read-only APIs, and apps that
+persist sensitive data to `localStorage`/IndexedDB on the user's own device.
+
+- **No secrets in source, and it's enforced, not just asked for.** `scripts/check-secrets.mjs`
+  scans every line a PR *adds* (diff-shaped, like `check-enum-blast-radius.mjs`) against
+  high-confidence credential patterns (Anthropic, OpenAI, Google, xAI, AWS, GitHub, Slack keys; PEM
+  private-key blocks) and runs as a blocking step in `sdd-sentinel.yml`. Unlike the blast-radius and
+  guardrail-integrity gates, there is **no PR-body acknowledgment escape hatch** — a real committed
+  credential is never something to wave through with a note; rotate it, then remove it from the
+  working tree (removing it in a later commit does not remove it from git history). Run
+  `node scripts/check-secrets.mjs --tree` locally for a one-time full-tree audit; the CI gate only
+  looks at lines a PR itself adds, so it won't re-flag anything already in history.
+
+- **A network call an app makes must be named in that app's spec, and must never carry
+  sensitive data off-device.** The six apps are not uniformly offline: `travel-packing-app` calls
+  Nominatim, Open-Meteo, and currency/advisory APIs for weather, geocoding, and exchange rates;
+  `smart-recipe-app` calls TheMealDB for recipe search; `mood-diner`'s service worker fetches for
+  cache-fallback only; `legal-financial-rag`, `elder-care-planner`, and `portfolio-hub` make none at
+  application runtime (`legal-financial-rag`'s own README notes Google Fonts still loads once over
+  network on first visit, which is why its claim is "no *document or query* content leaves the
+  device," not "zero requests ever" — say what you actually mean, per the Cite Confidence lesson in
+  §6). The boundary that matters: every existing call sends anonymous lookup parameters (a place
+  name, a date, a currency code, a search term) and nothing from a user's financial, health, or care
+  plan. Widening what a network call sends — or adding a new call — is a spec change to that app's
+  `specs/<app>-spec.md`, not something to add quietly alongside an unrelated feature.
+
+- **No analytics or telemetry SDK without a spec update.** None of the six apps currently ship one
+  (checked: no PostHog, Google Analytics, Segment, Plausible, Mixpanel, or Amplitude anywhere in
+  `projects/`). That's a deliberate privacy stance for at least `legal-financial-rag` and
+  `elder-care-planner`, not an oversight to "fix" — adding one to any app needs the same spec
+  contradiction check §1 already requires for any feature, because it changes what that app promises
+  never to send off-device.
+
+- **Sensitive data written to persistent client storage needs the same at-rest treatment the app
+  already gives that data on its other paths — and right now, one app doesn't.**
+  `legal-financial-rag` encrypts its vault at rest (PBKDF2 + a tamper-evident hash chain, see §6's
+  Node WebCrypto lesson). `elder-care-planner`'s own share/export path
+  (`src/lib/share.ts`) encrypts a plan with AES-GCM + PBKDF2 before it ever leaves the device — but
+  `savePlan` in `src/lib/storage.ts` writes that same plan (income, savings, monthly care costs) to
+  `localStorage` as plain `JSON.stringify(plan)`, unencrypted, on every autosave. The data has an
+  encrypted-at-rest treatment defined in the same app; the far more common code path (routine local
+  persistence, not the occasional export) simply doesn't use it. This is a real, open gap, not
+  something this section fixes by asserting a rule — encrypting local persistence needs a key-
+  management decision (a device-bound key with no user friction, versus a passphrase gate like
+  `legal-financial-rag`'s) that changes the app's UX and belongs in a spec update and a proposed
+  work order, not a silent implementation choice. Not tagged as a guardrail: "does this write path
+  handle data as sensitively as another path in the same app handles the same data" is exactly the
+  kind of cross-file, judgment-dependent property no regex over a line can see — the same shape as
+  several lessons in §6.
+
+## 12. Client-Side Observability
+
+None of these apps run a backend this repo owns, so "observability" doesn't mean server logs,
+distributed tracing, or a metrics pipeline — there is no server to instrument. What it means here is
+narrower and answerable: **when something breaks at runtime, does the app tell you, without shipping
+what broke anywhere off the user's device?**
+
+- **Every app should fail into something, not into a blank page.** `travel-packing-app` is the one
+  app in the repo with a real pattern: a structured `Logger` (`src/services/logger.ts`) that
+  persists entries to IndexedDB via `idb-keyval` for later inspection, still `console.error`s in dev,
+  and is wired into a top-level error boundary (`src/app/error.tsx`) so a render crash shows a
+  recoverable screen instead of a blank one. The other five apps have no error boundary at all and
+  rely on ad hoc `console.error` calls scattered in individual `catch` blocks (e.g.
+  `mood-diner/src/App.tsx`, `smart-recipe-app/src/lib/data.ts`,
+  `legal-financial-rag/src/components/QueryWorkbench.tsx` and `VaultLockModal.tsx`) — real error
+  handling, but with no single place that catches what those `catch` blocks miss, and no boundary
+  around a rendering crash at all. New work on any of the three Next.js apps should add its own
+  `error.tsx`; the three Vite apps need the class-component equivalent (`componentDidCatch` /
+  `getDerivedStateFromError`), since Vite has no framework-level error-boundary convention to lean on.
+
+- **Nothing observed here leaves the device.** A structured logger is for the same on-device
+  inspection §6's debugging lessons already rely on (e.g. the elder-care-planner debounced-autosave
+  and hydration-timing bugs) — it is not a telemetry pipeline, and adding one that phones home would
+  contradict the privacy stance §11 already states. If a future app genuinely needs remote error
+  reporting, that's an explicit spec decision, not a default.
+
+- **Not yet a guardrail or a sensor, on purpose.** §8's policy is to gate a check once it describes
+  a regression, not while it still describes a backlog — the same arc `senseUnitTests` went through
+  before it started blocking the gate. Right now there is exactly one app with the pattern and five
+  without it; a sensor built today would just be reporting that gap five times over, which nobody has
+  been asked to close yet. Once error-boundary coverage closes across the other five apps, "does
+  `senseApp` find a matching error boundary for this app's framework" becomes a reasonable
+  non-blocking sensor to add — before that, it stays prose.
