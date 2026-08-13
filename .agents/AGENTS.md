@@ -875,3 +875,46 @@ the moment the enum gained a member the UI gained an option. The claim could not
 
 If a change forces a user-visible surface, either handle it or say plainly that it is unhandled.
 An unachievable scope claim tells a reviewer not to look where the problem is.
+
+## 10. Definition of Ready / Definition of Done
+
+Sections 2, 5, 8, and 9 already state every rule below in full; nothing here is new. This section
+exists because those rules are scattered across the file by topic (spec discipline, testing order,
+PR hygiene), and a pre-flight / pre-merge moment benefits from having them in one place to run down.
+Where this checklist and the full rule it compresses disagree, the full rule governs — this is a
+summary, not a separate source of truth.
+
+### 10.1 Definition of Ready — before you start implementing
+
+- The matching spec in `specs/<app>-spec.md` covers what you're about to build. If it's silent,
+  ambiguous, or contradicts the request, that's a stop-and-flag per §2 — not a judgment call to
+  resolve on the fly.
+- The change fits in one sentence a reviewer could hold you to later. If describing it needs "and,"
+  it is more than one change.
+- The acceptance criteria are concrete enough to write a failing test against before writing any
+  implementation — the §5 "Red" step needs a real target, not a vague one.
+- You already know which existing sweeps, fixtures, or enumerated-case tables this change will touch
+  (§9.3), and whether it widens an enum or union (§9.2) — so the consumer grep happens before you're
+  deep in the diff, not after review flags it.
+
+### 10.2 Definition of Done — before you open, and before you merge
+
+- `node scripts/test-app.mjs <AppName>` has been run in this session, and what you report is its
+  actual printed output — not the expected result of the sub-checks you happen to remember running
+  (§9.1).
+- Every new or changed logic module has a unit test that was red before it went green, or — for a
+  backfill on already-working code — a stated mutation that was run and observed to fail (§5).
+- `node scripts/harness-status.mjs --gate` has been run and shows 0 blocking findings; this is not
+  inferred from the checks above having passed.
+- Any type widening names every consumer file from `grep -rln "<TypeName>" projects/<app>/src/` and
+  states how each one handles the new case, or why it needs none (§9.2).
+- Every sweep that enumerates cases carries a fixture for the new one (§9.3).
+- Every "this protects X" claim in the PR body names the mutation that was run against it and the
+  result (§9.4).
+- The PR's scope claims describe what the diff actually forces, not what you meant to touch (§9.5).
+- `README.md`, the relevant `specs/<app>-spec.md`, and `HANDOFF.md` reflect the change, not the
+  state before it (§7).
+
+A red suite or a "not run, because …" is an honest Definition of Done failure and belongs in the PR
+body verbatim (§9.1) — it is not a reason to skip opening the PR. It is a claimed green that was
+never run that this checklist exists to prevent.
