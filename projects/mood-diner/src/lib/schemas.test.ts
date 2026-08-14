@@ -6,6 +6,7 @@ import {
   BookingDetailsSchema,
   AggregateScoreSchema,
   OpeningHourRangeSchema,
+  ReservationSchema,
 } from './schemas';
 import { INITIAL_RESTAURANTS } from '../data/restaurantsData';
 
@@ -55,15 +56,19 @@ const validRestaurant = {
   moods: ['cosy'],
   aggregateScore: validAggregate,
   websiteUrl: 'https://example.com',
-  verifiedWebsiteStatus: 'verified',
+  verifiedWebsiteStatus: 'Verified Open' as const,
   openingHours: { monday: { openHour: 12, closeHour: 23 } },
   menu: [validMenuItem],
-  busyHours: [{ hour: 19, occupancyPercent: 85, label: 'Peak', vibe: 'buzzing' }],
+  busyHours: [{ hour: 19, occupancyPercent: 85, label: 'Peak', vibe: 'Peak & Lively' as const }],
   address: '1 Example Street, London',
   distanceMiles: 1.2,
   walkTimeMinutes: 24,
+  hasFireplace: true,
+  heroImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
+  priceRange: '$$$' as const,
   driveTimeMinutes: 7,
   outdoorSeating: true,
+  isRealWorldVerified: true,
 };
 
 // Omit a key without leaving an unused binding behind: the usual
@@ -168,13 +173,63 @@ describe('RestaurantSchema', () => {
     })).toThrow();
   });
 
-  it('Given the weather-dependent optional flags, When they are omitted, Then the restaurant is still valid', () => {
-    // rooftop/fireplace/hasHeaters drive the weather scoring; absent means "no",
-    // and must not be mistaken for a malformed row.
-    const parsed = RestaurantSchema.parse(validRestaurant);
-    expect(parsed.rooftop).toBeUndefined();
-    expect(parsed.fireplace).toBeUndefined();
-    expect(parsed.hasHeaters).toBeUndefined();
+  it('Given isRealWorldVerified omitted, When it is parsed, Then the restaurant is still valid', () => {
+    // Only AddRealRestaurantModal sets this flag; the shipped dataset omits
+    // it entirely, so absent must not be mistaken for a malformed row.
+    const parsed = RestaurantSchema.parse(without(validRestaurant, 'isRealWorldVerified'));
+    expect(parsed.isRealWorldVerified).toBeUndefined();
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'not a url',
+  ])(
+    'Given a websiteUrl of %s, When it is parsed, Then the contract rejects it',
+    (websiteUrl) => {
+      // websiteUrl is rendered directly as an <a href> (RestaurantCard,
+      // RestaurantModal); a restaurant round-tripped through localStorage is
+      // untrusted input by the time it's read back (.agents/AGENTS.md §1),
+      // so a non-http(s) scheme must never reach the contract's output.
+      expect(() => RestaurantSchema.parse({ ...validRestaurant, websiteUrl })).toThrow();
+    },
+  );
+
+  it('Given a websiteUrl with an http(s) scheme, When it is parsed, Then it is accepted', () => {
+    expect(RestaurantSchema.parse({ ...validRestaurant, websiteUrl: 'http://example.com' }).websiteUrl)
+      .toBe('http://example.com');
+  });
+});
+
+describe('ReservationSchema', () => {
+  const validReservation = {
+    id: 'r1',
+    restaurantId: 'the-hearth',
+    restaurantName: 'The Hearth',
+    date: '2026-03-01',
+    time: '19:30',
+    partySize: 4,
+    occasion: 'Anniversary',
+    specialRequests: 'Window seat if possible',
+    seatingPreference: 'Window' as const,
+    status: 'Confirmed' as const,
+    createdAt: '2026-02-20T10:00:00.000Z',
+  };
+
+  it('Given a reservation round-tripped through storage, When it is parsed, Then it is accepted unchanged', () => {
+    expect(ReservationSchema.parse(validReservation)).toEqual(validReservation);
+  });
+
+  it('Given a reservation missing a required field, When it is parsed, Then the contract rejects it', () => {
+    expect(() => ReservationSchema.parse(without(validReservation, 'restaurantId'))).toThrow();
+  });
+
+  it('Given a seatingPreference outside the declared union, When it is parsed, Then the contract rejects it', () => {
+    expect(() => ReservationSchema.parse({ ...validReservation, seatingPreference: 'Rooftop' })).toThrow();
+  });
+
+  it('Given a partySize that arrived as a string, When it is parsed, Then it is rejected rather than coerced', () => {
+    expect(() => ReservationSchema.parse({ ...validReservation, partySize: '4' })).toThrow();
   });
 });
 

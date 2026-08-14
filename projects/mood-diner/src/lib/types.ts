@@ -8,5 +8,6 @@ export type {
   BusyHourSlot,
   Restaurant,
   WeatherState,
+  Reservation,
   BookingDetails,
 } from './schemas';

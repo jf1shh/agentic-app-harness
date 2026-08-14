@@ -57,7 +57,8 @@ src/
   data/restaurantsData.ts            # INITIAL_RESTAURANTS (real-world dataset)
   lib/
     monetization/MonetizationContext.tsx
-    schemas.ts                       # Zod contracts (Restaurant, BookingDetails, ...)
+    schemas.ts                       # Zod contracts (Restaurant, Reservation, BookingDetails, ...)
+    storage.ts                       # localStorage boundary: safeParse's every read, drops invalid rows
     types.ts
   utils/
     aggregateScoring.ts, openStatus.ts, reviewVibeParser.ts,
@@ -75,6 +76,11 @@ capacitor.config.ts
 ## Persistence and privacy
 
 - Storage keys: `mood_diner_reservations`, `mood_diner_custom_restaurants`, and plans/credit counters.
+- Both `mood_diner_reservations` and `mood_diner_custom_restaurants` are read back through
+  `src/lib/storage.ts`, which validates every entry against `RestaurantSchema`/`ReservationSchema`
+  (`.agents/AGENTS.md` §1) and silently drops rows that don't conform — a corrupted or hand-edited
+  payload degrades to fewer entries rather than crashing the app or handing an invalid
+  `websiteUrl` straight to an `<a href>`.
 - Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 - The privacy audit confirmed: **no `fetch()` anywhere in `src/`**, no analytics SDK, no accounts, no payments. The only genuine third-party request is the Unsplash image CDN for restaurant photos.
 
