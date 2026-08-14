@@ -5,12 +5,78 @@
 // so the thing that gates merges is itself gated. Zero dependencies; run with:
 //   node scripts/harness-status.test.mjs
 
-import { GUARDRAILS, senseApp, senseMobileRelease, senseProductionBundleTest, senseUnitTests, isBlocking, allRuleMeta } from './harness-status.mjs';
+import {
+  GUARDRAILS,
+  senseApp,
+  senseMobileRelease,
+  senseProductionBundleTest,
+  senseUnitTests,
+  isBlocking,
+  allRuleMeta,
+  createBlockingStrategy,
+  createProjectAdapter,
+  createSensorChain,
+  runPipeline,
+} from './harness-status.mjs';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Architecture contracts for the harness itself. These are intentionally
+// small and executable: the four patterns must preserve deterministic output,
+// allow policy substitution, and hide app filesystem differences behind an
+// adapter.
+// Given a value and ordered stages, When the pipeline runs, Then each stage
+// receives the previous stage's output.
+const pipelineResult = runPipeline(1, [
+  (value) => value + 1,
+  (value) => value * 2,
+]);
+if (pipelineResult !== 4) {
+  console.error(`✗ pipeline: expected sequential stages to produce 4, got ${pipelineResult}`);
+  process.exit(1);
+}
+
+// Given ordered sensor handlers, When the chain runs, Then all handlers
+// contribute findings in registration order.
+const chainResult = createSensorChain([
+  () => [{ id: 'first' }],
+  () => [{ id: 'second' }],
+])({ app: 'fixture' });
+if (chainResult.map((finding) => finding.id).join(',') !== 'first,second') {
+  console.error('✗ chain: expected every handler to contribute findings in order');
+  process.exit(1);
+}
+
+// Given a custom blocking policy, When a finding is evaluated, Then the
+// injected strategy decides whether it blocks.
+const strictBlocking = createBlockingStrategy([
+  (finding) => finding.type === 'custom-blocking',
+]);
+if (!strictBlocking({ type: 'custom-blocking' }) || strictBlocking({ type: 'informational' })) {
+  console.error('✗ strategy: expected an injectable blocking policy');
+  process.exit(1);
+}
+
+// Given an app root with framework-specific paths, When the adapter reads it,
+// Then file discovery and repository-relative paths have one normalized API.
+const adapterRoot = mkdtempSync(join(tmpdir(), 'harness-adapter-'));
+try {
+  mkdirSync(join(adapterRoot, 'src', 'lib'), { recursive: true });
+  writeFileSync(join(adapterRoot, 'src', 'lib', 'fixture.ts'), 'export const fixture = true;');
+  const adapter = createProjectAdapter('fixture-app', adapterRoot);
+  if (adapter.app !== 'fixture-app'
+    || adapter.files(['.ts']).length !== 1
+    || !adapter.relative(adapter.files(['.ts'])[0]).endsWith('src/lib/fixture.ts')) {
+    console.error('✗ adapter: expected project paths and file discovery to be normalized');
+    process.exit(1);
+  }
+} finally {
+  rmSync(adapterRoot, { recursive: true, force: true });
+}
+
+console.log('✓ harness architecture (pipeline, chain, strategy, adapter)');
 // For each guardrail id: a line that MUST trip it, and one that MUST NOT.
 const CASES = {
   'viewport-no-zoom': {

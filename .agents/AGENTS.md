@@ -632,6 +632,17 @@ The harness closes its own improvement loop without any embedded LLM or API key 
 - **Verify** (`node scripts/harness-status.mjs --gate` / `.\scripts\harness.ps1 verify`): a blocking CI gate that fails on guardrail regressions and missing specs, while drift/manual-review findings only inform. The guardrails are themselves self-tested (`scripts/harness-status.test.mjs`), so the gate can't silently rot. Re-run `emit-tasks.mjs --prune` to retire resolved work orders.
 - **Learn** (`node scripts/harness-learn.mjs` / `.\scripts\harness.ps1 learn`): a blocking gate that enforces a closed traceability loop — every guardrail must carry a `lesson` back-reference and be tagged `[guardrail: <id>]` on its motivating AGENTS.md bullet, and every such tag must resolve to a real, self-tested guardrail. This makes "the harness gets stricter over time" a verifiable invariant, not a good intention.
 
+### Harness composition conventions
+
+The harness implementation keeps four deliberately small composition patterns explicit:
+
+- **Pipeline**: deterministic stages transform collected findings in order.
+- **Chain of Responsibility**: registered supplemental sensors each contribute findings without depending on sibling sensors.
+- **Strategy**: blocking policy is injectable through `createBlockingStrategy`, while the default policy remains the VERIFY contract.
+- **Adapter**: `createProjectAdapter` normalizes project-root file discovery and repository-relative paths across the six apps.
+
+These are functional zero-dependency helpers, not a class framework. Do not introduce a pattern abstraction unless it removes an existing cross-app conditional or makes a harness contract executable in the self-test.
+
 ### Blocking guardrails vs. informational sensors
 Not every mechanical check belongs in `GUARDRAILS`. That array is for **line-level
 regressions**: its `test(line)` contract is what `harness-status.test.mjs` self-tests,

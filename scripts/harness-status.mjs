@@ -36,6 +36,48 @@ const specsDir = join(repoRoot, 'specs');
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.vite', 'coverage', 'android', 'playwright-report', 'test-results']);
 
+// ---------------------------------------------------------------------------
+// Harness composition primitives.
+//
+// These keep the implementation functional and zero-dependency while making
+// the four deliberate patterns explicit:
+//   - Pipeline: deterministic stages transform one value in sequence.
+//   - Chain of Responsibility: every registered sensor handler contributes its
+//     findings without knowing about the other handlers.
+//   - Strategy: blocking policy is injectable instead of hard-coded at callers.
+//   - Adapter: project-specific filesystem conventions are normalized behind a
+//     small interface.
+// ---------------------------------------------------------------------------
+export function runPipeline(initialValue, stages) {
+  return stages.reduce((value, stage) => stage(value), initialValue);
+}
+
+export function createSensorChain(handlers) {
+  return (context) => handlers.flatMap((handler) => handler(context) || []);
+}
+
+export function createBlockingStrategy(rules) {
+  const policy = rules || [
+    (finding) => finding.type === 'guardrail',
+    (finding) => finding.type === 'unit-test-coverage',
+    (finding) => finding.type === 'missing-artifact' && finding.severity === 'high',
+  ];
+  return (finding) => policy.some((rule) => rule(finding));
+}
+
+const defaultBlockingStrategy = createBlockingStrategy();
+
+export function createProjectAdapter(app, projPath) {
+  return {
+    app,
+    root: projPath,
+    path: (...parts) => join(projPath, ...parts),
+    files: (exts) => walk(projPath, exts),
+    read: (file) => readSafe(file),
+    relative: (file) => rel(file),
+  };
+}
+
 // A test file, by either convention this monorepo uses: co-located `foo.test.ts`
 // (elder-care-planner, smart-recipe-app), a `__tests__/` sibling (mood-diner,
 // portfolio-hub) or an app-root `__tests__/` (travel-packing-app).
@@ -571,6 +613,7 @@ function rel(p) { return relative(repoRoot, p).split('\\').join('/'); }
 // (or write into) the actual projects/ or specs/ directories.
 function senseApp(app, projPathOverride, specPathOverride) {
   const projPath = projPathOverride || join(projectsDir, app);
+  const project = createProjectAdapter(app, projPath);
   const findings = [];
   const add = (f) => findings.push({ app, ...f });
 
@@ -589,7 +632,10 @@ function senseApp(app, projPathOverride, specPathOverride) {
       detail: `Add a projects/${app}/README.md describing the app and pointing to its spec.` });
   }
 
-  const srcFiles = walk(join(projPath, 'src'), ['.ts', '.tsx']);
+  const srcFiles = project.files(['.ts', '.tsx']).filter((f) => {
+    const relativePath = f.slice(project.root.length);
+    return relativePath.startsWith(`${sep}src${sep}`) || relativePath.startsWith('/src/');
+  });
 
   // 3. Contract-first Zod usage.
   const usesZod = srcFiles.some((f) => {
@@ -635,7 +681,7 @@ function senseApp(app, projPathOverride, specPathOverride) {
   // 6. Guardrail scans.
   for (const g of GUARDRAILS) {
     if (g.appliesTo && !g.appliesTo(projPath)) continue;
-    const files = walk(projPath, g.exts).filter((f) => !(g.excludePath && g.excludePath(f)));
+    const files = project.files(g.exts).filter((f) => !(g.excludePath && g.excludePath(f)));
     const evidence = [];
     for (const f of files) {
       const c = readSafe(f);
@@ -653,14 +699,17 @@ function senseApp(app, projPathOverride, specPathOverride) {
     }
   }
 
-  // 7. Mobile release readiness (informational; native-container apps only).
-  for (const f of senseMobileRelease(app, projPath, join(repoRoot, '.github', 'workflows'))) add(f);
-
-  // 8. Production-bundle E2E coverage (informational; any app with Playwright).
-  for (const f of senseProductionBundleTest(app, projPath)) add(f);
-
-  // 9. Unit-test-driven development (informational; any app with a src/ tree).
-  for (const f of senseUnitTests(app, projPath)) add(f);
+  // 7–9. Supplemental sensors are a chain: each handler contributes findings,
+  // and one new sensor can be registered without editing the others.
+  const supplementalSensors = createSensorChain([
+    ({ app: sensorApp, project: sensorProject }) => senseMobileRelease(
+      sensorApp, sensorProject.root, join(repoRoot, '.github', 'workflows')),
+    ({ app: sensorApp, project: sensorProject }) => senseProductionBundleTest(
+      sensorApp, sensorProject.root),
+    ({ app: sensorApp, project: sensorProject }) => senseUnitTests(
+      sensorApp, sensorProject.root),
+  ]);
+  for (const f of supplementalSensors({ app, project })) add(f);
 
   return findings;
 }
@@ -689,11 +738,9 @@ function senseApp(app, projPathOverride, specPathOverride) {
 // If this needs to be relaxed — a spike, a vendored module, a deliberate
 // exception — take the type out of this function rather than deleting the
 // sensor, so the finding stays visible while it stops blocking.
-export function isBlocking(f) {
-  if (f.type === 'guardrail') return true;
-  if (f.type === 'unit-test-coverage') return true;
-  if (f.type === 'missing-artifact' && f.severity === 'high') return true; // missing spec
-  return false;
+export function isBlocking(f, strategy) {
+  const selectedStrategy = typeof strategy === 'function' ? strategy : defaultBlockingStrategy;
+  return selectedStrategy(f);
 }
 
 // Collect findings across all apps into a status object (no I/O).
@@ -702,16 +749,18 @@ export function collectStatus() {
     ? readdirSync(projectsDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)
     : [];
 
-  let findings = [];
-  for (const app of apps) findings = findings.concat(senseApp(app));
-
   const severityRank = { high: 0, medium: 1, low: 2 };
-  findings.sort((a, b) =>
-    (Number(isBlocking(b)) - Number(isBlocking(a))) ||
-    (severityRank[a.severity] - severityRank[b.severity]) ||
-    a.app.localeCompare(b.app));
-
-  for (const f of findings) f.blocking = isBlocking(f);
+  const findings = runPipeline(apps, [
+    (appNames) => appNames.flatMap((app) => senseApp(app)),
+    (allFindings) => allFindings.sort((a, b) =>
+      (Number(isBlocking(b)) - Number(isBlocking(a))) ||
+      (severityRank[a.severity] - severityRank[b.severity]) ||
+      a.app.localeCompare(b.app)),
+    (allFindings) => allFindings.map((finding) => ({
+      ...finding,
+      blocking: isBlocking(finding),
+    })),
+  ]);
 
   const byType = {}, bySeverity = {};
   for (const f of findings) {
