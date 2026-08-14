@@ -286,3 +286,28 @@ regenerated fixture. Confirmed green.
      the fix** — several fixes in this pass initially looked complete under `vitest run` alone,
      but the actual proof (and, twice, a real bug in the *test* itself — a wrong fixture, a
      rounding-boundary-fragile assertion) only surfaced on the mutation re-run.
+
+## 8. Harness Composition Refactor (current session)
+
+The harness now makes four intentionally small patterns executable without
+introducing a class framework or dependency:
+
+- **Pipeline** — `collectStatus()` transforms app names into findings, sorted
+  findings, and finally findings annotated with blocking state.
+- **Chain of Responsibility** — supplemental sensors are registered as ordered
+  handlers, so mobile readiness, production-bundle coverage, and unit-test
+  coverage each contribute independently.
+- **Strategy** — `createBlockingStrategy()` owns the default VERIFY policy while
+  `isBlocking()` accepts an injected policy for focused tests and future policy
+  changes.
+- **Adapter** — `createProjectAdapter()` normalizes project-root file discovery
+  and repository-relative paths across Next.js, Vite, and Capacitor projects.
+
+`node scripts/harness-status.test.mjs` contains executable contracts for all four
+patterns. The refactor preserves the existing deterministic output and leaves the
+pre-existing `elder-care-planner-spec-drift` work order as the only informational
+finding.
+
+**Documentation note:** the Unit-Test-Driven Development material above records
+historical milestones from earlier sessions; the current source is authoritative
+where those older next-step notes differ from the present gate state.
