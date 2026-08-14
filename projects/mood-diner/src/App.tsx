@@ -13,22 +13,15 @@ import { Restaurant, WeatherCondition, Reservation, TransportMode } from './type
 import { evaluateWeatherSuitability } from './utils/weatherEngine';
 import { parseReviewCommentsForMood } from './utils/reviewVibeParser';
 import { isRestaurantOpenNow } from './utils/openStatus';
+import { loadCustomRestaurants, saveCustomRestaurants, loadReservations, saveReservations } from './lib/storage';
 import { Sun, AlertCircle } from 'lucide-react';
 
 export const App: React.FC = () => {
   // State
-  const [restaurants, setRestaurants] = useState<Restaurant[]>(() => {
-    try {
-      const customSaved = localStorage.getItem('mood_diner_custom_restaurants');
-      if (customSaved) {
-        const parsed = JSON.parse(customSaved);
-        return [...parsed, ...INITIAL_RESTAURANTS];
-      }
-    } catch {
-      // fallback
-    }
-    return INITIAL_RESTAURANTS;
-  });
+  const [restaurants, setRestaurants] = useState<Restaurant[]>(() => [
+    ...loadCustomRestaurants(localStorage),
+    ...INITIAL_RESTAURANTS,
+  ]);
 
   const [weather, setWeather] = useState<WeatherCondition>(PRESET_WEATHER[0]); // Default Hot Summer 92°F
   const [selectedOccasion, setSelectedOccasion] = useState<string>('All');
@@ -42,31 +35,16 @@ export const App: React.FC = () => {
   const [isBookingsModalOpen, setIsBookingsModalOpen] = useState<boolean>(false);
   const [isAddRealModalOpen, setIsAddRealModalOpen] = useState<boolean>(false);
 
-  const [reservations, setReservations] = useState<Reservation[]>(() => {
-    try {
-      const saved = localStorage.getItem('mood_diner_reservations');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [reservations, setReservations] = useState<Reservation[]>(() => loadReservations(localStorage));
 
   useEffect(() => {
-    try {
-      localStorage.setItem('mood_diner_reservations', JSON.stringify(reservations));
-    } catch (e) {
-      console.error(e);
-    }
+    saveReservations(localStorage, reservations);
   }, [reservations]);
 
   const handleAddCustomRestaurant = (newRestaurant: Restaurant) => {
     setRestaurants((prev) => [newRestaurant, ...prev]);
-    try {
-      const existingCustom = JSON.parse(localStorage.getItem('mood_diner_custom_restaurants') || '[]');
-      localStorage.setItem('mood_diner_custom_restaurants', JSON.stringify([newRestaurant, ...existingCustom]));
-    } catch (e) {
-      console.error(e);
-    }
+    const existingCustom = loadCustomRestaurants(localStorage);
+    saveCustomRestaurants(localStorage, [newRestaurant, ...existingCustom]);
   };
 
   // Filter & Weather / Comment Vibe Ranking Logic
