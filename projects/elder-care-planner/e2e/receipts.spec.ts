@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner, openSection } from './support';
+import { gotoPlanner, openSection, waitForEncryptedSave } from './support';
 import { decodePlanFromShare } from '../src/lib/share';
 
 /**
@@ -49,8 +49,9 @@ test.describe('BDD Spec: Receipt photos attached to ledger entries', () => {
 
     const stored = () =>
       page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('1200');
-    const before = (await stored()).length;
+    await waitForEncryptedSave(page);
+    const beforeRaw = await stored();
+    const before = beforeRaw.length;
 
     // When a receipt is attached
     await receiptInput(page).setInputFiles({
@@ -59,7 +60,14 @@ test.describe('BDD Spec: Receipt photos attached to ledger entries', () => {
       buffer: TINY_PNG,
     });
     await expect(page.getByRole('link', { name: 'View receipt' })).toBeVisible();
-    await expect.poll(stored).toContain('receipt-');
+    // The envelope's random IV changes on every save regardless of content,
+    // so waiting for it to differ from the pre-attach snapshot (rather than
+    // for any particular substring) proves the save carrying the receipt id
+    // has actually landed.
+    await page.waitForFunction(
+      (prev) => window.localStorage.getItem('elder-care-planner:state:v1') !== prev,
+      beforeRaw,
+    );
 
     // Then the stored plan grew by an id, not by an image
     const after = (await stored()).length;
@@ -201,9 +209,7 @@ test.describe('BDD Spec: Receipt photos attached to ledger entries', () => {
     // after the receipt id has actually landed in storage rather than
     // immediately after attaching it — the same reason facilities.spec.ts
     // polls before its own quota-margin measurement.
-    const stored = () =>
-      page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('receiptPhotoId');
+    await waitForEncryptedSave(page);
 
     // When the shared family link is generated (spec §11.6) from the current plan
     await page.getByLabel('Passphrase').fill('correct horse battery staple');

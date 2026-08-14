@@ -34,6 +34,36 @@ test.describe('BDD Spec: The plan is still here on the next visit', () => {
     await expect(page.getByLabel('Which state?')).toHaveValue('CA');
   });
 
+  test('Given a distinctive figure typed into the planner, When the debounced autosave lands, Then the raw stored value is encrypted, not plaintext', async ({
+    page,
+  }) => {
+    // Given a family typing a real, distinctive income figure
+    await gotoPlanner(page);
+    await page.getByLabel('Their monthly income').fill('391742');
+    await expect(page.getByLabel('Their monthly income')).toHaveValue('391742');
+
+    // When the debounced autosave (300ms) has had time to land
+    await page.waitForFunction(() => {
+      const raw = window.localStorage.getItem('elder-care-planner:state:v1');
+      return raw !== null && raw.startsWith('encv1.');
+    });
+
+    // Then what is actually on disk is an encrypted envelope — never the
+    // figure itself, and never the field name that would help find it
+    const raw = await page.evaluate(() =>
+      window.localStorage.getItem('elder-care-planner:state:v1'),
+    );
+    expect(raw).not.toBeNull();
+    expect(raw).not.toContain('391742');
+    expect(raw).not.toContain('monthlyIncomeCents');
+
+    // And it still comes back correctly on the next visit — encryption did
+    // not cost the family their figures
+    await page.reload();
+    await gotoPlanner(page);
+    await expect(page.getByLabel('Their monthly income')).toHaveValue('391742');
+  });
+
   test('Given a ledger of logged payments, When the page is reloaded, Then the ledger and its reconciliation survive', async ({
     page,
   }) => {

@@ -2,6 +2,15 @@
 
 > **Status:** V1 IMPLEMENTED — `projects/elder-care-planner`, passing
 > `node scripts/test-app.mjs elder-care-planner`.
+> **Revision 13 — §4.1a: encryption at rest for local persistence, decision recorded before
+> implementation.** A security audit (2026-08-14, PR #214) found `savePlannerState` writing the
+> stored form state — income, savings, monthly care costs — to `localStorage` as plaintext JSON,
+> while this app's own shared-family-link export (§11.6) already encrypted the identical data. §4.1a
+> records the key-management decision this required per `.agents/AGENTS.md` §1/§11: a device-bound,
+> non-extractable AES-GCM-256 key over a `legal-financial-rag`-style passphrase gate, because a
+> mandatory passphrase would contradict this app's own "no account gate, at any point" promise (§3)
+> and risks permanently locking a family out of their plan if forgotten. No migration step — a
+> pre-existing plaintext payload still loads and is transparently re-encrypted on the next save.
 > **Revision 12 — §11 records one more user-supplied feature idea, adjudicated.** An NYT-style
 > interactive slider (§11.10 below) is admissible against §1.1/§1.2 on inspection, *provided* the §1.1
 > "no point estimates where a range is the honest answer" rule is satisfied at the UI layer rather
@@ -268,7 +277,11 @@ Rules this surface must hold to:
   finished so tests can wait for it rather than racing it.
 - **Writes are debounced, and flushed on `pagehide`/`visibilitychange`.** Debouncing alone loses
   the last few hundred milliseconds of typing when someone closes the tab or backgrounds a phone,
-  with no indication it happened.
+  with no indication it happened. Since §4.1a, the two flush events are handled differently:
+  `visibilitychange` -> `hidden` only backgrounds the tab, so the async encrypt-then-write
+  reliably completes; `pagehide` means the page may be torn down before a pending promise
+  resolves — measured to actually lose the write under a plain reload — so that flush writes
+  plaintext synchronously instead, upgraded to an encrypted envelope on the next successful save.
 - **A payload that fails the contract is reported, not silently discarded.** `absent` (a first
   visit) and `invalid` (corrupt, hand-edited, or written by a future version) are distinguished,
   and the second one puts a notice on screen. A family that typed thirty ledger entries is told
@@ -279,6 +292,60 @@ Rules this surface must hold to:
   device" control clears every key the app owns.
 - **The version lives in the key** (`elder-care-planner:state:v1`), so a future schema reads a
   different key and an old payload is ignored rather than half-migrated.
+
+### 4.1a Encryption at rest, and why the key is device-bound rather than a passphrase
+
+**Decision, recorded before implementation** (per `.agents/AGENTS.md` §1 — no vibe coding — and the
+work order this closes, `tasks/elder-care-planner-unencrypted-plan-storage.md`): the stored
+`PlannerState` (§4.1) is encrypted with AES-GCM-256 under a key generated once per device and held
+in IndexedDB (`src/lib/planEncryption.ts`), non-extractable, never exported as raw bytes. There is
+**no passphrase**.
+
+A full security audit (2026-08-14, PR #214) found `savePlannerState` writing income, savings, and
+monthly care costs to `localStorage` as plaintext JSON, while this app's own shared-family-link
+export (§11.6) already encrypts the identical data with AES-GCM + PBKDF2 before it ever leaves the
+device. `.agents/AGENTS.md` §11 named the gap and required a recorded key-management decision
+before any fix, because the two options change the app's character differently:
+
+| | Device-bound key (chosen) | Passphrase gate (`legal-financial-rag`'s model) |
+|---|---|---|
+| Friction | None — invisible to the family | A lock screen every session, a passphrase to not lose |
+| Protects against | Another app/process reading raw `localStorage`, or a stray backup of it | The same, **and** someone with the unlocked browser but not the passphrase |
+| Cost of forgetting it | N/A — nothing to forget | The plan becomes permanently unreadable (same as `legal-financial-rag`'s vault) |
+
+§3 and §11.1 already reject an account or a sync server on the same "no friction, no account gate,
+under 60 seconds" grounds this decision extends: "**No account gate, no email wall, no onboarding
+carousel, at any point**" (§3) describes a promise a mandatory passphrase would break in spirit even
+though it is not literally an account. `legal-financial-rag`'s vault is a different product with a
+different audience — someone who has opted into a security-first tool for the exact purpose of
+gating access. This app's audience is a family, often mid-crisis, who the whole spec (§1.1, §3) is
+built to get in front of real numbers in under a minute; a forgotten passphrase permanently locking
+out a parent's care plan is a worse failure mode for this product than the plaintext gap it fixes.
+
+**What this does and does not protect against**, stated as plainly as the privacy note states
+everything else: it protects the figures from anything that reads `localStorage` directly without
+also being able to run script on this origin — another local app inspecting browser profile files,
+a naive backup or sync tool that copies `localStorage` verbatim, or a `grep` across a disk image.
+It does **not** protect against someone with the unlocked browser itself, since the whole point of a
+device-bound key is that this origin's own script can always reach it with no prompt — the existing
+"erase before handing back a shared computer" guidance in the privacy note remains the operative
+protection for that case, unchanged by this decision.
+
+Nor is the encrypted state guaranteed to be the *only* thing ever on disk at every instant: the
+`pagehide` flush (below) writes plaintext synchronously rather than risk losing the write entirely,
+so a brief plaintext copy of the state as of the moment a tab was actually closed or navigated away
+from can persist until the next successful save. This is not a new exposure this decision
+introduces — it is exactly what this key held, unconditionally, before encryption existed at all —
+and it closes itself automatically on the very next save.
+
+**Format and migration.** The stored value is either a legacy plaintext JSON payload (written before
+this decision, or written when IndexedDB is unavailable — private-mode storage restrictions, or a
+server render) or an `encv1.<iv>.<ciphertext>` envelope. `loadPlannerStateEncrypted` distinguishes
+them by prefix, so an existing family's already-stored plan loads exactly as before and is
+transparently re-encrypted on the very next autosave — no explicit migration step, no version bump
+to the storage key. If IndexedDB is unavailable, `savePlannerStateEncrypted` falls back to writing
+plaintext rather than silently failing to persist at all: a working, unencrypted autosave is closer
+to this app's core promise than a broken one.
 
 ### Module layout
 ```
@@ -298,7 +365,8 @@ src/
     engine/opportunity.ts   # caregiver work reduction -> lifetime cost
     engine/tax.ts           # medical-expense deduction estimate
     explain/                # engine output -> checkable derivations (§6.10)
-    storage.ts              # localStorage boundary, Zod-validated
+    storage.ts              # localStorage boundary, Zod-validated, AES-GCM-encrypted (§4.1a)
+    planEncryption.ts        # device-bound AES-GCM key (IndexedDB) + encrypt/decrypt primitives (§4.1a)
     share.ts                # shared family link: encrypt/decrypt a Plan into a URL fragment (§11.6)
     receipts.ts             # receipt photos attached to ledger entries: IndexedDB store (§11.14)
     careCoverage.ts          # weekly coverage-grid arithmetic feeding providesUnpaidHoursPerWeek (§11.15)

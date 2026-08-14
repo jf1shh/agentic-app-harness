@@ -15,11 +15,14 @@ import {
   clearPlan,
   loadPlannerState,
   savePlannerState,
+  loadPlannerStateEncrypted,
+  savePlannerStateEncrypted,
   clearPlannerState,
   STORAGE_KEY,
   PLANNER_STATE_KEY,
   type StorageLike,
 } from './storage';
+import { ENCRYPTED_PREFIX, type DeviceKeyProvider } from './planEncryption';
 import { DEFAULT_ASSUMPTIONS, PlanSchema, type Plan, type PlannerState } from './schemas';
 import { INITIAL_STATE, buildPlan } from './plannerState';
 
@@ -250,5 +253,154 @@ describe('Given the form state and the domain contract are separate schemas', ()
     // Then the two schemas have not drifted apart
     expect(built).not.toBeNull();
     expect(PlanSchema.safeParse(built).success).toBe(true);
+  });
+});
+
+// Encryption at rest (spec §4.1a, .agents/AGENTS.md §11). The real device key
+// is IndexedDB-backed and unavailable under Vitest's `environment: 'node'`
+// (planEncryption.test.ts covers that "unsupported" path) — these tests
+// inject a key generated directly in the test process via the
+// `DeviceKeyProvider` parameter, so the full envelope-format/fallback logic
+// in storage.ts itself gets real round-trip coverage, not just the
+// plaintext-fallback branch.
+async function testKeyProvider(): Promise<DeviceKeyProvider> {
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, [
+    'encrypt',
+    'decrypt',
+  ]);
+  return () => Promise.resolve(key);
+}
+
+describe('Given a device that can hold an encryption key', () => {
+  it('When state is saved and reloaded, Then every figure they typed comes back unchanged', async () => {
+    // Given a plan with a distinctive figure and an available device key
+    const storage = memoryStorage();
+    const getKey = await testKeyProvider();
+    const typed: PlannerState = { ...INITIAL_STATE, monthlyIncomeCents: 312_500, stateCode: 'CA' };
+
+    // When it is saved and read back through the encrypted path
+    await savePlannerStateEncrypted(storage, typed, getKey);
+    const result = await loadPlannerStateEncrypted(storage, getKey);
+
+    // Then nothing was lost on the way through
+    expect(result.status).toBe('restored');
+    expect(result.status === 'restored' && result.state).toEqual(typed);
+  });
+
+  it('When state is saved, Then the raw stored value carries the encrypted envelope prefix and never the plaintext figure', async () => {
+    // Given a distinctive income figure
+    const storage = memoryStorage();
+    const getKey = await testKeyProvider();
+
+    // When it is saved
+    await savePlannerStateEncrypted(storage, { ...INITIAL_STATE, monthlyIncomeCents: 312_500 }, getKey);
+
+    // Then what actually landed in storage is an envelope, not JSON a reader could grep
+    const raw = storage.getItem(PLANNER_STATE_KEY)!;
+    expect(raw.startsWith(ENCRYPTED_PREFIX)).toBe(true);
+    expect(raw).not.toContain('312500');
+    expect(raw).not.toContain('monthlyIncomeCents');
+  });
+
+  it('Given an envelope whose ciphertext was tampered with, When it is loaded, Then it is reported invalid rather than decrypted wrong', async () => {
+    // Given a saved, encrypted state
+    const storage = memoryStorage();
+    const getKey = await testKeyProvider();
+    await savePlannerStateEncrypted(storage, INITIAL_STATE, getKey);
+    const raw = storage.getItem(PLANNER_STATE_KEY)!;
+
+    // When a byte in the middle of the ciphertext segment is flipped
+    const [, ivB64, cipherB64] = raw.split('.');
+    const cipherBytes = Uint8Array.from(
+      atob(cipherB64.replace(/-/g, '+').replace(/_/g, '/')),
+      (c) => c.charCodeAt(0),
+    );
+    cipherBytes[Math.floor(cipherBytes.length / 2)] ^= 0xff;
+    const tamperedB64 = btoa(String.fromCharCode(...cipherBytes))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    storage.setItem(PLANNER_STATE_KEY, `${ENCRYPTED_PREFIX}${ivB64}.${tamperedB64}`);
+
+    // Then AES-GCM's own authentication catches it — reported, not silently wrong
+    const result = await loadPlannerStateEncrypted(storage, getKey);
+    expect(result.status).toBe('invalid');
+  });
+
+  it('Given a plan encrypted under one device key, When it is loaded with a different key, Then it is reported invalid', async () => {
+    // Given a plan saved under one key
+    const storage = memoryStorage();
+    const originalKey = await testKeyProvider();
+    await savePlannerStateEncrypted(storage, INITIAL_STATE, originalKey);
+
+    // When it is read back with a key this device never generated
+    const differentKey = await testKeyProvider();
+    const result = await loadPlannerStateEncrypted(storage, differentKey);
+
+    // Then it fails cleanly, the same as any other unreadable payload
+    expect(result.status).toBe('invalid');
+  });
+
+  it('Given an already-encrypted payload, When the device key is no longer available at load time, Then it is reported invalid rather than treated as a first visit', async () => {
+    // Given a plan encrypted while a device key existed
+    const storage = memoryStorage();
+    const keyAtSaveTime = await testKeyProvider();
+    await savePlannerStateEncrypted(storage, INITIAL_STATE, keyAtSaveTime);
+
+    // When it is read back after the key became unavailable (e.g. IndexedDB
+    // was cleared or disabled between visits) — the envelope is still there,
+    // just unreadable
+    const noKeyAnymore: DeviceKeyProvider = () => Promise.resolve(null);
+    const result = await loadPlannerStateEncrypted(storage, noKeyAnymore);
+
+    // Then this is reported the same as any other unreadable payload, not
+    // mistaken for a first visit ('absent') — the family typed real numbers
+    // and deserves to be told, not silently started over.
+    expect(result.status).toBe('invalid');
+  });
+});
+
+describe('Given a device that cannot hold an encryption key (no IndexedDB)', () => {
+  const noKey: DeviceKeyProvider = () => Promise.resolve(null);
+
+  it('When state is saved, Then it still persists, as plaintext, rather than silently failing to save at all', async () => {
+    // Given no device key available
+    const storage = memoryStorage();
+
+    // When state is saved anyway
+    await savePlannerStateEncrypted(storage, { ...INITIAL_STATE, monthlyIncomeCents: 312_500 }, noKey);
+
+    // Then the family's autosave still works — a working plaintext write beats a broken one
+    const raw = storage.getItem(PLANNER_STATE_KEY)!;
+    expect(raw.startsWith(ENCRYPTED_PREFIX)).toBe(false);
+    const result = await loadPlannerStateEncrypted(storage, noKey);
+    expect(result.status === 'restored' && result.state.monthlyIncomeCents).toBe(312_500);
+  });
+});
+
+describe('Given a plan saved before this app encrypted at rest', () => {
+  it('When it is loaded through the encrypted path, Then the legacy plaintext payload still restores', async () => {
+    // Given a plaintext payload written by an older version of this app
+    const storage = memoryStorage();
+    savePlannerState(storage, { ...INITIAL_STATE, monthlyIncomeCents: 275_000 });
+    const getKey = await testKeyProvider();
+
+    // When it is restored through the new encrypted-aware loader
+    const result = await loadPlannerStateEncrypted(storage, getKey);
+
+    // Then nothing about the family's plan was lost by shipping encryption
+    expect(result.status).toBe('restored');
+    expect(result.status === 'restored' && result.state.monthlyIncomeCents).toBe(275_000);
+  });
+
+  it('When it is saved again, Then it is transparently upgraded to an encrypted envelope', async () => {
+    // Given a legacy plaintext payload and a device key now available
+    const storage = memoryStorage();
+    savePlannerState(storage, INITIAL_STATE);
+    const getKey = await testKeyProvider();
+
+    // When the next autosave fires
+    await savePlannerStateEncrypted(storage, INITIAL_STATE, getKey);
+
+    // Then the stored value is now the encrypted envelope, with no explicit migration step
+    expect(storage.getItem(PLANNER_STATE_KEY)!.startsWith(ENCRYPTED_PREFIX)).toBe(true);
   });
 });
