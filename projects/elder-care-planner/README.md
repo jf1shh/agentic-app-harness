@@ -225,7 +225,8 @@ src/
     data/{costOfCare,benefits,expenseCategories,feeStructures,questionsToAsk}.ts
     plannerState.ts                  # form-state → Plan projection
     recommendation.ts                # neutral-voice summary copy
-    storage.ts                       # localStorage boundary, Zod-validated
+    storage.ts                       # localStorage boundary, Zod-validated, AES-GCM-encrypted
+    planEncryption.ts                # device-bound AES-GCM key (IndexedDB) + encrypt/decrypt (§4.1a)
     photos.ts                        # IndexedDB boundary for tour photos — kept
                                      # apart from the plan so a photo quota
                                      # failure can never fail a plan write
@@ -243,17 +244,23 @@ Next.js App Router, `output: 'export'`, vanilla CSS. **No charting library** —
 
 ## Persistence
 
-`localStorage`, validated against the contract-first Zod schemas on every read.
+`localStorage`, validated against the contract-first Zod schemas on every read, **encrypted at
+rest** (spec §4.1a) with AES-GCM-256 under a device-bound key generated once and held in IndexedDB
+(`src/lib/planEncryption.ts`) — non-extractable, no passphrase, no friction. A pre-existing
+plaintext payload (written before this feature, or while IndexedDB is unavailable) still loads
+and is transparently upgraded to an encrypted envelope on the next save; no migration step.
 
-Three intentional decisions:
+Four intentional decisions:
 
 - **The stored artifact is the form state, not a `Plan`.** `buildPlan()` drops `monthsElapsed`, `compareHoursPerWeek`, and (for hourly care) the housing carry cost, so persisting it would silently rewrite the ledger reconciliation on reload.
-- **Writes are debounced and flushed on `pagehide`/`visibilitychange`.** A pure debounce loses the last edit when the tab closes or a phone is backgrounded.
-- **A payload that fails the contract is reported, not silently discarded.** `absent` (first visit) and `invalid` (corrupt / hand-edited / schema mismatch) are distinguished and the second puts a notice on screen.
+- **The key is device-bound, not a passphrase.** A `legal-financial-rag`-style passphrase gate would protect more (someone with the unlocked browser but not the passphrase) but contradicts this app's own "no account gate, at any point" promise and risks a forgotten passphrase permanently locking out a parent's care plan — worse than the plaintext gap it fixes. Full rationale in spec §4.1a.
+- **Writes are debounced and flushed on `pagehide`/`visibilitychange` — asymmetrically.** A pure debounce loses the last edit when the tab closes or a phone is backgrounded. `visibilitychange` -> `hidden` keeps the page alive, so it flushes with a full async encrypt; `pagehide` may tear the page down before a pending promise resolves — measured to actually lose the write under a plain reload — so it flushes plaintext synchronously instead, upgraded on the next save.
+- **A payload that fails the contract is reported, not silently discarded.** `absent` (first visit) and `invalid` (corrupt / hand-edited / schema mismatch / undecryptable) are distinguished and the second puts a notice on screen.
 
 A confirmed **"Forget everything on this device"** control clears every key the app owns **and
-empties the IndexedDB photo store** — a separate store needs a separate erase, or the promise is
-broken on exactly the shared computer it was made for. Nothing else leaves the browser.
+empties the IndexedDB photo store and the device encryption key** — a separate store needs a
+separate erase, or the promise is broken on exactly the shared computer it was made for. Nothing
+else leaves the browser.
 
 Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 

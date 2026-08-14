@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner, openSection } from './support';
+import { gotoPlanner, openSection, waitForEncryptedSave } from './support';
 
 /**
  * The facility shortlist (spec §11.2).
@@ -273,8 +273,9 @@ test.describe('Given photographs taken on a tour', () => {
     // the tour has actually landed in storage rather than after it was typed.
     const stored = () =>
       page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('Oakmont');
-    const before = (await stored()).length;
+    await waitForEncryptedSave(page);
+    const beforeRaw = await stored();
+    const before = beforeRaw.length;
 
     await page
       .getByTestId('photos-f1')
@@ -283,7 +284,14 @@ test.describe('Given photographs taken on a tour', () => {
 
     const photo = page.getByTestId('photos-f1').locator('img');
     await expect(photo).toHaveCount(1);
-    await expect.poll(stored).toContain('photo-');
+    // The envelope's random IV changes on every save regardless of content,
+    // so waiting for it to differ from the pre-attach snapshot (rather than
+    // for any particular substring) proves the save carrying the new photo
+    // id has actually landed.
+    await page.waitForFunction(
+      (prev) => window.localStorage.getItem('elder-care-planner:state:v1') !== prev,
+      beforeRaw,
+    );
 
     // Then the stored plan grew by an id, not by an image. A base64 photo in
     // localStorage is what takes the whole plan down with a quota error, so

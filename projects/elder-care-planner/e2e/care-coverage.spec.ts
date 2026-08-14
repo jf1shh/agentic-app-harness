@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner, openSection } from './support';
+import { gotoPlanner, openSection, waitForEncryptedSave, readStoredPlannerState } from './support';
 import { decodePlanFromShare } from '../src/lib/share';
 
 /**
@@ -51,11 +51,10 @@ test.describe('BDD Spec: The weekly coverage pattern makes unpaid hours checkabl
 
     // The visible control can only ever show one value, so the real risk is
     // an underlying array with two entries for the same cell — checked by
-    // parsing the stored state directly rather than trusting the <select>.
-    const stored = () =>
-      page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('evening');
-    const state = JSON.parse(await stored());
+    // decrypting and parsing the stored state directly rather than trusting
+    // the <select>.
+    await waitForEncryptedSave(page);
+    const state = await readStoredPlannerState(page);
     const matches = (state.careCoverage as { day: string; block: string }[]).filter(
       (s) => s.day === 'tue' && s.block === 'evening',
     );
@@ -98,9 +97,7 @@ test.describe('BDD Spec: The weekly coverage pattern makes unpaid hours checkabl
     await openSection(page, 'split');
     await page.getByTestId('coverage-thu-overnight').selectOption({ label: 'Family member 2' });
 
-    const stored = () =>
-      page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('overnight');
+    await waitForEncryptedSave(page);
 
     await page.reload();
     await page.waitForFunction(() => document.documentElement.dataset.planready === 'true');
@@ -117,9 +114,7 @@ test.describe('BDD Spec: The weekly coverage pattern makes unpaid hours checkabl
     await openSection(page, 'split');
     await page.getByTestId('coverage-fri-evening').selectOption({ label: 'Family member 1' });
 
-    const stored = () =>
-      page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('careCoverage');
+    await waitForEncryptedSave(page);
 
     // When the shared family link is generated (spec §11.6) from the current plan
     await page.getByLabel('Passphrase').fill('correct horse battery staple');

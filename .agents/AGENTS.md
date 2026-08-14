@@ -994,21 +994,38 @@ persist sensitive data to `localStorage`/IndexedDB on the user's own device.
   never to send off-device.
 
 - **Sensitive data written to persistent client storage needs the same at-rest treatment the app
-  already gives that data on its other paths — and right now, one app doesn't.**
-  `legal-financial-rag` encrypts its vault at rest (PBKDF2 + a tamper-evident hash chain, see §6's
-  Node WebCrypto lesson). `elder-care-planner`'s own share/export path
-  (`src/lib/share.ts`) encrypts a plan with AES-GCM + PBKDF2 before it ever leaves the device — but
-  `savePlan` in `src/lib/storage.ts` writes that same plan (income, savings, monthly care costs) to
-  `localStorage` as plain `JSON.stringify(plan)`, unencrypted, on every autosave. The data has an
-  encrypted-at-rest treatment defined in the same app; the far more common code path (routine local
-  persistence, not the occasional export) simply doesn't use it. This is a real, open gap, not
-  something this section fixes by asserting a rule — encrypting local persistence needs a key-
-  management decision (a device-bound key with no user friction, versus a passphrase gate like
-  `legal-financial-rag`'s) that changes the app's UX and belongs in a spec update and a proposed
-  work order, not a silent implementation choice. Not tagged as a guardrail: "does this write path
-  handle data as sensitively as another path in the same app handles the same data" is exactly the
-  kind of cross-file, judgment-dependent property no regex over a line can see — the same shape as
-  several lessons in §6.
+  already gives that data on its other paths.** `legal-financial-rag` encrypts its vault at rest
+  (PBKDF2 + a tamper-evident hash chain, see §6's Node WebCrypto lesson).
+  `elder-care-planner`'s own share/export path (`src/lib/share.ts`) has always encrypted a plan
+  with AES-GCM + PBKDF2 before it leaves the device — but until a security audit on 2026-08-14
+  (PR #214) found it, `savePlan`/`savePlannerState` in `src/lib/storage.ts` wrote that same data
+  (income, savings, monthly care costs) to `localStorage` as plain `JSON.stringify(...)`, on every
+  autosave. The data had an encrypted-at-rest treatment defined in the same app; the far more
+  common code path (routine local persistence, not the occasional export) simply didn't use it.
+
+  **Resolved** (work order `tasks/elder-care-planner-unencrypted-plan-storage.md`, spec §4.1a): the
+  key-management decision this bullet originally deferred — a device-bound key with no user
+  friction, versus a passphrase gate like `legal-financial-rag`'s — was made and recorded in the
+  spec *before* implementing, per §1. A device-bound, non-extractable AES-GCM-256 key
+  (`src/lib/planEncryption.ts`, held in IndexedDB) was chosen over a passphrase specifically
+  because this app's own spec already rejects any account gate or mandatory friction step "at any
+  point," and a forgotten passphrase permanently locking a family out of a parent's care plan is a
+  worse failure mode than the plaintext gap it fixes. One edge stayed open on purpose rather than
+  fixed silently: the `pagehide` flush (tab close / navigation) cannot rely on an async
+  `crypto.subtle.encrypt` completing before the page is torn down — measured to actually lose the
+  write under a plain browser reload, not a theoretical concern — so that one flush path writes
+  plaintext synchronously, same as it always did, and the next successful save (the next visit, or
+  an earlier `visibilitychange`) transparently re-encrypts it. Six existing E2E specs
+  (`care-coverage`, `facilities`, `home-sale`, `receipts`) asserted on the raw `localStorage` value
+  by plaintext substring purely as a "did the debounced write land yet" synchronization point, and
+  had to be rewritten against the new envelope format (`e2e/support.ts`'s `waitForEncryptedSave`);
+  one of them genuinely needed to inspect the underlying data shape (a duplicate-array check) and
+  now decrypts in-page via `readStoredPlannerState`, since the non-extractable device key never
+  leaves the browser for the Node-side test process to read.
+
+  Not tagged as a guardrail: "does this write path handle data as sensitively as another path in
+  the same app handles the same data" is exactly the kind of cross-file, judgment-dependent
+  property no regex over a line can see — the same shape as several lessons in §6.
 
 ## 12. Client-Side Observability
 

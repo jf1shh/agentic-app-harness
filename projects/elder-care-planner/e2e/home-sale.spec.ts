@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { gotoPlanner, openSection } from './support';
+import { gotoPlanner, openSection, waitForEncryptedSave } from './support';
 
 /**
  * Home sale proceeds as a timed liquidity event (spec §11.16).
@@ -83,9 +83,7 @@ test.describe('BDD Spec: A home sale extends the runway by the amount and timing
     await page.getByLabel('Month the sale is expected to close').fill('2');
     await expect(page.getByTestId('depletion-months')).toHaveText('6 months');
 
-    const stored = () =>
-      page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await expect.poll(stored).toContain('homeSaleProceedsCents');
+    await waitForEncryptedSave(page);
 
     await page.reload();
     await page.waitForFunction(() => document.documentElement.dataset.planready === 'true');

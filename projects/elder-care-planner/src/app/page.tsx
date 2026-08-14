@@ -29,9 +29,11 @@ import { summariseLedger } from '@/lib/engine/ledger';
 import {
   browserStorage,
   clearPlannerState,
-  loadPlannerState,
+  loadPlannerStateEncrypted,
   savePlannerState,
+  savePlannerStateEncrypted,
 } from '@/lib/storage';
+import { clearDeviceKey } from '@/lib/planEncryption';
 import { buildExplanations } from '@/lib/explain/build';
 import { CARE_TYPE_LABELS, SELECTABLE_CARE_TYPES } from '@/lib/data/costOfCare';
 import { ILComparisonPanel } from '@/components/ILComparisonPanel';
@@ -121,18 +123,21 @@ export default function Home() {
   // unavoidable rather than careless: the page is a static export, so the stored
   // plan cannot be read while rendering without producing server markup that
   // disagrees with the first client render. One extra render on mount is the
-  // price of persistence that survives hydration.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  // price of persistence that survives hydration. (The state now sets from
+  // inside a nested async closure rather than the effect body directly, since
+  // the restore is async — the lint rule's static analysis no longer flags
+  // this shape, so the disable comment that used to sit here is gone too.)
   useEffect(() => {
-    const storage = browserStorage();
-    if (storage) {
-      const result = loadPlannerState(storage);
-      if (result.status === 'restored') setState(result.state);
-      if (result.status === 'invalid') setRestoreFailed(true);
-    }
-    setRestored(true);
+    void (async () => {
+      const storage = browserStorage();
+      if (storage) {
+        const result = await loadPlannerStateEncrypted(storage);
+        if (result.status === 'restored') setState(result.state);
+        if (result.status === 'invalid') setRestoreFailed(true);
+      }
+      setRestored(true);
+    })();
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // A shared link opens straight to the sender's snapshot rather than this
   // device's own plan. Checked on mount for the same SSR-safety reason the
@@ -157,7 +162,7 @@ export default function Home() {
     if (!restored) return;
     const storage = browserStorage();
     if (!storage) return;
-    const timer = setTimeout(() => savePlannerState(storage, state), 300);
+    const timer = setTimeout(() => void savePlannerStateEncrypted(storage, state), 300);
     return () => clearTimeout(timer);
   }, [state, restored]);
 
@@ -168,6 +173,23 @@ export default function Home() {
   // and that edit would be lost with no indication it had been. `pagehide`
   // covers navigation and closing; `visibilitychange` covers a phone being
   // backgrounded, where `pagehide` is not dependable.
+  //
+  // The two events get different treatment, and that split is deliberate,
+  // not an oversight: encrypting is async (`crypto.subtle.encrypt`), and
+  // `visibilitychange` -> `hidden` only backgrounds the tab — the page and
+  // its script keep running, so an async encrypt-then-write reliably
+  // completes. `pagehide` means navigation or closing is already underway,
+  // and the page can be torn down before a pending promise resolves. This
+  // was not a theoretical concern: an async flush on `pagehide` was measured
+  // to lose the just-typed value under a plain `page.reload()` in this app's
+  // own E2E suite, even with the device key already cached from the mount-
+  // time restore. So `pagehide` writes plaintext synchronously instead —
+  // exactly what this key persisted before encryption existed, so this is
+  // not a new risk, only an unclosed edge of this feature — and the very
+  // next successful save (the next visit, or an earlier `visibilitychange`
+  // this same session) transparently re-encrypts it, the same upgrade path
+  // `savePlannerStateEncrypted` already uses for a plan saved before this
+  // feature existed at all (spec §4.1a).
   const latest = useRef(state);
   const canSave = useRef(false);
   useEffect(() => {
@@ -176,18 +198,23 @@ export default function Home() {
   }, [state, restored]);
 
   useEffect(() => {
-    const flush = () => {
+    const flushSync = () => {
       if (!canSave.current) return;
       const storage = browserStorage();
       if (storage) savePlannerState(storage, latest.current);
     };
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') flush();
+    const flushAsync = () => {
+      if (!canSave.current) return;
+      const storage = browserStorage();
+      if (storage) void savePlannerStateEncrypted(storage, latest.current);
     };
-    window.addEventListener('pagehide', flush);
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushAsync();
+    };
+    window.addEventListener('pagehide', flushSync);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
-      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('pagehide', flushSync);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
@@ -216,12 +243,13 @@ export default function Home() {
   const eraseEverything = () => {
     const storage = browserStorage();
     if (storage) clearPlannerState(storage);
-    // Tour photos and receipt photos both live in IndexedDB rather than
-    // localStorage, so clearing the plan does not touch either. "Forget
-    // everything on this device" has to mean everything, or the control is a
-    // lie on a shared computer.
+    // Tour photos, receipt photos, and the device encryption key all live in
+    // IndexedDB rather than localStorage, so clearing the plan does not touch
+    // any of them on its own. "Forget everything on this device" has to mean
+    // everything, or the control is a lie on a shared computer.
     void clearPhotos();
     void clearReceipts();
+    void clearDeviceKey();
     setState(INITIAL_STATE);
     setRestoreFailed(false);
     setConfirmingErase(false);
@@ -653,10 +681,12 @@ export default function Home() {
             account numbers.
           </p>
           <p>
-            <strong>These figures are saved in this browser</strong> so the plan is still here on
-            the next visit. That is the same device and the same browser only — nothing is
-            synced, and nothing is uploaded. On a shared or borrowed computer, erase it before
-            handing it back.
+            <strong>These figures are saved in this browser</strong>, encrypted with a key
+            generated on this device that never leaves it, so the plan is still here on the next
+            visit. That is the same device and the same browser only — nothing is synced, and
+            nothing is uploaded. Encryption protects the saved figures from being read directly
+            off the device; it does not replace erasing the plan before handing back a shared or
+            borrowed computer, since this browser can still open it.
           </p>
           {confirmingErase ? (
             <p>

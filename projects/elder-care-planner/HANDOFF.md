@@ -3,18 +3,44 @@
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
 facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), the
 §11.8–§11.13 batch, the shared family link (spec §11.6), receipt photo capture (spec §11.14), the
-weekly care-coverage grid (spec §11.15), and home-sale proceeds as a timed liquidity event (spec
-§11.16, home-sale half only — reverse-mortgage loan modeling stays declined) — all described
-below. `node scripts/test-app.mjs elder-care-planner` passes all checks (security advisory-only,
-lint, type-check, 493 Vitest, 141 Playwright + axe).
+weekly care-coverage grid (spec §11.15), home-sale proceeds as a timed liquidity event (spec
+§11.16, home-sale half only — reverse-mortgage loan modeling stays declined), and encryption at
+rest for local persistence (spec §4.1a) — all described below. `node scripts/test-app.mjs
+elder-care-planner` passes all checks (security advisory-only, lint, type-check, 551 Vitest, 142
+Playwright + axe).
 
-**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 10,
-marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence). Read §2 (research) before changing scope; the feature set is derived from it,
+**Spec:** [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — revision 13,
+marked V1 IMPLEMENTED (revision 6 added the ledger UI, revision 7 local persistence, revision 13
+encryption at rest). Read §2 (research) before changing scope; the feature set is derived from it,
 not from intuition.
 
 ---
 
 ## What was built
+
+**Encryption at rest for local persistence (spec §4.1a, most recent).** A full security audit
+(2026-08-14, PR #214) found `savePlannerState` writing income, savings, and monthly care costs to
+`localStorage` as plaintext JSON, while this app's own shared-family-link export (§11.6) already
+encrypted the identical data. Closed via a hand-authored work order
+(`tasks/elder-care-planner-unencrypted-plan-storage.md`) that required a key-management decision
+recorded in the spec *before* implementing: a device-bound, non-extractable AES-GCM-256 key
+(`src/lib/planEncryption.ts`, IndexedDB-held) was chosen over a `legal-financial-rag`-style
+passphrase gate, because a mandatory passphrase contradicts this app's own "no account gate, at
+any point" promise and risks permanently locking a family out of their plan if forgotten. A
+pre-existing plaintext payload still loads and is transparently re-encrypted on the next save — no
+migration step. One real regression surfaced during implementation and is worth knowing about
+before touching this code again: an async encrypt-then-write on `pagehide` was measured to
+actually lose the just-typed value under a plain browser reload (the page can be torn down before
+a pending promise resolves) — fixed by writing plaintext synchronously on `pagehide` specifically
+(exactly what this key always did before encryption existed, so not a new risk) while
+`visibilitychange`→`hidden` (which doesn't destroy the page) does the full async encrypt. See
+`app/page.tsx`'s flush-effect comment and spec §4.1a for the full reasoning. Six existing E2E specs
+that read raw `localStorage` by plaintext substring purely to synchronize on "has the debounced
+write landed yet" needed rewriting against the new envelope format (`e2e/support.ts`'s
+`waitForEncryptedSave`); one that genuinely needed to inspect the underlying array (a
+duplicate-entry check in `care-coverage.spec.ts`) now decrypts in-page via
+`readStoredPlannerState`, since the non-extractable device key never leaves the browser for the
+Node-side test process to read.
 
 **Home-sale proceeds (spec §11.16, most recent).** §10.3 named one deferred item —
 "reverse-mortgage and home-sale modeling" — that was actually two features of very different
