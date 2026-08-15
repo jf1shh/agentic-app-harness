@@ -674,10 +674,13 @@ As an AI agent operating within this repository, you must strictly adhere to the
   changes a `[guardrail: …]` tag count), run `cd projects/portfolio-hub && npm run
   generate:loop-stats` and re-run its suite in the same commit. The failure is already guarded —
   portfolio-hub's own unit test recomputes the counts against the committed fixture — so this is a
-  pre-push discipline lesson, not a missing test. Not tagged as a guardrail: "did this diff change
-  the count" is a base-vs-HEAD property (diff-shaped), the same reason enum blast radius lives in
-  `scripts/check-enum-blast-radius.mjs` as a workflow step rather than a `harness-status.mjs`
-  guardrail.
+  pre-push discipline lesson, not a missing test. The failure is now guarded twice, so it cannot
+  resurface as a red round-trip one commit late: portfolio-hub's own unit test recomputes the
+  counts against the committed fixture, and `scripts/check-loop-stats.mjs` recomputes them again at
+  the repo gate, failing fast with the `npm run generate:loop-stats` hint. Not a
+  `harness-status.mjs` guardrail: "did these counts drift" is a cross-file recompute, not a
+  line-level pattern — the same reason it lives as a workflow step (like
+  `check-enum-blast-radius.mjs` and `check-doc-claims.mjs`) rather than in `GUARDRAILS`.
 - **A GPU-less Container Cannot Create a WebGL Context in the Pinned Headless Shell — Degrade
   Gracefully, and Test the No-WebGL Path**: In the GPU-less sandbox/CI containers this repo runs
   in, Playwright's bundled headless shell cannot create a WebGL context
