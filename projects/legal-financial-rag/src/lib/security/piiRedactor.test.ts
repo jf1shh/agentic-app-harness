@@ -151,10 +151,7 @@ describe('detectAndRedactPII — bank/routing duplicates and IBAN', () => {
 
   // The bank regex alternation is `Routing|Account|IBAN` — every existing case
   // used "Account" or "Routing", so the IBAN branch of the alternation had no
-  // case of its own. Note: the regex caps the captured value at 18 characters
-  // ({8,18}), so a real full-length IBAN (15-34 chars per ISO 13616) is too
-  // long to match at all — a separate, genuine gap this test doesn't paper
-  // over by using a value short enough to fit the existing cap.
+  // case of its own.
   it('Given a bank code labelled with the word "IBAN", When PII redaction runs, Then it is detected and masked', () => {
     const rawText = 'IBAN: NWBK60161331 for the wire transfer.';
     const result = detectAndRedactPII(rawText);
@@ -162,6 +159,31 @@ describe('detectAndRedactPII — bank/routing duplicates and IBAN', () => {
     const bankTag = result.tags.find((t) => t.type === 'BANK_ACCOUNT');
     expect(bankTag).toBeDefined();
     expect(result.redactedText).not.toContain('NWBK60161331');
+  });
+
+  // Real IBANs run 15-34 characters (ISO 13616). The bank regex caps its
+  // captured value at 18 ({8,18}), so a full-length IBAN is too long to match
+  // at all — the whole number, tail included, is left un-redacted. For a
+  // security product whose pitch is automated PII redaction, leaking the tail
+  // of an IBAN is the worst kind of failure, so these lock the full range.
+  it('Given a full-length 22-character IBAN, When PII redaction runs, Then the entire IBAN is detected and masked with no tail leaked', () => {
+    const rawText = 'International transfer to IBAN: DE89370400440532013000 for settlement.';
+    const result = detectAndRedactPII(rawText);
+
+    const bankTag = result.tags.find((t) => t.type === 'BANK_ACCOUNT');
+    expect(bankTag).toBeDefined();
+    expect(bankTag?.originalText).toContain('DE89370400440532013000');
+    expect(result.redactedText).not.toContain('DE89370400440532013000');
+  });
+
+  it('Given a maximum-length 34-character IBAN, When PII redaction runs, Then the entire IBAN is detected and masked', () => {
+    const rawText = 'IBAN AA12345678901234567890123456789012 (maximum ISO 13616 length).';
+    const result = detectAndRedactPII(rawText);
+
+    const bankTag = result.tags.find((t) => t.type === 'BANK_ACCOUNT');
+    expect(bankTag).toBeDefined();
+    expect(bankTag?.originalText).toContain('AA12345678901234567890123456789012');
+    expect(result.redactedText).not.toContain('AA12345678901234567890123456789012');
   });
 });
 
