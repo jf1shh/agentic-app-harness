@@ -41,7 +41,22 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install workspace dependencies
-        run: npm install
+        shell: bash
+        run: |
+          # Six parallel legs each run a full workspace install; the registry
+          # flakes transiently, and a hiccup here surfaces as a red sensor that
+          # never actually ran. Retry before failing.
+          for attempt in 1 2 3; do
+            echo "npm install attempt $attempt"
+            if npm install; then
+              echo "npm install succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "npm install failed on attempt $attempt"
+            sleep 15
+          done
+          echo "npm install failed after 3 attempts"
+          exit 1
 
       # Speeds up repeat runs on the same PR: Stryker's --incremental mode
       # (used by run-mutation.mjs) skips re-testing mutants it already scored
