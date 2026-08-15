@@ -674,10 +674,13 @@ As an AI agent operating within this repository, you must strictly adhere to the
   changes a `[guardrail: …]` tag count), run `cd projects/portfolio-hub && npm run
   generate:loop-stats` and re-run its suite in the same commit. The failure is already guarded —
   portfolio-hub's own unit test recomputes the counts against the committed fixture — so this is a
-  pre-push discipline lesson, not a missing test. Not tagged as a guardrail: "did this diff change
-  the count" is a base-vs-HEAD property (diff-shaped), the same reason enum blast radius lives in
-  `scripts/check-enum-blast-radius.mjs` as a workflow step rather than a `harness-status.mjs`
-  guardrail.
+  pre-push discipline lesson, not a missing test. The failure is now guarded twice, so it cannot
+  resurface as a red round-trip one commit late: portfolio-hub's own unit test recomputes the
+  counts against the committed fixture, and `scripts/check-loop-stats.mjs` recomputes them again at
+  the repo gate, failing fast with the `npm run generate:loop-stats` hint. Not a
+  `harness-status.mjs` guardrail: "did these counts drift" is a cross-file recompute, not a
+  line-level pattern — the same reason it lives as a workflow step (like
+  `check-enum-blast-radius.mjs` and `check-doc-claims.mjs`) rather than in `GUARDRAILS`.
 - **A GPU-less Container Cannot Create a WebGL Context in the Pinned Headless Shell — Degrade
   Gracefully, and Test the No-WebGL Path**: In the GPU-less sandbox/CI containers this repo runs
   in, Playwright's bundled headless shell cannot create a WebGL context
@@ -692,6 +695,36 @@ As an AI agent operating within this repository, you must strictly adhere to the
   --enable-unsafe-swiftshader` through the existing `HARNESS_CHROMIUM_PATH` override — a small
   wrapper script suffices, and it is an environment override, not part of the app. Not tagged as a
   guardrail: WebGL availability is a runtime/environment property, not a line pattern.
+- **Verify a Stated Count Before Writing It Down — Don't Recall It**: PR #38's own description
+  claimed "10 components ... + 2 more" for `mood-diner` — wrong, but harmless, since the shipped
+  README already said 8, matching the directory on disk. The more serious version of the same
+  mistake landed in a shipped file: `elder-care-planner/README.md` stated "437 unit tests," a
+  number that matched no real source — not the actual suite (`npx vitest run`: 551 passed, 33
+  files), not even `portfolio-hub`'s own catalog (`237`). The same README's engine table also
+  undercounted (10 listed, 14 real files in `src/lib/engine/`) and its architecture block dropped
+  one of six real data files. A follow-up PR (#223) had to re-derive every number from the actual
+  files and command output rather than trust the prose. **Any specific count named in a PR body or
+  a README — component counts, test counts, engine counts, file counts — must be produced by
+  literally running the count in that session** (`ls src/components | wc -l`, `npx vitest run`,
+  `grep -c`), never recalled from an earlier pass, a sibling doc, or an impression of the file tree.
+  Not tagged as a guardrail: whether a given number was actually counted versus remembered leaves
+  no trace in the diff for a line-level regex to catch — only re-running the count catches it,
+  which is what `scripts/check-doc-claims.mjs` already does for the one claim it covers (§8);
+  extending its coverage to more per-app numeric claims is a natural, still-open follow-up.
+- **A Promised Follow-Up Is a Debt, Not a Deliverable**: PRs #161 and #162 (weather-reactive
+  packing essentials, travel-mode preference) each branched independently off `master` and said so
+  explicitly in their own bodies — *"whichever merges second will need a conflict-resolution merge
+  ... I'll handle that once one of them lands."* Neither was revisited. Six days later `master` had
+  grown a full i18n system and several new components touching the same files, and what the PR
+  bodies described as a quick merge-order fix had become a ~20-file manual conflict resolution on
+  each — confirmed with a local three-way merge test (`git merge-tree`), not just GitHub's
+  `mergeable_state` flag, before either was closed. The promise wasn't dishonest when written; it
+  assumed a re-invocation that never happened. An agent should not write "I'll handle X once Y
+  lands" unless something concrete will actually re-invoke it to do so — a scheduled check, a
+  human review cadence, a CI hook — and where that isn't guaranteed, the honest sentence is "this
+  will conflict with #NNN; whichever lands second needs a human-initiated rebase," not a promise
+  the same session cannot keep. Not tagged as a guardrail: whether a stated intention to return
+  will actually be acted on is outside anything visible in the diff itself.
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.

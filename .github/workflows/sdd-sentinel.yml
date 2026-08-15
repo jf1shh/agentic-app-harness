@@ -78,6 +78,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/test-app.test.mjs
 
+      - name: Loop-Stats Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-loop-stats.test.mjs
+
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
       # naming a file in the blast-radius table counts as handling it — "no
@@ -159,6 +163,15 @@ jobs:
       - name: Doc-Claims Gate (checked-in docs must match what they claim)
         shell: pwsh
         run: node ./scripts/check-doc-claims.mjs --gate
+
+      # The rulebook's lesson count is load-bearing data: blocks a PR that
+      # changes .agents/AGENTS.md or scripts/harness-status.mjs without
+      # regenerating portfolio-hub's committed loop-stats fixture, failing fast
+      # with the regenerate command instead of a cryptic `expected 47 to be 46`
+      # unit-test failure in the per-app leg (.agents/AGENTS.md §6).
+      - name: Loop-Stats Gate (committed loop stats must match the rulebook)
+        shell: pwsh
+        run: node ./scripts/check-loop-stats.mjs
 
       - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
         shell: pwsh
