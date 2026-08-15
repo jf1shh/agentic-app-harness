@@ -62,7 +62,7 @@ jobs:
       # (used by run-mutation.mjs) skips re-testing mutants it already scored
       # against unchanged code, using this file as its memory between runs.
       - name: Cache Stryker incremental state
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: projects/${{ matrix.app }}/reports/mutation/incremental.json
           key: stryker-incremental-${{ matrix.app }}-${{ github.event.pull_request.number || 'dispatch' }}
