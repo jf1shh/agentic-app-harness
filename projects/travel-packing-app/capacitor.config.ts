@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.harness.travelpacking',
+  appId: 'com.jf1shh.travelpacking',
   appName: 'travel-packing-app',
   // Built by `npm run build:capacitor` (NEXT_BUILD_DIR=.next-capacitor,
   // CAPACITOR_BUILD=1) — a separate export from the GitHub Pages build, with

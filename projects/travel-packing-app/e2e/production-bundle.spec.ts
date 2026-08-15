@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * Production-bundle smoke test for PackRight.
+ * Production-bundle smoke test for SmartPack.
  *
  * Every other spec in this suite runs against the dev server, where the deploy
  * path is stripped and assets are served from the root. That is structurally
@@ -49,7 +49,7 @@ test.describe('BDD Spec: Production bundle boots at its deploy origin', () => {
     await page.goto(PAGES_URL, { waitUntil: 'networkidle' });
 
     // Then the app actually mounted — not a blank screen
-    await expect(page.locator('h1')).toContainText('PackRight');
+    await expect(page.locator('h1')).toContainText('SmartPack');
 
     // And every asset the document referenced resolved
     expect(failed, `failed requests under the deploy subpath:\n${failed.join('\n')}`).toEqual([]);

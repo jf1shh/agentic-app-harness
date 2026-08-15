@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PackRight",
+  title: "SmartPack",
   description: "A wardrobe analyzer and packing optimizer that schedules outfits and packing physics for your trip.",
 };
 

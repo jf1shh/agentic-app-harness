@@ -1,4 +1,4 @@
-# PackRight — Play Console listing kit
+# SmartPack — Play Console listing kit
 
 Same method as `projects/mood-diner/store-listing/`: assets built from the app's real brand color
 and real UI, copy checked against what the app actually does, Q&A answers cross-checked against
@@ -47,11 +47,11 @@ Weather-matched outfits and a packing list sized to your actual suitcase
 
 ## Full description (≤4000 chars)
 ```
-PackRight builds a packing list around your actual trip — the real weather forecast for your
+SmartPack builds a packing list around your actual trip — the real weather forecast for your
 dates, and a real suitcase model's actual capacity — instead of a generic checklist.
 
 WEATHER-MATCHED, DAY BY DAY
-Enter your destination and dates and PackRight pulls the live forecast, then schedules a
+Enter your destination and dates and SmartPack pulls the live forecast, then schedules a
 non-repeating outfit for every day of the trip, tuned to that day's temperature and precipitation.
 Multi-destination trips get their own per-leg weather and adapter guidance rather than one
 forecast stretched across the whole itinerary.

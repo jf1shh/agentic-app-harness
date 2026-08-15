@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * Capacitor-bundle smoke test for PackRight.
+ * Capacitor-bundle smoke test for SmartPack.
  *
  * production-bundle.spec.ts proves the GitHub Pages export resolves at the
  * Pages subpath. This proves the OTHER export — the one `capacitor.config.ts`
@@ -48,7 +48,7 @@ test.describe('BDD Spec: Capacitor bundle boots at the WebView origin', () => {
     await page.goto(CAPACITOR_URL, { waitUntil: 'networkidle' });
 
     // Then the app actually mounted — not a blank screen
-    await expect(page.locator('h1')).toContainText('PackRight');
+    await expect(page.locator('h1')).toContainText('SmartPack');
 
     // And every asset the document referenced resolved at the bare root
     expect(failed, `failed requests at the WebView origin:\n${failed.join('\n')}`).toEqual([]);

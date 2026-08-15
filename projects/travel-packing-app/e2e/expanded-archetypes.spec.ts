@@ -30,7 +30,7 @@ test.describe('Expanded style archetypes (Phase 16)', () => {
 
     // Given the app is loaded with the archetype-preset wardrobe source
     await page.goto('/');
-    await expect(page.locator('h1:has-text("PackRight")')).toBeVisible();
+    await expect(page.locator('h1:has-text("SmartPack")')).toBeVisible();
 
     // And the new "Corporate Power" archetype is selectable and selected
     const archetypeSelect = page.locator('#archetype');

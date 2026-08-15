@@ -16,7 +16,7 @@ test.describe('Live weather API integration (opt-in)', () => {
 
   test('Given the default wardrobe and a real destination, When the user runs Analyze against the live API, Then a wearability report is shown', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1:has-text("PackRight")')).toBeVisible();
+    await expect(page.locator('h1:has-text("SmartPack")')).toBeVisible();
 
     await page.click('button.btn-primary');
 
