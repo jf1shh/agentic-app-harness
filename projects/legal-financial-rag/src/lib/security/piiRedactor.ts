@@ -56,8 +56,12 @@ export function detectAndRedactPII(text: string): RedactionResult {
     });
   }
 
-  // 3. Detect Bank Routing / Account Numbers
-  const bankRegex = /\b(?:Routing|Account|IBAN)\s*(?:#|No|Number)?\s*(?:is|:)?[\s:]*([A-Z0-9]{8,18})\b/gi;
+  // 3. Detect Bank Routing / Account / IBAN numbers. The captured value is
+  // allowed up to 34 characters because real IBANs run 15-34 chars (ISO 13616);
+  // the previous {8,18} cap made a full-length IBAN too long to match at all,
+  // leaving the tail un-redacted. Over-redacting a long alphanumeric token after
+  // a bank label is the safer failure for a PII redactor than leaking one.
+  const bankRegex = /\b(?:Routing|Account|IBAN)\s*(?:#|No|Number)?\s*(?:is|:)?[\s:]*([A-Z0-9]{8,34})\b/gi;
   while ((match = bankRegex.exec(text)) !== null) {
     const originalText = match[0];
     const placeholder = `[REDACTED_BANK_ACCT_${bankCounter++}]`;
