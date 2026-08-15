@@ -4,7 +4,9 @@
 
 - **ICM (Interpretable Context Methodology)** — the folder-structure layer this file belongs to:
   plain-text markdown files that give an LLM immediate spatial orientation in a workspace, instead
-  of a multi-agent framework. See [ktnCodes/icm-template](https://github.com/ktnCodes/icm-template).
+  of a multi-agent framework. Originated in
+  [RinDig/Interpretable-Context-Methodology](https://github.com/RinDig/Interpretable-Context-Methodology);
+  this repo adopts it via the derived [ktnCodes/icm-template](https://github.com/ktnCodes/icm-template).
 - **Layer 0 (`IDENTITY.md`)** — "Where am I?": the workspace map.
 - **Layer 1 (`CONTEXT.md`)** — "Where do I go?": task routing.
 - **Layer 2 (stage `CONTEXT.md`)** — "What do I do, in this stage?": `stages/<stage>/CONTEXT.md`,

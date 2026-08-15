@@ -12,6 +12,8 @@ LLM-free by never assuming which one.
   `.agents/AGENTS.md` in full (§1–§9 govern how the change itself is made).
 - **Does**: implements the change in the correct `projects/<app-name>/`, writes/updates tests per
   `.agents/AGENTS.md` §5, runs `node scripts/test-app.mjs <AppName>` locally before pushing.
+- **Audit** (this stage's pass/fail checklist, before opening the PR): `.agents/AGENTS.md` §10's
+  Definition of Ready/Done — run through it line by line rather than trusting memory.
 - **Writes**: a pull request. **Never self-merges** — a human reviews and merges
   (`.agents/AGENTS.md` §5/§8). See `.agents/AGENTS.md` §9 for what the PR body must contain
   (what you actually ran, not what you meant to run).
