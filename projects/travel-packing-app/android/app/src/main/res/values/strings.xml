@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">PackRight</string>
-    <string name="title_activity_main">PackRight</string>
-    <string name="package_name">com.harness.travelpacking</string>
-    <string name="custom_url_scheme">com.harness.travelpacking</string>
+    <string name="app_name">SmartPack</string>
+    <string name="title_activity_main">SmartPack</string>
+    <string name="package_name">com.jf1shh.travelpacking</string>
+    <string name="custom_url_scheme">com.jf1shh.travelpacking</string>
 </resources>

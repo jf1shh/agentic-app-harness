@@ -59,10 +59,10 @@ if (hasReleaseSigning && !file(releaseStoreFile).exists()) {
 }
 
 android {
-    namespace = "com.harness.travelpacking"
+    namespace = "com.jf1shh.travelpacking"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.harness.travelpacking"
+        applicationId "com.jf1shh.travelpacking"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode resolvedVersionCode
