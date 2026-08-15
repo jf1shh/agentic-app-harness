@@ -1,28 +1,38 @@
 ---
 name: sdd-harness-guide
-description: Comprehensive operational guide for AI agents executing Spec-Driven Development (SDD), Zod Contract-First validation, BDD testing, and build management in the Agentic App Harness monorepo.
+description: Quick-reference pointer to the Agentic App Harness operational workflow and CLI, for AI agents working in this monorepo.
 ---
 
 # SDD Harness Operational Guide
 
-As an AI Agent operating within this monorepo (`jf1shh/agentic-app-harness`), follow these core execution procedures:
+The authoritative workflow and rules live in [`.agents/AGENTS.md`](../../AGENTS.md) — read it
+in full before changing code. It is deliberately **not** restated here: `_config/conventions.md`
+already documents why a second copy of the rules drifts the moment either is edited. This file
+is a pointer plus the few operational notes that live nowhere else.
 
-## 1. Primary Workflow Execution Order
+## Where the workflow lives
 
-0. **Orient via ICM**: Read `IDENTITY.md` (workspace map) and `CONTEXT.md` (task-routing table) at
-   the repo root first — they're a navigation layer on top of this guide, not a substitute for it.
-1. **Read Spec First**: Never generate code without reading `specs/<app-name>-spec.md`.
-2. **Contract-First Schemas**: Define data models in `src/lib/schemas.ts` or `src/schemas.ts` using `zod`. Infer TypeScript types (`z.infer<typeof Schema>`).
-3. **BDD Specification Standard**: Format test scenarios in `Given [Context] -> When [User Action] -> Then [Expected Outcome]`.
-4. **Pre/Post Build Cleanup**: Execute `.\scripts\clean-app.ps1` or `npm run clean`.
-5. **Verification**: Run `.\scripts\test-app.ps1 -AppName <AppName>`.
-6. **Remote Deployment Verification**: When pushing changes triggering GitHub Actions, set a **5-minute reminder timer** (`schedule`) to verify `completed success` and test HTTP 200 responses before declaring completion. Do not run local servers while waiting for remote builds.
-7. **Session Wrap-up**: Update `README.md`, `HANDOFF.md`, and execute `/learn` loop.
+- **End-to-end sequence (idea → spec → build → gate → PR → harness loop):**
+  [`docs/APP_DEVELOPMENT_CYCLE.md`](../../../docs/APP_DEVELOPMENT_CYCLE.md) — ordered Phases 0–9.
+- **Binding rules** (spec-first, Zod contract-first, BDD `Given → When → Then`, testing, the
+  agentic loop, PR discipline): [`.agents/AGENTS.md`](../../AGENTS.md) §1–§9.
+- **Orientation first:** [`IDENTITY.md`](../../../IDENTITY.md) (workspace map) and
+  [`CONTEXT.md`](../../../CONTEXT.md) (task routing) at the repo root.
 
-## 2. CLI Tooling Reference
+## CLI quick reference
 
-- `.\scripts\harness.ps1 test all` — Test all monorepo apps.
-- `.\scripts\harness.ps1 test <appName>` — Test a specific app.
-- `.\scripts\harness.ps1 validate` — Run spec & schema coverage audit.
-- `.\scripts\harness.ps1 clean` — Monorepo build cleanup.
-- `.\scripts\harness.ps1 mobile <appName>` — Capacitor Android platform build.
+- `.\\scripts\\harness.ps1 test all` — run the full per-app gate across every app.
+- `.\\scripts\\harness.ps1 test <appName>` — run it for one app (wraps `scripts/test-app.mjs`).
+- `node scripts/test-app.mjs <AppName>` — the authoritative per-app gate directly (lint, tsc,
+  Vitest, Playwright + axe a11y); add `--changed` to gate only the apps this diff touches.
+- `.\\scripts\\harness.ps1 validate` — spec & schema coverage audit.
+- `.\\scripts\\harness.ps1 status` / `tasks` / `verify` / `learn` — the agentic loop stages.
+- `.\\scripts\\harness.ps1 clean` — monorepo build cleanup.
+- `.\\scripts\\harness.ps1 mobile <appName>` — Capacitor Android platform build.
+
+## Operational notes (not stated elsewhere)
+
+- **Remote deploys need a follow-up check.** After pushing changes that trigger GitHub Actions,
+  set a ~5-minute reminder to confirm the workflow reported `completed success` and the deployed
+  URL answers HTTP 200 before declaring the task done. Do not run a local server while waiting
+  for a remote build — it verifies nothing the remote will ship.
