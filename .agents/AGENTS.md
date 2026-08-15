@@ -664,6 +664,35 @@ As an AI agent operating within this repository, you must strictly adhere to the
   no-catch draft. Not tagged as a guardrail: whether a given save carries the state a
   measurement depends on is a timing property, invisible to any line-level regex.
 
+- **The Rulebook's Lesson Count Is Load-Bearing Data, Not Documentation**: `projects/portfolio-hub`
+  derives its displayed loop stats — and its `loopStats.generated.test.ts` assertion — from the live
+  `scripts/harness-status.mjs` and `.agents/AGENTS.md` (§6 lesson bullets counted), not from a
+  hand-written constant. PR #217 added one §6 lesson and pushed without regenerating
+  `portfolio-hub/src/data/loopStats.generated.ts`; CI's `test (portfolio-hub)` leg went red with
+  `expected 47 to be 46` on a change to an entirely different app. The fix is the app's own
+  generator: after any change to `.agents/AGENTS.md` that adds, removes, or merges a §6 lesson (or
+  changes a `[guardrail: …]` tag count), run `cd projects/portfolio-hub && npm run
+  generate:loop-stats` and re-run its suite in the same commit. The failure is already guarded —
+  portfolio-hub's own unit test recomputes the counts against the committed fixture — so this is a
+  pre-push discipline lesson, not a missing test. Not tagged as a guardrail: "did this diff change
+  the count" is a base-vs-HEAD property (diff-shaped), the same reason enum blast radius lives in
+  `scripts/check-enum-blast-radius.mjs` as a workflow step rather than a `harness-status.mjs`
+  guardrail.
+- **A GPU-less Container Cannot Create a WebGL Context in the Pinned Headless Shell — Degrade
+  Gracefully, and Test the No-WebGL Path**: In the GPU-less sandbox/CI containers this repo runs
+  in, Playwright's bundled headless shell cannot create a WebGL context
+  (`BindToCurrentSequence failed`), and neither `--enable-unsafe-swiftshader` nor
+  `--use-angle=swiftshader` rescues it. Two consequences. (1) *Any WebGL renderer must survive that
+  condition*: `travel-packing-app`'s `new THREE.WebGLRenderer()` threw uncaught in its mount
+  effect, which React's error boundary turned into the whole Knapsack Engine panel unmounting —
+  including the accessible text breakdown the spec promises. Guard renderer creation and degrade to
+  the text fallback; assert it with an E2E that stubs `HTMLCanvasElement.prototype.getContext` to
+  return null via `page.addInitScript`. (2) *To test the working-WebGL path in such a container*,
+  run the suite against the full Chrome binary with `--no-sandbox --in-process-gpu
+  --enable-unsafe-swiftshader` through the existing `HARNESS_CHROMIUM_PATH` override — a small
+  wrapper script suffices, and it is an environment override, not part of the app. Not tagged as a
+  guardrail: WebGL availability is a runtime/environment property, not a line pattern.
+
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.
 - **Create Agent Handoff File**: Agents MUST create or update a dedicated handoff file (e.g., `HANDOFF.md` in the project root or relevant app directory) detailing current project state, key changes, open bugs/blockers, and exact next steps so any future AI agent can seamlessly take over the work without loss of context.
