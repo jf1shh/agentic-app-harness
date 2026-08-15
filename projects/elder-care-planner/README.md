@@ -34,12 +34,15 @@ to visibly move the runway), put the Family Meeting Summary behind a control the
 cannot see, and require the `role="tablist"` handling whose failure mode is already recorded in
 `.agents/AGENTS.md` §6.
 
-### Ten pure-function engines (`src/lib/engine/**`)
+### Fourteen pure-function engines (`src/lib/engine/**`)
 | Module | What it computes |
 |---|---|
 | `cost.ts` | All-in monthly cost: base rate + care-level tier + add-on fees + annual escalator; advertised vs. realistic side by side |
 | `breakeven.ts` | In-home vs. residential hourly crossover, both sides fully loaded |
+| `breakevenBand.ts` | The break-even slider's crossover *band* — calls `computeBreakEven` at the low and high hourly-rate bounds rather than widening the pure engine's own contract |
+| `citedBreakEvenBand.ts` | Resolves the §11.10 cited-rate break-even band once, so the summary paragraph and the slider read the same object instead of drifting |
 | `runway.ts` | Month-by-month depletion with care inflation, income COLA, asset returns, expiring LTC benefits |
+| `depletion.ts` | Where a projected balance first reaches zero, read off the same series the chart draws — never re-derived from plan inputs |
 | `sensitivity.ts` | Which input moves the runway most — ranks levers by `impactMonths` |
 | `split.ts` | Largest-remainder split so parts always sum exactly to the shortfall, under all three methods |
 | `ledger.ts` | Pledged-vs-paid reconciliation; per-category totals feeding the tax estimate |
@@ -47,6 +50,7 @@ cannot see, and require the `role="tablist"` handling whose failure mode is alre
 | `tax.ts` | Medical-expense deduction estimate above 7.5% AGI |
 | `buyin.ts` | Independent living buy-in contracts: refund at a given tenure, entry-fee affordability, and the per-option overlay projection |
 | `fit.ts` | Facility shortlist: weighted scores across eight tour dimensions, the exclusions behind them, and what pricing the plan at a community would cost in months of runway |
+| `plan.ts` | Orchestrates a stored `Plan` into everything the UI renders (active scenario, aide hourly rate) — kept pure and separate from React so the whole result set is unit-testable in one call |
 
 Engines are pure — no React, no storage, no ambient `Date.now()` — so 100% Vitest coverage of the math is achievable.
 
@@ -220,9 +224,10 @@ src/
     ExplainProvider.tsx, ExplainDrawer.tsx, ExplanationBody.tsx, WhyButton.tsx
   lib/
     schemas.ts                       # Zod contracts + inferred types
-    engine/{breakeven,buyin,cost,fit,ledger,opportunity,plan,runway,sensitivity,split,tax}.ts
+    engine/{breakeven,breakevenBand,buyin,citedBreakEvenBand,cost,depletion,fit,
+      ledger,opportunity,plan,runway,sensitivity,split,tax}.ts
     explain/{build,types}.ts         # engine output → derivations
-    data/{costOfCare,benefits,expenseCategories,feeStructures,questionsToAsk}.ts
+    data/{costOfCare,benefits,expenseCategories,feeStructures,questionsToAsk,startingGuide}.ts
     plannerState.ts                  # form-state → Plan projection
     recommendation.ts                # neutral-voice summary copy
     storage.ts                       # localStorage boundary, Zod-validated, AES-GCM-encrypted
@@ -306,10 +311,11 @@ npx playwright test   # E2E + axe a11y
 npm run build:capacitor && npx cap sync android   # Capacitor export → sync into android/
 ```
 
-Coverage bullets (per projectData.ts and the per-file Vitest suite):
+Coverage bullets (counts from `npx vitest run` and the E2E spec directory, not projectsData.ts —
+portfolio-hub's catalog metrics for this app are stale and tracked separately):
 
-- **437 unit tests** (Vitest) on engines, storage, and every derivation; BDD-formatted.
-- **E2E specs** including axe on the default view, the large-text view, the fully-expanded view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
+- **551 unit tests** (Vitest, 33 test files) on engines, storage, and every derivation; BDD-formatted.
+- **23 E2E specs** including axe on the default view, the large-text view, the fully-expanded view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
 - **Printing is tested as behaviour, not assumed from CSS** (`e2e/printing.spec.ts`): the app's
   print button, the browser's `beforeprint`, and the print stylesheet are each exercised
   separately, because a collapsed `<details>` prints collapsed and no stylesheet reliably says

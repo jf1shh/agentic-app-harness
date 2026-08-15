@@ -156,6 +156,7 @@ src/
     DailyActivityPicker.tsx        # per-day activity tagging (Beach/Hike/Ski/Formal/...)
     SuitcaseFinder.tsx             # brand/model text search + barcode lookup
     SuitcaseScanner.tsx            # live-camera barcode scan + credit-card tap-to-measure
+    SuitcaseLayout.tsx             # drag-to-reorder packed-garment tiles (@dnd-kit/core)
     VolumeDonutChart.tsx           # 2D SVG donut chart of packed volume by category
     Volume3DPanel.tsx              # accessible wrapper: aria-label/description + text fallback
     Volume3DScene.tsx              # the Three.js/WebGL canvas, loaded via next/dynamic({ssr:false})
