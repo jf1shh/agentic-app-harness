@@ -21,6 +21,15 @@ export function sanitizeInput(text: string): SanitizationResult {
     warnings.push('Input truncated to maximum 50,000 characters to prevent ReDoS vulnerability.');
   }
 
+  // Normalize invisible zero-width separators to a regular space before any
+  // pattern runs. `\s` matches spaces, tabs, newlines and NBSP but NOT U+200B
+  // (zero-width space), U+200C/D (non-joiner/joiner), U+2060 (word joiner) or
+  // U+FEFF (BOM), so an attacker can split "ignore previous instructions" into
+  // "ignore<U+200B>previous<U+200B>instructions" — visually identical to a
+  // reader, but invisible to every regex below. Collapsing them to a space
+  // closes that evasion while preserving real whitespace.
+  sanitizedText = sanitizedText.replace(/[\u200B-\u200D\u2060\uFEFF]/g, ' ');
+
   // 2. Strip HTML tags & inline event handlers
   const htmlTagRegex = /<[^>]*>/g;
   if (htmlTagRegex.test(sanitizedText)) {
