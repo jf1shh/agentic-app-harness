@@ -66,9 +66,8 @@ src/
   utils/__tests__/                   # Vitest unit coverage for each engine
 public/
   manifest.json, sw.js               # PWA shell
+  favicon.png, icon-192.png, icon-512.png   # app icons (favicon.png is a 64px derivation)
   privacy.html                       # Play Store privacy policy
-  icon-192.png, icon-512.{jpg,png}   # app icons
-  playstore-banner.jpg
 android/                             # Capacitor-generated native container
 capacitor.config.ts
 ```
