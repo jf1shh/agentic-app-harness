@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.npmrc)",
+      "Read(**/credentials.json)",
+      "Read(**/keystore.properties)",
+      "Read(**/*.jks)",
+      "Read(**/*.pem)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/verify-scripts.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

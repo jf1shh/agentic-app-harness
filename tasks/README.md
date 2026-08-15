@@ -50,6 +50,27 @@ Claude Code, Cursor, Copilot, Aider, or a human — may claim one. To act on it:
 4. Run `node scripts/emit-tasks.mjs --prune` to retire the resolved order.
 5. Open a PR. **Agents never self-merge** — a human reviews.
 
+## Session & model discipline (efficiency, not correctness)
+
+Work orders are self-contained on purpose — each one can be executed in a **fresh
+session** (or a `/clear`ed one) without losing anything the task needs. Three habits
+make the most of that design:
+
+- **One task per session.** Don't carry an unrelated PR's context into the next work
+  order; the always-loaded rulebook + the task file + its spec are the whole contract.
+  Start clean, end clean — a bloated session is re-billed on every turn.
+- **Delegate exploration, not implementation.** Heavy repo-wide reads (dependency
+  graphs, "who calls this?", history) belong in a subagent or a tool (see the optional
+  repowise MCP in the README), so the main session stays on the files the task touches.
+- **Split models per phase.** Plan with the strongest reasoner (spec/architecture is
+  where an expensive model earns its tokens), execute the mechanical work with a
+  cheaper one, review with the strong one. Point directly at the spec/task file
+  instead of re-grepping the tree.
+
+None of this changes the *gate* — `node scripts/test-app.mjs <AppName>` (or
+`--changed` for the inner loop) still has to go green, and CI still runs the full
+suite. These are cost/attention habits, not shortcuts.
+
 ## Regenerating
 
 ```bash
