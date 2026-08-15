@@ -68,6 +68,8 @@ export const PROTECTED_FILES = [
   { path: 'scripts/check-enum-blast-radius.mjs', kind: 'gate-script' },
   { path: 'scripts/check-enum-blast-radius.test.mjs', kind: 'self-test' },
   { path: 'scripts/harness-learn.mjs', kind: 'gate-script' },
+  { path: 'scripts/check-loop-stats.mjs', kind: 'gate-script' },
+  { path: 'scripts/check-loop-stats.test.mjs', kind: 'self-test' },
 ];
 
 /* -------------------------------------------------------------------- */
