@@ -13,6 +13,22 @@ interface Props {
 
 const MIN_RENDER_HEIGHT_PX = 220;
 
+/**
+ * Create the WebGL renderer, returning null when a WebGL context cannot be
+ * created. Three.js throws on a missing context (no GPU, a GPU-disabled or
+ * restricted WebView, a GPU-less CI container), and an uncaught throw in the
+ * mount effect would take the whole Knapsack Engine panel down with it —
+ * including the text breakdown that is the accessible representation. The
+ * caller degrades to that breakdown instead.
+ */
+function createRenderer(): THREE.WebGLRenderer | null {
+  try {
+    return new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch {
+    return null;
+  }
+}
+
 // The actual WebGL canvas. Loaded exclusively via next/dynamic({ ssr: false })
 // from Volume3DPanel -- this app is a Next.js static export (output:
 // 'export'), and Three.js touches `window`/WebGL at module scope, which
@@ -46,6 +62,18 @@ export default function Volume3DScene({ blocks, suitcaseSize }: Props) {
     const container = containerRef.current;
     if (!container) return;
 
+    const renderer = createRenderer();
+    if (!renderer) {
+      // No WebGL: leave the canvas out entirely. The panel's text breakdown
+      // (the aria-describedby target) is always rendered by the parent, so
+      // the view degrades to text instead of crashing the whole panel. The
+      // attribute is set directly on the DOM node (an external system) rather
+      // than through setState, which would cascade a render for no benefit.
+      container.dataset.webgl = 'unavailable';
+      return;
+    }
+    container.dataset.webgl = 'active';
+
     const scene = new THREE.Scene();
     const width = container.clientWidth || 1;
     const height = container.clientHeight || MIN_RENDER_HEIGHT_PX;
@@ -55,7 +83,6 @@ export default function Volume3DScene({ blocks, suitcaseSize }: Props) {
     camera.position.set(maxDim * 1.3, maxDim * 1.05, maxDim * 1.5);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     // updateStyle defaults to true here deliberately: it sets the canvas's
     // CSS width/height to match the container while the drawing buffer

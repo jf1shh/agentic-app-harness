@@ -146,14 +146,12 @@ export default function Home() {
   // reload, so a recipient who already has this page open in a tab and then
   // opens (or pastes) a share link would otherwise never have this effect
   // re-run at all.
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const readHash = () => setShareFragment(extractShareFragment(window.location.hash));
     readHash();
     window.addEventListener('hashchange', readHash);
     return () => window.removeEventListener('hashchange', readHash);
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Save on change, debounced so a burst of typing is one write. Guarded on
   // `restored` — without it the first save would fire with the defaults and

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner, openSection, waitForEncryptedSave } from './support';
+import { gotoPlanner, openSection, readStoredPlannerState } from './support';
 
 /**
  * The facility shortlist (spec §11.2).
@@ -271,9 +271,22 @@ test.describe('Given photographs taken on a tour', () => {
 
     // Writes are debounced (spec §4.1), so the baseline has to be taken after
     // the tour has actually landed in storage rather than after it was typed.
+    // waitForEncryptedSave alone is not enough — it returns on *any* encrypted
+    // save, and under load that can be the page-load save, before the tour has
+    // landed, which would make `before` miss the tour and the delta below
+    // include it. Wait for the save that provably carries the tour instead.
     const stored = () =>
       page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await waitForEncryptedSave(page);
+    await expect
+      .poll(async () => {
+        try {
+          const state = await readStoredPlannerState(page);
+          return Array.isArray(state.facilities) ? state.facilities.length : 0;
+        } catch {
+          return 0; // no envelope written yet — keep polling
+        }
+      })
+      .toBe(1);
     const beforeRaw = await stored();
     const before = beforeRaw.length;
 

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { gotoPlanner, openSection, waitForEncryptedSave } from './support';
+import { gotoPlanner, openSection, waitForEncryptedSave, readStoredPlannerState } from './support';
 import { decodePlanFromShare } from '../src/lib/share';
 
 /**
@@ -49,7 +49,20 @@ test.describe('BDD Spec: Receipt photos attached to ledger entries', () => {
 
     const stored = () =>
       page.evaluate(() => localStorage.getItem('elder-care-planner:state:v1') ?? '');
-    await waitForEncryptedSave(page);
+    // Writes are debounced, and waitForEncryptedSave returns on *any* encrypted
+    // save — under load that can be the page-load save, before the entry has
+    // landed, which would make `before` miss the entry and the delta below
+    // include it. Wait for the save that provably carries the entry instead.
+    await expect
+      .poll(async () => {
+        try {
+          const state = await readStoredPlannerState(page);
+          return Array.isArray(state.ledger) ? state.ledger.length : 0;
+        } catch {
+          return 0; // no envelope written yet — keep polling
+        }
+      })
+      .toBe(1);
     const beforeRaw = await stored();
     const before = beforeRaw.length;
 
