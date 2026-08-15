@@ -10,7 +10,7 @@ UI currently overclaims (the paywall), that's called out rather than smoothed ov
 | File | Spec | Status |
 |---|---|---|
 | `public/icon-512.png` | 512×512 PNG | Already meets spec, already on-brand — reuse as-is |
-| `store-listing/feature-graphic.png` | 1024×500 | New — built from the real icon + header gradient/tagline. **Replaces `public/playstore-banner.jpg`**, which baked in a "GET IT ON Google Play" badge (Play's feature-graphic policy prohibits store badges in the image itself) and fabricated review counts ("Yelp: 4.7★ (1.2k Reviews)", "Google Maps: 4.8★ (2.5k Reviews)") that the app has no basis for claiming. Don't upload the old banner. |
+| `store-listing/feature-graphic.png` | 1024×500 | New — built from the real icon + header gradient/tagline. It replaces the old `public/playstore-banner.jpg` (now deleted), which baked in a "GET IT ON Google Play" badge (Play's feature-graphic policy prohibits store badges in the image itself) and fabricated review counts ("Yelp: 4.7★ (1.2k Reviews)", "Google Maps: 4.8★ (2.5k Reviews)") that the app has no basis for claiming. Don't re-add the old banner. |
 | `store-listing/screenshots/1-home.png` … `5-confirmed.png` | 1080×1920 | Real captures from the running app (filters, weather engine, a restaurant's live-extracted menu, the booking flow, and confirmation) — not mockups |
 
 **Screenshots were captured in a network-restricted sandbox**, so the Unsplash-hosted restaurant
