@@ -23,7 +23,6 @@ const skipProd = truthy.has(
 if (skipProd) {
   // Surface this on webServer startup so a human (or the next operator
   // reading CI logs) sees that the bypass was intentional, not accidental.
-  // eslint-disable-next-line no-console
   console.warn(
     '[harness] PLAYWRIGHT_SKIP_PROD is set; the production-bundle webServer '
     + 'on port 5189 is NOT registered. e2e/production-bundle.spec.ts will fail '

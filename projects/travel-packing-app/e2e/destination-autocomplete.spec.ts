@@ -17,10 +17,19 @@ test.describe('Destination Autocomplete', () => {
 
     await page.goto('/');
     const dest = page.locator('#dest');
-    await dest.fill('Par');
+    await expect(dest).toBeVisible();
+    // The input is React-controlled and initialized to "Hawaii"; a fill that
+    // lands before hydration sets the DOM value but is reverted by the first
+    // client render (the "fill before hydration is swallowed" lesson in
+    // .agents/AGENTS.md §6), which reads as a suggestions list that never
+    // opens. Retry until the controlled value actually sticks.
+    await expect(async () => {
+      await dest.fill('Par');
+      await expect(dest).toHaveValue('Par');
+    }).toPass({ timeout: 15000 });
 
     const listbox = page.getByRole('listbox', { name: 'Destination suggestions' });
-    await expect(listbox).toBeVisible();
+    await expect(listbox).toBeVisible({ timeout: 15000 });
     await expect(listbox.getByRole('option', { name: /Paris, France/ })).toBeVisible();
 
     await listbox.getByRole('option', { name: /Paris, France/ }).click();
@@ -29,7 +38,14 @@ test.describe('Destination Autocomplete', () => {
 
   test('Given a query shorter than 2 characters, When typed, Then no suggestions dropdown appears', async ({ page }) => {
     await page.goto('/');
-    await page.locator('#dest').fill('a');
+    const dest = page.locator('#dest');
+    await expect(dest).toBeVisible();
+    // Same hydration race as above — assert the value stuck, or a swallowed
+    // fill passes vacuously because an empty input also shows no suggestions.
+    await expect(async () => {
+      await dest.fill('a');
+      await expect(dest).toHaveValue('a');
+    }).toPass({ timeout: 15000 });
     await expect(page.getByRole('listbox', { name: 'Destination suggestions' })).not.toBeVisible();
   });
 });

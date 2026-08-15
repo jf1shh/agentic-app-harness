@@ -63,6 +63,45 @@ test.describe('3D suitcase packing volume view', () => {
     }
   });
 
+  test('Given WebGL is unavailable, When Analyze renders the Knapsack Engine panel, Then the text breakdown still renders and no canvas is mounted', async ({ page }) => {
+    await stubWeather(page);
+    // Simulate a browser without a usable WebGL context (GPU-less container,
+    // restricted WebView, older phone). The override runs before any app code,
+    // so three.js's WebGLRenderer cannot construct — the exact condition that
+    // must degrade to the text breakdown instead of crashing the panel.
+    await page.addInitScript(() => {
+      const realGetContext = HTMLCanvasElement.prototype.getContext;
+      const blocked = function (this: HTMLCanvasElement, kind: string, ...rest: unknown[]) {
+        if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') return null;
+        return (
+          realGetContext as (this: HTMLCanvasElement, k: string, ...r: unknown[]) => unknown
+        ).apply(this, [kind, ...rest]);
+      };
+      HTMLCanvasElement.prototype.getContext =
+        blocked as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    });
+
+    await page.goto('/');
+    await page.click('button.btn-primary');
+
+    const view = page.getByRole('img', { name: /3D Suitcase Packing View:/ });
+    // Wait for the component to *settle* into its no-WebGL state rather than
+    // sampling the loading placeholder before the async scene import resolves
+    // and the context failure is handled — a race that made an earlier draft
+    // pass on the broken build.
+    await expect(view.locator('[data-webgl="unavailable"]')).toBeVisible({ timeout: 15000 });
+
+    // No WebGL canvas is mounted — the view degrades to its text breakdown
+    // rather than taking the whole knapsack panel down with it.
+    await expect(view.locator('canvas')).toHaveCount(0);
+
+    // The text breakdown (the element aria-describedby points at) is intact,
+    // so the accessible representation survives when the canvas cannot.
+    const describedBy = await view.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    await expect(page.locator(`#${describedBy} li`)).not.toHaveCount(0);
+  });
+
   test('Given the 3D view is rendered after Analyze, When it is scanned for a11y, Then there are no violations', async ({ page }) => {
     const AxeBuilder = (await import('@axe-core/playwright')).default;
     await stubWeather(page);
