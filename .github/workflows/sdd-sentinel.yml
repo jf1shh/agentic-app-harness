@@ -70,6 +70,14 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-secrets.test.mjs
 
+      # test-app.mjs is the authoritative per-app gate (ci.yml runs the full
+      # suite with no --changed). Its --changed diff-to-app mapping is the only
+      # pure logic in it and is never exercised by ci.yml, so it gets the same
+      # "verify the verifier" treatment as the other gates.
+      - name: Test-App Self-Test (verify the --changed mapping)
+        shell: pwsh
+        run: node ./scripts/test-app.test.mjs
+
       - name: Loop-Stats Self-Test (verify the verifier)
         shell: pwsh
         run: node ./scripts/check-loop-stats.test.mjs

@@ -1,7 +1,7 @@
-# Project Specification: Travel Packing App (PackRight)
+# Project Specification: Travel Packing App (SmartPack)
 
 ## 1. Product Overview
-**Name:** Travel Packing App (PackRight - Wardrobe Analyzer)
+**Name:** Travel Packing App (SmartPack - Wardrobe Analyzer)
 **Description:** An intelligent wardrobe analyzer and outfit scheduler. It calculates valid outfits based on strict pairing rules (color math, material thermals, daily weather/activity constraints). It outputs a "Wearability Report" and "Knapsack Physics Report" and schedules outfits across the trip without consecutive-day repeats.
 **Target Audience:** Advanced travelers who want flexible, highly interchangeable capsule wardrobes rather than just piece counts.
 
@@ -303,7 +303,10 @@ screen, silently, because the GitHub Pages deploy of the *other* export stays co
 
 **Native project.** `android/` is the Capacitor-generated native container, committed to the repo (as
 `mood-diner`'s is) so CI can build it without re-running `npx cap add android`. App ID
-`com.harness.travelpacking`, following this repo's `com.harness.<appname>` convention. Release
+`com.jf1shh.travelpacking` — unlike this repo's other Capacitor shells, which use the placeholder
+`com.harness.<appname>` convention, this app ID is under a domain-style namespace its developer
+(Jared Fisher, GitHub `jf1shh`) actually owns, chosen before the first Play Store upload since the
+application ID can never change afterward. Release
 signing follows the same env-var/`keystore.properties` pattern documented in
 `projects/travel-packing-app/README.md`'s "Android release signing" section — neither the keystore
 nor its passwords are ever committed.

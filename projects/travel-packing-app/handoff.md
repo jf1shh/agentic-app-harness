@@ -1,6 +1,6 @@
-# 🤝 PackRight - Agent Handoff Document
+# 🤝 SmartPack - Agent Handoff Document
 
-Welcome, fellow Agent! This document will quickly get you up to speed on the **PackRight** repository. This is an intelligent travel packing optimizer that enforces strict mathematical rules for styling, weather, and luggage physics.
+Welcome, fellow Agent! This document will quickly get you up to speed on the **SmartPack** repository (branded "PackRight" through Phase 22, renamed per Phase 23 below). This is an intelligent travel packing optimizer that enforces strict mathematical rules for styling, weather, and luggage physics.
 
 ## 📁 Repository Context
 - **Path**: `projects/travel-packing-app`
@@ -172,6 +172,23 @@ places "the current suitcase" is read, via one `resolveSuitcase()` helper. Andro
 `CAMERA` permission it never needed before this phase. **Left undone**: a custom measurement isn't
 encoded into the Share Trip link — `share.ts` never serialized the suitcase selection at all, even
 for the catalog dropdown, so this is a pre-existing gap, not a regression.
+
+**Phase 23 — Rebrand to SmartPack, and app ID moved off the placeholder namespace**: the Play Store
+listing name "PackRight" was already taken by another live app, so every user-facing occurrence —
+the `app.title` i18n key in all 11 locales, the Next.js `<title>` metadata, the Android
+`app_name`/`title_activity_main` strings, `public/privacy.html`, `store-listing/README.md`'s Play
+Console copy, and this app's own `README.md`/spec headings — was renamed to **SmartPack**.
+Separately, and before any Play Console upload (application IDs are permanent once published), the
+Android application ID moved from this repo's shared placeholder `com.harness.travelpacking` to
+`com.jf1shh.travelpacking`, a namespace under the developer's own GitHub identity —
+`capacitor.config.ts`'s `appId`, `android/app/build.gradle`'s `namespace`/`applicationId`,
+`android/app/src/main/res/values/strings.xml`'s `package_name`/`custom_url_scheme`, and
+`MainActivity.java` (moved to `android/app/src/main/java/com/jf1shh/travelpacking/` to match its
+new `package` declaration, since Gradle's default source set resolves a class by directory path)
+all updated together. Internal-only identifiers deliberately left unchanged: the npm package name
+and monorepo folder (`travel-packing-app`, referenced throughout `scripts/`, CI workflow file
+names, and `specs/travel-packing-app-spec.md`'s own filename) and the `packright_theme`/
+`packright_checklist` `localStorage` keys, none of which are user-visible.
 
 **Known follow-ups explicitly left undone (see each PR body for the full reasoning):** none.
 
