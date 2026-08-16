@@ -91,6 +91,10 @@ node scripts/check-guardrail-integrity.mjs --base origin/master --head HEAD
                                            # diff-shaped: "who guards the guards" — blocks a deleted
                                            # guardrail or shrunk gate self-test, silent on additions
 node scripts/check-loop-stats.mjs         # verify: committed portfolio-hub loop stats match the rulebook
+node scripts/check-peer-consistency.mjs   # verify: no split react/react-dom, @types/*, or
+                                           # @typescript-eslint plugin/parser majors, within an app
+                                           # or across apps sharing an eslint major (not diff-shaped)
+node scripts/check-peer-consistency.test.mjs  # self-test the peer/anchor-group matching
 node scripts/run-mutation.mjs <AppName>   # informational: Stryker mutation score for one app
 node scripts/run-mutation.mjs --all       # informational: Stryker mutation score for every app
 node scripts/run-mutation.test.mjs        # self-test the mutation-scoring logic
@@ -165,7 +169,10 @@ per app on `ubuntu-latest`; `sdd-sentinel.yml` runs the harness gate plus `check
 `check-doc-claims.mjs --gate` (checked-in docs must match what they claim),
 `check-guardrail-integrity.mjs` ("who guards the guards" — blocks a silently deleted guardrail or
 shrunk gate self-test), `check-loop-stats.mjs` (committed portfolio-hub loop stats match the
-rulebook), `validate-specs.ps1 -Strict`, and a reviewdog step that posts every
+rulebook), `check-peer-consistency.mjs` (no split react/react-dom, `@types/*`, or
+`@typescript-eslint` plugin/parser majors, within an app or across apps sharing an `eslint` major —
+apps differing from *each other* stays fine by design), `validate-specs.ps1 -Strict`, and a
+reviewdog step that posts every
 guardrail hit as an inline PR comment (`harness-status-rdjson.mjs`, informational, never blocks)
 on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own informational,
 `continue-on-error` matrix job; `deploy-pages.yml` and `android-release.yml` build and ship
