@@ -71,6 +71,9 @@ export default function SuitcaseScanner({ isOpen, onClose, onDimensionsReady }: 
   });
   const stillImageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<{ active: boolean; index: number }>({ active: false, index: -1 });
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   const isLiveCamera = (scannerMode === 'measure' && phase === 'capturing') || scannerMode === 'barcode';
   const isMeasuring = phase === 'calibrate' || phase === 'measureL' || phase === 'measureW';
@@ -85,6 +88,16 @@ export default function SuitcaseScanner({ isOpen, onClose, onDimensionsReady }: 
     });
     return () => {
       cancelled = true;
+    };
+  }, [isOpen]);
+
+  // Move focus into the dialog on open and return it to the trigger on close.
+  useEffect(() => {
+    if (!isOpen) return;
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => {
+      restoreFocusRef.current?.focus?.();
     };
   }, [isOpen]);
 
@@ -586,6 +599,31 @@ export default function SuitcaseScanner({ isOpen, onClose, onDimensionsReady }: 
     onClose();
   };
 
+  const handleDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleClose();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const container = dialogRef.current;
+    if (!container) return;
+    const focusables = Array.from(
+      container.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+    ).filter((el) => !el.hasAttribute('disabled'));
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   if (!isOpen) return null;
 
   const showBarcodeScanning = scannerMode === 'barcode' && !measurements && !scannedModel;
@@ -608,6 +646,8 @@ export default function SuitcaseScanner({ isOpen, onClose, onDimensionsReady }: 
       role="dialog"
       aria-modal="true"
       aria-label="Suitcase camera scanner"
+      ref={dialogRef}
+      onKeyDown={handleDialogKeyDown}
       style={{
         position: 'fixed',
         inset: 0,
@@ -627,7 +667,7 @@ export default function SuitcaseScanner({ isOpen, onClose, onDimensionsReady }: 
           color: 'white',
         }}
       >
-        <button onClick={handleClose} aria-label="Close scanner" style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, padding: '8px 12px', cursor: 'pointer' }}>
+        <button onClick={handleClose} aria-label="Close scanner" ref={closeButtonRef} style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, padding: '8px 12px', cursor: 'pointer' }}>
           ✕ Close
         </button>
 

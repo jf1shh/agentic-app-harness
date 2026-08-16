@@ -4,7 +4,9 @@
     "subtitle": "Live-Wetter & Intelligenter Garderoben-Analysator",
     "startOver": "↩ Neu Starten",
     "deleteAllData": "🗑️ Alle Meine Daten Löschen",
-    "deleteConfirm": "Dadurch werden deine gespeicherte Garderobe, Fotos und Einstellungen dauerhaft von diesem Gerät gelöscht. Dies kann nicht rückgängig gemacht werden. Fortfahren?"
+    "deleteConfirm": "Dadurch werden deine gespeicherte Garderobe, Fotos und Einstellungen dauerhaft von diesem Gerät gelöscht. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
+    "shareTrip": "🔗 Reise teilen",
+    "copied": "✔ Kopiert!"
   },
   "theme": {
     "dark": "🌙 Dunkelmodus",
@@ -30,7 +32,8 @@
     "airline": "Fluggesellschaft (Handgepäck-Limits)",
     "analyzing": "Wetter wird abgerufen und analysiert...",
     "analyzeButton": "Garderobe analysieren & Outfits planen",
-    "failedToAnalyze": "Reiseanalyse fehlgeschlagen"
+    "failedToAnalyze": "Reiseanalyse fehlgeschlagen",
+    "invalidDateRange": "Das Enddatum muss am oder nach dem Startdatum liegen."
   },
   "archetype": {
     "quietLuxury": "Quiet Luxury",
@@ -38,7 +41,16 @@
     "scandi": "Skandinavisch Minimalistisch",
     "corporate": "Corporate Power",
     "oldMoney": "Old Money",
-    "balletcore": "Balletcore"
+    "balletcore": "Balletcore",
+    "streetwear": "Y2K Streetwear",
+    "darkAcademia": "Dark Academia",
+    "athleisure": "Athleisure",
+    "bohemian": "Bohème / Resort",
+    "preppy": "Ivy League Prep",
+    "rock": "Rock Chic",
+    "whimsigoth": "Whimsigoth",
+    "coastal": "Coastal Maritime",
+    "cottagecore": "Cottagecore"
   },
   "strategy": {
     "standard": "Standard (Komfortabel)",

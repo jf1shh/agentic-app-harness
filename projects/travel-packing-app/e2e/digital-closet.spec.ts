@@ -43,4 +43,21 @@ test.describe('Digital Closet', () => {
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
     expect(accessibilityScanResults.violations).toEqual([]);
   });
+
+  test('Given the Digital Closet is opened, When Escape is pressed, Then it closes and focus returns to the button that opened it', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('radio', { name: 'Upload Custom Closet (.txt / .md)' }).check();
+    const openButton = page.getByRole('button', { name: /Manage Digital Closet/ });
+    await openButton.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Digital Closet' });
+    await expect(dialog).toBeVisible();
+
+    // Focus lands inside the dialog, on the close control, not a hidden element.
+    await expect(dialog.getByRole('button', { name: 'Close digital closet' })).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(openButton).toBeFocused();
+  });
 });

@@ -4,7 +4,9 @@
     "subtitle": "リアルタイム天気とスマートワードローブ分析",
     "startOver": "↩ 最初からやり直す",
     "deleteAllData": "🗑️ すべてのデータを削除",
-    "deleteConfirm": "この端末に保存されたワードローブ、写真、設定を完全に削除します。この操作は取り消せません。続行しますか？"
+    "deleteConfirm": "この端末に保存されたワードローブ、写真、設定を完全に削除します。この操作は取り消せません。続行しますか？",
+    "shareTrip": "🔗 旅行を共有",
+    "copied": "✔ コピーしました！"
   },
   "theme": {
     "dark": "🌙 ダークモード",
@@ -30,7 +32,8 @@
     "airline": "航空会社（手荷物制限）",
     "analyzing": "天気を取得して分析中...",
     "analyzeButton": "ワードローブを分析してコーディネートを組む",
-    "failedToAnalyze": "旅行の分析に失敗しました"
+    "failedToAnalyze": "旅行の分析に失敗しました",
+    "invalidDateRange": "終了日は開始日以降の日付にしてください。"
   },
   "archetype": {
     "quietLuxury": "クワイエットラグジュアリー",
@@ -38,7 +41,16 @@
     "scandi": "北欧ミニマリスト",
     "corporate": "コーポレートパワー",
     "oldMoney": "オールドマネー",
-    "balletcore": "バレエコア"
+    "balletcore": "バレエコア",
+    "streetwear": "Y2Kストリートウェア",
+    "darkAcademia": "ダークアカデミア",
+    "athleisure": "アスレジャー",
+    "bohemian": "ボヘミアン / リゾート",
+    "preppy": "アイビーリーグプレップ",
+    "rock": "ロックシック",
+    "whimsigoth": "ウィムジゴス",
+    "coastal": "コースタルマリタイム",
+    "cottagecore": "コテージコア"
   },
   "strategy": {
     "standard": "標準（快適重視）",

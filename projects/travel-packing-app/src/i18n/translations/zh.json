@@ -4,7 +4,9 @@
     "subtitle": "实时天气与智能衣橱分析",
     "startOver": "↩ 重新开始",
     "deleteAllData": "🗑️ 删除我的所有数据",
-    "deleteConfirm": "这将永久删除此设备上保存的衣橱、照片和偏好设置，且无法撤销。是否继续？"
+    "deleteConfirm": "这将永久删除此设备上保存的衣橱、照片和偏好设置，且无法撤销。是否继续？",
+    "shareTrip": "🔗 分享行程",
+    "copied": "✔ 已复制!"
   },
   "theme": {
     "dark": "🌙 深色模式",
@@ -30,7 +32,8 @@
     "airline": "航空公司（随身行李限制）",
     "analyzing": "正在获取天气并分析...",
     "analyzeButton": "分析衣橱并安排每日穿搭",
-    "failedToAnalyze": "行程分析失败"
+    "failedToAnalyze": "行程分析失败",
+    "invalidDateRange": "结束日期必须晚于或等于开始日期。"
   },
   "archetype": {
     "quietLuxury": "静奢风",
@@ -38,7 +41,16 @@
     "scandi": "北欧极简风",
     "corporate": "商务通勤风",
     "oldMoney": "老钱风",
-    "balletcore": "芭蕾风"
+    "balletcore": "芭蕾风",
+    "streetwear": "Y2K街头风",
+    "darkAcademia": "暗黑学院风",
+    "athleisure": "运动休闲风",
+    "bohemian": "波西米亚度假风",
+    "preppy": "常春藤学院风",
+    "rock": "摇滚时尚风",
+    "whimsigoth": "暗黑奇幻风",
+    "coastal": "海滨航海风",
+    "cottagecore": "田园小屋风"
   },
   "strategy": {
     "standard": "标准（舒适）",

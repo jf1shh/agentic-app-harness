@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Garment } from '../types';
 import { saveItemImage, getItemImage, deleteItemImage, checkStorageQuota } from '../services/db';
+import { downscaleImageToBlob } from '../utils/imageProcessing';
 import { buildManualGarment, ManualGarmentInput } from '../utils/wardrobeBuilder';
 import { COLOR_MATCHES } from '../utils/generator';
 
@@ -48,7 +49,47 @@ export default function WardrobeManager({ garments, setGarments, isOpen, onClose
     };
   }, [isOpen, garments]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+
+  // Move focus into the dialog on open and return it to the trigger on close,
+  // so keyboard and screen-reader users are not left on a hidden control.
+  useEffect(() => {
+    if (!isOpen) return;
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => {
+      restoreFocusRef.current?.focus?.();
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const handleDialogKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const container = dialogRef.current;
+    if (!container) return;
+    const focusables = Array.from(
+      container.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+    ).filter((el) => !el.hasAttribute('disabled'));
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,9 +112,14 @@ export default function WardrobeManager({ garments, setGarments, isOpen, onClose
 
   const handleImageUpload = async (id: string, file: File) => {
     setProcessing((prev) => ({ ...prev, [id]: true }));
+    let blobURL: string | null = null;
     try {
       const { removeBackground } = await import('@imgly/background-removal');
-      const blobURL = URL.createObjectURL(file);
+      // Resize before the model and before storage: a phone photo at full
+      // resolution costs a lot of on-device AI time and IndexedDB quota for a
+      // ~48px thumbnail (see src/utils/imageProcessing.ts).
+      const resized = await downscaleImageToBlob(file);
+      blobURL = URL.createObjectURL(resized);
       const imageBlob = await removeBackground(blobURL);
       const reader = new FileReader();
       reader.readAsDataURL(imageBlob);
@@ -86,13 +132,18 @@ export default function WardrobeManager({ garments, setGarments, isOpen, onClose
     } catch (err) {
       console.error('Background removal failed', err);
       setProcessing((prev) => ({ ...prev, [id]: false }));
+    } finally {
+      if (blobURL) URL.revokeObjectURL(blobURL);
     }
   };
 
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label="Digital Closet"
+      ref={dialogRef}
+      onKeyDown={handleDialogKeyDown}
       style={{
         position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
         display: 'flex', justifyContent: 'flex-end',
@@ -104,7 +155,7 @@ export default function WardrobeManager({ garments, setGarments, isOpen, onClose
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2>Digital Closet</h2>
-          <button className="btn-secondary" onClick={onClose} aria-label="Close digital closet">✕</button>
+          <button className="btn-secondary" onClick={onClose} aria-label="Close digital closet" ref={closeButtonRef}>✕</button>
         </div>
 
         {lowSpace && (

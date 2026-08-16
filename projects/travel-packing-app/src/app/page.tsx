@@ -180,8 +180,15 @@ export default function Home() {
   };
 
   const handleAnalyze = async () => {
-    setLoading(true);
     setError('');
+    // A reversed or unparseable date range would otherwise surface far from
+    // the cause — the weather fetch's fallback can't build a sane itinerary
+    // from it — so fail here with a message the user can act on.
+    if (tripDurationFromDates(startDate, endDate) < 1) {
+      setError(t('trip.invalidDateRange'));
+      return;
+    }
+    setLoading(true);
     try {
       const validAdditionalDestinations = additionalDestinations.map((d) => d.trim()).filter((d) => d.length > 0);
       let generatedItinerary: DayItinerary[];
@@ -295,7 +302,13 @@ export default function Home() {
     if (typeof window !== 'undefined' && !window.confirm(t('app.deleteConfirm'))) return;
     await clearAllLocalData();
     try {
-      localStorage.clear();
+      // The six apps deploy under one GitHub Pages origin, so localStorage is
+      // a single shared namespace. Remove only this app's keys — defined in
+      // page.tsx ('packright_theme'), i18n/context.tsx ('packright_lang') and
+      // PackingChecklist.tsx ('packright_checklist') — a blanket
+      // localStorage.clear() here would wipe every other app's data on the
+      // origin (e.g. smart-recipe-app's inventory and meal plan).
+      ['packright_theme', 'packright_lang', 'packright_checklist'].forEach((key) => localStorage.removeItem(key));
     } catch {
       // Best-effort; IndexedDB is already cleared above.
     }
@@ -310,7 +323,7 @@ export default function Home() {
           className="btn-secondary header-share-btn"
           style={{ fontSize: '0.9rem', padding: '6px 12px' }}
         >
-          {shareCopied ? '✔ Copied!' : '🔗 Share Trip'}
+          {shareCopied ? t('app.copied') : t('app.shareTrip')}
         </button>
         <div className="header-controls">
           <select
@@ -325,10 +338,14 @@ export default function Home() {
               <option key={lang.code} value={lang.code}>{lang.nativeName}</option>
             ))}
           </select>
+          {/* The label depends on `theme`, read from localStorage on first client
+              render; the server renders the light-theme default. Suppress the
+              mismatch the same way the i18n'd <h1>/<p> above do. */}
           <button
             onClick={toggleTheme}
             className="btn-secondary theme-toggle-btn"
             style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+            suppressHydrationWarning
           >
             {theme === 'light' ? t('theme.dark') : t('theme.light')}
           </button>
@@ -380,11 +397,11 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '16px' }}>
             <div>
               <label htmlFor="start" className="label">{t('trip.startDate')}</label>
-              <input id="start" type="date" className="input-field" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <input id="start" type="date" className="input-field" value={startDate} max={endDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div>
               <label htmlFor="end" className="label">{t('trip.endDate')}</label>
-              <input id="end" type="date" className="input-field" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <input id="end" type="date" className="input-field" value={endDate} min={startDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
 
@@ -427,15 +444,15 @@ export default function Home() {
                     <option value="quiet-luxury">{t('archetype.quietLuxury')}</option>
                     <option value="gorpcore">{t('archetype.gorpcore')}</option>
                     <option value="scandi">{t('archetype.scandi')}</option>
-                    <option value="streetwear">Y2K Streetwear</option>
-                    <option value="dark-academia">Dark Academia</option>
-                    <option value="athleisure">Athleisure</option>
-                    <option value="bohemian">Bohemian / Resort</option>
-                    <option value="preppy">Ivy League Prep</option>
-                    <option value="rock">Rock Chic</option>
-                    <option value="whimsigoth">Whimsigoth</option>
-                    <option value="coastal">Coastal Maritime</option>
-                    <option value="cottagecore">Cottagecore</option>
+                    <option value="streetwear">{t('archetype.streetwear')}</option>
+                    <option value="dark-academia">{t('archetype.darkAcademia')}</option>
+                    <option value="athleisure">{t('archetype.athleisure')}</option>
+                    <option value="bohemian">{t('archetype.bohemian')}</option>
+                    <option value="preppy">{t('archetype.preppy')}</option>
+                    <option value="rock">{t('archetype.rock')}</option>
+                    <option value="whimsigoth">{t('archetype.whimsigoth')}</option>
+                    <option value="coastal">{t('archetype.coastal')}</option>
+                    <option value="cottagecore">{t('archetype.cottagecore')}</option>
                     <option value="corporate">{t('archetype.corporate')}</option>
                     <option value="old-money">{t('archetype.oldMoney')}</option>
                     <option value="balletcore">{t('archetype.balletcore')}</option>

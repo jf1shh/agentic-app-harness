@@ -4,7 +4,9 @@
     "subtitle": "실시간 날씨 및 스마트 옷장 분석기",
     "startOver": "↩ 처음부터 다시",
     "deleteAllData": "🗑️ 내 모든 데이터 삭제",
-    "deleteConfirm": "이 기기에 저장된 옷장, 사진, 환경설정이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?"
+    "deleteConfirm": "이 기기에 저장된 옷장, 사진, 환경설정이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?",
+    "shareTrip": "🔗 여행 공유",
+    "copied": "✔ 복사됨!"
   },
   "theme": {
     "dark": "🌙 다크 모드",
@@ -30,7 +32,8 @@
     "airline": "항공사 (기내 수하물 제한)",
     "analyzing": "날씨 조회 및 분석 중...",
     "analyzeButton": "옷장 분석 및 코디 일정 짜기",
-    "failedToAnalyze": "여행 분석에 실패했습니다"
+    "failedToAnalyze": "여행 분석에 실패했습니다",
+    "invalidDateRange": "종료일은 시작일과 같거나 그 이후여야 합니다."
   },
   "archetype": {
     "quietLuxury": "콰이엇 럭셔리",
@@ -38,7 +41,16 @@
     "scandi": "스칸디 미니멀리스트",
     "corporate": "코퍼레이트 파워",
     "oldMoney": "올드 머니",
-    "balletcore": "발레코어"
+    "balletcore": "발레코어",
+    "streetwear": "Y2K 스트릿웨어",
+    "darkAcademia": "다크 아카데미아",
+    "athleisure": "애슬레저",
+    "bohemian": "보헤미안 / 리조트",
+    "preppy": "아이비리그 프레피",
+    "rock": "록 시크",
+    "whimsigoth": "윔지고스",
+    "coastal": "코스탈 마리타임",
+    "cottagecore": "코티지코어"
   },
   "strategy": {
     "standard": "표준 (편안함)",

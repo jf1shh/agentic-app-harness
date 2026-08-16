@@ -78,11 +78,15 @@ export const Logger = {
 
       const blob = new Blob([logText], { type: 'text/plain' });
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+      link.href = url;
       link.download = `travel-optimizer-crash-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      // Revoke the blob URL once the download hand-off has started, so repeated
+      // exports don't accumulate object URLs for the lifetime of the page.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
     } catch (e) {
       console.error("[Logger] Failed to export logs", e);
     }
