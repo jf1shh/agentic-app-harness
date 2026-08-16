@@ -86,6 +86,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-peer-consistency.test.mjs
 
+      - name: Git-Hooks Installer Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/install-git-hooks.test.mjs
+
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
       # naming a file in the blast-radius table counts as handling it — "no

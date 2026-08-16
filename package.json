@@ -11,6 +11,9 @@
   "workspaces": [
     "projects/*"
   ],
+  "scripts": {
+    "prepare": "node scripts/install-git-hooks.mjs"
+  },
   "overrides": {
     "sharp": "^0.35.0",
     "adm-zip": "^0.6.0"
