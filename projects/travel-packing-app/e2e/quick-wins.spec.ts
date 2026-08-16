@@ -90,4 +90,28 @@ test.describe('Delete All My Data', () => {
     await page.waitForLoadState('load');
     await expect(page.locator('#dest')).toHaveValue('Hawaii');
   });
+
+  test('Given another app shares the origin-scoped localStorage, When Delete All My Data is accepted, Then only this app\'s keys are removed and the other app\'s data survives', async ({ page }) => {
+    await page.goto('/');
+    // All six apps deploy under one GitHub Pages origin, so localStorage is a
+    // shared namespace: `smart_recipe_inventory` is smart-recipe-app's real key.
+    await page.evaluate(() => {
+      localStorage.setItem('smart_recipe_inventory', JSON.stringify([{ id: '1', name: 'Milk' }]));
+      localStorage.setItem('packright_theme', 'dark');
+    });
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: /Delete All My Data/ }).click();
+
+    // The delete flow ends in window.location.reload(); wait for the new
+    // document to finish hydrating (the default destination re-renders) rather
+    // than racing page.evaluate against an in-flight navigation.
+    await expect(page.locator('#dest')).toHaveValue('Hawaii');
+    const afterDelete = await page.evaluate(() => ({
+      otherAppData: localStorage.getItem('smart_recipe_inventory'),
+      thisAppKey: localStorage.getItem('packright_theme'),
+    }));
+    expect(afterDelete.otherAppData).not.toBeNull();
+    expect(afterDelete.thisAppKey).toBeNull();
+  });
 });

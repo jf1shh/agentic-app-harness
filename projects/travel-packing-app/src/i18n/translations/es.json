@@ -4,7 +4,9 @@
     "subtitle": "Clima en Vivo y Analizador Inteligente de Vestuario",
     "startOver": "↩ Empezar de Nuevo",
     "deleteAllData": "🗑️ Eliminar Todos Mis Datos",
-    "deleteConfirm": "Esto elimina permanentemente tu vestuario guardado, fotos y preferencias de este dispositivo. No se puede deshacer. ¿Continuar?"
+    "deleteConfirm": "Esto elimina permanentemente tu vestuario guardado, fotos y preferencias de este dispositivo. No se puede deshacer. ¿Continuar?",
+    "shareTrip": "🔗 Compartir viaje",
+    "copied": "✔ ¡Copiado!"
   },
   "theme": {
     "dark": "🌙 Modo Oscuro",
@@ -30,7 +32,8 @@
     "airline": "Aerolínea (Límites de Equipaje de Mano)",
     "analyzing": "Obteniendo el Clima y Analizando...",
     "analyzeButton": "Analizar Vestuario y Programar Atuendos",
-    "failedToAnalyze": "No se pudo analizar el viaje"
+    "failedToAnalyze": "No se pudo analizar el viaje",
+    "invalidDateRange": "La fecha de fin debe ser igual o posterior a la fecha de inicio."
   },
   "archetype": {
     "quietLuxury": "Lujo Discreto",
@@ -38,7 +41,16 @@
     "scandi": "Minimalista Escandinavo",
     "corporate": "Poder Corporativo",
     "oldMoney": "Old Money",
-    "balletcore": "Balletcore"
+    "balletcore": "Balletcore",
+    "streetwear": "Streetwear Y2K",
+    "darkAcademia": "Dark Academia",
+    "athleisure": "Athleisure",
+    "bohemian": "Bohemio / Resort",
+    "preppy": "Prep Ivy League",
+    "rock": "Rock Chic",
+    "whimsigoth": "Whimsigoth",
+    "coastal": "Marítimo Costero",
+    "cottagecore": "Cottagecore"
   },
   "strategy": {
     "standard": "Estándar (Cómodo)",

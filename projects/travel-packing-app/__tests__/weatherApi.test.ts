@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { calculateWarmthTarget, transformWeatherToItinerary, searchLocations, geocodeViaNominatim, fetchLegItinerary } from '../src/services/weatherApi';
+import { calculateWarmthTarget, transformWeatherToItinerary, searchLocations, geocodeLocation, geocodeViaNominatim, fetchWeather, fetchLegItinerary } from '../src/services/weatherApi';
 import { DestinationLeg } from '../src/utils/multiDestination';
 
 describe('weatherApi logic', () => {
@@ -110,6 +110,55 @@ describe('searchLocations', () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('offline'));
     expect(await searchLocations('Paris')).toEqual([]);
   });
+
+  it('Given the API responds with a non-ok status, When locations are searched, Then an empty array is returned rather than trusting an error body', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ results: [{ name: 'Paris', latitude: 48.85, longitude: 2.35 }] }),
+    });
+    expect(await searchLocations('Paris')).toEqual([]);
+  });
+});
+
+describe('geocodeLocation', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('Given raw coordinate input, When geocoding, Then coordinates are parsed without any network request', async () => {
+    const result = await geocodeLocation('40.7128, -74.0060');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(result).toEqual({ latitude: 40.7128, longitude: -74.006, name: '40.7128, -74.0060' });
+  });
+
+  it('Given Open-Meteo responds non-ok with a non-JSON body, When geocoding, Then it falls through to the Nominatim fallback instead of throwing', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: async () => { throw new SyntaxError('Unexpected token < in JSON'); },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{
+          lat: '48.85', lon: '2.35',
+          display_name: 'Paris, France',
+          address: { city: 'Paris', country: 'France', country_code: 'fr' },
+        }],
+      });
+
+    const result = await geocodeLocation('Paris');
+    expect(result?.name).toBe('Paris');
+    const countryCode = result && 'country_code' in result ? result.country_code : null;
+    expect(countryCode).toBe('FR');
+  });
 });
 
 describe('geocodeViaNominatim', () => {
@@ -210,5 +259,38 @@ describe('fetchLegItinerary', () => {
 
     const result = await fetchLegItinerary({ ...leg, destination: 'Hawaii' }, 0, 'sightseeing');
     expect(result.countryCode).toBeNull();
+  });
+});
+
+describe('fetchWeather fallback', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('Given reversed trip dates, When the forecast fetch fails, Then the fallback returns one day of mild weather instead of throwing a RangeError', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('offline'));
+
+    const daily = await fetchWeather(21.3, -157.8, '2026-08-05', '2026-08-01');
+
+    expect(daily.time).toHaveLength(1);
+    expect(daily.temperature_2m_max).toEqual([20]);
+    expect(daily.temperature_2m_min).toEqual([10]);
+    expect(daily.precipitation_sum).toEqual([0]);
+  });
+
+  it('Given unparseable date strings, When the forecast fetch fails, Then the fallback returns one day of mild weather instead of throwing a RangeError', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('offline'));
+
+    const daily = await fetchWeather(0, 0, 'not-a-date', '');
+
+    expect(daily.time).toHaveLength(1);
+    expect(daily.temperature_2m_max).toEqual([20]);
+    expect(daily.temperature_2m_min).toEqual([10]);
   });
 });

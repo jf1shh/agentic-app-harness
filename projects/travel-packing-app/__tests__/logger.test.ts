@@ -155,3 +155,36 @@ describe('Logger.init', () => {
     expect(logs.at(-1)!.details).toMatchObject({ source: 'app.js', line: 42, column: 7 });
   });
 });
+
+describe('Logger.exportLogs', () => {
+  it('Given logs are exported, When the download link is clicked, Then the created object URL is revoked so repeated exports do not leak', async () => {
+    mockGet.mockResolvedValue([{ timestamp: 't', message: 'boom', details: {}, userAgent: 'x' }]);
+
+    // jsdom does not implement the static blob-URL helpers, so stub them to
+    // observe the create-then-revoke contract without a real Blob download.
+    // The anchor click is stubbed too: jsdom's real click on a `download`
+    // anchor attempts a navigation it then reports as "not implemented".
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const originalClick = HTMLAnchorElement.prototype.click;
+    const createObjectURL = vi.fn(() => 'blob:mock-url');
+    const revokeObjectURL = vi.fn();
+    URL.createObjectURL = createObjectURL as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL as unknown as typeof URL.revokeObjectURL;
+    HTMLAnchorElement.prototype.click = vi.fn();
+    vi.useFakeTimers();
+
+    try {
+      await Logger.exportLogs();
+      vi.runAllTimers();
+
+      expect(createObjectURL).toHaveBeenCalledTimes(1);
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+    } finally {
+      vi.useRealTimers();
+      URL.createObjectURL = originalCreate as unknown as typeof URL.createObjectURL;
+      URL.revokeObjectURL = originalRevoke as unknown as typeof URL.revokeObjectURL;
+      HTMLAnchorElement.prototype.click = originalClick;
+    }
+  });
+});

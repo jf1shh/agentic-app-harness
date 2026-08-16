@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { WearabilityReport, Garment } from '../types';
 import { saveItemImage, getItemImage } from '../services/db';
+import { downscaleImageToBlob } from '../utils/imageProcessing';
 import { OutfitRole } from '../utils/outfitEditor';
 import PackingChecklist from './PackingChecklist';
 import { useT } from '../i18n/context';
@@ -69,7 +70,10 @@ function OutfitSlot({
           marginBottom: '4px',
         }}
       >
-        {image && <img src={image} alt={role} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+        {image && (
+          // eslint-disable-next-line @next/next/no-img-element -- base64 data URL from IndexedDB; next/image cannot optimize it
+          <img src={image} alt={role} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        )}
       </div>
       <small>{label}</small>
     </div>
@@ -108,9 +112,14 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
 
   const handleImageUpload = async (id: string, file: File) => {
     setProcessing(prev => ({ ...prev, [id]: true }));
+    let blobURL: string | null = null;
     try {
       const { removeBackground } = await import('@imgly/background-removal');
-      const blobURL = URL.createObjectURL(file);
+      // Resize before the model and before storage: a phone photo at full
+      // resolution costs a lot of on-device AI time and IndexedDB quota for a
+      // ~100px thumbnail (see src/utils/imageProcessing.ts).
+      const resized = await downscaleImageToBlob(file);
+      blobURL = URL.createObjectURL(resized);
       const imageBlob = await removeBackground(blobURL);
       const reader = new FileReader();
       reader.readAsDataURL(imageBlob);
@@ -123,6 +132,8 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
     } catch (e) {
       console.error(e);
       setProcessing(prev => ({ ...prev, [id]: false }));
+    } finally {
+      if (blobURL) URL.revokeObjectURL(blobURL);
     }
   };
 
@@ -193,6 +204,7 @@ export default function WardrobeAnalyzer({ report, garments, destinationCountryC
             <div className="glass-panel" style={{ padding: '16px', textAlign: 'center' }}>
               <div style={{ width: '100px', height: '100px', margin: '0 auto 8px auto', backgroundColor: '#1e293b', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 {images[g.id] ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- base64 data URL from IndexedDB; next/image cannot optimize it
                   <img src={images[g.id]} alt={g.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 ) : processing[g.id] ? (
                   <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t('wearability.aiMagic')}</span>

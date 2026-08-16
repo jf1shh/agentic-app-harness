@@ -56,6 +56,7 @@ export const searchLocations = async (query: string, count: number = 5): Promise
   if (trimmed.length < 2 || AUTOCOMPLETE_COORD_REGEX.test(trimmed)) return [];
   try {
     const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trimmed)}&count=${count}&language=en&format=json`);
+    if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data.results) ? data.results : [];
   } catch {
@@ -63,7 +64,7 @@ export const searchLocations = async (query: string, count: number = 5): Promise
   }
 };
 
-export const geocodeLocation = async (locationName: string) => {
+export const geocodeLocation = async (locationName: string): Promise<LocationSuggestion> => {
   try {
     const match = locationName.match(COORD_REGEX);
     if (match) {
@@ -71,9 +72,15 @@ export const geocodeLocation = async (locationName: string) => {
     }
 
     const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationName)}&count=1&language=en&format=json`);
-    const data = await response.json();
-    let result = data.results && data.results.length > 0 ? data.results[0] : null;
+    let result: LocationSuggestion | null = null;
+    if (response.ok) {
+      const data = await response.json();
+      result = data.results && data.results.length > 0 ? data.results[0] : null;
+    }
 
+    // A non-ok response (rate limit, transient 5xx) must not skip the
+    // Nominatim fallback — parsing its error body would either throw on a
+    // non-JSON page or trust a response that is not a successful geocode.
     if (!result) {
       result = await geocodeViaNominatim(locationName);
     }
@@ -106,10 +113,19 @@ export const fetchWeather = async (lat: number, lon: number, startDateStr: strin
     return data.daily;
   } catch (error) {
     console.error("Weather Fetch Error:", error);
-    // Fallback to mild weather so app doesn't crash
-    const days = Math.ceil((new Date(endDateStr).getTime() - new Date(startDateStr).getTime()) / (1000 * 3600 * 24)) + 1;
+    // Fallback to mild weather so app doesn't crash. The day count is
+    // clamped to at least one valid day: a reversed date range (end before
+    // start) or unparseable date strings would otherwise compute a negative
+    // or NaN length, and `Array(negative)`/`Array(NaN)` throws a RangeError
+    // out of this very catch block, replacing a recoverable fetch failure
+    // with a confusing "Invalid array length" crash.
+    const startMs = new Date(startDateStr).getTime();
+    const endMs = new Date(endDateStr).getTime();
+    const rawDays = Math.ceil((endMs - startMs) / (1000 * 3600 * 24)) + 1;
+    const days = Number.isFinite(rawDays) && rawDays > 0 ? rawDays : 1;
+    const base = Number.isFinite(startMs) ? new Date(startDateStr) : new Date();
     return {
-      time: Array.from({length: days}, (_, i) => toDateStr(addDays(new Date(startDateStr), i))),
+      time: Array.from({ length: days }, (_, i) => toDateStr(addDays(base, i))),
       temperature_2m_max: Array(days).fill(20),
       temperature_2m_min: Array(days).fill(10),
       precipitation_sum: Array(days).fill(0)

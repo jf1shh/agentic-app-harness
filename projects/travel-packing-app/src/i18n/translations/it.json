@@ -4,7 +4,9 @@
     "subtitle": "Meteo in Tempo Reale e Analizzatore Intelligente del Guardaroba",
     "startOver": "↩ Ricomincia",
     "deleteAllData": "🗑️ Elimina Tutti i Miei Dati",
-    "deleteConfirm": "Questo elimina permanentemente il tuo guardaroba salvato, le foto e le preferenze da questo dispositivo. L'operazione non può essere annullata. Continuare?"
+    "deleteConfirm": "Questo elimina permanentemente il tuo guardaroba salvato, le foto e le preferenze da questo dispositivo. L'operazione non può essere annullata. Continuare?",
+    "shareTrip": "🔗 Condividi viaggio",
+    "copied": "✔ Copiato!"
   },
   "theme": {
     "dark": "🌙 Modalità Scura",
@@ -30,7 +32,8 @@
     "airline": "Compagnia Aerea (Limiti Bagaglio a Mano)",
     "analyzing": "Recupero meteo e analisi in corso...",
     "analyzeButton": "Analizza Guardaroba e Pianifica Abbinamenti",
-    "failedToAnalyze": "Analisi del viaggio non riuscita"
+    "failedToAnalyze": "Analisi del viaggio non riuscita",
+    "invalidDateRange": "La data di fine deve essere uguale o successiva alla data di inizio."
   },
   "archetype": {
     "quietLuxury": "Lusso Silenzioso",
@@ -38,7 +41,16 @@
     "scandi": "Minimalista Scandinavo",
     "corporate": "Eleganza Corporate",
     "oldMoney": "Old Money",
-    "balletcore": "Balletcore"
+    "balletcore": "Balletcore",
+    "streetwear": "Streetwear Y2K",
+    "darkAcademia": "Dark Academia",
+    "athleisure": "Athleisure",
+    "bohemian": "Bohémien / Resort",
+    "preppy": "Prep Ivy League",
+    "rock": "Rock Chic",
+    "whimsigoth": "Whimsigoth",
+    "coastal": "Marittimo Costiero",
+    "cottagecore": "Cottagecore"
   },
   "strategy": {
     "standard": "Standard (Comodo)",

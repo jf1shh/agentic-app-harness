@@ -48,4 +48,60 @@ test.describe('Destination Autocomplete', () => {
     }).toPass({ timeout: 15000 });
     await expect(page.getByRole('listbox', { name: 'Destination suggestions' })).not.toBeVisible();
   });
+
+  test('Given suggestions are open, When the user presses ArrowDown then Enter, Then the highlighted suggestion is selected without a mouse', async ({ page }) => {
+    await page.route('https://geocoding-api.open-meteo.com/v1/search**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [
+            { name: 'Paris', latitude: 48.85, longitude: 2.35, country: 'France', country_code: 'FR' },
+            { name: 'Paris', latitude: 33.66, longitude: -95.55, country: 'United States', country_code: 'US' },
+          ],
+        }),
+      })
+    );
+
+    await page.goto('/');
+    const dest = page.locator('#dest');
+    await expect(async () => {
+      await dest.fill('Par');
+      await expect(dest).toHaveValue('Par');
+    }).toPass({ timeout: 15000 });
+
+    const listbox = page.getByRole('listbox', { name: 'Destination suggestions' });
+    await expect(listbox).toBeVisible({ timeout: 15000 });
+
+    // activeIndex starts on the first result; ArrowDown highlights the second.
+    await dest.press('ArrowDown');
+    await dest.press('Enter');
+    await expect(dest).toHaveValue('Paris, United States');
+  });
+
+  test('Given suggestions are open, When Escape is pressed, Then the dropdown closes and the typed value is kept', async ({ page }) => {
+    await page.route('https://geocoding-api.open-meteo.com/v1/search**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [
+            { name: 'Paris', latitude: 48.85, longitude: 2.35, country: 'France', country_code: 'FR' },
+          ],
+        }),
+      })
+    );
+
+    await page.goto('/');
+    const dest = page.locator('#dest');
+    await expect(async () => {
+      await dest.fill('Par');
+      await expect(dest).toHaveValue('Par');
+    }).toPass({ timeout: 15000 });
+
+    const listbox = page.getByRole('listbox', { name: 'Destination suggestions' });
+    await expect(listbox).toBeVisible({ timeout: 15000 });
+
+    await dest.press('Escape');
+    await expect(listbox).not.toBeVisible();
+    await expect(dest).toHaveValue('Par');
+  });
 });
