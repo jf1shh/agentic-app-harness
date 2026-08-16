@@ -1,0 +1,48 @@
+#!/bin/sh
+# Pre-push gate — runs the fast, local, zero-network checks from
+# .github/workflows/sdd-sentinel.yml before code leaves this machine.
+#
+# .agents/AGENTS.md §9.1 exists because a PR once claimed "CI-clean" without
+# the gate ever having been run locally. This hook makes that mistake
+# structurally harder instead of only documenting it — inspired by
+# deepseek-ai/deepseek-harness's lefthook `pre-push: typecheck` convention,
+# reimplemented dependency-free to match this repo's own zero-dependency
+# harness-script philosophy (.agents/AGENTS.md §8) rather than adding
+# lefthook/husky as a root devDependency for one hook.
+#
+# It deliberately runs only the sub-second, file-shaped, no-network local
+# gates and skips everything else on purpose:
+#   - the diff-shaped gates (check-enum-blast-radius.mjs, check-secrets.mjs,
+#     check-guardrail-integrity.mjs) compare HEAD against origin/master and
+#     read a PR body that only exists once a PR is open — a stale local
+#     origin/master would make them wrong here, not just slow;
+#   - the full per-app suite (node scripts/test-app.mjs <App>) takes
+#     minutes, and a hook slow enough to be annoying is a hook people learn
+#     to skip with --no-verify, which defeats the point.
+# CI still runs the full gate suite on every PR regardless of this hook.
+#
+# Bypass with `git push --no-verify` (git's own escape hatch) — that stays
+# available on purpose, same as every other gate in this repo.
+#
+# Installed by: node scripts/install-git-hooks.mjs (root "prepare" script).
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "==> harness-status.mjs --gate"
+node scripts/harness-status.mjs --gate
+
+echo "==> harness-learn.mjs"
+node scripts/harness-learn.mjs
+
+echo "==> check-loop-stats.mjs"
+node scripts/check-loop-stats.mjs
+
+echo "==> check-peer-consistency.mjs"
+node scripts/check-peer-consistency.mjs
+
+echo "==> check-doc-claims.mjs --gate"
+node scripts/check-doc-claims.mjs --gate
+
+echo "==> Pre-push gate passed. CI still runs the full per-app suite and diff-shaped checks."

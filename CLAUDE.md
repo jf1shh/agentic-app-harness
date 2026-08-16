@@ -33,6 +33,12 @@ Root install (npm workspaces — one lockfile for all six apps' shared deps):
 npm install
 ```
 
+This also installs a `pre-push` git hook (`node scripts/install-git-hooks.mjs`, wired as the root
+`prepare` script) that runs the fast, local, no-network gates — `harness-status.mjs --gate`,
+`harness-learn.mjs`, `check-loop-stats.mjs`, `check-peer-consistency.mjs`, `check-doc-claims.mjs
+--gate` — before code leaves your machine; see `.githooks/pre-push` for what it deliberately does and
+doesn't run. Bypass with `git push --no-verify`; CI runs the full gate regardless.
+
 Per-app commands (run from `projects/<app-name>/`, e.g. `projects/elder-care-planner/`):
 
 ```
@@ -95,6 +101,8 @@ node scripts/check-peer-consistency.mjs   # verify: no split react/react-dom, @t
                                            # @typescript-eslint plugin/parser majors, within an app
                                            # or across apps sharing an eslint major (not diff-shaped)
 node scripts/check-peer-consistency.test.mjs  # self-test the peer/anchor-group matching
+node scripts/install-git-hooks.mjs        # installs the local pre-push gate (root "prepare" script)
+node scripts/install-git-hooks.test.mjs   # self-test the installer + the tracked .githooks/pre-push
 node scripts/run-mutation.mjs <AppName>   # informational: Stryker mutation score for one app
 node scripts/run-mutation.mjs --all       # informational: Stryker mutation score for every app
 node scripts/run-mutation.test.mjs        # self-test the mutation-scoring logic
