@@ -82,6 +82,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-loop-stats.test.mjs
 
+      - name: Peer-Consistency Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-peer-consistency.test.mjs
+
       # Blocks a PR that widens a z.enum without opening every consumer of the
       # inferred type (.agents/AGENTS.md §9.2). The PR body is passed in because
       # naming a file in the blast-radius table counts as handling it — "no
@@ -173,6 +177,18 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-loop-stats.mjs
 
+      # File-shaped like the gate above, not diff-shaped: reads the six
+      # projects/*/package.json files as they stand right now and blocks a
+      # split react/react-dom (or @types/*, or @typescript-eslint plugin/
+      # parser) major within one app, or a split @typescript-eslint major
+      # across apps that share an eslint major — the exact npm-install and
+      # workspace-hoisting failures in .agents/AGENTS.md §6. It deliberately
+      # never flags apps on different major versions from each other, since
+      # this repo's apps are independently versioned by design.
+      - name: Peer-Consistency Gate (shared devDependency peers must move together)
+        shell: pwsh
+        run: node ./scripts/check-peer-consistency.mjs
+
       - name: RAG Retrieval-Precision Gate (LexiVault, deterministic/no-LLM)
         shell: pwsh
         run: node ./scripts/rag-eval-gate.mjs
@@ -190,7 +206,7 @@ jobs:
 
             ✅ **All required spec & quality gates passed on this PR.**
             - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
-            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), the guardrail-integrity gate (the gates themselves weren't silently weakened), and the secret-scanning gate (no committed credentials on added lines) all passed.
+            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), the guardrail-integrity gate (the gates themselves weren't silently weakened), the secret-scanning gate (no committed credentials on added lines), and the peer-consistency gate (no split react/react-dom, @types/*, or @typescript-eslint plugin/parser majors, within an app or across apps sharing an eslint major) all passed.
             - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 
             *The full per-app suite (lint, type-check, Vitest, Playwright + \`@axe-core\`) runs in parallel in the Harness Testing Suite workflow.*
