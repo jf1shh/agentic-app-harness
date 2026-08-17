@@ -215,7 +215,13 @@ on every PR via `.github/workflows/sdd-sentinel.yml`. Guardrails are self-tested
 lesson, so the enforcement can't silently rot or silently expand past what's documented.
 
 **CI** (`.github/workflows/`): `ci.yml` runs `node scripts/test-app.mjs <app>` as one parallel matrix leg
-per app on `ubuntu-latest`; `sdd-sentinel.yml` runs the harness gate plus `check-enum-blast-radius.mjs`,
+per app on `ubuntu-latest`. Every leg still instantiates so all six `test (<app>)` status checks always
+report (branch protection stays intact), but each leg first diffs against the PR base / previous push
+tip and **skips its expensive suite** when neither that app (`projects/<app>/**`, `specs/<app>-spec.md`)
+nor shared infrastructure (root `package.json`/lockfile, `scripts/`, `.agents/`, `AGENTS.md`,
+`CLAUDE.md`, `specs/templates/`, `tsconfig*.json`, `ci.yml`) changed — a shared-infra change still
+rebuilds all six, because one lockfile and one hoisted `node_modules` mean a change there can break any
+app. `sdd-sentinel.yml` runs the harness gate plus `check-enum-blast-radius.mjs`,
 `check-doc-claims.mjs --gate` (checked-in docs must match what they claim),
 `check-guardrail-integrity.mjs` ("who guards the guards" — blocks a silently deleted guardrail or
 shrunk gate self-test), `check-containment.mjs` (harness infrastructure touches must be acknowledged
@@ -234,6 +240,17 @@ on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own i
 `continue-on-error` matrix job; `deploy-pages.yml` and `android-release.yml` build and ship
 the live artifacts (GitHub Pages, and the `mood-diner` Android APK) — both already run on `ubuntu-latest`,
 which is why `ci.yml` does too rather than paying for a Windows runner to exercise the `.ps1` wrapper.
+`deploy-pages.yml` assembles the full combined Pages artifact on every `master` push, but path-filters
+via a **per-app build cache**: each app's built output is cached under a content hash of its own source
+tree plus the root lockfile, so an unchanged app is restored rather than rebuilt (the heavy Next.js/ML
+builds only run when that app or a shared dependency changed) while the uploaded site stays complete —
+building only the changed app would delete the other five from production. `release.yml` cuts an
+**independent, versioned release for a single app** when a tag shaped
+`<app>-v<version>` is pushed (e.g. `elder-care-planner-v1.2.0`), or via `workflow_dispatch` — it resolves
+the app from the tag, builds only that app against the shared root lockfile, zips its build output
+(`out/` for the Next.js apps, `dist/` for the Vite apps), and publishes a GitHub Release via the
+pre-installed `gh` CLI. One file rather than six (unlike the per-app `android-release-<app>.yml`) because
+a web release carries no per-app signing secrets to separate.
 
 **ICM navigation layer** (`IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`): a five-layer
 [Interpretable Context Methodology](https://github.com/ktnCodes/icm-template) overlay, additive to

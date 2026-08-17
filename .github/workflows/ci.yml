@@ -30,8 +30,58 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          # Full history so the change-detection step below can diff HEAD against
+          # the PR base / previous push tip. A shallow clone would not contain the
+          # base commit and every leg would fall back to running.
+          fetch-depth: 0
+
+      # Every leg still instantiates, so all six `test (<app>)` status checks
+      # always report — branch protection stays intact (the "Green PR Check Is
+      # Not a Green Master" lesson in .agents/AGENTS.md §6 leans on required
+      # checks). What we skip for an unchanged app is the expensive suite below,
+      # which is where the CI cost actually is (install + Playwright browsers +
+      # Vitest + E2E). Detection, not a new workflow per app, so the check names
+      # and the shared-lockfile install path are unchanged.
+      - name: Resolve base ref
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect changes for ${{ matrix.app }}
+        id: changed
+        run: |
+          BASE="${{ steps.base.outputs.sha }}"
+          # No usable base (first push of a branch, force-push, all-zero SHA):
+          # run, rather than risk skipping a real change.
+          if [ -z "$BASE" ] \
+            || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "No usable base ref — running ${{ matrix.app }} to be safe." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE" HEAD)
+          # Shared infrastructure: one lockfile, one hoisted node_modules, one
+          # harness and rulebook. A change here can break any app (see the
+          # workspace-hoisting lessons in .agents/AGENTS.md §6), so rebuild all.
+          if echo "$CHANGED" | grep -Eq '^(package\.json|package-lock\.json|scripts/|\.agents/|AGENTS\.md|CLAUDE\.md|specs/templates/|tsconfig[^/]*\.json|\.github/workflows/ci\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Shared infra changed — running ${{ matrix.app }}." >> "$GITHUB_STEP_SUMMARY"
+          elif echo "$CHANGED" | grep -Eq "^projects/${{ matrix.app }}/|^specs/${{ matrix.app }}-spec\.md"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "${{ matrix.app }} changed — running its suite." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No changes for ${{ matrix.app }} or shared infra — skipping its suite." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Setup Node.js
+        if: steps.changed.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: '20'
@@ -48,4 +98,5 @@ jobs:
       # still exists for local muscle memory, but CI should run the script the
       # docs call authoritative, not a shim around it.
       - name: Run Harness Suite for ${{ matrix.app }}
+        if: steps.changed.outputs.run == 'true'
         run: node scripts/test-app.mjs ${{ matrix.app }}

@@ -277,10 +277,19 @@ jobs:
         shell: pwsh
         run: ./scripts/validate-specs.ps1 -Strict
 
+      # Purely informational: posts a "gates passed" summary comment. It runs
+      # AFTER every actual gate above, so a failure here means the gates already
+      # passed — a transient GitHub API 503 on this createComment call must not
+      # red the required Sentinel check (it did, on PR #236). `continue-on-error`
+      # matches the reviewdog annotation step above, which is non-blocking for
+      # the same reason; `retries` lets github-script ride out a brief blip
+      # (503 is not in its retry-exempt list) so the comment usually still posts.
       - name: Post SDD Sentinel PR Review Comment
         if: success() && github.event_name == 'pull_request'
+        continue-on-error: true
         uses: actions/github-script@v9
         with:
+          retries: 3
           script: |
             const body = `### 🤖 SDD Sentinel — Spec & Quality Gate Report
 

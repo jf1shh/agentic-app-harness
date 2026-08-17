@@ -1,0 +1,113 @@
+name: App Release (tagged)
+
+# Cut an independent, versioned release for a SINGLE app by pushing a tag shaped
+# `<app>-v<version>`, e.g. `elder-care-planner-v1.2.0` or `mood-diner-v0.3.1`.
+# Only that one app is built and published, so the six apps release on fully
+# independent cadences with no monorepo-wide version lockstep — the same
+# motivation as the per-app android-release-<app>.yml workflows, for the web
+# artifacts. This does not fight the workspace: deps still resolve against the
+# single root lockfile (npm workspaces), exactly as ci.yml and deploy-pages.yml
+# do. It is one file rather than six because, unlike the android bundles, a web
+# release carries no per-app signing secrets to justify separate workflows — the
+# app is resolved from the tag instead.
+#
+# Manual runs are supported via workflow_dispatch (pick the app + version) for a
+# release cut without pushing a tag first.
+
+on:
+  push:
+    tags:
+      - '*-v*'
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App to release (must match a projects/<app> directory)'
+        required: true
+      version:
+        description: 'Version label, e.g. v1.2.0'
+        required: true
+
+permissions:
+  contents: write # create the GitHub Release (and its tag on a manual run)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Resolve app, version, and tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            APP="${{ github.event.inputs.app }}"
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="${APP}-${VERSION}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            # `<app>-v<version>`: app is everything before the final `-v`,
+            # version is `v` + everything after it.
+            APP="${TAG%-v*}"
+            VERSION="v${TAG##*-v}"
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Validate app and pick its build output dir
+        id: dir
+        run: |
+          APP="${{ steps.meta.outputs.app }}"
+          if [ ! -d "projects/$APP" ]; then
+            echo "::error::No projects/$APP directory. Tag must be <app>-v<version> where <app> is one of the six apps under projects/."
+            exit 1
+          fi
+          # Next.js static-export apps emit `out/`; the Vite apps emit `dist/`.
+          # (Same split deploy-pages.yml already encodes per app.)
+          case "$APP" in
+            travel-packing-app|smart-recipe-app|elder-care-planner) echo "out=out" >> "$GITHUB_OUTPUT" ;;
+            mood-diner|portfolio-hub|legal-financial-rag) echo "out=dist" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::$APP has no known build-output directory mapping."; exit 1 ;;
+          esac
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # Root lockfile: one npm workspace install resolves this app's deps.
+          cache-dependency-path: package-lock.json
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Build ${{ steps.meta.outputs.app }}
+        run: |
+          cd "projects/${{ steps.meta.outputs.app }}"
+          npm run build
+
+      - name: Package build output
+        id: pkg
+        run: |
+          APP="${{ steps.meta.outputs.app }}"
+          DIR="projects/$APP/${{ steps.dir.outputs.out }}"
+          if [ ! -d "$DIR" ]; then
+            echo "::error::Expected build output at $DIR but it does not exist."
+            exit 1
+          fi
+          ARCHIVE="${APP}-${{ steps.meta.outputs.version }}.zip"
+          (cd "$DIR" && zip -r "$GITHUB_WORKSPACE/$ARCHIVE" .)
+          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
+
+      # gh is pre-installed on ubuntu-latest — no third-party release action.
+      # On a manual run the tag does not exist yet; `gh release create` creates
+      # it pointing at the checked-out commit.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            "${{ steps.pkg.outputs.archive }}" \
+            --title "${{ steps.meta.outputs.app }} ${{ steps.meta.outputs.version }}" \
+            --generate-notes

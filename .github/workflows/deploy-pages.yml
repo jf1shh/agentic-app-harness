@@ -40,46 +40,96 @@ jobs:
       - name: Install workspace dependencies
         run: npm install
 
-      # 1. Build Portfolio Hub (Root Showcase Site)
+      # Pages replaces the WHOLE site with one artifact, so every deploy must
+      # assemble the full portfolio-hub/dist tree — building only the changed app
+      # and uploading it alone would delete the other five from production. The
+      # path filter is therefore a per-app *build cache*, not a skipped upload:
+      # each app's built output is cached under a content hash of its own source
+      # tree plus the root lockfile (dep versions), so an unchanged app is
+      # restored instead of rebuilt while the artifact stays complete. This
+      # targets the real cost — the heavy Next.js / ML builds
+      # (smart-recipe-app embeddings, travel-packing-app ONNX) — which now only
+      # run when that app or a shared dependency actually changed. First run
+      # after this lands is a full build (all caches miss), same as before.
+
+      # 1. Build Portfolio Hub (Root Showcase Site) — always built. It owns the
+      # dist root and its `clean` wipes dist/ (including restored app subdirs),
+      # so it must run FIRST, before any app cache is restored into dist/<app>,
+      # and it's a light Vite build not worth caching around that ordering.
       - name: Build Portfolio Hub
         run: |
           cd projects/portfolio-hub
           npm run build
 
-      # 2. Build MoodDiner App -> dist/mood-diner
+      # 2. MoodDiner (Vite -> dist) -> dist/mood-diner
+      - name: Restore mood-diner build
+        id: cache-mood-diner
+        uses: actions/cache@v4
+        with:
+          path: projects/portfolio-hub/dist/mood-diner
+          key: pages-mood-diner-${{ hashFiles('package-lock.json', 'projects/mood-diner/**') }}
       - name: Build MoodDiner App
+        if: steps.cache-mood-diner.outputs.cache-hit != 'true'
         run: |
           cd projects/mood-diner
           npm run build
           mkdir -p ../portfolio-hub/dist/mood-diner
           cp -r dist/* ../portfolio-hub/dist/mood-diner/
 
-      # 3. Build Travel Packing App -> dist/travel-packing-app
+      # 3. Travel Packing (Next.js -> out) -> dist/travel-packing-app
+      - name: Restore travel-packing-app build
+        id: cache-travel-packing-app
+        uses: actions/cache@v4
+        with:
+          path: projects/portfolio-hub/dist/travel-packing-app
+          key: pages-travel-packing-app-${{ hashFiles('package-lock.json', 'projects/travel-packing-app/**') }}
       - name: Build Travel Packing App
+        if: steps.cache-travel-packing-app.outputs.cache-hit != 'true'
         run: |
           cd projects/travel-packing-app
           npm run build
           mkdir -p ../portfolio-hub/dist/travel-packing-app
           cp -r out/* ../portfolio-hub/dist/travel-packing-app/
 
-      # 4. Build Smart Kitchen Recipe Manager -> dist/smart-recipe-app
+      # 4. Smart Recipe (Next.js -> out) -> dist/smart-recipe-app
+      - name: Restore smart-recipe-app build
+        id: cache-smart-recipe-app
+        uses: actions/cache@v4
+        with:
+          path: projects/portfolio-hub/dist/smart-recipe-app
+          key: pages-smart-recipe-app-${{ hashFiles('package-lock.json', 'projects/smart-recipe-app/**') }}
       - name: Build Smart Recipe App
+        if: steps.cache-smart-recipe-app.outputs.cache-hit != 'true'
         run: |
           cd projects/smart-recipe-app
           npm run build
           mkdir -p ../portfolio-hub/dist/smart-recipe-app
           cp -r out/* ../portfolio-hub/dist/smart-recipe-app/
 
-      # 5. Build LexiVault Legal Financial RAG -> dist/legal-financial-rag
+      # 5. LexiVault Legal Financial RAG (Vite -> dist) -> dist/legal-financial-rag
+      - name: Restore legal-financial-rag build
+        id: cache-legal-financial-rag
+        uses: actions/cache@v4
+        with:
+          path: projects/portfolio-hub/dist/legal-financial-rag
+          key: pages-legal-financial-rag-${{ hashFiles('package-lock.json', 'projects/legal-financial-rag/**') }}
       - name: Build LexiVault Legal Financial RAG
+        if: steps.cache-legal-financial-rag.outputs.cache-hit != 'true'
         run: |
           cd projects/legal-financial-rag
           npm run build
           mkdir -p ../portfolio-hub/dist/legal-financial-rag
           cp -r dist/* ../portfolio-hub/dist/legal-financial-rag/
 
-      # 6. Build Elder Care Cost Planner -> dist/elder-care-planner
+      # 6. Elder Care Cost Planner (Next.js -> out) -> dist/elder-care-planner
+      - name: Restore elder-care-planner build
+        id: cache-elder-care-planner
+        uses: actions/cache@v4
+        with:
+          path: projects/portfolio-hub/dist/elder-care-planner
+          key: pages-elder-care-planner-${{ hashFiles('package-lock.json', 'projects/elder-care-planner/**') }}
       - name: Build Elder Care Cost Planner
+        if: steps.cache-elder-care-planner.outputs.cache-hit != 'true'
         run: |
           cd projects/elder-care-planner
           npm run build
