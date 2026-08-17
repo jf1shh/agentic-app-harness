@@ -94,6 +94,14 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-diff-size.test.mjs
 
+      - name: Instruction-Tamper Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-instruction-tamper.test.mjs
+
+      - name: Spec-Ordering Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-spec-ordering.test.mjs
+
       - name: Git-Hooks Installer Self-Test (verify the verifier)
         shell: pwsh
         run: node ./scripts/install-git-hooks.test.mjs
@@ -151,6 +159,29 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: node ./scripts/check-diff-size.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Non-blocking sensor: detects when an agent PR subtly weakens a prose
+      # rule in instruction files (removes MUST/NEVER/always/mandatory/blocking/
+      # required) or adds gate-bypass patterns (--no-verify, continue-on-error:
+      # true, if: false) to workflows. Informational only — exits 0 always.
+      # Promote to blocking once the false-positive rate is understood.
+      - name: Instruction-Tamper Sensor (rule weakening / gate bypass detection)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        shell: pwsh
+        run: node ./scripts/check-instruction-tamper.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Non-blocking sensor: flags apps where logic modules changed without
+      # a matching spec touch or test file touch. Approximates fspec's
+      # machine-checked spec→test→code ordering. PR body [spec-unchanged:
+      # reason] silences the finding for legitimate bugfixes.
+      - name: Spec-Ordering Sensor (logic changes should touch spec or tests)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node ./scripts/check-spec-ordering.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh
@@ -240,6 +271,7 @@ jobs:
             ✅ **All required spec & quality gates passed on this PR.**
             - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
             - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), the guardrail-integrity gate (the gates themselves weren't silently weakened), the secret-scanning gate (no committed credentials on added lines), the containment gate (harness infrastructure touches are acknowledged), the diff-size gate (large diffs are acknowledged), and the peer-consistency gate (no split react/react-dom, @types/*, or @typescript-eslint plugin/parser majors, within an app or across apps sharing an eslint major) all passed.
+            - **Non-blocking sensors**: instruction-tamper sensor (detects rule weakening and gate bypass in instruction/workflow files) and spec-ordering sensor (flags logic changes without a matching spec or test touch) ran as informational checks.
             - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 
             *The full per-app suite (lint, type-check, Vitest, Playwright + \`@axe-core\`) runs in parallel in the Harness Testing Suite workflow.*
