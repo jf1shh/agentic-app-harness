@@ -74,6 +74,10 @@ export const PROTECTED_FILES = [
   { path: 'scripts/check-containment.test.mjs', kind: 'self-test' },
   { path: 'scripts/check-diff-size.mjs', kind: 'gate-script' },
   { path: 'scripts/check-diff-size.test.mjs', kind: 'self-test' },
+  { path: 'scripts/check-instruction-tamper.mjs', kind: 'gate-script' },
+  { path: 'scripts/check-instruction-tamper.test.mjs', kind: 'self-test' },
+  { path: 'scripts/check-spec-ordering.mjs', kind: 'gate-script' },
+  { path: 'scripts/check-spec-ordering.test.mjs', kind: 'self-test' },
 ];
 
 /* -------------------------------------------------------------------- */

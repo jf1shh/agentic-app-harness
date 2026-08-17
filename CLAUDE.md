@@ -118,6 +118,14 @@ node scripts/check-containment.test.mjs   # self-test the containment matching
 node scripts/check-diff-size.mjs --base origin/master --head HEAD
                                            # diff-shaped: warns at 400, blocks at 800 changed lines
 node scripts/check-diff-size.test.mjs     # self-test the diff-size computation
+node scripts/check-instruction-tamper.mjs --base origin/master --head HEAD
+                                           # diff-shaped sensor: detects rule weakening / gate bypass
+                                           # in instruction files and workflows (non-blocking)
+node scripts/check-instruction-tamper.test.mjs  # self-test the tamper detection heuristics
+node scripts/check-spec-ordering.mjs --base origin/master --head HEAD
+                                           # diff-shaped sensor: flags logic changes without a
+                                           # matching spec or test touch (non-blocking)
+node scripts/check-spec-ordering.test.mjs  # self-test the ordering detection
 node scripts/emit-github-issues.mjs       # propose (alternate output): findings -> tasks/issues.json
 node scripts/emit-github-issues.mjs --upload  # also print the gh CLI bulk-upload loop
 node scripts/emit-github-issues.test.mjs  # self-test the issue-shaping logic
@@ -132,7 +140,14 @@ PR-body escape hatch — see `.agents/AGENTS.md` §11. `check-containment.mjs` b
 touches to harness infrastructure (scripts, AGENTS.md, CLAUDE.md, CI workflows, git hooks, spec
 templates) — name the file in the PR body or use `[containment-override: path]` to pass.
 `check-diff-size.mjs` warns at 400 and blocks at 800 net changed lines (excluding generated/lock
-files) — add `[large-diff-acknowledged]` to the PR body to override. `emit-github-issues.mjs` is
+files) — add `[large-diff-acknowledged]` to the PR body to override.
+`check-instruction-tamper.mjs` is a non-blocking sensor that detects rule weakening (removed
+MUST/NEVER/always/mandatory/blocking/required) in instruction files, gate bypass
+(`--no-verify`, `continue-on-error: true`, `if: false`) in workflows, and scope expansion
+(`exclude:` additions) — informational only, exits 0 always.
+`check-spec-ordering.mjs` is a non-blocking sensor that flags apps where logic modules changed
+without a matching spec or test file touch — add `[spec-unchanged: reason]` to the PR body to
+silence. `emit-github-issues.mjs` is
 optional tooling, not part of any gate — see `tasks/README.md`'s "Optional: bulk-import as GitHub
 Issues" section.
 
@@ -192,7 +207,10 @@ in the PR body), `check-diff-size.mjs` (warns at 400, blocks at 800 net changed 
 `check-loop-stats.mjs` (committed portfolio-hub loop stats match the
 rulebook), `check-peer-consistency.mjs` (no split react/react-dom, `@types/*`, or
 `@typescript-eslint` plugin/parser majors, within an app or across apps sharing an `eslint` major —
-apps differing from *each other* stays fine by design), `validate-specs.ps1 -Strict`, and a
+apps differing from *each other* stays fine by design), `validate-specs.ps1 -Strict`,
+two non-blocking sensors — `check-instruction-tamper.mjs` (detects rule weakening and gate bypass
+in instruction/workflow files) and `check-spec-ordering.mjs` (flags logic changes without a
+matching spec or test touch) — and a
 reviewdog step that posts every
 guardrail hit as an inline PR comment (`harness-status-rdjson.mjs`, informational, never blocks)
 on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own informational,
