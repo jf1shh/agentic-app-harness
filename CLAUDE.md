@@ -126,6 +126,11 @@ node scripts/check-spec-ordering.mjs --base origin/master --head HEAD
                                            # diff-shaped sensor: flags logic changes without a
                                            # matching spec or test touch (non-blocking)
 node scripts/check-spec-ordering.test.mjs  # self-test the ordering detection
+node scripts/generate-context-digest.mjs   # advisory: write .context-digest.json (per-app hashes,
+                                           # module counts, guardrail/lesson counts, HEAD commit)
+node scripts/generate-context-digest.mjs --diff  # compare saved digest against live state — shows
+                                           # which apps' specs/schemas changed since session start
+node scripts/generate-context-digest.test.mjs  # self-test the digest generation and diffing
 node scripts/emit-github-issues.mjs       # propose (alternate output): findings -> tasks/issues.json
 node scripts/emit-github-issues.mjs --upload  # also print the gh CLI bulk-upload loop
 node scripts/emit-github-issues.test.mjs  # self-test the issue-shaping logic
@@ -147,7 +152,11 @@ MUST/NEVER/always/mandatory/blocking/required) in instruction files, gate bypass
 (`exclude:` additions) — informational only, exits 0 always.
 `check-spec-ordering.mjs` is a non-blocking sensor that flags apps where logic modules changed
 without a matching spec or test file touch — add `[spec-unchanged: reason]` to the PR body to
-silence. `emit-github-issues.mjs` is
+silence. `generate-context-digest.mjs` is an advisory-only tool (no CI step, no gate):
+it writes a `.context-digest.json` snapshot of per-app spec/schema hashes, module counts, and
+guardrail/lesson counts so agents can detect context staleness during long-running sessions —
+run it at session start and again with `--diff` before pushing to see what changed.
+`emit-github-issues.mjs` is
 optional tooling, not part of any gate — see `tasks/README.md`'s "Optional: bulk-import as GitHub
 Issues" section.
 
