@@ -240,7 +240,12 @@ on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own i
 `continue-on-error` matrix job; `deploy-pages.yml` and `android-release.yml` build and ship
 the live artifacts (GitHub Pages, and the `mood-diner` Android APK) — both already run on `ubuntu-latest`,
 which is why `ci.yml` does too rather than paying for a Windows runner to exercise the `.ps1` wrapper.
-`release.yml` cuts an **independent, versioned release for a single app** when a tag shaped
+`deploy-pages.yml` assembles the full combined Pages artifact on every `master` push, but path-filters
+via a **per-app build cache**: each app's built output is cached under a content hash of its own source
+tree plus the root lockfile, so an unchanged app is restored rather than rebuilt (the heavy Next.js/ML
+builds only run when that app or a shared dependency changed) while the uploaded site stays complete —
+building only the changed app would delete the other five from production. `release.yml` cuts an
+**independent, versioned release for a single app** when a tag shaped
 `<app>-v<version>` is pushed (e.g. `elder-care-planner-v1.2.0`), or via `workflow_dispatch` — it resolves
 the app from the tag, builds only that app against the shared root lockfile, zips its build output
 (`out/` for the Next.js apps, `dist/` for the Vite apps), and publishes a GitHub Release via the
