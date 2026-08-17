@@ -102,6 +102,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-spec-ordering.test.mjs
 
+      - name: README-Freshness Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-readme-freshness.test.mjs
+
       - name: Git-Hooks Installer Self-Test (verify the verifier)
         shell: pwsh
         run: node ./scripts/install-git-hooks.test.mjs
@@ -182,6 +186,18 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: node ./scripts/check-spec-ordering.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Non-blocking sensor: flags PRs where app source or harness infra
+      # changed without a corresponding README update. §7 and §10.2
+      # require README updates when features change. PR body
+      # [readme-unchanged: reason] silences the finding.
+      - name: README-Freshness Sensor (source changes should update READMEs)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node ./scripts/check-readme-freshness.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh

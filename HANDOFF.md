@@ -49,7 +49,7 @@ reports **0 findings across all 6 apps**. `harness-learn.mjs`,
 
 Five harness features adopted from a landscape review of nine external agent-harness
 repos (loopgate_harness, OpenLore, fspec, Agent-Gate/MergeWarden, and others), all
-implemented and merged:
+implemented and merged, plus one additional sensor added afterward:
 
 ### Blocking CI gates (PR #232)
 
@@ -71,6 +71,10 @@ implemented and merged:
 4. **Spec-before-code ordering sensor** (`scripts/check-spec-ordering.mjs` +
    self-test). Flags apps where logic modules changed without a matching spec or test
    file touch. Silence with `[spec-unchanged: reason]` in the PR body. Non-blocking.
+5. **README freshness sensor** (`scripts/check-readme-freshness.mjs` + self-test,
+   47 tests). Flags PRs where app source or harness infrastructure changed without
+   a corresponding README update. Silence with `[readme-unchanged: reason]` in the
+   PR body. Non-blocking.
 
 ### Advisory tool (PR #234)
 
@@ -80,7 +84,7 @@ implemented and merged:
    session start; run with `--diff` before pushing to detect stale context. No CI step,
    no gate — advisory only.
 
-All five follow the pure-core + self-test pattern. Each script's `*.test.mjs` is
+All six follow the pure-core + self-test pattern. Each script's `*.test.mjs` is
 verified by `sdd-sentinel.yml`.
 
 ## 4. Still Open / Deliberately Deferred
@@ -98,10 +102,10 @@ verified by `sdd-sentinel.yml`.
 - **Final app-wide mutation scores** for `elder-care-planner`, `travel-packing-app`,
   `mood-diner`, and `smart-recipe-app` were confirmed at file level but never re-swept
   at app level. Informational, non-blocking — re-run `--full` before quoting a number.
-- **Two non-blocking sensors may be promoted to blocking** once their false-positive
-  rates are understood: `check-instruction-tamper.mjs` and `check-spec-ordering.mjs`
-  follow the same sensor→guardrail promotion arc as `senseUnitTests` (`.agents/AGENTS.md`
-  §8).
+- **Three non-blocking sensors may be promoted to blocking** once their false-positive
+  rates are understood: `check-instruction-tamper.mjs`, `check-spec-ordering.mjs`, and
+  `check-readme-freshness.mjs` follow the same sensor→guardrail promotion arc as
+  `senseUnitTests` (`.agents/AGENTS.md` §8).
 
 ## 5. How to Verify
 - Whole-repo sense + gates: `node scripts/harness-status.mjs --gate`, then

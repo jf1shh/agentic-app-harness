@@ -126,6 +126,10 @@ node scripts/check-spec-ordering.mjs --base origin/master --head HEAD
                                            # diff-shaped sensor: flags logic changes without a
                                            # matching spec or test touch (non-blocking)
 node scripts/check-spec-ordering.test.mjs  # self-test the ordering detection
+node scripts/check-readme-freshness.mjs --base origin/master --head HEAD
+                                           # diff-shaped sensor: flags source changes without a
+                                           # README update (non-blocking)
+node scripts/check-readme-freshness.test.mjs  # self-test the README freshness detection
 node scripts/generate-context-digest.mjs   # advisory: write .context-digest.json (per-app hashes,
                                            # module counts, guardrail/lesson counts, HEAD commit)
 node scripts/generate-context-digest.mjs --diff  # compare saved digest against live state — shows
@@ -152,7 +156,10 @@ MUST/NEVER/always/mandatory/blocking/required) in instruction files, gate bypass
 (`exclude:` additions) — informational only, exits 0 always.
 `check-spec-ordering.mjs` is a non-blocking sensor that flags apps where logic modules changed
 without a matching spec or test file touch — add `[spec-unchanged: reason]` to the PR body to
-silence. `generate-context-digest.mjs` is an advisory-only tool (no CI step, no gate):
+silence. `check-readme-freshness.mjs` is a non-blocking sensor that flags PRs where app
+source or harness infrastructure changed without a corresponding README update — add
+`[readme-unchanged: reason]` to the PR body to silence.
+`generate-context-digest.mjs` is an advisory-only tool (no CI step, no gate):
 it writes a `.context-digest.json` snapshot of per-app spec/schema hashes, module counts, and
 guardrail/lesson counts so agents can detect context staleness during long-running sessions —
 run it at session start and again with `--diff` before pushing to see what changed.
@@ -217,9 +224,10 @@ in the PR body), `check-diff-size.mjs` (warns at 400, blocks at 800 net changed 
 rulebook), `check-peer-consistency.mjs` (no split react/react-dom, `@types/*`, or
 `@typescript-eslint` plugin/parser majors, within an app or across apps sharing an `eslint` major —
 apps differing from *each other* stays fine by design), `validate-specs.ps1 -Strict`,
-two non-blocking sensors — `check-instruction-tamper.mjs` (detects rule weakening and gate bypass
-in instruction/workflow files) and `check-spec-ordering.mjs` (flags logic changes without a
-matching spec or test touch) — and a
+three non-blocking sensors — `check-instruction-tamper.mjs` (detects rule weakening and gate bypass
+in instruction/workflow files), `check-spec-ordering.mjs` (flags logic changes without a
+matching spec or test touch), and `check-readme-freshness.mjs` (flags source changes without a
+README update) — and a
 reviewdog step that posts every
 guardrail hit as an inline PR comment (`harness-status-rdjson.mjs`, informational, never blocks)
 on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own informational,

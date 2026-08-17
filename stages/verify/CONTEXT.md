@@ -22,6 +22,8 @@ Re-run the deterministic checks as a blocking CI gate. A PR cannot merge while t
     weakening and gate bypass in instruction/workflow files (non-blocking sensor).
   - `node scripts/check-spec-ordering.mjs --base origin/master --head HEAD` — flags logic changes
     without a matching spec or test touch (non-blocking sensor).
+  - `node scripts/check-readme-freshness.mjs --base origin/master --head HEAD` — flags source
+    changes without a corresponding README update (non-blocking sensor).
   - `node scripts/test-app.mjs <AppName>` per app — security audit, lint, type-check, Vitest,
     Playwright + axe a11y.
   - `.\scripts\validate-specs.ps1 -Strict` — every app has a spec, README, Zod usage, BDD specs.
