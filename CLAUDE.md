@@ -112,6 +112,12 @@ node scripts/check-secrets.mjs --base origin/master --head HEAD
                                            # diff-shaped: blocks a committed credential on an added line
 node scripts/check-secrets.mjs --tree     # one-time full-tree audit (not diff-shaped)
 node scripts/check-secrets.test.mjs       # self-test the secret-pattern matching
+node scripts/check-containment.mjs --base origin/master --head HEAD
+                                           # diff-shaped: blocks unacknowledged harness infra touches
+node scripts/check-containment.test.mjs   # self-test the containment matching
+node scripts/check-diff-size.mjs --base origin/master --head HEAD
+                                           # diff-shaped: warns at 400, blocks at 800 changed lines
+node scripts/check-diff-size.test.mjs     # self-test the diff-size computation
 node scripts/emit-github-issues.mjs       # propose (alternate output): findings -> tasks/issues.json
 node scripts/emit-github-issues.mjs --upload  # also print the gh CLI bulk-upload loop
 node scripts/emit-github-issues.test.mjs  # self-test the issue-shaping logic
@@ -122,8 +128,13 @@ Mutation testing (`run-mutation.mjs`) and the reviewdog inline-annotation bridge
 "Mutation testing" and "Inline PR annotations" subsections for why each stays outside
 `harness-status.mjs`'s fast sense loop and never blocks a merge on its own.
 `check-secrets.mjs` is diff-shaped like `check-enum-blast-radius.mjs` but **is** blocking, with no
-PR-body escape hatch — see `.agents/AGENTS.md` §11. `emit-github-issues.mjs` is optional tooling, not
-part of any gate — see `tasks/README.md`'s "Optional: bulk-import as GitHub Issues" section.
+PR-body escape hatch — see `.agents/AGENTS.md` §11. `check-containment.mjs` blocks unacknowledged
+touches to harness infrastructure (scripts, AGENTS.md, CLAUDE.md, CI workflows, git hooks, spec
+templates) — name the file in the PR body or use `[containment-override: path]` to pass.
+`check-diff-size.mjs` warns at 400 and blocks at 800 net changed lines (excluding generated/lock
+files) — add `[large-diff-acknowledged]` to the PR body to override. `emit-github-issues.mjs` is
+optional tooling, not part of any gate — see `tasks/README.md`'s "Optional: bulk-import as GitHub
+Issues" section.
 
 `.\scripts\harness.ps1 {status|tasks|verify|learn|history}` wraps the same five in one entry point.
 `harness-history.json` (git-tracked, unlike the gitignored `harness-status.json` snapshot) is the
@@ -176,7 +187,9 @@ lesson, so the enforcement can't silently rot or silently expand past what's doc
 per app on `ubuntu-latest`; `sdd-sentinel.yml` runs the harness gate plus `check-enum-blast-radius.mjs`,
 `check-doc-claims.mjs --gate` (checked-in docs must match what they claim),
 `check-guardrail-integrity.mjs` ("who guards the guards" — blocks a silently deleted guardrail or
-shrunk gate self-test), `check-loop-stats.mjs` (committed portfolio-hub loop stats match the
+shrunk gate self-test), `check-containment.mjs` (harness infrastructure touches must be acknowledged
+in the PR body), `check-diff-size.mjs` (warns at 400, blocks at 800 net changed lines),
+`check-loop-stats.mjs` (committed portfolio-hub loop stats match the
 rulebook), `check-peer-consistency.mjs` (no split react/react-dom, `@types/*`, or
 `@typescript-eslint` plugin/parser majors, within an app or across apps sharing an `eslint` major —
 apps differing from *each other* stays fine by design), `validate-specs.ps1 -Strict`, and a

@@ -70,6 +70,10 @@ export const PROTECTED_FILES = [
   { path: 'scripts/harness-learn.mjs', kind: 'gate-script' },
   { path: 'scripts/check-loop-stats.mjs', kind: 'gate-script' },
   { path: 'scripts/check-loop-stats.test.mjs', kind: 'self-test' },
+  { path: 'scripts/check-containment.mjs', kind: 'gate-script' },
+  { path: 'scripts/check-containment.test.mjs', kind: 'self-test' },
+  { path: 'scripts/check-diff-size.mjs', kind: 'gate-script' },
+  { path: 'scripts/check-diff-size.test.mjs', kind: 'self-test' },
 ];
 
 /* -------------------------------------------------------------------- */

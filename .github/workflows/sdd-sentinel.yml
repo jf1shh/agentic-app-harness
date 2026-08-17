@@ -86,6 +86,14 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-peer-consistency.test.mjs
 
+      - name: Containment Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-containment.test.mjs
+
+      - name: Diff-Size Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-diff-size.test.mjs
+
       - name: Git-Hooks Installer Self-Test (verify the verifier)
         shell: pwsh
         run: node ./scripts/install-git-hooks.test.mjs
@@ -122,6 +130,27 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: pwsh
         run: node ./scripts/check-secrets.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Blocks a PR that touches harness infrastructure (scripts/*.mjs,
+      # .agents/AGENTS.md, CLAUDE.md, CI workflows, git hooks, spec templates)
+      # without naming the file in the PR body or using a
+      # [containment-override: path] marker — see check-containment.mjs header.
+      - name: Containment Gate (harness infra touches must be acknowledged)
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node ./scripts/check-containment.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Blocks a PR whose net changed lines (excluding generated/lock files)
+      # exceed 800 without a [large-diff-acknowledged] marker in the PR body —
+      # warns at 400. See check-diff-size.mjs header for the threshold rationale.
+      - name: Diff-Size Gate (large diffs must be acknowledged)
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node ./scripts/check-diff-size.mjs --base origin/${{ github.base_ref }} --head HEAD
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh
@@ -210,7 +239,7 @@ jobs:
 
             ✅ **All required spec & quality gates passed on this PR.**
             - **Spec & schema coverage audit** (\`validate-specs.ps1 -Strict\`): every app has a spec, README, contract-first Zod schemas, and BDD \`Given-When-Then\` E2E specs. Strict mode fails the run on any gap.
-            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), the guardrail-integrity gate (the gates themselves weren't silently weakened), the secret-scanning gate (no committed credentials on added lines), and the peer-consistency gate (no split react/react-dom, @types/*, or @typescript-eslint plugin/parser majors, within an app or across apps sharing an eslint major) all passed.
+            - **Harness gates**: guardrail self-test, Lesson⇄Guardrail traceability (\`learn\`), the blocking \`verify\` gate, the doc-claims gate (checked-in docs match what they claim), the guardrail-integrity gate (the gates themselves weren't silently weakened), the secret-scanning gate (no committed credentials on added lines), the containment gate (harness infrastructure touches are acknowledged), the diff-size gate (large diffs are acknowledged), and the peer-consistency gate (no split react/react-dom, @types/*, or @typescript-eslint plugin/parser majors, within an app or across apps sharing an eslint major) all passed.
             - **RAG retrieval-precision gate**: LexiVault's hybrid search met the precision@K and MRR floors on the golden query set (deterministic, no LLM).
 
             *The full per-app suite (lint, type-check, Vitest, Playwright + \`@axe-core\`) runs in parallel in the Harness Testing Suite workflow.*
