@@ -31,11 +31,19 @@ peer-consistency, diff-size); `test-app.mjs` not run because no app code changed
 + one doc paragraph only). Output pasted verbatim in the PR body.
 
 ## Open / next steps
-- **Containment is body-timing sensitive.** The gate reads `github.event.pull_request.body` as of
-  the triggering push. When you add a contained file (`.github/workflows/*`, `AGENTS.md`,
-  `CLAUDE.md`, `.githooks/*`, `specs/templates/*`), the PR body must already name it *at push
-  time* — updating the body afterward does **not** re-trigger the gate; only a new push does.
-  Lesson for the next agent: acknowledge infra files in the body before the push that adds them.
+- **A top-level contained file needs the `[containment-override: …]` marker — naming it in prose
+  is not enough.** `check-containment.mjs`'s `isContainmentAcknowledged` accepts a path only via a
+  two-segment-minimum substring; its loop is `for (i=0; i <= segments.length - 2; …)`, which never
+  runs for a single-segment path like `CLAUDE.md` or `AGENTS.md`. So a multi-segment file
+  (`.github/workflows/ci.yml`) is acknowledged by naming it, but a root file can only be
+  acknowledged by `[containment-override: CLAUDE.md]`. This is what kept the Sentinel red from the
+  first commit; the fix is the override marker in the PR body. Verify acknowledgment locally with
+  `PR_BODY` set (`PR_BODY="…" node scripts/check-containment.mjs --base origin/master --head HEAD`)
+  before pushing — a bare `check-containment.mjs` run with no `PR_BODY` reports every file as
+  unacknowledged and hides which form the body actually needs.
+- **Containment reads the body as of the triggering push.** Updating the PR body does not
+  re-trigger the Sentinel (no `pull_request` synchronize event); only a new push does. So fix the
+  body first, then push.
 - The `deploy-pages` cache busts on any change under `projects/<app>/**` (test/README edits
   included) — deliberately conservative. Narrowing the hash to build-affecting paths is a possible
   follow-up.
