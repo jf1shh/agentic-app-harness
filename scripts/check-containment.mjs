@@ -76,7 +76,7 @@ export function matchesContainment(filePath, pattern) {
 
   if (fileDir !== dir) return false;
 
-  const extGlob = glob.replace('*', '');
+  const extGlob = glob.replaceAll('*', '');
   if (extGlob.startsWith('.')) return fileName.endsWith(extGlob);
   return true;
 }
