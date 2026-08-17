@@ -880,6 +880,21 @@ This is purely additive: the annotation step runs with `continue-on-error: true`
 block a merge on its own. `scripts/harness-status.mjs --gate`, run immediately before it in the
 same workflow, remains the actual gate.
 
+### Context staleness detection: `scripts/generate-context-digest.mjs`
+
+Long-running agent sessions — sessions where the gap between first reading a file and pushing a
+commit spans more than a few minutes — risk acting on stale context. A concurrent merge may have
+changed a spec, a schema, or the guardrail registry between the moment you cached it and the
+moment you push. `scripts/generate-context-digest.mjs` writes a `.context-digest.json` snapshot
+(gitignored, like `harness-status.json`) of per-app spec/schema hashes, module/test counts, the
+current HEAD commit, and the guardrail and lesson counts. Run it:
+
+1. **At session start**: `node scripts/generate-context-digest.mjs` — establishes a baseline.
+2. **Before pushing** (if the session has been long-running): `node scripts/generate-context-digest.mjs --diff` — compares the saved baseline against live repo state and reports which apps' specs or schemas changed in the interim.
+
+If `headCommit` differs between the two runs, re-read any changed specs before pushing. This is
+advisory only — no CI step, no blocking gate.
+
 ### Protocol: adding a learned lesson
 When you discover a reusable lesson, decide whether it is **mechanically detectable**:
 1. **Mechanical** (a pattern a regex can catch): (a) add a guardrail object to `GUARDRAILS` in `scripts/harness-status.mjs` with a `lesson` field; (b) add a known-bad + known-good case to `scripts/harness-status.test.mjs`; (c) add the lesson bullet to section 6 below and tag it `` `[guardrail: <id>]` ``. Run `.\scripts\harness.ps1 verify` — self-test, learn, and gate must all pass.
