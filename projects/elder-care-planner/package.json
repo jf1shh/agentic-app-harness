@@ -34,7 +34,7 @@
     "@capacitor/cli": "^8.5.0",
     "@playwright/test": "^1.61.1",
     "@stryker-mutator/core": "^9.6.1",
-    "@stryker-mutator/vitest-runner": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26",
     "@types/react": "^19",
     "@types/react-dom": "^19",
