@@ -16,6 +16,7 @@
 | Look up a repo convention or term | `_config/conventions.md`, `_config/glossary.md` | — |
 | Scaffold a brand-new app | `scripts/scaffold-app.ps1` | `specs/templates/`, `.agents/AGENTS.md` §4 |
 | Touch CI / workflows | `.github/workflows/` | `AGENTS.md` "CI" section |
+| Ship an app to the Google Play Store (Android release) | `PLAY-STORE-DEPLOY.md` | `projects/<app>/store-listing/README.md` |
 | Open a PR | — | `.agents/AGENTS.md` §9 (report what you ran, widen-a-type blast radius, prove-a-test-can-fail) |
 | Maintain this ICM layer as the repo evolves | `/icm-sync`, `/icm-context-scaffold` | `.claude/skills/icm-sync/SKILL.md`, `.claude/skills/icm-context-scaffold/SKILL.md` |
 
