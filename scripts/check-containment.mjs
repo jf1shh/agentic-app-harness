@@ -54,20 +54,41 @@ export const CONTAINED_PATHS = [
   { pattern: '.github/workflows/*.yml', description: 'CI pipelines' },
   { pattern: '.githooks/*', description: 'local gate hooks' },
   { pattern: 'specs/templates/*', description: 'spec format definitions' },
+  { pattern: '.claude/skills/*/SKILL.md', description: 'Claude Code skill definitions' },
+  { pattern: '.agents/skills/*/SKILL.md', description: 'cross-agent skill definitions' },
+  { pattern: '.claude/hooks/*', description: 'Claude Code lifecycle hooks' },
+  { pattern: '.claude/settings.json', description: 'Claude Code permissions and hook wiring' },
 ];
 
 /**
  * Whether a file path matches a containment pattern.
  *
- * Supports two forms:
- *   'dir/*.ext'   — matches any file directly in dir/ with that extension
- *   'exact/path'  — exact match
+ * Supports three forms:
+ *   'dir/*.ext'           — matches any file directly in dir/ with that extension
+ *   'dir/<seg>/file.ext'  — a middle-segment '*' matches exactly one path segment
+ *   'exact/path'          — exact match
  */
 export function matchesContainment(filePath, pattern) {
   const norm = filePath.split(sep).join('/');
   if (!pattern.includes('*')) return norm === pattern;
 
   const slashIdx = pattern.lastIndexOf('/');
+
+  // A '*' before the last '/' is a middle-segment wildcard: it matches exactly
+  // one path segment. Segment-match the whole pattern and require the file to
+  // have the same number of segments (no '**' recursion).
+  if (pattern.slice(0, slashIdx).includes('*')) {
+    const patSegs = pattern.split('/');
+    const fileSegs = norm.split('/');
+    if (patSegs.length !== fileSegs.length) return false;
+    for (let i = 0; i < patSegs.length; i += 1) {
+      if (patSegs[i] === '*') continue; // one segment, anything
+      if (patSegs[i] !== fileSegs[i]) return false;
+    }
+    return true;
+  }
+
+  // Otherwise the '*' is in the final filename segment, as before.
   const dir = pattern.slice(0, slashIdx);
   const glob = pattern.slice(slashIdx + 1);
 
