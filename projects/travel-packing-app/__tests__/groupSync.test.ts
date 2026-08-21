@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage } from '../src/services/groupSync';
+import {
+  createSyncChannel,
+  broadcastChecklistUpdate,
+  isChecklistSyncMessage,
+  isCheckedItemsMap,
+  parseStoredCheckedItems,
+} from '../src/services/groupSync';
 
 describe('createSyncChannel', () => {
   it('Given BroadcastChannel is available, When a channel is created, Then it is a real BroadcastChannel instance', () => {
@@ -60,5 +66,57 @@ describe('isChecklistSyncMessage', () => {
     expect(isChecklistSyncMessage(null)).toBe(false);
     expect(isChecklistSyncMessage('a string')).toBe(false);
     expect(isChecklistSyncMessage(42)).toBe(false);
+  });
+});
+
+describe('isCheckedItemsMap', () => {
+  it('Given a plain object of booleans, When it is validated, Then it is accepted', () => {
+    expect(isCheckedItemsMap({ 'shirt-1': true, 'sock-2': false })).toBe(true);
+  });
+
+  it('Given an empty object, When it is validated, Then it is accepted', () => {
+    expect(isCheckedItemsMap({})).toBe(true);
+  });
+
+  it('Given null, an array, or a bare number, When each is validated, Then each is rejected', () => {
+    expect(isCheckedItemsMap(null)).toBe(false);
+    expect(isCheckedItemsMap([1, 2])).toBe(false);
+    expect(isCheckedItemsMap(42)).toBe(false);
+  });
+
+  it('Given an object holding a non-boolean value, When it is validated, Then it is rejected', () => {
+    expect(isCheckedItemsMap({ 'shirt-1': 'yes' })).toBe(false);
+  });
+});
+
+describe('parseStoredCheckedItems', () => {
+  it('Given a stored map of checked items, When it is parsed, Then the map is returned', () => {
+    expect(parseStoredCheckedItems('{"shirt-1":true}')).toEqual({ 'shirt-1': true });
+  });
+
+  it('Given no stored value, When it is parsed, Then an empty map is returned', () => {
+    expect(parseStoredCheckedItems(null)).toEqual({});
+  });
+
+  it('Given a stored literal "null", When it is parsed, Then an empty map is returned rather than null', () => {
+    // JSON.parse('null') *succeeds* and yields null, so a try/catch around the
+    // parse does not catch this. The component then calls Object.values(null),
+    // which throws during render and takes the checklist down.
+    const result = parseStoredCheckedItems('null');
+    expect(result).toEqual({});
+    expect(() => Object.values(result).filter(Boolean).length).not.toThrow();
+  });
+
+  it('Given a stored array or bare number, When each is parsed, Then an empty map is returned', () => {
+    expect(parseStoredCheckedItems('[true,false]')).toEqual({});
+    expect(parseStoredCheckedItems('42')).toEqual({});
+  });
+
+  it('Given malformed JSON, When it is parsed, Then an empty map is returned', () => {
+    expect(parseStoredCheckedItems('{oops')).toEqual({});
+  });
+
+  it('Given an object holding non-boolean values, When it is parsed, Then an empty map is returned', () => {
+    expect(parseStoredCheckedItems('{"shirt-1":"yes"}')).toEqual({});
   });
 });

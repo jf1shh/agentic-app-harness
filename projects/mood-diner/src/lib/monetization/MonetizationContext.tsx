@@ -1,7 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  loadPlanTier,
+  savePlanTier,
+  loadCreditsForToday,
+  saveCredits,
+  DAILY_FREE_CREDITS,
+  type PlanTier,
+} from './monetizationStorage';
 
-export type PlanTier = 'free' | 'pro';
+export type { PlanTier };
 
 export interface MonetizationContextType {
   plan: PlanTier;
@@ -16,36 +24,26 @@ export interface MonetizationContextType {
 
 const MonetizationContext = createContext<MonetizationContextType | undefined>(undefined);
 
-const DAILY_FREE_CREDITS = 3;
-const STORAGE_KEY_PLAN = 'mooddiner_plan_tier';
-const STORAGE_KEY_CREDITS = 'mooddiner_daily_credits';
-const STORAGE_KEY_DATE = 'mooddiner_credit_date';
-
 export const MonetizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [plan, setPlan] = useState<PlanTier>(() => {
-    return (localStorage.getItem(STORAGE_KEY_PLAN) as PlanTier) || 'free';
-  });
+  // Every read and write below goes through monetizationStorage, which treats
+  // localStorage as the untrusted boundary it is (.agents/AGENTS.md §1). That
+  // matters most here: this provider sits at the root of the tree, so an
+  // unguarded throw from a browser that denies storage would blank the whole
+  // app rather than degrading to the free tier.
+  const [plan, setPlan] = useState<PlanTier>(() => loadPlanTier(localStorage));
 
-  const [creditsRemaining, setCreditsRemaining] = useState<number>(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const lastDate = localStorage.getItem(STORAGE_KEY_DATE);
-    if (lastDate !== today) {
-      localStorage.setItem(STORAGE_KEY_DATE, today);
-      localStorage.setItem(STORAGE_KEY_CREDITS, DAILY_FREE_CREDITS.toString());
-      return DAILY_FREE_CREDITS;
-    }
-    const saved = localStorage.getItem(STORAGE_KEY_CREDITS);
-    return saved !== null ? parseInt(saved, 10) : DAILY_FREE_CREDITS;
-  });
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(() =>
+    loadCreditsForToday(localStorage, new Date().toISOString().slice(0, 10)),
+  );
 
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_PLAN, plan);
+    savePlanTier(localStorage, plan);
   }, [plan]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_CREDITS, creditsRemaining.toString());
+    saveCredits(localStorage, creditsRemaining);
   }, [creditsRemaining]);
 
   const openPaywall = () => setIsPaywallOpen(true);
@@ -91,7 +89,7 @@ export const MonetizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 const DEFAULT_FALLBACK_CONTEXT: MonetizationContextType = {
   plan: 'free',
-  creditsRemaining: 3,
+  creditsRemaining: DAILY_FREE_CREDITS,
   isPaywallOpen: false,
   openPaywall: () => {},
   closePaywall: () => {},

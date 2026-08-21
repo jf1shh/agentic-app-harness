@@ -32,6 +32,19 @@ The central web portal for the **Agentic App Harness** monorepo — a master cat
 
 The catalog data is contract-first — `ProjectItemSchema` (in `src/schemas.ts`) is parsed on every load via `ProjectItemSchema.parse(item)`, so a typo or schema drift breaks the build, not the UI.
 
+
+### Crash recovery (`src/components/ErrorBoundary.tsx`)
+
+A top-level class error boundary (`.agents/AGENTS.md` §12) wraps the root `<App />` in
+`src/main.tsx`. Without it, a throw during render unmounts the whole tree and leaves a blank page —
+indistinguishable, on an installed Android build, from a broken install. The fallback shows fixed
+copy and a reload button.
+
+The boundary deliberately **does not render the error**: `error.message` and a component stack can
+quote the user data the app was holding when it crashed, so details go to `console.error` (on-device,
+never off it) and never into the DOM. `ErrorBoundary.test.tsx` asserts exactly that, by throwing a
+message containing a marker string and checking the marker never reaches the rendered output.
+
 ## Project layout
 
 ```

@@ -210,6 +210,13 @@ Next.js 16 + React 19 + TypeScript, vanilla CSS (glassmorphism + high-contrast),
 ## Persistence and privacy
 
 - Storage: IndexedDB (`src/services/db.ts`) for wardrobe photos and packing/trip data; `localStorage` for the theme choice and checklist state.
+- The checklist's saved checkmarks are restored through `parseStoredCheckedItems`
+  (`src/services/groupSync.ts`), which validates the *parsed result*, not just the parse. A
+  `try`/`catch` alone is not enough here: the string `"null"` is valid JSON, so it parses without
+  throwing and would otherwise reach `Object.values(...)` and crash the checklist during render.
+  The same `isCheckedItemsMap` guard also validates checklist updates arriving over
+  `BroadcastChannel` from another tab, so the two untrusted sources cannot drift into disagreeing
+  about what a valid map is.
 - Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 - The only remote calls are to `nominatim.openstreetmap.org` and `geocoding-api.open-meteo.com`, for the destination text and dates you enter — no wardrobe photos or packing data ever leave the device.
 

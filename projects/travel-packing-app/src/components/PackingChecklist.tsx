@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Garment } from '../types';
 import { useT } from '../i18n/context';
-import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage } from '../services/groupSync';
+import { createSyncChannel, broadcastChecklistUpdate, isChecklistSyncMessage, parseStoredCheckedItems } from '../services/groupSync';
 import { buildEssentialSpecs, computeProgressPercent } from '../utils/checklistEssentials';
 import { getAdapterPlugType } from '../utils/plugs';
 
@@ -18,8 +18,10 @@ export default function PackingChecklist({ garments, tripDays, destinationCountr
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
     try {
-      const saved = localStorage.getItem('packright_checklist');
-      return saved ? JSON.parse(saved) : {};
+      // parseStoredCheckedItems validates the parsed *result*, not just the
+      // parse: a stored literal "null" parses successfully and would otherwise
+      // reach Object.values() below and throw during render.
+      return parseStoredCheckedItems(localStorage.getItem('packright_checklist'));
     } catch (e) {
       console.error("Failed to load checklist state", e);
       return {};

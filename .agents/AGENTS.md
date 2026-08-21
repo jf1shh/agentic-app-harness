@@ -711,6 +711,50 @@ As an AI agent operating within this repository, you must strictly adhere to the
   no trace in the diff for a line-level regex to catch — only re-running the count catches it,
   which is what `scripts/check-doc-claims.mjs` already does for the one claim it covers (§8);
   extending its coverage to more per-app numeric claims is a natural, still-open follow-up.
+- **`localStorage` Throws — It Does Not Merely Return Null — and a Root Provider Is the Worst
+  Place to Learn That**: `mood-diner`'s own `src/lib/storage.ts` already wrapped every `getItem` in
+  a `try`/`catch` and validated the result through Zod, exactly as §1 requires. Its
+  `MonetizationContext.tsx`, in the same app, did neither: `localStorage.getItem(KEY) as PlanTier`
+  and `parseInt(saved, 10)`, both bare. The same shape as §11's *Contract That Exists But Isn't
+  Wired* — one hardened path, one unhardened path, same app, same data class — and it had three
+  separate failure modes stacked on it. (1) *Access throws when the browser denies storage* (a
+  private window, site data blocked, an Android WebView with DOM storage off). Not "returns null" —
+  a `SecurityError`. This read happens while the provider builds its initial state at the **root of
+  the tree**, so the throw is not caught by anything and the entire app renders as a blank page,
+  the exact failure §12's boundaries exist to stop. A hardened storage module three files away does
+  not help if the crashing read isn't going through it. (2) *An unvalidated `as` cast is a lie about
+  the type*, and a hand-edited `'gold'` propagates as a `PlanTier` everywhere downstream. (3) *A
+  corrupt count poisons itself permanently*: `parseInt('abc')` is `NaN`, `NaN > 0` is false so the
+  user is locked out of the free allowance, and — because the provider writes state back on change —
+  `NaN.toString()` persists `"NaN"`, so the lockout **survives every future reload**. Three rules.
+  *Guard the access, not just the parse.* *A corrupt count must fail toward the generous side* —
+  resetting to the full allowance hands a free user one extra day, resetting to zero silently
+  withholds what the app promised, and only one of those is recoverable by the user. *Don't reach
+  for `z.coerce` on a stored number*: it turns `null` and `''` into `0`, converting "nothing stored"
+  into "nothing left", which is the lockout wearing a Zod schema. Verified by mutation — restoring
+  the original unguarded reads turns 9 of the 17 cases in `monetizationStorage.test.ts` red,
+  including both the storage-denied and the persisted-`NaN` cases. Not tagged as a guardrail:
+  whether a given `getItem` sits on a path that can crash the root of the tree is a cross-file
+  property, and the hardened sibling module is what makes the gap invisible to a line-level read.
+
+- **`JSON.parse('null')` Succeeds, So a `try`/`catch` Around the Parse Is Not a Validation**:
+  `travel-packing-app`'s packing checklist restored its checked-items map with `saved ?
+  JSON.parse(saved) : {}` inside a `try`/`catch`, which looks like a guarded read and is not one.
+  The string `"null"` is *valid JSON*: it parses without throwing, the catch never fires, and
+  `checkedItems` becomes `null` — then `Object.values(checkedItems)` throws during render, several
+  lines and one component away from the read that caused it. The same hole passes an array, a bare
+  number, and an object whose values aren't booleans. **Validate the parsed result, not just the
+  act of parsing**; a `catch` only covers syntactically invalid JSON, which is the *easier* half of
+  the problem. What made the gap conspicuous once found: the same file already validated the *other*
+  untrusted source of the identical shape — `isChecklistSyncMessage`, guarding messages arriving over
+  `BroadcastChannel` from another tab — so the app was strict about a message from a sibling tab and
+  credulous about its own `localStorage`. Both now resolve through one exported `isCheckedItemsMap`,
+  per §6's *one definition, consumed twice* rule, so the two paths cannot drift into disagreeing
+  about what a valid map is. General shape worth carrying: when a value can arrive from two
+  untrusted sources, check that **both** go through the guard, and be suspicious of the one that
+  looks too routine to need it. Not tagged as a guardrail: "was the result of this parse validated"
+  needs the data flow from the parse to its first use, which a per-line regex cannot follow.
+
 - **A Promised Follow-Up Is a Debt, Not a Deliverable**: PRs #161 and #162 (weather-reactive
   packing essentials, travel-mode preference) each branched independently off `master` and said so
   explicitly in their own bodies — *"whichever merges second will need a conflict-resolution merge
@@ -1132,18 +1176,27 @@ distributed tracing, or a metrics pipeline — there is no server to instrument.
 narrower and answerable: **when something breaks at runtime, does the app tell you, without shipping
 what broke anywhere off the user's device?**
 
-- **Every app should fail into something, not into a blank page.** `travel-packing-app` is the one
-  app in the repo with a real pattern: a structured `Logger` (`src/services/logger.ts`) that
-  persists entries to IndexedDB via `idb-keyval` for later inspection, still `console.error`s in dev,
-  and is wired into a top-level error boundary (`src/app/error.tsx`) so a render crash shows a
-  recoverable screen instead of a blank one. The other five apps have no error boundary at all and
-  rely on ad hoc `console.error` calls scattered in individual `catch` blocks (e.g.
-  `mood-diner/src/App.tsx`, `smart-recipe-app/src/lib/data.ts`,
-  `legal-financial-rag/src/components/QueryWorkbench.tsx` and `VaultLockModal.tsx`) — real error
-  handling, but with no single place that catches what those `catch` blocks miss, and no boundary
-  around a rendering crash at all. New work on any of the three Next.js apps should add its own
-  `error.tsx`; the three Vite apps need the class-component equivalent (`componentDidCatch` /
-  `getDerivedStateFromError`), since Vite has no framework-level error-boundary convention to lean on.
+- **Every app should fail into something, not into a blank page.** `travel-packing-app` set the
+  pattern: a structured `Logger` (`src/services/logger.ts`) that persists entries to IndexedDB via
+  `idb-keyval` for later inspection, still `console.error`s in dev, and is wired into a top-level
+  error boundary (`src/app/error.tsx`) so a render crash shows a recoverable screen instead of a
+  blank one. **Coverage is now closed across all six apps**: the Next.js apps
+  (`elder-care-planner`, `smart-recipe-app`) each have their own `src/app/error.tsx`, and the three
+  Vite apps (`mood-diner`, `portfolio-hub`, `legal-financial-rag`) have the class-component
+  equivalent at `src/components/ErrorBoundary.tsx` (`getDerivedStateFromError` for the fallback,
+  `componentDidCatch` for reporting), wired in `src/main.tsx` around the root `<App />`, since Vite
+  has no framework-level error-boundary convention to lean on. Each app keeps its own copy rather
+  than sharing one from a common package — the same deliberate independence the six apps' separate
+  dependency versions already reflect. Two things the five new boundaries settled that are worth
+  carrying into any future one. (1) *Wrap outside the providers, not inside them*: `mood-diner`'s
+  `MonetizationProvider` reads `localStorage` while building its initial state, so a boundary nested
+  inside it would not catch the very crash most likely to happen at startup. (2) *The fallback must
+  not render the error*: `error.message` and a component stack can quote the user data the app was
+  holding when it crashed, so these log to the console and show fixed copy on screen — a boundary
+  that helpfully prints the exception is a disclosure bug on an app whose whole promise is that the
+  data stays on-device. Both are asserted, not just intended: each Vite app's
+  `ErrorBoundary.test.tsx` renders a child that throws a message containing a marker string and
+  asserts the marker never reaches `container.textContent`.
 
 - **Nothing observed here leaves the device.** A structured logger is for the same on-device
   inspection §6's debugging lessons already rely on (e.g. the elder-care-planner debounced-autosave
@@ -1151,10 +1204,14 @@ what broke anywhere off the user's device?**
   contradict the privacy stance §11 already states. If a future app genuinely needs remote error
   reporting, that's an explicit spec decision, not a default.
 
-- **Not yet a guardrail or a sensor, on purpose.** §8's policy is to gate a check once it describes
-  a regression, not while it still describes a backlog — the same arc `senseUnitTests` went through
-  before it started blocking the gate. Right now there is exactly one app with the pattern and five
-  without it; a sensor built today would just be reporting that gap five times over, which nobody has
-  been asked to close yet. Once error-boundary coverage closes across the other five apps, "does
-  `senseApp` find a matching error boundary for this app's framework" becomes a reasonable
-  non-blocking sensor to add — before that, it stays prose.
+- **Now a reasonable sensor candidate, and still not a guardrail.** §8's policy is to gate a check
+  once it describes a regression, not while it still describes a backlog — the same arc
+  `senseUnitTests` went through before it started blocking the gate. That precondition is now met:
+  with all six apps carrying a boundary, "does `senseApp` find a matching error boundary for this
+  app's framework" would report zero findings on the current tree, so adding it describes a
+  regression rather than a backlog. It stays prose in this pass only because it was not what this
+  audit was asked to build; the next agent to pick it up should add it as a **non-blocking** sensor
+  first (`src/app/error.tsx` for a Next.js app, a `getDerivedStateFromError` component reachable
+  from `src/main.tsx` for a Vite one) and promote it later, per the same policy. It is a sensor and
+  not a `GUARDRAILS` entry for the usual reason: "is this app's root wrapped in a boundary" is an
+  absence check across an import graph, which no `test(line)` predicate can express.

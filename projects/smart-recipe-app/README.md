@@ -50,6 +50,18 @@ Every read from `localStorage` is validated against the Zod schemas in `src/lib/
 
 Seed data ships in `src/lib/data.ts` as a starting inventory of 5 items, 2 recipes, and 1 meal-plan entry — overwritten only on first user mutation.
 
+
+### Crash recovery (`src/app/error.tsx`)
+
+A route-level error boundary (`.agents/AGENTS.md` §12). Next.js renders it in place of the segment
+when a render, lifecycle or effect below it throws, so a crash shows a recoverable screen with a
+"Try again" button instead of a blank page — which, on an installed Android build, is
+indistinguishable from a broken install.
+
+It deliberately **does not render the error**: a message or stack can quote the user data the app
+was holding when it crashed, so details go to `console.error` (on-device, never off it) and never
+into the DOM.
+
 ## Architecture
 
 ```
