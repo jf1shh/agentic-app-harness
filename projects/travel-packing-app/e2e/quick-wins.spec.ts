@@ -100,12 +100,21 @@ test.describe('Delete All My Data', () => {
       localStorage.setItem('packright_theme', 'dark');
     });
 
+    // The delete flow ends in window.location.reload(). Stamp the *current*
+    // document first and wait for the stamp to disappear: that is the only
+    // signal here that proves a new document exists. Waiting on
+    // `#dest === 'Hawaii'` cannot prove it, because this test never changes
+    // #dest — the default is already 'Hawaii' before the reload, so the wait
+    // is satisfied by the old document and page.evaluate below then races the
+    // in-flight navigation ("Execution context was destroyed").
+    await page.evaluate(() => {
+      document.documentElement.dataset.preDeleteMarker = 'present';
+    });
+
     page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: /Delete All My Data/ }).click();
 
-    // The delete flow ends in window.location.reload(); wait for the new
-    // document to finish hydrating (the default destination re-renders) rather
-    // than racing page.evaluate against an in-flight navigation.
+    await expect(page.locator('html')).not.toHaveAttribute('data-pre-delete-marker', 'present');
     await expect(page.locator('#dest')).toHaveValue('Hawaii');
     const afterDelete = await page.evaluate(() => ({
       otherAppData: localStorage.getItem('smart_recipe_inventory'),

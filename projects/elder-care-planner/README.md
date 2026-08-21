@@ -203,6 +203,18 @@ drawn in the **dollars of each future month**. The break-even comparison has no 
 definition that the chart labels and the §6.10 derivation `assumptions` both read, because two copies
 of that sentence drift the first time one is edited.
 
+
+### Crash recovery (`src/app/error.tsx`)
+
+A route-level error boundary (`.agents/AGENTS.md` §12). Next.js renders it in place of the segment
+when a render, lifecycle or effect below it throws, so a crash shows a recoverable screen with a
+"Try again" button instead of a blank page — which, on an installed Android build, is
+indistinguishable from a broken install.
+
+It deliberately **does not render the error**: a message or stack can quote the user data the app
+was holding when it crashed, so details go to `console.error` (on-device, never off it) and never
+into the DOM.
+
 ## Non-goals (binding — see spec §1.1)
 
 - **No referral revenue, ever.** No facility directory, no "get matched," no lead capture, no affiliate fees.

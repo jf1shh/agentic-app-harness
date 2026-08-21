@@ -72,6 +72,19 @@ android/                             # Capacitor-generated native container
 capacitor.config.ts
 ```
 
+
+### Crash recovery (`src/components/ErrorBoundary.tsx`)
+
+A top-level class error boundary (`.agents/AGENTS.md` §12) wraps the root `<App />` in
+`src/main.tsx`. Without it, a throw during render unmounts the whole tree and leaves a blank page —
+indistinguishable, on an installed Android build, from a broken install. The fallback shows fixed
+copy and a reload button.
+
+The boundary deliberately **does not render the error**: `error.message` and a component stack can
+quote the user data the app was holding when it crashed, so details go to `console.error` (on-device,
+never off it) and never into the DOM. `ErrorBoundary.test.tsx` asserts exactly that, by throwing a
+message containing a marker string and checking the marker never reaches the rendered output.
+
 ## Persistence and privacy
 
 - Storage keys: `mood_diner_reservations`, `mood_diner_custom_restaurants`, and plans/credit counters.
@@ -80,6 +93,15 @@ capacitor.config.ts
   (`.agents/AGENTS.md` §1) and silently drops rows that don't conform — a corrupted or hand-edited
   payload degrades to fewer entries rather than crashing the app or handing an invalid
   `websiteUrl` straight to an `<a href>`.
+- The Pro/free tier and the daily free-credit counter are read back through
+  `src/lib/monetization/monetizationStorage.ts`, which gives them the same treatment. Every access
+  is wrapped, because `localStorage` **throws** rather than returning `null` when a browser denies
+  storage (a private window, blocked site data, a WebView with DOM storage off) — and these values
+  are read while `MonetizationProvider` builds its initial state at the root of the tree, so an
+  unguarded throw would blank the entire app instead of degrading to the free tier. A corrupt
+  credit count resets to the full daily allowance rather than to zero: the old `parseInt` produced
+  `NaN`, which fails every `> 0` check *and* persisted itself back as the string `"NaN"`, locking a
+  free user out permanently across reloads.
 - Privacy policy at `public/privacy.html` — published at the Pages URL once built.
 - The privacy audit confirmed: **no `fetch()` anywhere in `src/`**, no analytics SDK, no accounts, no payments. The only genuine third-party request is the Unsplash image CDN for restaurant photos.
 
