@@ -760,10 +760,14 @@ function senseApp(app, projPathOverride, specPathOverride) {
       }
     }
     if (evidence.length) {
-      // All guardrails that were non-blocking at introduction have had their
-      // backlogs cleared and are now blocking. Future guardrails should start
-      // non-blocking here and be promoted once their backlog is gone (§8).
-      const gtype = 'guardrail';
+      // unpinned-deps starts non-blocking per §8 policy: it is a full-file scan,
+      // not diff-shaped, and would fail CI on every existing ^/~ in package.json
+      // files that are already locked by package-lock.json. The correct promotion
+      // path requires a diff-shaped check that only fires on NEW unpinned additions.
+      // ease-in-on-enter and text-truncate-missing had zero hits — promoted to
+      // blocking immediately (no backlog to clear).
+      const nonBlockingIds = new Set(['unpinned-deps']);
+      const gtype = nonBlockingIds.has(g.id) ? 'manual-review' : 'guardrail';
       add({ id: `${app}-guardrail-${g.id}`, ruleId: `guardrail:${g.id}`, type: gtype, severity: g.severity, gate: g.gate,
         title: `Guardrail '${g.label}' violated in projects/${app} (${evidence.length} hit${evidence.length > 1 ? 's' : ''})`,
         detail: g.why,

@@ -1,7 +1,7 @@
 {
   "name": "agentic-app-harness",
   "private": true,
-  "description": "Monorepo root \u2014 hoists shared dependencies for the apps under projects/*. Each app keeps its own package.json and version ranges; this file adds no dependencies of its own.",
+  "description": "Monorepo root — hoists shared dependencies for the apps under projects/*. Each app keeps its own package.json and version ranges; this file adds no dependencies of its own.",
   "author": "Jared Fisher <xjaredfisher@gmail.com>",
   "license": "MIT",
   "repository": {
@@ -15,7 +15,7 @@
     "prepare": "node scripts/install-git-hooks.mjs"
   },
   "overrides": {
-    "sharp": "0.35.0",
-    "adm-zip": "0.6.0"
+    "sharp": "^0.35.0",
+    "adm-zip": "^0.6.0"
   }
 }
