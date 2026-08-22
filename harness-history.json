@@ -69,7 +69,7 @@
     },
     {
       "at": "2026-08-22T19:27:40.726Z",
-      "commit": "ad0cd71e54dcf885f10e6d776dbee8a36d29822f",
+      "commit": "8d3cd3c8fdb12fb30a87747e620836d63aff8507",
       "totalFindings": 6,
       "blocking": 0,
       "byRule": {
