@@ -770,6 +770,33 @@ As an AI agent operating within this repository, you must strictly adhere to the
   the same session cannot keep. Not tagged as a guardrail: whether a stated intention to return
   will actually be acted on is outside anything visible in the diff itself.
 
+- **Unpinned Dependencies Drift Without Code Changes** `[guardrail: unpinned-deps]`: A dependency
+  version range (`^1.0.0`, `~1.0.0`, `>=1.0.0`, `latest`, `*`) lets a fresh `npm install` resolve
+  a different version than the one the suite passed against. The two peer-set lessons above are
+  about *which* version to pin; this is about the pin *existing at all*. A pinned version (`"1.2.3"`)
+  only changes when a human or agent deliberately edits it, so a regression is tied to a tracked
+  change. An unpinned range drifts on every install, and the failure can surface weeks later on a
+  different machine. `workspace:*` is exempt — it is a monorepo protocol, not a range. Pin every
+  dependency to an exact version; use the `dependency-doctor` skill (`.agents/skills/dependency-doctor/`)
+  to find the existing backlog, and let the guardrail prevent new ones from being added.
+
+- **Ease-In Timing On Enter Animations Feels Jarring** `[guardrail: ease-in-on-enter]`: An
+  `ease-in` timing curve (Tailwind `ease-in`, Framer Motion `ease: "easeIn"`, CSS
+  `cubic-bezier(0.4, 0, 1, 1)`) decelerates into position — the element appears to slow down as
+  it arrives, which feels sluggish and physically wrong. Enter/mount animations should use
+  `ease-out`: the element accelerates into view and settles naturally (CSS
+  `cubic-bezier(0, 0, 0.2, 1)`, the Material Design standard deceleration curve). `ease-in` is
+  correct for exit/leave transitions, but those are rare in UI work compared to enter — if a hit
+  lands on an exit animation, it is safe to ignore. Inspired by `emilkowalski/skills`.
+
+- **Hidden Text Overflow Must Indicate Truncation** `[guardrail: text-truncate-missing]`:
+  Combining `overflow-hidden` with `whitespace-nowrap` clips text invisibly — the user sees a
+  sentence stop mid-word and has no visual indicator that content was hidden. Add `truncate`
+  (Tailwind), `text-ellipsis`, or `line-clamp-N` so the truncation is visually communicated with
+  an ellipsis or fade. `overflow-hidden` alone (layout containment) and `whitespace-nowrap` alone
+  (preventing wrap) are not this anti-pattern — only the specific combination without a
+  truncation indicator fires.
+
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.
 - **Create Agent Handoff File**: Agents MUST create or update a dedicated handoff file (e.g., `HANDOFF.md` in the project root or relevant app directory) detailing current project state, key changes, open bugs/blockers, and exact next steps so any future AI agent can seamlessly take over the work without loss of context.

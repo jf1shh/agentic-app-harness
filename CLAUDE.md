@@ -207,7 +207,7 @@ Components/pages (`.tsx`) are deliberately not unit-tested — that coverage is 
 **The agentic loop** (full detail in `.agents/AGENTS.md` §8): `harness-status.mjs` senses missing
 artifacts, spec drift, and
 <!-- doc-claim: cmd="node scripts/count-guardrails.mjs" -->
-**7** line-level "guardrails" distilled from real bugs (each one traces to a
+**10** line-level "guardrails" distilled from real bugs (each one traces to a
 prose lesson in `.agents/AGENTS.md` §6); `emit-tasks.mjs` turns findings into self-contained work orders
 under `tasks/`; any agent claims one, does the work, opens a PR (**never self-merges**); the gate reruns
 on every PR via `.github/workflows/sdd-sentinel.yml`. Guardrails are self-tested
