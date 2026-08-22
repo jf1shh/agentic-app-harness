@@ -28,6 +28,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from '
 import { join, relative, extname, dirname, basename, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { senseTokenBudget } from './token-budget.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..');
@@ -219,6 +220,73 @@ const GUARDRAILS = [
     severity: 'high',
     gate: 'guardrails',
     why: 'A test that cannot fail is not weak coverage — it is a false statement about what is covered, and it displaces the real test nobody now thinks to write. Chain a matcher onto every expect(), and assert behaviour rather than annotating a type against itself.',
+  },
+  {
+    id: 'unpinned-deps',
+    label: 'Pinned dependency versions (no ^ ~ >= > < * or "latest")',
+    lesson: 'Unpinned Dependencies Drift Without Code Changes',
+    exts: ['.json'],
+    // Only package.json files — other JSON files may legitimately use version ranges.
+    excludePath: (p) => !/[\\/]package\.json$/.test(p),
+    test: (line) => {
+      // Match dependency entries whose version value starts with an unpinned specifier.
+      // Pinned versions are digits-and-dots only (e.g. "1.2.3").
+      // We look for: "key": "<unpinned>", optionally with trailing comma.
+      const m = line.match(/^\s*"[^"]+"\s*:\s*"([^"]+)"\s*,?\s*$/);
+      if (!m) return false;
+      const version = m[1];
+      // Exclude special fields that aren't package versions.
+      if (version === 'workspace:*') return false;
+      // Pinned: digits and dots only (optionally with a leading 'v').
+      if (/^(v?\d+\.\d+\.\d+([-.][\w.]+)?)$/.test(version)) return false;
+      // Unpinned: starts with ^ ~ >= > < * or is literally 'latest'.
+      return /^[\^~>=<*]/.test(version) || version === 'latest';
+    },
+    severity: 'medium',
+    gate: 'guardrails',
+    why: 'Unpinned dependency ranges (^1.0.0, ~1.0.0, >=1.0.0, latest) allow a fresh npm install to resolve a different version than the one the suite passed against. A dependency bump is only safe when it moves with a tracked change — an unpinned range is a silent drift on every install. Pin to an exact version ("1.2.3").',
+  },
+  {
+    id: 'ease-in-on-enter',
+    label: 'Enter animations use ease-out (no ease-in on mount/enter)',
+    lesson: 'Ease-In Timing On Enter Animations Feels Jarring',
+    exts: ['.tsx', '.jsx', '.css'],
+    excludePath: (p) => /\.(test|spec)\.(tsx?|jsx?)$/.test(p) || /[\\/]e2e[\\/]/.test(p),
+    test: (line) => {
+      // (a) Tailwind: the bare `ease-in` utility class (not ease-in-out or ease-in-*).
+      if (/\bease-in(?!-)\b/.test(line)) return true;
+      // (b) Framer Motion / JS animation: `ease: "easeIn"` or `ease: 'easeIn'`.
+      if (/ease:\s*["'`]easeIn["'`]/.test(line)) return true;
+      // (c) CSS standard ease-in cubic bezier: cubic-bezier(0.4, 0, 1, 1).
+      if (/cubic-bezier\(\s*0\.4\s*,\s*0\s*,\s*1\s*,\s*1\s*\)/.test(line)) return true;
+      return false;
+    },
+    severity: 'low',
+    gate: 'guardrails',
+    why: 'Ease-in (decelerating into position) on enter/mount animations feels sluggish — the element appears to slow down as it arrives. Use ease-out instead: the element accelerates into view and settles naturally. Ease-in is correct for exit/leave transitions, but those are rare in UI work compared to enter. If this line is on an exit animation, ignore the finding.',
+  },
+  {
+    id: 'text-truncate-missing',
+    label: 'Truncated text shows an indicator (no overflow-hidden + whitespace-nowrap without truncate/ellipsis)',
+    lesson: 'Hidden Text Overflow Must Indicate Truncation',
+    exts: ['.tsx', '.jsx'],
+    excludePath: (p) => /\.(test|spec)\.(tsx?|jsx?)$/.test(p) || /[\\/]e2e[\\/]/.test(p),
+    test: (line) => {
+      // The anti-pattern: overflow-hidden + whitespace-nowrap but no truncate
+      // indicator. Catches both Tailwind `className="... overflow-hidden ... whitespace-nowrap ..."`
+      // and inline styles where the compound pattern exists without truncate/ellipsis/line-clamp.
+      if (!/\boverflow-hidden\b/.test(line)) return false;
+      if (!/\bwhitespace-nowrap\b/.test(line)) return false;
+      // Has the escape hatch: truncate or text-ellipsis means the user knows
+      // text is being cut off, which is the right behaviour.
+      if (/\btruncate\b/.test(line)) return false;
+      if (/\btext-ellipsis\b/.test(line)) return false;
+      if (/\bline-clamp-\d\b/.test(line)) return false;
+      return true;
+    },
+    severity: 'low',
+    gate: 'guardrails',
+    why: 'overflow-hidden + whitespace-nowrap clips text invisibly — the user sees a sentence stop mid-word with no ellipsis or fade, and has no way to know content was hidden. Add `truncate` (Tailwind) or `text-ellipsis` alongside the overflow classes so the truncation is visually indicated.',
   },
 ];
 
@@ -692,14 +760,22 @@ function senseApp(app, projPathOverride, specPathOverride) {
       }
     }
     if (evidence.length) {
-      add({ id: `${app}-guardrail-${g.id}`, ruleId: `guardrail:${g.id}`, type: 'guardrail', severity: g.severity, gate: g.gate,
+      // unpinned-deps starts non-blocking per §8 policy: it is a full-file scan,
+      // not diff-shaped, and would fail CI on every existing ^/~ in package.json
+      // files that are already locked by package-lock.json. The correct promotion
+      // path requires a diff-shaped check that only fires on NEW unpinned additions.
+      // ease-in-on-enter and text-truncate-missing had zero hits — promoted to
+      // blocking immediately (no backlog to clear).
+      const nonBlockingIds = new Set(['unpinned-deps']);
+      const gtype = nonBlockingIds.has(g.id) ? 'manual-review' : 'guardrail';
+      add({ id: `${app}-guardrail-${g.id}`, ruleId: `guardrail:${g.id}`, type: gtype, severity: g.severity, gate: g.gate,
         title: `Guardrail '${g.label}' violated in projects/${app} (${evidence.length} hit${evidence.length > 1 ? 's' : ''})`,
         detail: g.why,
         evidence: evidence.slice(0, 25) });
     }
   }
 
-  // 7–9. Supplemental sensors are a chain: each handler contributes findings,
+  // 7–10. Supplemental sensors are a chain: each handler contributes findings,
   // and one new sensor can be registered without editing the others.
   const supplementalSensors = createSensorChain([
     ({ app: sensorApp, project: sensorProject }) => senseMobileRelease(
@@ -708,6 +784,7 @@ function senseApp(app, projPathOverride, specPathOverride) {
       sensorApp, sensorProject.root),
     ({ app: sensorApp, project: sensorProject }) => senseUnitTests(
       sensorApp, sensorProject.root),
+    () => senseTokenBudget(),
   ]);
   for (const f of supplementalSensors({ app, project })) add(f);
 
@@ -863,6 +940,9 @@ const SENSOR_RULES = [
   { ruleId: 'unit-test-coverage:no-unit-tests', type: 'unit-test-coverage', severity: 'high' },
   { ruleId: 'unit-test-coverage:untested-modules', type: 'unit-test-coverage', severity: 'medium' },
   { ruleId: 'unit-test-coverage:bdd-noncompliant', type: 'unit-test-coverage', severity: 'medium' },
+  { ruleId: 'token-budget:context-warning', type: 'token-budget', severity: 'medium' },
+  { ruleId: 'token-budget:context-critical', type: 'token-budget', severity: 'high' },
+  { ruleId: 'token-budget:context-trending-up', type: 'token-budget', severity: 'medium' },
 ];
 
 // Map of every known ruleId -> { type, severity, blocking }, blocking computed

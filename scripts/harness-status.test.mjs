@@ -149,6 +149,75 @@ const CASES = {
       "const dbUrl = database: '/not/a/base';",
     ],
   },
+  'unpinned-deps': {
+    bad: [
+      '    "react": "^18.2.0",',
+      '    "typescript": "~5.3.0",',
+      '    "next": ">=14.0.0",',
+      '    "eslint": "latest",',
+      '    "vitest": "*",',
+      '    "zod": ">3.20.0",',
+      '    "react-dom": "<19.0.0",',
+    ],
+    good: [
+      '    "react": "18.2.0",',
+      '    "typescript": "5.3.3",',
+      '    "next": "14.0.4",',
+      '    "zod": "3.22.4",',
+      '    "@repo/lib": "workspace:*",',
+      '    "node-fetch": "3.3.2",',
+      '    "prettier": "v3.1.0",',
+      '    "some-pkg": "1.2.3-beta.1",',
+    ],
+  },
+  'ease-in-on-enter': {
+    bad: [
+      // Tailwind ease-in class.
+      'className="transition-all duration-300 ease-in"',
+      'className={`transition-opacity ease-in ${open ? "opacity-100" : "opacity-0"}`}',
+      // Framer Motion easeIn.
+      'ease: "easeIn"',
+      "ease: 'easeIn'",
+      // CSS cubic-bezier ease-in.
+      'transition: opacity 200ms cubic-bezier(0.4, 0, 1, 1);',
+      'transition: all 0.3s cubic-bezier(0.4, 0, 1, 1);',
+    ],
+    good: [
+      // Ease-out is the correct choice.
+      'className="transition-all duration-300 ease-out"',
+      'ease: "easeOut"',
+      'transition: opacity 200ms cubic-bezier(0, 0, 0.2, 1);',
+      // A different cubic-bezier (not the standard ease-in curve).
+      'transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);',
+      // Ease-in-out is a deliberate compromise, not the anti-pattern.
+      'className="transition-colors ease-in-out"',
+      // easeInQuad, easeInOut, etc. — these are custom curves, not the
+      // generic easeIn that maps to the standard ease-in bezier.
+      'ease: "easeInOut"',
+      'ease: [0.4, 0, 0.2, 1]',
+    ],
+  },
+  'text-truncate-missing': {
+    bad: [
+      'className="overflow-hidden whitespace-nowrap"',
+      'className={`overflow-hidden whitespace-nowrap ${extra}`}',
+      'className="flex overflow-hidden whitespace-nowrap"',
+    ],
+    good: [
+      // Has truncate — user knows text is being cut off.
+      'className="overflow-hidden whitespace-nowrap truncate"',
+      'className="truncate"',
+      // Has text-ellipsis.
+      'className="overflow-hidden whitespace-nowrap text-ellipsis"',
+      // Has line-clamp (multi-line truncation with indicator).
+      'className="overflow-hidden line-clamp-2"',
+      // overflow-hidden without whitespace-nowrap is just layout — not text truncation.
+      'className="overflow-hidden"',
+      'className="overflow-hidden rounded-lg shadow"',
+      // whitespace-nowrap without overflow-hidden is just preventing wrap — fine.
+      'className="whitespace-nowrap text-sm"',
+    ],
+  },
 };
 
 let failures = 0;

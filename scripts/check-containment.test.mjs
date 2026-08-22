@@ -82,6 +82,63 @@ ok(
   'matchesContainment: specs/templates/* matches files in templates dir',
 );
 
+/* ---- middle-segment glob ---- */
+
+ok(
+  matchesContainment('.claude/skills/diagnosing-bugs/SKILL.md', '.claude/skills/*/SKILL.md'),
+  'matchesContainment: middle-segment * matches exactly one path segment',
+);
+
+ok(
+  !matchesContainment('.claude/skills/SKILL.md', '.claude/skills/*/SKILL.md'),
+  'matchesContainment: middle-segment * does NOT match a path with no intermediate dir',
+);
+
+ok(
+  !matchesContainment('.claude/skills/a/b/SKILL.md', '.claude/skills/*/SKILL.md'),
+  'matchesContainment: middle-segment * does NOT match more than one intermediate dir',
+);
+
+ok(
+  matchesContainment('.agents/skills/review/SKILL.md', '.agents/skills/*/SKILL.md'),
+  'matchesContainment: .agents/skills/*/SKILL.md matches a cross-agent skill definition',
+);
+
+ok(
+  !matchesContainment('.claude/skills/README.md', '.claude/skills/*/SKILL.md'),
+  'matchesContainment: .claude/skills/*/SKILL.md does NOT match .claude/skills/README.md',
+);
+
+ok(
+  !matchesContainment('projects/foo/SKILL.md', '.claude/skills/*/SKILL.md'),
+  'matchesContainment: .claude/skills/*/SKILL.md does NOT match a SKILL.md outside the watched dirs',
+);
+
+ok(
+  !matchesContainment('projects/foo/SKILL.md', '.agents/skills/*/SKILL.md'),
+  'matchesContainment: .agents/skills/*/SKILL.md does NOT match a SKILL.md outside the watched dirs',
+);
+
+ok(
+  matchesContainment('.claude/hooks/session-start-digest.mjs', '.claude/hooks/*'),
+  'matchesContainment: .claude/hooks/* matches a Claude Code lifecycle hook',
+);
+
+ok(
+  !matchesContainment('.claude/hooks/sub/dir.mjs', '.claude/hooks/*'),
+  'matchesContainment: .claude/hooks/* does NOT match a nested hook file',
+);
+
+ok(
+  matchesContainment('.claude/settings.json', '.claude/settings.json'),
+  'matchesContainment: .claude/settings.json exact path matches',
+);
+
+ok(
+  !matchesContainment('.claude/other.json', '.claude/settings.json'),
+  'matchesContainment: .claude/settings.json does NOT match a different file',
+);
+
 /* ---- findViolations ---- */
 
 ok(
@@ -112,6 +169,31 @@ ok(
 ok(
   findViolations(['.github/workflows/sdd-sentinel.yml']).length === 1,
   'findViolations: a CI workflow is contained',
+);
+
+ok(
+  findViolations(['.claude/settings.json']).length === 1,
+  'findViolations: .claude/settings.json is contained',
+);
+
+ok(
+  findViolations(['.claude/skills/diagnosing-bugs/SKILL.md']).length === 1,
+  'findViolations: a Claude Code skill definition is contained',
+);
+
+ok(
+  findViolations(['.agents/skills/review/SKILL.md']).length === 1,
+  'findViolations: a cross-agent skill definition is contained',
+);
+
+ok(
+  findViolations(['.claude/hooks/session-start-digest.mjs']).length === 1,
+  'findViolations: a Claude Code lifecycle hook is contained',
+);
+
+ok(
+  findViolations(['.claude/skills/README.md']).length === 0,
+  'findViolations: a non-SKILL.md under .claude/skills is not contained',
 );
 
 {
@@ -223,6 +305,22 @@ ok(
 ok(
   CONTAINED_PATHS.some((p) => p.pattern === '.github/workflows/*.yml'),
   'CONTAINED_PATHS includes CI workflows',
+);
+ok(
+  CONTAINED_PATHS.some((p) => p.pattern === '.claude/skills/*/SKILL.md'),
+  'CONTAINED_PATHS includes Claude Code skill definitions',
+);
+ok(
+  CONTAINED_PATHS.some((p) => p.pattern === '.agents/skills/*/SKILL.md'),
+  'CONTAINED_PATHS includes cross-agent skill definitions',
+);
+ok(
+  CONTAINED_PATHS.some((p) => p.pattern === '.claude/hooks/*'),
+  'CONTAINED_PATHS includes Claude Code lifecycle hooks',
+);
+ok(
+  CONTAINED_PATHS.some((p) => p.pattern === '.claude/settings.json'),
+  'CONTAINED_PATHS includes Claude Code settings',
 );
 
 /* ---- summary ---- */

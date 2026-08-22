@@ -7,8 +7,8 @@
 import { LoopStats, LoopStatsSchema } from '../schemas';
 
 const RAW_LOOP_STATS: LoopStats = {
-  "guardrailCount": 7,
-  "lessonCount": 53,
+  "guardrailCount": 10,
+  "lessonCount": 56,
   "appCount": 5
 };
 
