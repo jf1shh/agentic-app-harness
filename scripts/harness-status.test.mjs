@@ -10,6 +10,7 @@ import {
   senseApp,
   senseMobileRelease,
   senseProductionBundleTest,
+  senseDeadPublicAssets,
   senseUnitTests,
   isBlocking,
   allRuleMeta,
@@ -548,6 +549,64 @@ describe('run', () => {
   rmSync(tmp3, { recursive: true, force: true });
 }
 
+// ---------------------------------------------------------------------------
+// Dead public-asset sensor. Also non-blocking, also fixture-driven: the sensor
+// resolves references against real files on disk, so the fixture must exercise
+// the index.html -> manifest.json -> icon-512.png chain, a privacy page the
+// README links, and a genuinely dead pair.
+// ---------------------------------------------------------------------------
+const tmpAssets = mkdtempSync(join(tmpdir(), 'harness-dead-assets-'));
+try {
+  const write = (root, relPath, body) => {
+    const full = join(root, relPath);
+    mkdirSync(dirname(full), { recursive: true });
+    writeFileSync(full, body);
+    return full;
+  };
+  const idsOf = (root, app = 'a') =>
+    senseDeadPublicAssets(app, root).map((f) => f.id.replace(`${app}-dead-public-asset-`, ''));
+
+  // (a) Worst case: a dead large image and a dead placeholder SVG, next to a
+  // live icon chain (index.html -> manifest.json -> icon-512.png) and a
+  // privacy page the README references — only the dead pair should fire.
+  const bad = join(tmpAssets, 'bad');
+  write(bad, 'index.html', '<link rel="manifest" href="./manifest.json"><img src="/icon-512.png">');
+  write(bad, 'public/manifest.json', JSON.stringify({ icons: [{ src: './icon-512.png' }] }));
+  write(bad, 'public/icon-512.png', 'not really a png');
+  write(bad, 'public/playstore-banner.jpg', 'big dead banner');
+  write(bad, 'public/next.svg', '<svg/>');
+  write(bad, 'public/privacy.html', '<h1>Privacy</h1>');
+  write(bad, 'README.md', 'Privacy policy at `public/privacy.html`.');
+  write(bad, 'src/App.tsx', 'export const App = () => null;');
+  const badIds = idsOf(bad);
+  for (const id of ['playstore-banner.jpg', 'next.svg']) {
+    if (!badIds.includes(id)) { console.error(`✗ dead-assets: MISSED '${id}' on the known-bad fixture`); failures++; }
+  }
+  for (const id of ['icon-512.png', 'privacy.html']) {
+    if (badIds.includes(id)) { console.error(`✗ dead-assets: false-positive on live asset '${id}'`); failures++; }
+  }
+  if (badIds.length !== 2) {
+    console.error(`✗ dead-assets: unexpected finding set: ${badIds.join(', ')}`); failures++;
+  }
+
+  // (b) An app with no public/ dir is entirely out of scope.
+  const web = join(tmpAssets, 'web');
+  write(web, 'src/App.tsx', 'export const App = () => null;');
+  if (senseDeadPublicAssets('web', web).length) {
+    console.error('✗ dead-assets: fired on an app with no public/ dir'); failures++;
+  }
+
+  // (c) Every finding must be non-blocking — this sensor informs, never gates.
+  const blocking = senseDeadPublicAssets('bad', bad).filter(isBlocking);
+  if (blocking.length) {
+    console.error(`✗ dead-assets: ${blocking.length} finding(s) block the gate; this sensor must only inform`); failures++;
+  }
+
+  if (!failures) console.log('✓ dead-asset sensor (fires on unreferenced public files, silent on live chains and README-linked policy pages, non-blocking)');
+} finally {
+  rmSync(tmpAssets, { recursive: true, force: true });
+}
+
 // Rule-registry cross-check: harness-history.mjs trusts allRuleMeta() to know
 // every ruleId a finding can carry, so it can record a zero for a rule that
 // stayed quiet in a given run. This must run against a deliberately-bad
@@ -609,4 +668,4 @@ if (failures) {
   console.error(`\n${failures} self-test failure(s).`);
   process.exit(1);
 }
-console.log(`\nAll ${GUARDRAILS.length} guardrails + the mobile-readiness, production-bundle and unit-test sensors verified.`);
+console.log(`\nAll ${GUARDRAILS.length} guardrails + the mobile-readiness, production-bundle, unit-test and dead-asset sensors verified.`);

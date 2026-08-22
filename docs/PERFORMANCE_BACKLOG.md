@@ -6,9 +6,9 @@
 > The items that were safe to land immediately shipped in the optimization PR instead.
 >
 > **Re-audited 2026-08-22** (second pass). All six apps rebuilt fresh (`npm run build` for each);
-> the shipped items still hold, two backlog items were closed as safe, and the remaining two
-> backlog items were re-measured with current numbers. See [Measurements](#measurements-2026-08-22)
-> below.
+> the shipped items still hold, and the two remaining backlog items were resolved that same day:
+> the ONNX WASM stays bundled (decision below), and the dead-asset guardrail shipped as the
+> non-blocking `senseDeadPublicAssets` sensor. See [Measurements](#measurements-2026-08-22) below.
 
 ## Done (shipped in the PR)
 
@@ -29,19 +29,18 @@
   same dead-asset class the audit found by hand before; it has now recurred once, which is the
   argument for backlog item #3 (the guardrail).
 
-## Backlog (needs a decision)
+## Decided (2026-08-22)
 
-### 1. travel-packing-app — serve the ONNX WASM from a CDN instead of bundling it
+### 1. travel-packing-app — ONNX WASM stays bundled (no CDN offload)
 
-- **Measured (2026-08-22):** the static export ships **two** ort WASM files — `ort-wasm-simd-threaded.jsep.*.wasm` at **26.8 MB** and `ort-wasm-simd-threaded.asyncify.*.wasm` at **24.3 MB** (51.1 MB total, up from 22.8 MB when this was first recorded) plus `ort.*.min.mjs` bundles (~0.5 MB). This is `onnxruntime-web` (peer dep of `@imgly/background-removal`), pulled in only when the user invokes background removal.
-- **Why it's on hold:** it *is* already lazy (`await import('@imgly/background-removal')` in `WardrobeAnalyzer.tsx` / `WardrobeManager.tsx`; re-verified — zero `ort-wasm` references in the exported `index.html`), so it never blocks first paint. Serving the WASM from a CDN instead would cut ~51 MB from the worst-case download but adds a third-party runtime dependency and a config change in `WardrobeAnalyzer.tsx` / `WardrobeManager.tsx`.
-- **Acceptance criteria if picked up:** background removal still works offline/Capacitor; no CSP changes required; chunk removed from the exported bundle.
+- **Measured:** the static export ships **two** ort WASM files — `ort-wasm-simd-threaded.jsep.*.wasm` at **26.8 MB** and `ort-wasm-simd-threaded.asyncify.*.wasm` at **24.3 MB** (51.1 MB total) plus `ort.*.min.mjs` bundles (~0.5 MB). Still lazy (`await import('@imgly/background-removal')` in `WardrobeAnalyzer.tsx` / `WardrobeManager.tsx`; zero `ort-wasm` references in the exported `index.html`), so it never blocks first paint.
+- **Decision:** keep it bundled. travel-packing-app ships as a Capacitor/Android container and the README promises offline use — a CDN dependency would break that guarantee and add a third-party runtime dependency, to save bytes that are already out of the first-load path. If the 51 MB export ever becomes a hosting problem (Pages artifact size, deploy time), the lazy split means it can move to a CDN later without touching the first-load bundle.
 
-### 2. Optional — add a bundle-size guardrail to the harness
+### 2. Dead-asset detection — implemented as the non-blocking `senseDeadPublicAssets` sensor
 
-- **Why useful:** the audit found the mood-diner dead assets and the ten dead SVGs only by manual inspection. A `scripts/harness-status.mjs` guardrail (e.g., flag `public/` assets > 400 KB that no `src/` file references, and/or unreferenced `public/` files of any size) would catch this class mechanically — and this class has now recurred once since the idea was first recorded.
-- **Why on hold:** per `.agents/AGENTS.md` §8, a guardrail requires a traced lesson in §6 and a self-test in `harness-status.test.mjs` — that's a deliberate addition, not a drive-by.
-- **Acceptance criteria:** the rule fires on a committed fixture, self-tests pass, and the gate stays green for the existing six apps.
+- The original idea ("flag `public/` assets > 400 KB that no `src/` file references") shipped as `senseDeadPublicAssets` in `scripts/harness-status.mjs`, deliberately a **sensor**, not a line-level guardrail: "no file references this asset" is a whole-tree absence check (the reference can be several files away: `index.html` → `manifest.json` → `icon-512.png`) that no `test(line)` predicate can express. It reports any `public/` file whose basename appears nowhere else in the app — including markdown/store-listing docs, so each app's standalone `privacy.html` stays silent.
+- It starts **non-blocking** per the §8 sensor policy (deleting an asset can need product judgement), carries a fixture-driven self-test in `harness-status.test.mjs` proving it fires on a dead fixture and stays silent on a live chain, and is traceable to the new §6 lesson in `.agents/AGENTS.md`.
+- **Remaining decision (future):** promote to blocking once it has been quiet long enough to describe a regression — the §8 promotion criterion, surfaced by `node scripts/harness-history.mjs`.
 
 ## Measurements (2026-08-22)
 
