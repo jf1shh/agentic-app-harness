@@ -485,6 +485,97 @@ export function senseProductionBundleTest(app, projPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Dead public assets — an INFORMATIONAL sensor.
+//
+// public/ is copied verbatim into every web build (and the Capacitor
+// container), so a file nothing references is pure payload on every ship. The
+// 2026-08 optimization audits found this class twice, only by hand:
+// mood-diner's obsolete public/playstore-banner.jpg (681 KB) and
+// icon-512.jpg (489 KB), and five unreferenced create-next-app placeholder
+// SVGs in each of travel-packing-app and smart-recipe-app.
+//
+// "No file references this asset" is an *absence* check across the whole tree
+// — the reference can be several files away (index.html -> manifest.json ->
+// icon-512.png) and any extension — so no test(line) predicate can express it:
+// a sensor, not a guardrail.
+//
+// Deliberately NON-BLOCKING, per the §8 sensor policy: deleting an asset can
+// need product judgement (a brand asset, a store-listing source, a privacy
+// policy intentionally hosted standalone), so this reports and becomes a work
+// order instead of painting PRs red. It can be promoted to blocking only once
+// it has been quiet long enough to describe a regression — and even then it
+// stays a sensor, because the check is a whole-tree property, not a line.
+//
+// What it deliberately does NOT claim: a *referenced* but oversized asset (a
+// 500 KB icon the manifest really uses) is a size-tuning question, not this
+// bug — re-encoding wants a human eyeball and is out of scope here.
+// ---------------------------------------------------------------------------
+export function senseDeadPublicAssets(app, projPath) {
+  const findings = [];
+  const publicDir = join(projPath, 'public');
+  if (!existsSync(publicDir)) return findings;
+
+  const assets = readdirSync(publicDir, { withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => join(publicDir, e.name));
+  if (!assets.length) return findings;
+  const assetNames = assets.map((a) => basename(a));
+
+  // Every app file an asset could be referenced from — including public/*
+  // itself, so the index.html -> manifest.json -> icon-512.png chain resolves,
+  // and markdown/e2e/store-listing docs (a privacy.html the README links is a
+  // live asset). Excludes vendored/native/build trees: node_modules, android,
+  // dist/out/.next*/build outputs, and the fixture caches.
+  const sources = [];
+  const stack = [projPath];
+  while (stack.length) {
+    const dir = stack.pop();
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('.next')) stack.push(full);
+      } else {
+        sources.push(full);
+      }
+    }
+  }
+
+  const assetByPath = new Map(assets.map((a) => [a, basename(a)]));
+  const referenced = new Set();
+  for (const f of sources) {
+    const content = readSafe(f);
+    if (!content) continue;
+    const selfName = assetByPath.get(f);
+    for (const name of assetNames) {
+      // A file does not count as its own reference (a manifest naming its own
+      // file, an sw.js containing the string 'sw.js', ...).
+      if (name === selfName || referenced.has(name)) continue;
+      if (content.includes(name)) referenced.add(name);
+    }
+  }
+
+  for (const asset of assets) {
+    const name = basename(asset);
+    if (referenced.has(name)) continue;
+    let size = 0;
+    try { size = statSync(asset).size; } catch { /* raced deletion */ }
+    findings.push({
+      id: `${app}-dead-public-asset-${name}`,
+      ruleId: 'dead-public-asset',
+      type: 'manual-review',
+      severity: 'medium',
+      gate: 'manual-review',
+      title: `Unreferenced public asset in projects/${app}: public/${name}`,
+      detail: `No file in projects/${app} (src, html, json, markdown, e2e, store-listing, or other public files) references '${name}', yet public/ is copied verbatim into every web build and Capacitor container — ${size} bytes of dead payload per ship. If it is intentionally standalone (a privacy policy page, a store-listing source), keep it and say so; otherwise delete it.`,
+      evidence: [{ file: rel(asset), line: 1, snippet: `${name} (${size} bytes), no references` }],
+    });
+  }
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
 // Unit-test-driven development — an INFORMATIONAL sensor.
 //
 // .agents/AGENTS.md §5 mandates unit tests for all core logic and BDD
@@ -782,6 +873,8 @@ function senseApp(app, projPathOverride, specPathOverride) {
       sensorApp, sensorProject.root, join(repoRoot, '.github', 'workflows')),
     ({ app: sensorApp, project: sensorProject }) => senseProductionBundleTest(
       sensorApp, sensorProject.root),
+    ({ app: sensorApp, project: sensorProject }) => senseDeadPublicAssets(
+      sensorApp, sensorProject.root),
     ({ app: sensorApp, project: sensorProject }) => senseUnitTests(
       sensorApp, sensorProject.root),
     () => senseTokenBudget(),
@@ -929,6 +1022,7 @@ const SENSOR_RULES = [
   { ruleId: 'e2e-bdd-noncompliant', type: 'test-coverage', severity: 'medium' },
   { ruleId: 'spec-drift', type: 'drift', severity: 'medium' },
   { ruleId: 'production-bundle-test-missing', type: 'test-coverage', severity: 'high' },
+  { ruleId: 'dead-public-asset', type: 'manual-review', severity: 'medium' },
   { ruleId: 'mobile-readiness:no-signing-config', type: 'mobile-readiness', severity: 'high' },
   { ruleId: 'mobile-readiness:default-version-code', type: 'mobile-readiness', severity: 'medium' },
   { ruleId: 'mobile-readiness:default-launcher-icon', type: 'mobile-readiness', severity: 'high' },
