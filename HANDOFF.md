@@ -1,116 +1,78 @@
-# HANDOFF — Full audit: bugs, Play Store readiness, security, privacy, robustness
+# HANDOFF — Harness robustness pass (three fixes, no app changes)
 
-Branch: `claude/full-app-audit-q9266h`
+Branch: `master` (each item below landed as its own PR, already merged; no branch is currently
+checked out with pending work).
 
 ## Why
 
-A full-repo audit across all six apps for bugs, Play Store readiness, security, privacy,
-robustness and functionality. The harness's own sense loop was already clean
-(`harness-status.mjs --strict`: 0 findings), so everything below is a finding the existing
-deterministic gates cannot see — which is the point of doing the pass by hand.
+The user asked how to make the harness itself "more robust and better at making apps" after its
+first GitHub star. This session found and fixed three real issues in the harness's own machinery
+(not the six apps), in priority order the user picked interactively.
 
-## What was already fine (checked, not assumed)
+## What changed (three merged PRs, in landing order)
 
-Worth recording so the next audit doesn't re-litigate it:
+1. **PR #277 — `allRuleMeta()` blocking-registry bug.** `scripts/harness-status.mjs`'s rule
+   registry hardcoded every guardrail's finding type as `'guardrail'` (blocking), but the
+   `unpinned-deps` guardrail's real findings carry type `'manual-review'` (deliberately
+   non-blocking). `harness-history.mjs` read the registry as saying "blocking" while the live gate
+   said "not blocking" for the same rule, so its "chronically firing — check for a bypassed gate"
+   signal was crying wolf on `unpinned-deps` every run — which risks masking a *real* bypassed gate
+   reported alongside a known-false one. Fixed by extracting one shared `guardrailFindingType()`
+   helper used by both `senseApp()` and `allRuleMeta()`. Added a self-test asserting the registry's
+   `blocking` flag agrees with `isBlocking()` on the real finding, for every fixture case.
 
-- **Android release plumbing** — all five native apps resolve signing credentials from env then a
-  git-ignored `keystore.properties`, stay *unsigned* rather than failing when absent, and take
-  `versionCode` from `ANDROID_VERSION_CODE`. `minSdk 24 / target+compile 36`.
-- **Backup and data extraction** — every native app excludes `app_webview/` from both
-  `<cloud-backup>` and `<device-transfer>`, so the WebView's `localStorage`/IndexedDB never
-  reaches a Google account. This is what makes each privacy policy's on-device claim true.
-- **Permissions match reality** — `elder-care-planner` declares *no* `INTERNET` permission (it
-  makes zero network calls, verified by grep); `travel-packing-app`'s `CAMERA` is really used by
-  `SuitcaseScanner`/`measurement`. No app over-declares.
-- **Network claims match code** — `fetch` appears only in `smart-recipe-app` (TheMealDB) and
-  `travel-packing-app` (Nominatim / Open-Meteo / currency / advisory). The other four make none.
-- **Store listing assets** — 512×512 icon, 1024×500 feature graphic, screenshots and a privacy
-  policy for all five. `mood-diner` deliberately reuses `public/icon-512.png` instead of
-  duplicating it into `store-listing/`, which its README documents; that is not a gap.
-- **No XSS surface** — zero `dangerouslySetInnerHTML`, zero `innerHTML` assignments, no `eval` in
-  app code. Every data-driven `href` traces to a hardcoded constant, a blob URL, or (in
-  `mood-diner`) a `websiteUrl` already `.refine()`d to `http(s):`.
-- **`npm audit`: 10 advisories, all dev/build-time transitives** (`@capacitor/cli` → `xcode` →
-  `uuid`; `promptfoo` → `ai` → `undici`; `next` → `postcss` → `nanoid`). None reach a shipped
-  bundle. This is what `test-app.mjs` reports as its one advisory WARN per app.
+2. **PR #278 — 11 `npm audit` vulnerabilities + a new sensor so it can't recur silently.** Found
+   while doing routine branch cleanup (a `git push` warning line nobody reads). All 11 were
+   transitive devDependencies (`undici` via `promptfoo`'s eval tooling, `nanoid` via `postcss`,
+   `uuid` via `@capacitor/cli`'s unused iOS tooling, `qs` via Stryker's `typed-rest-client`) — none
+   shipped in a production bundle, but the fix was mostly free (`npm audit fix` cleared 7/11; the
+   last 3 needed one scoped root `package.json` `overrides` entry). Added
+   `scripts/check-dependency-audit.mjs` (+ self-test), wired non-blocking into `sdd-sentinel.yml`,
+   so `npm audit --json` against the shared lockfile is a single visible CI log entry instead of six
+   buried per-app runs nobody was reading.
 
-## What changed
+3. **PR #279 — Slimmed `.agents/AGENTS.md` from 1,305 → 641 lines (51% smaller).** Executed
+   `docs/SLIM_RULEBOOK_PROPOSAL.md` Step 1 (already-approved-by-user proposal, previously
+   unimplemented): §6's 57 lesson bullets moved from inline prose to a one-line index, full text
+   relocated verbatim to `.agents/lessons/<slug>.md` (one file per lesson). Content fidelity checked
+   byte-for-byte by script (not by eye); all 10 guardrail-tagged lessons' titles cross-checked
+   against `harness-status.mjs`'s `lesson:` fields so `harness-learn.mjs` needed no code change.
 
-### 1. Error boundaries — coverage closed across all six apps (`.agents/AGENTS.md` §12)
+## Verified (commands actually run, not recalled — see each PR body for full output)
 
-§12 named this as an open backlog: only `travel-packing-app` had a boundary; the other five had
-none, so any render throw unmounted the tree to a blank page — on an installed Android build,
-indistinguishable from a broken install.
+Every PR: `harness-status.mjs --gate`, `harness-status.test.mjs`, `harness-learn.mjs`,
+`check-loop-stats.mjs`, `check-doc-claims.mjs --gate` — all green. #278 additionally: full
+`test-app.mjs` on `legal-financial-rag` + `elder-care-planner`, `rag-eval-gate.mjs` (100%
+precision@K, exercises the patched `undici` chain end-to-end), `npx cap --version` (confirms
+`@capacitor/cli` untouched by the `xcode` override). #279 additionally: portfolio-hub's
+`loopStats.generated.test.ts` (3/3), and a script-verified byte-diff proving no lesson prose was
+altered during the move.
 
-- Next.js: new `src/app/error.tsx` in `elder-care-planner` and `smart-recipe-app`.
-- Vite: new `src/components/ErrorBoundary.tsx` in `mood-diner`, `portfolio-hub` and
-  `legal-financial-rag`, wired in `src/main.tsx` around the root `<App />`.
-- In `mood-diner` the boundary wraps **outside** `MonetizationProvider` on purpose — that provider
-  reads `localStorage` while building initial state, so a boundary nested inside it would miss the
-  crash most likely to happen at startup.
-- The fallback never renders `error.message` or a component stack: either can quote the user data
-  the app was holding when it crashed. Details go to `console.error` only.
+## Repo hygiene done alongside (not code, but real)
 
-### 2. `mood-diner` monetization storage boundary
-
-`MonetizationContext.tsx` read `localStorage.getItem(KEY) as PlanTier` and `parseInt(saved, 10)`
-with no guard, while the same app's `storage.ts` validated everything. Three defects:
-
-1. `localStorage` **throws** (not returns null) when a browser denies storage. That read happens at
-   the root of the tree → blank app instead of degrading to the free tier.
-2. Unvalidated `as` cast — a hand-edited `'gold'` propagates as a `PlanTier`.
-3. `parseInt('abc')` → `NaN`, which fails every `> 0` check *and* persists back as the string
-   `"NaN"`, locking a free user out of their allowance permanently across reloads.
-
-New `src/lib/monetization/monetizationStorage.ts` + 17 unit tests.
-
-### 3. `travel-packing-app` checklist parse
-
-`JSON.parse('null')` succeeds and returns `null`, so the existing `try`/`catch` never fired and
-`Object.values(null)` threw during render. Now goes through `parseStoredCheckedItems`, which
-validates the parsed *result*. The shared `isCheckedItemsMap` guard is also what
-`isChecklistSyncMessage` uses, so the localStorage path and the BroadcastChannel path cannot drift.
-
-### 4. `travel-packing-app` E2E — a vacuous reload synchronization (pre-existing)
-
-`e2e/quick-wins.spec.ts:94` waited for `#dest === 'Hawaii'` as proof the delete-and-reload had
-finished — but that test never changes `#dest`, so `'Hawaii'` is already true *before* the reload.
-The wait was satisfied by the old document and `page.evaluate` then raced the navigation
-(`Execution context was destroyed`). It now stamps the current document and waits for the stamp to
-disappear, which is the only signal here that proves a new document exists.
-
-This failed twice under `test-app.mjs`'s single-worker full run and passed when the spec was run
-alone — a reminder that "passes in isolation" is not evidence about a suite.
-
-## Verification
-
-`node scripts/test-app.mjs <App>` run for **all six** apps in this session — all report
-`ALL HARNESS CHECKS PASSED` (each with the same one advisory `WARN` for the dev-only npm
-advisories above). Repo gates: `harness-status.mjs --gate` (0 blocking), `harness-learn.mjs`,
-`check-doc-claims.mjs --gate`, `check-loop-stats.mjs`, `check-peer-consistency.mjs`,
-`check-secrets.mjs --tree`, `harness-status.test.mjs` — all pass.
-
-Mutation proofs (§9.4), each run and observed:
-- Restoring the original unguarded monetization reads → **9 of 17** cases red.
-- `getDerivedStateFromError` returning `{ hasError: false }` → **4 of 5** boundary cases red.
-- Leaking `error.message` into the fallback DOM → exactly the privacy case red, nothing else.
+- Deleted 5 stale remote branches (2 merged, 2 abandoned/closed — `claude/travel-packing-travel-mode`
+  and `claude/travel-packing-weather-extras` are the exact "promised follow-up" failure §6's own
+  lesson warns about, never revisited).
+- Left the **24 open Dependabot PRs** untouched deliberately — §6 documents a real incident
+  (`A Green PR Check Is Not a Green Master`) from batch-merging 11 of these in one day; triaging
+  them wants a one-at-a-time pass, not bulk action.
 
 ## Open / next steps
 
-- **A sensor for error-boundary coverage is now justified and unbuilt.** §12's precondition ("gate
-  a check once it describes a regression, not a backlog") is met now that all six apps carry a
-  boundary — a sensor added today would report zero. It was left unbuilt because it wasn't what
-  this audit was asked for. Add it **non-blocking** first, per §8.
-- **PBKDF2 is at 100,000 iterations** in both `elder-care-planner/src/lib/share.ts` and
-  `legal-financial-rag/src/lib/security/encryption.ts`. That is not a defect — it was a defensible
-  figure — but current OWASP guidance for PBKDF2-SHA256 is considerably higher. Raising it is a
-  judgement call about the passphrase-unlock latency budget on a low-end phone, and it changes the
-  cost of unlocking existing vaults, so it wants a deliberate decision rather than a silent bump.
-- **The Next.js `error.tsx` boundaries are verified by build + framework contract, not by a
-  forced-crash test.** The three Vite boundaries have real behavioural unit tests
-  (`ErrorBoundary.test.tsx`); the two Next.js ones do not, because those apps have no
-  `@testing-library/react` and forcing a client render crash from Playwright is fragile. If that
-  coverage matters, the honest route is a dedicated throwing route behind a test-only flag.
-- **A containment override is needed in the PR body** for `.agents/AGENTS.md` (see the previous
-  handoff's note: a single-segment root path like `CLAUDE.md` can *only* be acknowledged with an
-  explicit `[containment-override: …]` marker, prose naming is not enough).
+- **A recurring CI friction point, hit independently twice now** (once in the audit that produced
+  the previous version of this file, again in PR #278 and #279): `check-containment.mjs`'s
+  `isAcknowledged()` requires a *2-segment* path slice to appear in the PR body
+  (`segments.length - 2` loop iterations), so a root-level single-segment filename — `CLAUDE.md` is
+  the recurring offender — can **never** be acknowledged by naming it in prose, no matter how it's
+  phrased. Only `[containment-override: CLAUDE.md]` satisfies it. Worth fixing the matcher itself
+  (extend the loop to `segments.length - 1`, or treat a bare filename as its own 1-segment match) —
+  noted twice now, still unbuilt.
+- **Remaining items from the original prioritized list**, not yet picked:
+  - Clear the **unpinned-deps backlog** (149 unpinned versions across 6 apps) so the existing
+    non-blocking `unpinned-deps` guardrail can be promoted to blocking.
+  - Build the **spec-review skill** (`docs/EXTERNAL_REPO_ADOPTION_PLAN.md` WI-2) — closes the gap
+    where shipped code silently diverges from its spec; several §6 lessons trace to exactly this.
+  - Triage the 24 open Dependabot PRs, one at a time, per app.
+- **§5/§8 detail-splitting** (the rest of `SLIM_RULEBOOK_PROPOSAL.md`, to hit the whole-file
+  `<250 lines` target) is explicitly a separate, later decision per that doc's own sequencing — not
+  started, contingent on §6's split (done) measuring clean over time.
