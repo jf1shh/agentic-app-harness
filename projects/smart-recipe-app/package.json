@@ -30,7 +30,7 @@
     "postcss": "8.5.23"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.12.1",
+    "@axe-core/playwright": "4.13.0",
     "@capacitor/android": "8.5.0",
     "@capacitor/cli": "8.5.0",
     "@huggingface/transformers": "4.2.0",
