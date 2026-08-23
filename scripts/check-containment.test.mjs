@@ -253,6 +253,35 @@ ok(
   'isContainmentAcknowledged: workflow path with two+ segments is accepted',
 );
 
+// A root-level single-segment path (CLAUDE.md, AGENTS.md) can never reach the
+// "two-segment minimum" the loop otherwise enforces -- segments.length - 2 is
+// negative, so the loop never runs and the file can only ever be acknowledged
+// via [containment-override: ...], never by naming it, no matter the phrasing.
+// Confirmed independently on PRs #278 and #279 before this fix. This is a
+// different case from the bare-last-segment test above: there, the file's
+// OWN path has two segments and only a substring of it appears in the body
+// (correctly rejected, and still rejected after this fix -- see the next
+// case down). Here, the file's own full path IS one segment.
+ok(
+  isContainmentAcknowledged(
+    'Updated CLAUDE.md with a new command.',
+    'CLAUDE.md',
+  ),
+  'isContainmentAcknowledged: a root-level single-segment path (CLAUDE.md) is accepted by naming it, not just by override marker',
+);
+
+ok(
+  isContainmentAcknowledged(
+    'This PR touches [containment-override: CLAUDE.md] for docs reasons.',
+    'CLAUDE.md',
+  ),
+  'isContainmentAcknowledged: the override marker still works for a single-segment path',
+);
+
+// Confirms the fix does not weaken the existing multi-segment rule: the
+// "bare filename (one segment) is NOT accepted" case above (scripts/
+// harness-status.mjs named only by its last segment) must still reject.
+
 /* ---- unacknowledgedViolations (gate decision) ---- */
 
 {
