@@ -1,15 +1,15 @@
-# HANDOFF — Harness robustness pass, continued (dependency backlog cleared)
+# HANDOFF — Harness robustness pass + Dependabot backlog triage
 
-Branch: `master` (this item's own branch not yet created/pushed — see below; everything prior is
-already merged, no other branch has pending work).
+Branch: `master`. Nothing pending — every PR from this pass is merged or closed; the working tree
+has no uncommitted changes.
 
 ## Why
 
-Continuation of the harness-robustness pass from the user's "how can we make it more robust"
-question. Six PRs already shipped (#277–#282, all merged); this session clears the last
-mechanical item from that original list: the `unpinned-deps` backlog.
+Continuation of a multi-session harness-robustness pass that started from the user asking "how can
+we make it more robust and better at making apps." Nine PRs shipped (#277–#285); this session also
+fully triaged the 30+ open Dependabot PR backlog that had accumulated untouched.
 
-## What changed (prior session, all merged)
+## What changed — nine merged PRs, in landing order
 
 1. **#277** — Fixed `allRuleMeta()` hardcoding every guardrail as blocking, which made
    `harness-history.mjs` cry wolf on `unpinned-deps` (then still non-blocking) every run.
@@ -18,71 +18,83 @@ mechanical item from that original list: the `unpinned-deps` backlog.
 3. **#279** — Slimmed `.agents/AGENTS.md` 1,305 → 641 lines (51%) by moving §6's 57 lesson
    bodies to `.agents/lessons/<slug>.md`, leaving a one-line index. Content fidelity verified
    byte-for-byte by script.
-4. **#280** — Refreshed `HANDOFF.md` (was stale, pinned to a branch 8+ merges old) and
-   `IDENTITY.md`'s folder map.
+4. **#280** — Refreshed `HANDOFF.md` (was stale) and `IDENTITY.md`'s folder map.
 5. **#281** — Added `.agents/skills/spec-review/SKILL.md` (WI-2 from
    `docs/EXTERNAL_REPO_ADOPTION_PLAN.md`) — the Spec axis nothing else in the harness covers.
-   Dry-run verified against a real historical divergence (`368dcf5`/PR #47 vs. its fix
-   `33468cb`/PR #67). Also discovered and corrected: the adoption plan's status header wrongly
-   still called WI-6 proposal-only — it shipped in PR #273, before this whole pass started.
+   Dry-run verified against a real historical divergence. Also corrected the adoption plan's
+   status header, which wrongly still called WI-6 proposal-only (it shipped in #273).
 6. **#282** — Fixed `check-containment.mjs`'s `isContainmentAcknowledged()`: a root-level
    single-segment path (`CLAUDE.md`, `AGENTS.md`) could never be acknowledged by naming it in a
-   PR body — only `[containment-override: ...]` worked, `segments.length - 2` going negative for
-   a one-segment path. Hit on #278 and #279 both, plus once before this pass (see the previous
-   HANDOFF.md's own note, now resolved). `Math.max(0, segments.length - 2)` fixes it without
-   touching the analogous (and *correctly* two-segment-only) function in
-   `check-enum-blast-radius.mjs`.
+   PR body, only via `[containment-override: ...]`. Hit three times before the fix (once
+   pre-dating this pass, twice during it).
+7. **#283** — Pinned all 149 unpinned dependency entries across all six apps to their
+   currently-resolved installed version (zero behavior change — verified via a lockfile diff with
+   no `resolved`/`integrity` line changes). Promoted `unpinned-deps` from `manual-review` to a
+   blocking guardrail — same arc `unit-test-coverage` went through.
+8. **#284** — Recorded a fresh `harness-history.json` snapshot to clear the stale "chronically
+   firing" signal the #283 promotion left against a pre-promotion baseline.
+9. **#285** — Removed `dependabot.yml`'s root `directory: "/"` npm entry. For an npm workspace,
+   Dependabot's root directive auto-expands to every workspace member, so it was duplicating the
+   six per-app entries — found while triaging the backlog below (see next section).
 
-## What changed (this session — not yet committed/pushed)
+## Dependabot backlog triage (this session, no code PR — direct PR management)
 
-**Cleared the `unpinned-deps` backlog and promoted the guardrail to blocking.**
+Started at 30 open PRs; a default-limit `gh pr list` call hid 3 more (33 real). Ended at **8 open,
+all individually verified safe**, everything else closed with a reason on each:
 
-- Pinned all 149 unpinned dependency entries across all six apps to their currently-resolved
-  installed version (`createRequire(...).resolve()`, with a directory-walk fallback for the 19
-  packages whose own `exports` map blocks a `./package.json` subpath resolve). Text-level line
-  replacement only — no `JSON.stringify` reformatting.
-- Verified **zero behavior change**: regenerated `package-lock.json` and confirmed the diff
-  contains no `resolved`/`integrity` line changes anywhere — every changed line is a declared
-  range tightening to match what was already installed, no package's actual resolved version
-  moved.
-- Verified with a full `npm run lint` pass across all six apps, `check-peer-consistency.mjs`, and
-  two complete `test-app.mjs` runs (`legal-financial-rag` clean; `travel-packing-app` had one
-  flaky E2E test that passed cleanly on an isolated re-run — pre-existing worker-contention
-  flakiness, unrelated to the pinning).
-- Promoted `unpinned-deps` out of `GUARDRAIL_NON_BLOCKING_IDS` in `scripts/harness-status.mjs` —
-  same arc `unit-test-coverage` went through (non-blocking while it described a backlog, blocking
-  once it didn't). Updated the self-test in `harness-status.test.mjs` that specifically asserted
-  `unpinned-deps` was non-blocking (written in #277) to assert the opposite — a regression test
-  against `GUARDRAIL_NON_BLOCKING_IDS` quietly growing it back.
-- Appended a "Promoted to blocking" note to `.agents/lessons/unpinned-deps.md` documenting the
-  above, matching how other lessons narrate their own later resolution inline.
+- **11 duplicates** closed — the root-entry duplication #285 fixes. Each close comment points to
+  the PR that already covers the same change.
+- **3 confirmed broken**, need real feature work, not a bump — closed with reasoning:
+  - `eslint-plugin-react-refresh` 0.5.x dropped CommonJS entirely; legal-financial-rag/mood-diner/
+    portfolio-hub's legacy `.eslintrc.cjs` (ESLint 8) can't resolve the plugin's rules at all
+    anymore. Needs an ESLint 9 flat-config migration first.
+  - `lucide-react` 1.x removed the `Github`/`Linkedin` icons portfolio-hub's `src/App.tsx` imports
+    — the exact incident `.agents/AGENTS.md` §6 already documents from a prior bump. Re-created
+    once by Dependabot's normal cycle (as #286) before #285 merged; closed again, same reason.
+  - The "react group" bump silently jumps **mood-diner from React 18.3.1 to 19.2.8** (a full
+    major bundled into a routine grouped update) without its `@testing-library/react` peer,
+    breaking `ErrorBoundary.test.tsx`. The other 5 apps in the group are already on React 19 and
+    unaffected.
+- **10 stryker-mutator PRs** (5 `core` + 5 `vitest-runner`, all 9.6.1→10.0.0) closed — tested
+  locally in a scratch git worktree (`git worktree add`, `npm install`, `node
+  scripts/run-mutation.mjs <app>`): `@stryker-mutator/core` 10.0.0 crashes outright (`TypeError:
+  ts.parseConfigFileTextToJson is not a function`), a genuine upstream regression unrelated to
+  this repo's own version choices. Mutation testing is informational-only, so nothing required
+  was ever at risk.
+- **8 verified safe, left open for the user to merge**: `next` 16.3.1 (#268) + its
+  `eslint-config-next` peer per app (#240/#248/#263); typescript-eslint group (#247);
+  `actions/cache` v4→v6 (#237, needed a containment-acknowledgment edit to its PR body first);
+  `eslint-plugin-security` 4.0.1 (#258), `@testing-library/dom` 10.4.1 (#251), and `@types/node`
+  26.2.0 (#264) — the last three tested locally via the same worktree technique, all fully clean.
 
-**Not yet done as of this handoff**: committing, opening the PR, and watching CI. Next agent (or
-this session, resumed) should do that next — the working tree already has the fix; nothing here
-is speculative or unverified.
+**No PR was merged by this session** — per `.agents/AGENTS.md` §5/§8, agents never self-merge. All
+verification (local worktree testing, CI log reading) was done to inform the human's merge
+decision, not to substitute for it.
 
-## Verified (commands actually run this session)
+## Verified (representative commands actually run this session)
 
 ```
-node scripts/harness-status.mjs --strict     -> 0 findings (was 6 medium, 149 total hits)
-npm run lint                                  (all 6 apps)  -> clean
-node scripts/check-peer-consistency.mjs       -> PASSED
-node scripts/test-app.mjs legal-financial-rag -> ALL HARNESS CHECKS PASSED
-node scripts/test-app.mjs travel-packing-app  -> 1 flaky E2E, confirmed passing in isolation
-git diff package-lock.json | grep resolved/integrity -> 0 matches
+node scripts/harness-status.mjs --strict              -> 0 findings (was 6 medium before #283)
+git worktree add <scratch> <dependabot-branch> && npm install && node scripts/run-mutation.mjs <app>
+  -> reproduced the stryker-mutator/core 10.0.0 crash directly
+node scripts/test-app.mjs <app> --skip-e2e             -> used to verify eslint-plugin-security,
+  testing-library/dom bumps locally before recommending merge
 ```
 
 ## Repo hygiene
 
-Left the **24 open Dependabot PRs** deliberately untouched (same reasoning as the prior session):
-`.agents/AGENTS.md` §6 documents a real incident from batch-merging 11 of these in one day.
-Triaging them wants a one-at-a-time pass, not bulk action — still the one open item from the
-original list nobody has picked up yet.
+All stale Dependabot branches for closed PRs were auto-deleted by GitHub on close. No manual
+branch cleanup needed this time (unlike earlier sessions' stale `claude/*` branches).
 
 ## Open / next steps
 
-- Commit + PR the unpinned-deps work above, watch CI, merge.
-- Triage the 24 open Dependabot PRs, one at a time.
-- `docs/SLIM_RULEBOOK_PROPOSAL.md`'s remaining phase (§5/§8 detail-splitting, to hit the
-  whole-file `<250 lines` target) is still an explicitly separate, later decision per that doc's
-  own sequencing.
+- **Merge the 8 verified-safe PRs** (#237, #240, #247, #248, #251, #258, #263, #264, #268) —
+  ready whenever.
+- **Three closed PRs represent real, deliberate future work**, not backlog to re-open casually:
+  an ESLint 9 migration (3 apps), a lucide-react icon-source swap (portfolio-hub), and a
+  coordinated React 19 migration for mood-diner (with its testing-library peer). Each needs its
+  own scoped session, not a routine dependency bump.
+- **Stryker 10.0.0 is upstream-broken** against this repo's TypeScript setup — worth checking back
+  periodically (`npm view @stryker-mutator/core versions`) rather than re-attempting the same bump.
+- `docs/SLIM_RULEBOOK_PROPOSAL.md`'s remaining phase (§5/§8 detail-splitting) is still an
+  explicitly separate, later decision per that doc's own sequencing — not started.
