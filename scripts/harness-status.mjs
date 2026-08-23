@@ -290,6 +290,17 @@ const GUARDRAILS = [
   },
 ];
 
+// Guardrails that start non-blocking despite living in GUARDRAILS — see the
+// unpinned-deps comment at their call site in senseApp() for why. This set is
+// the single source of truth for "is this guardrail's finding type blocking
+// or manual-review": both senseApp() (real findings) and allRuleMeta() (the
+// rule registry harness-history.mjs reads to judge "chronically firing" vs.
+// "clean") must derive a guardrail's finding type from it, or the registry
+// and the actual gate can disagree about whether a rule blocks — exactly the
+// kind of drift check-guardrail-integrity.mjs exists to catch, one level up.
+const GUARDRAIL_NON_BLOCKING_IDS = new Set(['unpinned-deps']);
+const guardrailFindingType = (g) => GUARDRAIL_NON_BLOCKING_IDS.has(g.id) ? 'manual-review' : 'guardrail';
+
 // ---------------------------------------------------------------------------
 // Mobile release readiness — an INFORMATIONAL sensor for apps that ship a
 // native container. These are *absence* checks (no signing config, an unbranded
@@ -857,8 +868,7 @@ function senseApp(app, projPathOverride, specPathOverride) {
       // path requires a diff-shaped check that only fires on NEW unpinned additions.
       // ease-in-on-enter and text-truncate-missing had zero hits — promoted to
       // blocking immediately (no backlog to clear).
-      const nonBlockingIds = new Set(['unpinned-deps']);
-      const gtype = nonBlockingIds.has(g.id) ? 'manual-review' : 'guardrail';
+      const gtype = guardrailFindingType(g);
       add({ id: `${app}-guardrail-${g.id}`, ruleId: `guardrail:${g.id}`, type: gtype, severity: g.severity, gate: g.gate,
         title: `Guardrail '${g.label}' violated in projects/${app} (${evidence.length} hit${evidence.length > 1 ? 's' : ''})`,
         detail: g.why,
@@ -1043,7 +1053,7 @@ const SENSOR_RULES = [
 // through the same isBlocking() the gate itself uses so the two can never say
 // different things about the same rule.
 export function allRuleMeta() {
-  const guardrailRules = GUARDRAILS.map((g) => ({ ruleId: `guardrail:${g.id}`, type: 'guardrail', severity: g.severity }));
+  const guardrailRules = GUARDRAILS.map((g) => ({ ruleId: `guardrail:${g.id}`, type: guardrailFindingType(g), severity: g.severity }));
   const byId = {};
   for (const r of [...guardrailRules, ...SENSOR_RULES]) {
     byId[r.ruleId] = { type: r.type, severity: r.severity, blocking: isBlocking(r) };

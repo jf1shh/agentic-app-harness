@@ -643,7 +643,33 @@ try {
       else if (!registry[f.ruleId]) {
         console.error(`✗ rule-registry: ruleId '${f.ruleId}' (finding '${f.id}') is not in allRuleMeta() — add it to SENSOR_RULES in harness-status.mjs or history silently stops tracking it`);
         failures++;
+      } else if (registry[f.ruleId].blocking !== isBlocking(f)) {
+        // Caught a real drift here: allRuleMeta() hardcoded every guardrail's
+        // registry type as 'guardrail', while unpinned-deps' real findings
+        // carry type 'manual-review' (non-blocking) — so harness-history.mjs
+        // read the registry as saying "blocking" while the live gate said
+        // "not blocking" for the same ruleId, and reported it as chronically
+        // firing / a bypassed gate that was never actually bypassed.
+        console.error(`✗ rule-registry: ruleId '${f.ruleId}' — registry says blocking=${registry[f.ruleId].blocking}, ` +
+          `but the real finding's isBlocking() says ${isBlocking(f)}. harness-history.mjs would misjudge this rule.`);
+        failures++;
       }
+    }
+
+    // unpinned-deps is the guardrail known to be deliberately non-blocking
+    // despite living in GUARDRAILS — assert the registry agrees, not just
+    // that the two happen to match on whatever fixture findings exist above.
+    const unpinnedProj = join(tmp4, 'proj-unpinned');
+    mkdirSync(unpinnedProj, { recursive: true });
+    writeFileSync(join(unpinnedProj, 'package.json'), '{\n  "dependencies": {\n    "left-pad": "^1.0.0"\n  }\n}\n');
+    const unpinnedFindings = senseApp('fixture-app-unpinned', unpinnedProj, specPath);
+    const unpinnedFinding = unpinnedFindings.find((f) => f.ruleId === 'guardrail:unpinned-deps');
+    if (!unpinnedFinding) {
+      console.error('✗ rule-registry: expected ruleId "guardrail:unpinned-deps" on a package.json with an unpinned version'); failures++;
+    } else if (registry['guardrail:unpinned-deps'].blocking !== false || isBlocking(unpinnedFinding) !== false) {
+      console.error(`✗ rule-registry: 'guardrail:unpinned-deps' must be non-blocking in both the registry ` +
+        `(${registry['guardrail:unpinned-deps'].blocking}) and the live finding (${isBlocking(unpinnedFinding)})`);
+      failures++;
     }
 
     // missing-spec and e2e-missing are mutually exclusive with the fixture
