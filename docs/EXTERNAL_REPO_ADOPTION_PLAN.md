@@ -1,12 +1,24 @@
 # Plan — adopt external agent-tooling patterns into the harness
 
-> **Status: proposal. Nothing in this document has been implemented.** It exists to get
-> approval before any change, per `.agents/AGENTS.md` §1/§2 — every item below adds or
-> changes agent-instruction surface or a harness gate, which is a spec change, not an
-> edit to make on the fly. Same posture as [`SLIM_RULEBOOK_PROPOSAL.md`](SLIM_RULEBOOK_PROPOSAL.md)
-> and [`PERFORMANCE_BACKLOG.md`](PERFORMANCE_BACKLOG.md).
+> **Status: WI-2 and WI-6 implemented; WI-1, WI-3, WI-4, WI-5 remain proposal-only.** WI-6 landed
+> in PR #273 ("Add agent-instruction surface to containment gate") before this plan was otherwise
+> executed — `CONTAINED_PATHS` already covers `.claude/skills/*/SKILL.md` and
+> `.agents/skills/*/SKILL.md` (with the middle-segment wildcard `matchesContainment` fix WI-6
+> called out as needed, verified working directly against `.agents/skills/spec-review/SKILL.md`
+> when WI-2 landed). Every remaining item below adds or changes agent-instruction surface or a
+> harness gate, which is a spec change, not an edit to make on the fly. Same posture as
+> [`SLIM_RULEBOOK_PROPOSAL.md`](SLIM_RULEBOOK_PROPOSAL.md) and
+> [`PERFORMANCE_BACKLOG.md`](PERFORMANCE_BACKLOG.md).
 >
-> Baseline commit for every measurement below: `bebc968`.
+> Baseline commit for every measurement below: `bebc968`, except where a WI's own section notes
+> it was re-verified at implementation time against a later commit.
+>
+> **WI-2 landed at `.agents/skills/spec-review/SKILL.md`, not `.claude/skills/`** — the plan's own
+> open question #2 below guessed `.claude/skills/` from a `bebc968`-era snapshot where
+> `.agents/skills/` held only the ICM guide pointer; by implementation time it already held four
+> harness-discipline skills (`dependency-doctor`, `harness-doctor`, `scope-creep-detector`,
+> `architecture-scanner`), so cross-tool availability was the deciding factor instead. Documented
+> in `_config/conventions.md`.
 
 ## Method — and what "examined" honestly means here
 
@@ -147,6 +159,10 @@ tabular.
 
 ## WI-2 — `spec-review` skill (the Spec axis only)
 
+> **Implemented** at [`.agents/skills/spec-review/SKILL.md`](../.agents/skills/spec-review/SKILL.md)
+> (not `.claude/skills/` — see the status note above). All four acceptance criteria below are met;
+> see each one's own note for how.
+
 **Source:** `mattpocock/skills`, `skills/engineering/code-review/SKILL.md` (read in full).
 
 ### Why
@@ -198,24 +214,34 @@ the spec line.
 
 ### Acceptance criteria
 
-- [ ] Every finding quotes the spec line it is judged against; a finding with no quote is a
-      defect in the skill.
-- [ ] The skill reports "no spec available" and stops rather than inventing a standard, matching
-      the source's behaviour.
-- [ ] Dry-run against the merge commit of a §6-documented spec failure (the §11.10 hourly-band
-      PR is the cleanest: the spec required four things, the PR shipped two). If the review does
-      not surface the two missing elements, it is revised before merge.
-- [ ] It states in its own text that it is advisory, so nothing reads it as a passed gate (§9.1).
+- [x] Every finding quotes the spec line it is judged against; a finding with no quote is a
+      defect in the skill. (Step 5's report template requires the quote; Step 4 states it for
+      each finding class.)
+- [x] The skill reports "no spec available" and stops rather than inventing a standard, matching
+      the source's behaviour. (Step 2.)
+- [x] Dry-run against the merge commit of a §6-documented spec failure — the §11.10 hourly-band
+      PR (`368dcf5`, #47). **Re-verified at implementation time, more precisely than this plan
+      originally stated**: the spec didn't get "two of four fields," it got a band whose
+      `FigureConfidence` tag and note were the pre-existing *row's* (describing the published
+      point rate), never a dedicated tag/note of the band's own — the exact "borrowed confidence"
+      laundering §6's Cite Confidence lesson names. Manually walking the skill's own steps against
+      `368dcf5` surfaces exactly this, matching the actual fix (PR #67, `33468cb`, which added
+      dedicated `hourlyBandConfidence`/`hourlyBandNote` fields). The skill's own Verification
+      section carries this corrected description.
+- [x] It states in its own text that it is advisory, so nothing reads it as a passed gate (§9.1).
+      (Step 5's closing line.)
 
 ### Gate interactions
 
-None. Additive file under `.claude/skills/`.
+None. Additive file under `.agents/skills/` (see the status note above for why not
+`.claude/skills/`).
 
 ### Risk
 
 Medium — this is the item most able to be confidently wrong. A Spec review that hallucinates a
 requirement is worse than none, because it sends an agent to change working code. The dry-run
-acceptance criterion is the mitigation and should not be waived.
+acceptance criterion is the mitigation and was not waived — in fact it caught this plan's own
+description of the §11.10 case being imprecise before the skill shipped.
 
 **Effort:** M (one file, ~150–220 lines, plus a dry-run against a real historical PR).
 
@@ -509,14 +535,17 @@ Plus the matching cases in `check-containment.test.mjs`.
 
 ### Acceptance criteria
 
-- [ ] `node scripts/check-containment.test.mjs` passes with new cases for each added pattern,
-      including at least one negative (a path that must **not** match).
-- [ ] Editing a `SKILL.md` without naming it in the PR body fails the containment gate; naming it
-      passes.
-- [ ] `matchesContainment` handles `.claude/skills/*/SKILL.md` (it does **not** at `bebc968` —
-      see point 2), with a self-test case proving it, and the misleading header comment about
-      "any single path segment" is corrected in the same PR.
-- [ ] `check-guardrail-integrity.mjs` stays silent (this widens a gate, it does not weaken one) —
+- [x] `node scripts/check-containment.test.mjs` passes with new cases for each added pattern,
+      including at least one negative (a path that must **not** match). (Re-run at WI-2's
+      implementation time: still passes; `.agents/skills/*/SKILL.md`,
+      `.claude/skills/*/SKILL.md`, `.claude/hooks/*`, and `.claude/settings.json` each carry both
+      a positive and a negative case.)
+- [x] Editing a `SKILL.md` without naming it in the PR body fails the containment gate; naming it
+      passes. (Confirmed directly against `.agents/skills/spec-review/SKILL.md` when WI-2 landed.)
+- [x] `matchesContainment` handles `.claude/skills/*/SKILL.md` — resolution (a) taken, the
+      middle-segment `*` is supported, and the header comment now correctly says "single path
+      segment" rather than the `bebc968`-era overstatement.
+- [x] `check-guardrail-integrity.mjs` stays silent (this widens a gate, it does not weaken one) —
       confirmed by running it, not assumed.
 
 ### Gate interactions
@@ -537,9 +566,9 @@ the escape hatch already exists and is documented (name the file, or
 ## Sequencing
 
 ```
-WI-6  extend containment          ← first: covers everything the rest adds
+WI-6  extend containment          ← first: covers everything the rest adds        [DONE — PR #273]
   ├── WI-1  diagnosing-bugs skill      (independent)
-  ├── WI-2  spec-review skill          (independent)
+  ├── WI-2  spec-review skill          (independent)                              [DONE]
   ├── WI-4  SessionStart hook          (independent)
   └── WI-5  wrap-up skill              (best written after WI-3 exists, so its
                                         checklist can reference a real run)
@@ -551,12 +580,12 @@ else can land in any order or in parallel.
 
 Suggested PR grouping, sized against `check-diff-size.mjs` (warn 400, block 800):
 
-| PR | Contents | Est. changed lines |
-|---|---|---|
-| 1 | WI-6 | ~80 |
-| 2 | WI-1 + WI-2 | ~450 (warns; no `[large-diff-acknowledged]` needed) |
-| 3 | WI-3 | ~320 |
-| 4 | WI-4 + WI-5 | ~260 |
+| PR | Contents | Est. changed lines | Status |
+|---|---|---|---|
+| 1 | WI-6 | ~80 | **Done** — PR #273 |
+| 2 | WI-1 + WI-2 | ~450 (warns; no `[large-diff-acknowledged]` needed) | **WI-2 done**, landed alone (not bundled with WI-1); WI-1 still open |
+| 3 | WI-3 | ~320 | Open |
+| 4 | WI-4 + WI-5 | ~260 | Open |
 
 Each is independently revertible. Per §6's independent-branch lesson, each branches from
 `master` and whichever lands second resolves its own conflict **in that session** — this plan
@@ -623,11 +652,13 @@ resolution.
 1. **Does WI-5 claim the name `/learn`?** §7 names it. Implementing it under a different name
    leaves the rulebook pointing at nothing; claiming it means the rulebook's §7 text should be
    updated to match — a §1 spec change needing approval, not an edit to make on the fly.
-2. **Do WI-1 and WI-2 belong in `.claude/skills/` or `.agents/skills/`?** The repo currently uses
-   both, with no documented rule for which. `.agents/` is the cross-tool standard the root
-   `AGENTS.md` advertises; `.claude/` is Claude-only, like the existing hook. My recommendation:
-   `.claude/skills/`, matching `verify-scripts.mjs`'s stated Claude-Code-only posture, and add
-   the convention to `_config/conventions.md` so the next agent is not guessing.
+2. **Resolved, differently than originally recommended.** WI-2 landed in `.agents/skills/`, not
+   `.claude/skills/` — by implementation time `.agents/skills/` already held four harness-
+   discipline skills (this recommendation was written when it held none but the ICM pointer), so
+   cross-tool availability won over the original Claude-Code-only guess. The rule is now
+   documented in `_config/conventions.md` so the next agent (including whoever builds WI-1) is not
+   guessing: harness-discipline skill → `.agents/skills/`; ICM-layer-maintenance-only skill →
+   `.claude/skills/`.
 3. **Is WI-3 worth it at 65 links?** It found 2 real defects in the rulebook, which is the
    argument for; the surface is genuinely small, which is the argument against. Reasonable to
    fix the two links by hand and skip the script.
