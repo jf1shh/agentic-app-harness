@@ -121,7 +121,22 @@ export function findViolations(touchedFiles, patterns = CONTAINED_PATHS) {
 
 /**
  * Whether a file is acknowledged in the PR body via [containment-override: path]
- * or by simply naming the file path (two-segment minimum, same as blast-radius).
+ * or by simply naming the file path (two-segment minimum, same as blast-radius
+ * — see check-enum-blast-radius.mjs's isAcknowledged for why: a bare last
+ * segment like `page.tsx` collides by coincidence far too often to count as
+ * "considered"). That minimum is impossible to reach for a path that only
+ * *has* one segment to begin with (CLAUDE.md, AGENTS.md at the repo root) —
+ * `segments.length - 2` goes negative and the loop below never runs, so
+ * naming the file could never satisfy this check, only the override marker
+ * could, no matter how it was phrased. Confirmed live on PRs #278 and #279.
+ * `Math.max(0, ...)` closes that gap: a genuinely single-segment path falls
+ * back to matching its own (only) segment, which is not the collision-prone
+ * case the two-segment minimum guards against — CLAUDE.md/AGENTS.md are
+ * unique, unambiguous filenames, unlike page.tsx/index.ts. Every path with
+ * two or more segments is completely unaffected (Math.max(0, n) === n for
+ * any n >= 0), so the bare-last-segment rejection for a multi-segment path
+ * (e.g. naming only "harness-status.mjs" when the real path is
+ * "scripts/harness-status.mjs") still correctly fails.
  */
 export function isContainmentAcknowledged(body, filePath) {
   if (!body) return false;
@@ -131,7 +146,7 @@ export function isContainmentAcknowledged(body, filePath) {
   if (body.includes(marker)) return true;
 
   const segments = norm.split('/');
-  for (let i = 0; i <= segments.length - 2; i += 1) {
+  for (let i = 0; i <= Math.max(0, segments.length - 2); i += 1) {
     if (body.includes(segments.slice(i).join('/'))) return true;
   }
   return false;
