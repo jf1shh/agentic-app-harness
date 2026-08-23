@@ -106,6 +106,46 @@
         "token-budget:context-critical": 0,
         "token-budget:context-trending-up": 0
       }
+    },
+    {
+      "at": "2026-08-23T20:04:17.366Z",
+      "commit": "3ee909d71022cafe65463b352440361c85cbb188",
+      "totalFindings": 0,
+      "blocking": 0,
+      "byRule": {
+        "guardrail:viewport-no-zoom": 0,
+        "guardrail:explicit-any": 0,
+        "guardrail:root-service-worker": 0,
+        "guardrail:pbkdf2-salt-buffer": 0,
+        "guardrail:responsive-grid": 0,
+        "guardrail:capacitor-absolute-base": 0,
+        "guardrail:no-op-assertion": 0,
+        "guardrail:unpinned-deps": 0,
+        "guardrail:ease-in-on-enter": 0,
+        "guardrail:text-truncate-missing": 0,
+        "missing-spec": 0,
+        "missing-readme": 0,
+        "no-zod-schema": 0,
+        "e2e-missing": 0,
+        "e2e-bdd-noncompliant": 0,
+        "spec-drift": 0,
+        "production-bundle-test-missing": 0,
+        "dead-public-asset": 0,
+        "mobile-readiness:no-signing-config": 0,
+        "mobile-readiness:default-version-code": 0,
+        "mobile-readiness:default-launcher-icon": 0,
+        "mobile-readiness:slug-app-name": 0,
+        "mobile-readiness:manifest-icons-missing": 0,
+        "mobile-readiness:no-privacy-policy": 0,
+        "mobile-readiness:no-android-ci": 0,
+        "unit-test-coverage:vitest-unscoped": 0,
+        "unit-test-coverage:no-unit-tests": 0,
+        "unit-test-coverage:untested-modules": 0,
+        "unit-test-coverage:bdd-noncompliant": 0,
+        "token-budget:context-warning": 0,
+        "token-budget:context-critical": 0,
+        "token-budget:context-trending-up": 0
+      }
     }
   ]
 }
