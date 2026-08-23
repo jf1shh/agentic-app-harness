@@ -38,7 +38,8 @@ agentic-app-harness/
 ├── .cursor/rules/           # Cursor adapter (harness.mdc)
 ├── .claude/skills/          # /icm-scaffold, /icm-sync, /icm-context-scaffold — maintain this layer
 ├── .agents/
-│   ├── AGENTS.md            # THE authoritative rulebook — read before changing any code
+│   ├── AGENTS.md            # THE authoritative rulebook — §6 is a one-line index; full lesson text below
+│   ├── lessons/             # Full text of every §6 lesson, one file per lesson (see AGENTS.md §8)
 │   ├── rules/harness.md     # Source rule text shared by the adapters above
 │   └── skills/sdd-harness-guide/
 ├── projects/                 # npm workspace — six independent apps, each own package.json:
@@ -51,7 +52,10 @@ agentic-app-harness/
 ├── specs/                    # specs/<app-name>-spec.md — source of truth, read before coding;
 │   └── templates/            #   specs/templates/ holds the spec format itself
 ├── docs/
-│   └── APP_DEVELOPMENT_CYCLE.md  # Sequenced walkthrough: idea → spec → build → gate → PR → harness loop
+│   ├── APP_DEVELOPMENT_CYCLE.md      # Sequenced walkthrough: idea → spec → build → gate → PR → harness loop
+│   ├── PERFORMANCE_BACKLOG.md        # Measured, deliberately-unimplemented optimization backlog
+│   ├── SLIM_RULEBOOK_PROPOSAL.md     # Rulebook-slimming plan — §6 split done, §5/§8 detail-split pending
+│   └── EXTERNAL_REPO_ADOPTION_PLAN.md  # Evaluated external agent-tooling patterns for adoption
 ├── scripts/                  # The harness: Sense → Propose → Act → Verify → Learn (zero-dep Node ESM)
 ├── stages/                   # ICM Layer 2/4 — one folder per harness-loop stage:
 │   ├── sense/                #   CONTEXT.md contract + output/ (→ harness-status.json)
