@@ -1,8 +1,21 @@
 # Proposal — Slim the always-loaded rulebook into a lean index
 
-> **Status: proposal. Nothing in this document has been implemented.** It exists to get
-> approval before any change, per `.agents/AGENTS.md` §1/§2 — the rulebook is the single
-> source of truth, so restructuring it is a spec change, not an edit to make on the fly.
+> **Status: Step 1 (§6 only) implemented, approved before the change per §1/§2.** §6's 57 lesson
+> bullets moved from inline prose to one-line index entries in `.agents/AGENTS.md`, each linking to
+> the full text in its own file under `.agents/lessons/<slug>.md`. Nothing else in this document —
+> §5/§8 detail-splitting, the `<250 lines` target for the whole file — has been done; that was always
+> a later, separate decision per the Rollout section below, contingent on this step measuring clean.
+>
+> **Measured, not vibed:** `.agents/AGENTS.md` went from **1,305 lines / 119 KB** to **641 lines /
+> 57 KB** — a 51% reduction in what every agent session loads before doing any real work. Every one
+> of the four acceptance commands below passed: `node scripts/harness-learn.mjs` (10/10 guardrails
+> still trace), `node scripts/check-doc-claims.mjs --gate`, `node scripts/harness-status.test.mjs`,
+> and portfolio-hub's `loopStats.generated.test.ts` (57 lessons, unchanged count). Content fidelity
+> was verified byte-for-byte: the concatenation of all 57 `.agents/lessons/*.md` bodies, blank lines
+> stripped, is character-identical to the original §6 body, blank lines stripped — confirmed by
+> script, not by eye. No rule was weakened, removed, or reworded; every guardrail-tagged lesson's
+> bold title was cross-checked against its `lesson:` field in `scripts/harness-status.mjs` and
+> matches exactly, so `harness-learn.mjs`'s traceability check needed no code change.
 
 ## The problem (measured, not vibed)
 
@@ -76,13 +89,17 @@ same counts — or a deliberate, documented count change).
 
 ## Rollout (if approved)
 
-1. Do §6 first, alone — it's the 55% and the only low-risk move (pure prose, no binding rules).
-2. Keep a compatibility shim: `.agents/AGENTS.md` §6 becomes an index of one-line lesson
-   summaries + links; the full prose moves to `.agents/lessons/`.
-3. Re-run the four acceptance commands above; fix parser paths.
-4. Land that as its own PR (no rule changes, only relocation), then measure — if session
-   context actually drops and nothing regressed, proceed to §5/§8 detail-splitting in a second
-   PR. If it regresses, revert the one PR and stop.
+1. ~~Do §6 first, alone — it's the 55% and the only low-risk move (pure prose, no binding rules).~~ **Done.**
+2. ~~Keep a compatibility shim: `.agents/AGENTS.md` §6 becomes an index of one-line lesson
+   summaries + links; the full prose moves to `.agents/lessons/`.~~ **Done** — one line per lesson,
+   title + optional `[guardrail: id]` tag + a link to `.agents/lessons/<slug>.md`.
+3. ~~Re-run the four acceptance commands above; fix parser paths.~~ **Done** — no parser paths needed
+   fixing: `harness-learn.mjs` and `loopStatsCompute.mjs` both already scanned §6 by line pattern
+   (`[guardrail: id]` tag text, `^- \*\*` bullet count) rather than by prose length, so a one-line
+   index entry that preserves the exact bold title and tag satisfies both unchanged.
+4. Landed as its own PR (no rule changes, only relocation) — measured above. **Next step (§5/§8
+   detail-splitting to hit the `<250 lines` whole-file target) is a separate, later decision**, not
+   bundled into this one, per the sequencing this section always specified.
 
 ## Non-goals
 

@@ -282,5 +282,6 @@ the full evidence:
 - **Prove a new test can fail**: break the implementation once, watch the test go red, restore it, state
   the mutation and result in the PR body. An `expect()` with no matcher or a tautological type assertion
   is not coverage.
-- Discovered a reusable lesson? It goes in `.agents/AGENTS.md` §6, and — if it's mechanically detectable
-  — as a self-tested guardrail in `scripts/harness-status.mjs` too. The protocol is in §8.
+- Discovered a reusable lesson? It goes in `.agents/lessons/<slug>.md` (full text) plus a one-line
+  index entry in `.agents/AGENTS.md` §6, and — if it's mechanically detectable — as a self-tested
+  guardrail in `scripts/harness-status.mjs` too. The protocol is in §8.
