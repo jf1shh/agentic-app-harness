@@ -1,32 +1,18 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-    ignore:
-      # .agents/AGENTS.md §6 "A Dependency Bump Is Only Safe If Its Peers Move
-      # With It": a lone major bump of the compiler or linter has twice taken
-      # this repo's CI red — TypeScript 7 and ESLint 10 both land ahead of
-      # what typescript-eslint (and this repo's plugin pairings) support.
-      # Patch/minor stay automatic; a major needs a deliberate, whole-peer-set
-      # PR, not a routine Dependabot bump.
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-
+  # No root `directory: "/"` npm entry, deliberately. For an npm workspace,
+  # Dependabot's root directive auto-expands to every workspace member —
+  # which duplicates the six per-app entries below rather than adding
+  # coverage. Verified, not assumed: a prior root entry produced PRs like
+  # "bump next from 16.3.0 to 16.3.1" touching elder-care-planner,
+  # smart-recipe-app, and travel-packing-app's package.json in one PR, while
+  # each of those apps' own per-app entry opened an *identical* PR for the
+  # same file. Removing the root entry loses proposals only for the root
+  # package.json's own narrow devDependency (onnxruntime-web) and the
+  # `overrides` block (sharp, adm-zip, xcode>uuid) — those move rarely and
+  # deliberately (the overrides exist for CVE patches, see PR #182/#278) and
+  # are easy to track by hand; that's a small trade against eliminating
+  # duplicate PRs across five dependency families and all six apps.
   - package-ecosystem: "npm"
     directory: "/projects/mood-diner"
     schedule:
@@ -111,9 +97,6 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
 
-  # Previously missing from this file entirely — legal-financial-rag and
-  # elder-care-planner had zero automated dependency scanning of their own
-  # npm trees (only ever covered indirectly via the root workspace lockfile).
   - package-ecosystem: "npm"
     directory: "/projects/legal-financial-rag"
     schedule:
