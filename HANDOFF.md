@@ -1,78 +1,88 @@
-# HANDOFF — Harness robustness pass (three fixes, no app changes)
+# HANDOFF — Harness robustness pass, continued (dependency backlog cleared)
 
-Branch: `master` (each item below landed as its own PR, already merged; no branch is currently
-checked out with pending work).
+Branch: `master` (this item's own branch not yet created/pushed — see below; everything prior is
+already merged, no other branch has pending work).
 
 ## Why
 
-The user asked how to make the harness itself "more robust and better at making apps" after its
-first GitHub star. This session found and fixed three real issues in the harness's own machinery
-(not the six apps), in priority order the user picked interactively.
+Continuation of the harness-robustness pass from the user's "how can we make it more robust"
+question. Six PRs already shipped (#277–#282, all merged); this session clears the last
+mechanical item from that original list: the `unpinned-deps` backlog.
 
-## What changed (three merged PRs, in landing order)
+## What changed (prior session, all merged)
 
-1. **PR #277 — `allRuleMeta()` blocking-registry bug.** `scripts/harness-status.mjs`'s rule
-   registry hardcoded every guardrail's finding type as `'guardrail'` (blocking), but the
-   `unpinned-deps` guardrail's real findings carry type `'manual-review'` (deliberately
-   non-blocking). `harness-history.mjs` read the registry as saying "blocking" while the live gate
-   said "not blocking" for the same rule, so its "chronically firing — check for a bypassed gate"
-   signal was crying wolf on `unpinned-deps` every run — which risks masking a *real* bypassed gate
-   reported alongside a known-false one. Fixed by extracting one shared `guardrailFindingType()`
-   helper used by both `senseApp()` and `allRuleMeta()`. Added a self-test asserting the registry's
-   `blocking` flag agrees with `isBlocking()` on the real finding, for every fixture case.
+1. **#277** — Fixed `allRuleMeta()` hardcoding every guardrail as blocking, which made
+   `harness-history.mjs` cry wolf on `unpinned-deps` (then still non-blocking) every run.
+2. **#278** — Patched 11 `npm audit` vulnerabilities (all transitive devDependencies); added
+   `scripts/check-dependency-audit.mjs` (non-blocking sensor) so this can't recur silently.
+3. **#279** — Slimmed `.agents/AGENTS.md` 1,305 → 641 lines (51%) by moving §6's 57 lesson
+   bodies to `.agents/lessons/<slug>.md`, leaving a one-line index. Content fidelity verified
+   byte-for-byte by script.
+4. **#280** — Refreshed `HANDOFF.md` (was stale, pinned to a branch 8+ merges old) and
+   `IDENTITY.md`'s folder map.
+5. **#281** — Added `.agents/skills/spec-review/SKILL.md` (WI-2 from
+   `docs/EXTERNAL_REPO_ADOPTION_PLAN.md`) — the Spec axis nothing else in the harness covers.
+   Dry-run verified against a real historical divergence (`368dcf5`/PR #47 vs. its fix
+   `33468cb`/PR #67). Also discovered and corrected: the adoption plan's status header wrongly
+   still called WI-6 proposal-only — it shipped in PR #273, before this whole pass started.
+6. **#282** — Fixed `check-containment.mjs`'s `isContainmentAcknowledged()`: a root-level
+   single-segment path (`CLAUDE.md`, `AGENTS.md`) could never be acknowledged by naming it in a
+   PR body — only `[containment-override: ...]` worked, `segments.length - 2` going negative for
+   a one-segment path. Hit on #278 and #279 both, plus once before this pass (see the previous
+   HANDOFF.md's own note, now resolved). `Math.max(0, segments.length - 2)` fixes it without
+   touching the analogous (and *correctly* two-segment-only) function in
+   `check-enum-blast-radius.mjs`.
 
-2. **PR #278 — 11 `npm audit` vulnerabilities + a new sensor so it can't recur silently.** Found
-   while doing routine branch cleanup (a `git push` warning line nobody reads). All 11 were
-   transitive devDependencies (`undici` via `promptfoo`'s eval tooling, `nanoid` via `postcss`,
-   `uuid` via `@capacitor/cli`'s unused iOS tooling, `qs` via Stryker's `typed-rest-client`) — none
-   shipped in a production bundle, but the fix was mostly free (`npm audit fix` cleared 7/11; the
-   last 3 needed one scoped root `package.json` `overrides` entry). Added
-   `scripts/check-dependency-audit.mjs` (+ self-test), wired non-blocking into `sdd-sentinel.yml`,
-   so `npm audit --json` against the shared lockfile is a single visible CI log entry instead of six
-   buried per-app runs nobody was reading.
+## What changed (this session — not yet committed/pushed)
 
-3. **PR #279 — Slimmed `.agents/AGENTS.md` from 1,305 → 641 lines (51% smaller).** Executed
-   `docs/SLIM_RULEBOOK_PROPOSAL.md` Step 1 (already-approved-by-user proposal, previously
-   unimplemented): §6's 57 lesson bullets moved from inline prose to a one-line index, full text
-   relocated verbatim to `.agents/lessons/<slug>.md` (one file per lesson). Content fidelity checked
-   byte-for-byte by script (not by eye); all 10 guardrail-tagged lessons' titles cross-checked
-   against `harness-status.mjs`'s `lesson:` fields so `harness-learn.mjs` needed no code change.
+**Cleared the `unpinned-deps` backlog and promoted the guardrail to blocking.**
 
-## Verified (commands actually run, not recalled — see each PR body for full output)
+- Pinned all 149 unpinned dependency entries across all six apps to their currently-resolved
+  installed version (`createRequire(...).resolve()`, with a directory-walk fallback for the 19
+  packages whose own `exports` map blocks a `./package.json` subpath resolve). Text-level line
+  replacement only — no `JSON.stringify` reformatting.
+- Verified **zero behavior change**: regenerated `package-lock.json` and confirmed the diff
+  contains no `resolved`/`integrity` line changes anywhere — every changed line is a declared
+  range tightening to match what was already installed, no package's actual resolved version
+  moved.
+- Verified with a full `npm run lint` pass across all six apps, `check-peer-consistency.mjs`, and
+  two complete `test-app.mjs` runs (`legal-financial-rag` clean; `travel-packing-app` had one
+  flaky E2E test that passed cleanly on an isolated re-run — pre-existing worker-contention
+  flakiness, unrelated to the pinning).
+- Promoted `unpinned-deps` out of `GUARDRAIL_NON_BLOCKING_IDS` in `scripts/harness-status.mjs` —
+  same arc `unit-test-coverage` went through (non-blocking while it described a backlog, blocking
+  once it didn't). Updated the self-test in `harness-status.test.mjs` that specifically asserted
+  `unpinned-deps` was non-blocking (written in #277) to assert the opposite — a regression test
+  against `GUARDRAIL_NON_BLOCKING_IDS` quietly growing it back.
+- Appended a "Promoted to blocking" note to `.agents/lessons/unpinned-deps.md` documenting the
+  above, matching how other lessons narrate their own later resolution inline.
 
-Every PR: `harness-status.mjs --gate`, `harness-status.test.mjs`, `harness-learn.mjs`,
-`check-loop-stats.mjs`, `check-doc-claims.mjs --gate` — all green. #278 additionally: full
-`test-app.mjs` on `legal-financial-rag` + `elder-care-planner`, `rag-eval-gate.mjs` (100%
-precision@K, exercises the patched `undici` chain end-to-end), `npx cap --version` (confirms
-`@capacitor/cli` untouched by the `xcode` override). #279 additionally: portfolio-hub's
-`loopStats.generated.test.ts` (3/3), and a script-verified byte-diff proving no lesson prose was
-altered during the move.
+**Not yet done as of this handoff**: committing, opening the PR, and watching CI. Next agent (or
+this session, resumed) should do that next — the working tree already has the fix; nothing here
+is speculative or unverified.
 
-## Repo hygiene done alongside (not code, but real)
+## Verified (commands actually run this session)
 
-- Deleted 5 stale remote branches (2 merged, 2 abandoned/closed — `claude/travel-packing-travel-mode`
-  and `claude/travel-packing-weather-extras` are the exact "promised follow-up" failure §6's own
-  lesson warns about, never revisited).
-- Left the **24 open Dependabot PRs** untouched deliberately — §6 documents a real incident
-  (`A Green PR Check Is Not a Green Master`) from batch-merging 11 of these in one day; triaging
-  them wants a one-at-a-time pass, not bulk action.
+```
+node scripts/harness-status.mjs --strict     -> 0 findings (was 6 medium, 149 total hits)
+npm run lint                                  (all 6 apps)  -> clean
+node scripts/check-peer-consistency.mjs       -> PASSED
+node scripts/test-app.mjs legal-financial-rag -> ALL HARNESS CHECKS PASSED
+node scripts/test-app.mjs travel-packing-app  -> 1 flaky E2E, confirmed passing in isolation
+git diff package-lock.json | grep resolved/integrity -> 0 matches
+```
+
+## Repo hygiene
+
+Left the **24 open Dependabot PRs** deliberately untouched (same reasoning as the prior session):
+`.agents/AGENTS.md` §6 documents a real incident from batch-merging 11 of these in one day.
+Triaging them wants a one-at-a-time pass, not bulk action — still the one open item from the
+original list nobody has picked up yet.
 
 ## Open / next steps
 
-- **A recurring CI friction point, hit independently twice now** (once in the audit that produced
-  the previous version of this file, again in PR #278 and #279): `check-containment.mjs`'s
-  `isAcknowledged()` requires a *2-segment* path slice to appear in the PR body
-  (`segments.length - 2` loop iterations), so a root-level single-segment filename — `CLAUDE.md` is
-  the recurring offender — can **never** be acknowledged by naming it in prose, no matter how it's
-  phrased. Only `[containment-override: CLAUDE.md]` satisfies it. Worth fixing the matcher itself
-  (extend the loop to `segments.length - 1`, or treat a bare filename as its own 1-segment match) —
-  noted twice now, still unbuilt.
-- **Remaining items from the original prioritized list**, not yet picked:
-  - Clear the **unpinned-deps backlog** (149 unpinned versions across 6 apps) so the existing
-    non-blocking `unpinned-deps` guardrail can be promoted to blocking.
-  - Build the **spec-review skill** (`docs/EXTERNAL_REPO_ADOPTION_PLAN.md` WI-2) — closes the gap
-    where shipped code silently diverges from its spec; several §6 lessons trace to exactly this.
-  - Triage the 24 open Dependabot PRs, one at a time, per app.
-- **§5/§8 detail-splitting** (the rest of `SLIM_RULEBOOK_PROPOSAL.md`, to hit the whole-file
-  `<250 lines` target) is explicitly a separate, later decision per that doc's own sequencing — not
-  started, contingent on §6's split (done) measuring clean over time.
+- Commit + PR the unpinned-deps work above, watch CI, merge.
+- Triage the 24 open Dependabot PRs, one at a time.
+- `docs/SLIM_RULEBOOK_PROPOSAL.md`'s remaining phase (§5/§8 detail-splitting, to hit the
+  whole-file `<250 lines` target) is still an explicitly separate, later decision per that doc's
+  own sequencing.

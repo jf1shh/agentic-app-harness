@@ -11,3 +11,13 @@
   different machine. `workspace:*` is exempt — it is a monorepo protocol, not a range. Pin every
   dependency to an exact version; use the `dependency-doctor` skill (`.agents/skills/dependency-doctor/`)
   to find the existing backlog, and let the guardrail prevent new ones from being added.
+
+**Promoted to blocking.** This guardrail started `manual-review` (non-blocking) because it is a
+full-file scan, not diff-shaped — blocking it while any of the tree's 149 pre-existing unpinned
+entries remained would have failed CI on files nobody touched in that PR. The backlog (all six
+apps) was pinned to each entry's currently-resolved installed version — a text-level replacement,
+verified by diffing the regenerated `package-lock.json` and confirming zero `resolved`/`integrity`
+lines changed anywhere, i.e. no package's actual installed version moved, only the declared range
+tightened to match it. Confirmed with a full `npm run lint` pass across all six apps and two
+complete `test-app.mjs` runs. Same arc `unit-test-coverage` went through: non-blocking while it
+still described a backlog, blocking once it had nothing left to say about history.
