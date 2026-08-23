@@ -22,7 +22,7 @@
     "test:mutation": "stryker run"
   },
   "dependencies": {
-    "lucide-react": "0.544.0",
+    "lucide-react": "1.33.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "4.4.3"
