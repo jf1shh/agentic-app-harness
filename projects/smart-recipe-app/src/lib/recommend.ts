@@ -70,7 +70,7 @@ export function estimateDifficulty(ingredientCount: number, minutes: number | nu
   return 'Easy';
 }
 
-function titleOf(recipe: RecipeEntry): string {
+export function titleOf(recipe: RecipeEntry): string {
   const h1 = recipe.content.split(/\r?\n/).find((l) => /^#\s+/.test(l.trim()));
   if (h1) return h1.replace(/^#\s+/, '').trim();
   return recipe.filename.replace(/\.md$/i, '').replace(/[-_]/g, ' ').trim();
