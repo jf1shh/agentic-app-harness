@@ -41,7 +41,13 @@ agentic-app-harness/
 │   ├── AGENTS.md            # THE authoritative rulebook — §6 is a one-line index; full lesson text below
 │   ├── lessons/             # Full text of every §6 lesson, one file per lesson (see AGENTS.md §8)
 │   ├── rules/harness.md     # Source rule text shared by the adapters above
-│   └── skills/sdd-harness-guide/
+│   └── skills/               # Cross-tool harness-discipline skills (see _config/conventions.md)
+│       ├── sdd-harness-guide/       #   Quick-reference pointer to the harness workflow/CLI
+│       ├── harness-doctor/          #   Fast gate-by-gate diagnostic sweep
+│       ├── dependency-doctor/       #   Unpinned/duplicate/deprecated dependency audit
+│       ├── scope-creep-detector/    #   PR diff vs. its own stated scope
+│       ├── architecture-scanner/    #   Deepening-opportunity survey (thin facades, wide surfaces)
+│       └── spec-review/             #   Diff vs. spec.md — the one axis no script covers (see SKILL.md)
 ├── projects/                 # npm workspace — six independent apps, each own package.json:
 │   ├── portfolio-hub         #   Vite + React 19 — master showcase portal
 │   ├── mood-diner             #   Vite + React 18 + Capacitor — restaurant recommender/booking
