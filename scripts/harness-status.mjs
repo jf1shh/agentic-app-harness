@@ -290,15 +290,21 @@ const GUARDRAILS = [
   },
 ];
 
-// Guardrails that start non-blocking despite living in GUARDRAILS — see the
-// unpinned-deps comment at their call site in senseApp() for why. This set is
-// the single source of truth for "is this guardrail's finding type blocking
-// or manual-review": both senseApp() (real findings) and allRuleMeta() (the
-// rule registry harness-history.mjs reads to judge "chronically firing" vs.
-// "clean") must derive a guardrail's finding type from it, or the registry
-// and the actual gate can disagree about whether a rule blocks — exactly the
-// kind of drift check-guardrail-integrity.mjs exists to catch, one level up.
-const GUARDRAIL_NON_BLOCKING_IDS = new Set(['unpinned-deps']);
+// Guardrails that start non-blocking despite living in GUARDRAILS. This set
+// is the single source of truth for "is this guardrail's finding type
+// blocking or manual-review": both senseApp() (real findings) and
+// allRuleMeta() (the rule registry harness-history.mjs reads to judge
+// "chronically firing" vs. "clean") must derive a guardrail's finding type
+// from it, or the registry and the actual gate can disagree about whether a
+// rule blocks — exactly the kind of drift check-guardrail-integrity.mjs
+// exists to catch, one level up.
+//
+// unpinned-deps lived here until its 149-entry backlog (across all six apps)
+// was closed and verified — same arc unit-test-coverage went through: a
+// full-tree scan is safe to promote once it has nothing left to say about
+// history, not while it still does. See its GUARDRAILS entry's `why` and
+// the call site in senseApp() for the mechanics.
+const GUARDRAIL_NON_BLOCKING_IDS = new Set();
 const guardrailFindingType = (g) => GUARDRAIL_NON_BLOCKING_IDS.has(g.id) ? 'manual-review' : 'guardrail';
 
 // ---------------------------------------------------------------------------
@@ -862,12 +868,15 @@ function senseApp(app, projPathOverride, specPathOverride) {
       }
     }
     if (evidence.length) {
-      // unpinned-deps starts non-blocking per §8 policy: it is a full-file scan,
-      // not diff-shaped, and would fail CI on every existing ^/~ in package.json
-      // files that are already locked by package-lock.json. The correct promotion
-      // path requires a diff-shaped check that only fires on NEW unpinned additions.
-      // ease-in-on-enter and text-truncate-missing had zero hits — promoted to
-      // blocking immediately (no backlog to clear).
+      // Guardrails promoted straight to blocking (ease-in-on-enter,
+      // text-truncate-missing) had zero hits when added, so there was no
+      // backlog to clear. unpinned-deps didn't: it's a full-file scan, not
+      // diff-shaped, so blocking it while any of its 149 pre-existing hits
+      // remained would have failed CI on files nobody touched in that PR.
+      // Ran non-blocking until the backlog was pinned to zero across all six
+      // apps and verified (full lint pass + two apps' complete test-app.mjs
+      // suites, zero resolved dependency versions changed), then promoted —
+      // see GUARDRAIL_NON_BLOCKING_IDS above.
       const gtype = guardrailFindingType(g);
       add({ id: `${app}-guardrail-${g.id}`, ruleId: `guardrail:${g.id}`, type: gtype, severity: g.severity, gate: g.gate,
         title: `Guardrail '${g.label}' violated in projects/${app} (${evidence.length} hit${evidence.length > 1 ? 's' : ''})`,

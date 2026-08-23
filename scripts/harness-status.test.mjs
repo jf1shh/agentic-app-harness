@@ -656,9 +656,13 @@ try {
       }
     }
 
-    // unpinned-deps is the guardrail known to be deliberately non-blocking
-    // despite living in GUARDRAILS — assert the registry agrees, not just
-    // that the two happen to match on whatever fixture findings exist above.
+    // unpinned-deps was the guardrail deliberately non-blocking despite living
+    // in GUARDRAILS, until its 149-entry backlog was closed and it was
+    // promoted (GUARDRAIL_NON_BLOCKING_IDS is now empty). Assert the
+    // promotion actually took in both the registry and the live finding, not
+    // just that the two happen to match on whatever fixture findings exist
+    // above — this is the regression test for GUARDRAIL_NON_BLOCKING_IDS
+    // quietly growing unpinned-deps back onto it.
     const unpinnedProj = join(tmp4, 'proj-unpinned');
     mkdirSync(unpinnedProj, { recursive: true });
     writeFileSync(join(unpinnedProj, 'package.json'), '{\n  "dependencies": {\n    "left-pad": "^1.0.0"\n  }\n}\n');
@@ -666,8 +670,8 @@ try {
     const unpinnedFinding = unpinnedFindings.find((f) => f.ruleId === 'guardrail:unpinned-deps');
     if (!unpinnedFinding) {
       console.error('✗ rule-registry: expected ruleId "guardrail:unpinned-deps" on a package.json with an unpinned version'); failures++;
-    } else if (registry['guardrail:unpinned-deps'].blocking !== false || isBlocking(unpinnedFinding) !== false) {
-      console.error(`✗ rule-registry: 'guardrail:unpinned-deps' must be non-blocking in both the registry ` +
+    } else if (registry['guardrail:unpinned-deps'].blocking !== true || isBlocking(unpinnedFinding) !== true) {
+      console.error(`✗ rule-registry: 'guardrail:unpinned-deps' must be blocking (promoted) in both the registry ` +
         `(${registry['guardrail:unpinned-deps'].blocking}) and the live finding (${isBlocking(unpinnedFinding)})`);
       failures++;
     }
