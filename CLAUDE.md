@@ -130,6 +130,10 @@ node scripts/check-readme-freshness.mjs --base origin/master --head HEAD
                                            # diff-shaped sensor: flags source changes without a
                                            # README update (non-blocking)
 node scripts/check-readme-freshness.test.mjs  # self-test the README freshness detection
+node scripts/check-dependency-audit.mjs   # informational sensor: npm audit --json against the
+                                           # shared root lockfile, one summary instead of six
+node scripts/check-dependency-audit.mjs --json  # machine-readable summary
+node scripts/check-dependency-audit.test.mjs  # self-test the audit-summarizing logic (fixture-driven)
 node scripts/generate-context-digest.mjs   # advisory: write .context-digest.json (per-app hashes,
                                            # module counts, guardrail/lesson counts, HEAD commit)
 node scripts/generate-context-digest.mjs --diff  # compare saved digest against live state — shows
@@ -140,10 +144,11 @@ node scripts/emit-github-issues.mjs --upload  # also print the gh CLI bulk-uploa
 node scripts/emit-github-issues.test.mjs  # self-test the issue-shaping logic
 ```
 
-Mutation testing (`run-mutation.mjs`) and the reviewdog inline-annotation bridge
-(`harness-status-rdjson.mjs`) are both informational/additive — see `.agents/AGENTS.md` §8's
-"Mutation testing" and "Inline PR annotations" subsections for why each stays outside
-`harness-status.mjs`'s fast sense loop and never blocks a merge on its own.
+Mutation testing (`run-mutation.mjs`), the dependency-vulnerability audit
+(`check-dependency-audit.mjs`), and the reviewdog inline-annotation bridge
+(`harness-status-rdjson.mjs`) are all informational/additive — see `.agents/AGENTS.md` §8's
+"Mutation testing", "Dependency vulnerability audit", and "Inline PR annotations" subsections for
+why each stays outside `harness-status.mjs`'s fast sense loop and never blocks a merge on its own.
 `check-secrets.mjs` is diff-shaped like `check-enum-blast-radius.mjs` but **is** blocking, with no
 PR-body escape hatch — see `.agents/AGENTS.md` §11. `check-containment.mjs` blocks unacknowledged
 touches to harness infrastructure (scripts, AGENTS.md, CLAUDE.md, CI workflows, git hooks, spec
@@ -230,10 +235,11 @@ in the PR body), `check-diff-size.mjs` (warns at 400, blocks at 800 net changed 
 rulebook), `check-peer-consistency.mjs` (no split react/react-dom, `@types/*`, or
 `@typescript-eslint` plugin/parser majors, within an app or across apps sharing an `eslint` major —
 apps differing from *each other* stays fine by design), `validate-specs.ps1 -Strict`,
-three non-blocking sensors — `check-instruction-tamper.mjs` (detects rule weakening and gate bypass
+four non-blocking sensors — `check-instruction-tamper.mjs` (detects rule weakening and gate bypass
 in instruction/workflow files), `check-spec-ordering.mjs` (flags logic changes without a
-matching spec or test touch), and `check-readme-freshness.mjs` (flags source changes without a
-README update) — and a
+matching spec or test touch), `check-readme-freshness.mjs` (flags source changes without a
+README update), and `check-dependency-audit.mjs` (one summary of `npm audit` against the shared
+lockfile, instead of six buried per-app runs) — and a
 reviewdog step that posts every
 guardrail hit as an inline PR comment (`harness-status-rdjson.mjs`, informational, never blocks)
 on every PR; `mutation-testing.yml` runs `run-mutation.mjs` per app as its own informational,

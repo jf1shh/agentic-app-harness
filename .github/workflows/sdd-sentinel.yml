@@ -106,6 +106,10 @@ jobs:
         shell: pwsh
         run: node ./scripts/check-readme-freshness.test.mjs
 
+      - name: Dependency-Audit Self-Test (verify the verifier)
+        shell: pwsh
+        run: node ./scripts/check-dependency-audit.test.mjs
+
       - name: Git-Hooks Installer Self-Test (verify the verifier)
         shell: pwsh
         run: node ./scripts/install-git-hooks.test.mjs
@@ -198,6 +202,18 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: node ./scripts/check-readme-freshness.mjs --base origin/${{ github.base_ref }} --head HEAD
+
+      # Non-blocking sensor: runs `npm audit --json` once against the shared
+      # root lockfile (works from the lockfile alone, no install needed) and
+      # prints every advisory in one place. Not gated on the PR event, unlike
+      # the diff-shaped sensors above — a lockfile-wide advisory can appear
+      # with no lockfile change in this PR at all, if a new CVE was published
+      # against a version already pinned. See check-dependency-audit.mjs's
+      # header for why 11 real advisories went unnoticed before this existed.
+      - name: Dependency-Audit Sensor (known vulnerabilities in the resolved tree)
+        continue-on-error: true
+        shell: pwsh
+        run: node ./scripts/check-dependency-audit.mjs
 
       - name: Harness Learn Gate (Lesson <-> Guardrail traceability)
         shell: pwsh
