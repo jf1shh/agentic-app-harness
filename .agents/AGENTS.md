@@ -948,6 +948,47 @@ sensor-vs-guardrail-vs-gate split, just outside the module that split was origin
 Run it locally with `node scripts/run-mutation.mjs <AppName>` (or `--all`); `npm run test:mutation`
 inside a given `projects/<app>` runs Stryker directly for a tighter local loop.
 
+### Dependency vulnerability audit: `scripts/check-dependency-audit.mjs` (npm audit, informational)
+
+`test-app.mjs` already runs `npm audit --audit-level=high` as an advisory step (§5) — but it runs
+that six times, once per app, against the one shared root lockfile, and only ever prints to that
+app's own console output. Nothing tracked it across commits or surfaced it as a single readable
+summary. In practice, 11 real advisories (1 high, 8 moderate, 2 low, at the time this was found)
+accumulated silently for weeks across four transitive devDependencies — `undici` (via
+`promptfoo → ai → @ai-sdk/gateway`, `legal-financial-rag`'s eval tooling), `nanoid` (via `postcss`,
+every app's build), `uuid` (via `@capacitor/cli → xcode`, unused iOS tooling in an Android-only
+repo), and `qs` (via `@stryker-mutator/core → typed-rest-client`). The only place they surfaced was
+a `remote:` warning line on `git push` — real, but easy to never read, and nothing re-surfaced it on
+the next push if you didn't. None of the four were in a shipped app bundle (all devDependencies-only
+tooling), so there was no live exposure, but an unread advisory is still a debt: the fix, once
+looked at, was mostly free — `npm audit fix` resolved 7 of 11 within already-declared semver ranges,
+and the remaining `uuid`/`xcode` chain needed only a scoped root `package.json` `overrides` entry
+(`{ "xcode": { "uuid": "^11.1.1" } }`), which hoists `xcode`'s `uuid` requirement onto the
+already-patched top-level `uuid`, without forcing a `@capacitor/cli` downgrade — the same pattern
+this repo's `overrides` block already used once before, for `sharp`/`adm-zip` (PR #182).
+
+`scripts/check-dependency-audit.mjs` is the fix: it runs `npm audit --json` once at the repo root
+(works from `package-lock.json` alone — no `node_modules` install required, verified by running it
+with `node_modules` renamed away) and prints every advisory, sorted worst-severity-first, in one
+place that's part of the PR's own CI log instead of a push warning. Its parsing logic
+(`summarizeAudit()`) is pure and self-tested against a fixture shaped like `npm audit`'s real JSON
+output, so the self-test never depends on network or the live advisory database — the same
+"live third-party API" discipline §6 already requires of E2E specs.
+
+Deliberately outside `harness-status.mjs`'s `senseApp()` sweep, for the same reason mutation testing
+is (immediately above): that sweep is a zero-dependency, sub-second, offline scan, and `npm audit`
+needs network access and can take real wall-clock seconds — folding it in would break the sense
+layer's speed contract. It runs as its own CI step in `sdd-sentinel.yml`, `continue-on-error: true`
+like the other non-blocking sensors, and is **not** gated on `github.event_name == 'pull_request'`
+the way the diff-shaped sensors are: a new CVE can be published against a version this repo already
+has pinned, with no lockfile change in the current PR at all, so it needs to run on every trigger,
+not just when the lockfile itself moved.
+
+Non-blocking per the sensor-before-guardrail policy above: it reports advisory counts, it does not
+fail `test-app.mjs` or the harness `--gate`. Promoting a severity floor (e.g. "0 high/critical
+advisories") to a blocking check is a deliberate, later, human decision, once a floor is chosen —
+the same arc `unit-test-coverage` went through before it started blocking the gate.
+
 ### Inline PR annotations: `scripts/harness-status-rdjson.mjs` (reviewdog)
 
 §9.1 says "never self-certify verification" for PR bodies — a rule written because an agent's
