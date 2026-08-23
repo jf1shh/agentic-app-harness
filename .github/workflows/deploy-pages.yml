@@ -64,7 +64,7 @@ jobs:
       # 2. MoodDiner (Vite -> dist) -> dist/mood-diner
       - name: Restore mood-diner build
         id: cache-mood-diner
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: projects/portfolio-hub/dist/mood-diner
           key: pages-mood-diner-${{ hashFiles('package-lock.json', 'projects/mood-diner/**') }}
@@ -79,7 +79,7 @@ jobs:
       # 3. Travel Packing (Next.js -> out) -> dist/travel-packing-app
       - name: Restore travel-packing-app build
         id: cache-travel-packing-app
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: projects/portfolio-hub/dist/travel-packing-app
           key: pages-travel-packing-app-${{ hashFiles('package-lock.json', 'projects/travel-packing-app/**') }}
@@ -94,7 +94,7 @@ jobs:
       # 4. Smart Recipe (Next.js -> out) -> dist/smart-recipe-app
       - name: Restore smart-recipe-app build
         id: cache-smart-recipe-app
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: projects/portfolio-hub/dist/smart-recipe-app
           key: pages-smart-recipe-app-${{ hashFiles('package-lock.json', 'projects/smart-recipe-app/**') }}
@@ -109,7 +109,7 @@ jobs:
       # 5. LexiVault Legal Financial RAG (Vite -> dist) -> dist/legal-financial-rag
       - name: Restore legal-financial-rag build
         id: cache-legal-financial-rag
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: projects/portfolio-hub/dist/legal-financial-rag
           key: pages-legal-financial-rag-${{ hashFiles('package-lock.json', 'projects/legal-financial-rag/**') }}
@@ -124,7 +124,7 @@ jobs:
       # 6. Elder Care Cost Planner (Next.js -> out) -> dist/elder-care-planner
       - name: Restore elder-care-planner build
         id: cache-elder-care-planner
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: projects/portfolio-hub/dist/elder-care-planner
           key: pages-elder-care-planner-${{ hashFiles('package-lock.json', 'projects/elder-care-planner/**') }}
