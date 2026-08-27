@@ -1,8 +1,27 @@
-# Agentic App Harness
+<p align="center">
+  <img src=".github/graphics/banner.svg" alt="Agentic App Harness — spec-driven development, enforced in CI, six live apps, one self-improving loop" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/jf1shh/agentic-app-harness/actions/workflows/ci.yml"><img src="https://github.com/jf1shh/agentic-app-harness/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/jf1shh/agentic-app-harness/actions/workflows/sdd-sentinel.yml"><img src="https://github.com/jf1shh/agentic-app-harness/actions/workflows/sdd-sentinel.yml/badge.svg" alt="SDD Sentinel"></a>
+  <a href="https://github.com/jf1shh/agentic-app-harness/actions/workflows/codeql.yml"><img src="https://github.com/jf1shh/agentic-app-harness/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://github.com/jf1shh/agentic-app-harness/actions/workflows/deploy-pages.yml"><img src="https://github.com/jf1shh/agentic-app-harness/actions/workflows/deploy-pages.yml/badge.svg" alt="Deploy Pages"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/jf1shh/agentic-app-harness" alt="MIT License"></a>
+  <a href="https://jf1shh.github.io/agentic-app-harness/"><img src="https://img.shields.io/badge/live-jf1shh.github.io-2ea44f" alt="Live on GitHub Pages"></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/guardrails-10%20self--tested-8b5cf6" alt="10 self-tested guardrails">
+  <img src="https://img.shields.io/badge/learned%20lessons-57-6366f1" alt="57 learned lessons">
+  <img src="https://img.shields.io/badge/apps-6%20live-14b8a6" alt="6 live apps">
+  <img src="https://img.shields.io/badge/CI%20workflows-11-0ea5e9" alt="11 CI workflows">
+  <img src="https://img.shields.io/badge/embedded%20LLM-none-64748b" alt="No embedded LLM">
+</p>
 
 A **spec-driven development (SDD) harness** for building and maintaining production-grade web & mobile apps with AI coding assistants — where the quality bar (runtime schemas, unit + E2E tests, accessibility, spec coverage) is **enforced in CI, not just documented**.
 
-> **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents working under strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. The harness also **closes its own improvement loop** (see the **Agentic Loop** section below): it senses drift and regressions and generates agent work orders **deterministically, with no embedded LLM or API key** — the AI agent is a pluggable actuator, not a hardcoded dependency.
+> **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents working under strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. The harness also **closes its own improvement loop** (see **The Agentic Loop** below): it senses drift and regressions and generates agent work orders **deterministically, with no embedded LLM or API key** — the AI agent is a pluggable actuator, not a hardcoded dependency.
 
 It hosts six real, deployed applications and holds every one of them to the same enforced standard.
 
@@ -16,59 +35,77 @@ It hosts six real, deployed applications and holds every one of them to the same
 
 ---
 
-## 🌐 Live GitHub Pages Showcase & Applications
+## 🌐 Live Showcase
 
-- **Master Portfolio Showcase Hub:** [https://jf1shh.github.io/agentic-app-harness/](https://jf1shh.github.io/agentic-app-harness/)
-- **MoodDiner (Smart Restaurant Recommender & Booking App):** [https://jf1shh.github.io/agentic-app-harness/mood-diner/](https://jf1shh.github.io/agentic-app-harness/mood-diner/)
-- **Travel Packing App (Wardrobe & Knapsack Weight Optimizer):** [https://jf1shh.github.io/agentic-app-harness/travel-packing-app/](https://jf1shh.github.io/agentic-app-harness/travel-packing-app/)
-- **Smart Kitchen Recipe Manager (Meal Planner & Pantry):** [https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/](https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/)
-- **LexiVault Financial RAG (100% Local Private Legal RAG & Security Engine):** [https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/](https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/)
-- **Elder Care Cost Planner (All-In Care Costs, Funding Runway & Fair Family Split):** [https://jf1shh.github.io/agentic-app-harness/elder-care-planner/](https://jf1shh.github.io/agentic-app-harness/elder-care-planner/)
+Click any card to open the live app. Each one is a full deployment, not a demo stub — real state, real persistence, real test coverage.
+
+<table>
+<tr>
+<td width="50%">
+<a href="https://jf1shh.github.io/agentic-app-harness/">
+<img src=".github/graphics/portfolio-hub.svg" alt="Portfolio Hub" width="100%">
+</a>
+</td>
+<td width="50%">
+<a href="https://jf1shh.github.io/agentic-app-harness/mood-diner/">
+<img src=".github/graphics/mood-diner.svg" alt="MoodDiner" width="100%">
+</a>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<a href="https://jf1shh.github.io/agentic-app-harness/travel-packing-app/">
+<img src=".github/graphics/travel-packing-app.svg" alt="Travel Packing App" width="100%">
+</a>
+</td>
+<td width="50%">
+<a href="https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/">
+<img src=".github/graphics/smart-recipe-app.svg" alt="Smart Recipe App" width="100%">
+</a>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<a href="https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/">
+<img src=".github/graphics/legal-financial-rag.svg" alt="LexiVault" width="100%">
+</a>
+</td>
+<td width="50%">
+<a href="https://jf1shh.github.io/agentic-app-harness/elder-care-planner/">
+<img src=".github/graphics/elder-care-planner.svg" alt="Elder Care Planner" width="100%">
+</a>
+</td>
+</tr>
+</table>
+
+| App | What it does | Live |
+|---|---|---|
+| **Portfolio Hub** | Master showcase portal linking the other five, with live loop stats and harness status | [Open ↗](https://jf1shh.github.io/agentic-app-harness/) |
+| **MoodDiner** | Restaurant recommender & table-booking engine — also ships as a real Android app | [Open ↗](https://jf1shh.github.io/agentic-app-harness/mood-diner/) |
+| **Travel Packing App** | Wardrobe & knapsack-weight packing optimizer, with in-browser ML background removal | [Open ↗](https://jf1shh.github.io/agentic-app-harness/travel-packing-app/) |
+| **Smart Recipe App** | Kitchen recipe manager & meal planner with a local semantic-search embedding corpus | [Open ↗](https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/) |
+| **LexiVault** (`legal-financial-rag`) | 100% client-side private RAG for legal & financial documents — zero query content leaves the device | [Open ↗](https://jf1shh.github.io/agentic-app-harness/legal-financial-rag/) |
+| **Elder Care Planner** | Care-cost, funding-runway & fair family-split planner — every headline figure carries its own confidence tag | [Open ↗](https://jf1shh.github.io/agentic-app-harness/elder-care-planner/) |
 
 ---
 
-## Directory Structure
-
-- `projects/`: npm workspace (`projects/*` in the root `package.json`) containing all web & mobile applications. Shared devDependencies (`react`, `typescript`, `vitest`, `@playwright/test`, `eslint`, …) dedupe into a single root `node_modules` via one root `package-lock.json`; each app keeps its own `package.json` and independent version ranges — run `npm install` once at the repo root rather than per app.
-  - `projects/portfolio-hub`: Master Showcase Web Portal (Port 3009).
-  - `projects/mood-diner`: Smart Restaurant Recommender & Table Booking Engine (Port 5178).
-  - `projects/travel-packing-app`: Smart Wardrobe Packing Assistant (Port 3000).
-  - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3005).
-  - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3010).
-  - `projects/elder-care-planner`: Offline-first elder care cost, runway and family cost-sharing planner, with cited cost data, per-figure confidence tags and a "how was this calculated?" derivation behind every headline number (Port 3011).
-- `specs/`: Markdown specifications for every application. These are the **single source of truth**.
-- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `harness-history.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform). Also includes diff-shaped CI gates (`check-containment.mjs`, `check-diff-size.mjs`, `check-enum-blast-radius.mjs`, `check-guardrail-integrity.mjs`, `check-secrets.mjs`) and non-blocking sensors (`check-instruction-tamper.mjs`, `check-spec-ordering.mjs`, `check-readme-freshness.mjs`, `check-dependency-audit.mjs`), plus the advisory `generate-context-digest.mjs` for context staleness detection.
-- `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).
-- `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo — §6 ("Learned Lessons") is a lean index of one-line entries; the full text of each lesson lives in its own file under `.agents/lessons/`, so a fresh agent session isn't paying the token cost of every lesson's full prose before doing any real work (see [`docs/SLIM_RULEBOOK_PROPOSAL.md`](docs/SLIM_RULEBOOK_PROPOSAL.md)). `.agents/skills/` holds cross-tool, model-invoked harness-discipline skills — `sdd-harness-guide`, `harness-doctor`, `dependency-doctor`, `scope-creep-detector`, `architecture-scanner`, and `spec-review` (compares a diff against its app's spec — the one axis `check-spec-ordering.mjs`, `validate-specs.ps1`, and the harness's own spec-drift sense don't cover, since none of them read the diff's content against the spec's).
-- `IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`: an [ICM](https://github.com/ktnCodes/icm-template) (Interpretable Context Methodology) navigation layer for AI agents — a workspace map (`IDENTITY.md`) and task-routing table (`CONTEXT.md`) at the repo root, plus a `CONTEXT.md` contract and `output/` pointer per stage of the Agentic Loop below (`stages/sense/`, `stages/propose/`, `stages/act/`, `stages/verify/`, `stages/learn/`). It sits **on top of** `.agents/AGENTS.md`, not in place of it — every rule-bearing statement in it links back to the rulebook rather than restating it. Maintained via the project-scoped `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}` skills.
-
----
-
-## Engineering Standards (enforced, not aspirational)
-
-1. **Spec-Driven Development (SDD)**: Specs dictate architecture, data models, and acceptance criteria before code is written.
-2. **Contract-First Schema Validation (Zod)**: Every app defines its data models as runtime Zod schemas and infers its TypeScript types from them (`z.infer<typeof Schema>`), validating untrusted input (storage, imports) at the boundary.
-3. **Behavior-Driven Development (BDD)**: All E2E and unit scenarios follow `Given [Context] -> When [Action] -> Then [Outcome]`.
-4. **Unit-Test-Driven Development**: Every change to a logic module (`src/lib`, `src/utils`, `src/services`, `src/engine`, `src/data`, …) starts with a failing Vitest case, and any behaviour a PR claims to protect must be proved by breaking the code and watching the test go red. This is **gated**, not just asked for: `senseUnitTests` fails the build on any logic module that no unit test reaches, any unit test missing `Given/When/Then`, and any Vitest config without an explicit `include`. Its line-level half, the `no-op-assertion` guardrail, blocks too: an `expect()` with no matcher, or a type annotated against itself, is a test that cannot fail. The check shipped non-blocking and was promoted once the backlog it found (15 untested modules, 12 unformatted test files) was closed — a check gates when it describes a regression, not while it still describes history.
-5. **Mandatory Testing & Verification**: Each app must pass `node scripts/test-app.mjs <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility. Cross-platform, so the authoritative gate runs anywhere Node does (`.\scripts\test-app.ps1 -AppName <AppName>` wraps it).
-6. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
-7. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict`, plus diff-shaped gates (`check-containment.mjs`, `check-diff-size.mjs`, `check-enum-blast-radius.mjs`, `check-guardrail-integrity.mjs`, `check-secrets.mjs`) and non-blocking sensors (`check-instruction-tamper.mjs` for rule weakening/gate bypass, `check-spec-ordering.mjs` for logic changes without spec or test touches, `check-readme-freshness.mjs` for source changes without README updates, `check-dependency-audit.mjs` for known vulnerabilities in the resolved dependency tree) on pull requests — the build **fails** if any app is missing a spec, if a guardrail is violated, if harness infrastructure is touched without acknowledgment, or if a diff exceeds 800 changed lines without override. Compliance is a gate, not a claim.
-8. **Cited Figures Carry Their Own Confidence**: Where an app shows a number that came from outside it, that number carries a provenance tag (`verified` / `needs_verification` / `derived`) and the UI surfaces it next to the figure. The rule that makes this more than decoration: **a figure derived from a cited one needs its own tag**, never its row's. A published median tagged `verified` does not make a spread computed around it verified too — that is laundering an uncertain figure into a confident one, and it is the failure mode most likely to survive review, because the sentence reads well. Where no trustworthy figure exists, the honest output is a labelled fallback or an empty dataset with a comment saying why — `STATE_MEDIANS` in `elder-care-planner` is deliberately empty, because a made-up state number is worse than an absent one.
-9. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see below).
-
----
-
-## 🔁 The Agentic Loop (Sense → Propose → Verify → Learn)
+## 🔁 The Agentic Loop (Sense → Propose → Act → Verify → Learn)
 
 The harness closes its own improvement loop — **with no embedded LLM and no API key.** The AI coding agent is a pluggable actuator (Claude Code, Cursor, Copilot, Aider, …); the repo stays provider-neutral. The loop core is zero-dependency Node ESM, so it runs identically in CI and on any dev machine, with or without PowerShell — the `Harness Testing Suite` invokes `node scripts/test-app.mjs` directly on `ubuntu-latest`.
 
-```
-SENSE      node scripts/harness-status.mjs        → harness-status.json
-PROPOSE    node scripts/emit-tasks.mjs            → tasks/<finding-id>.md
-ACT        any AI agent claims a task, opens a PR
-VERIFY     node scripts/harness-status.mjs --gate → CI fails on blocking findings
-LEARN      node scripts/harness-learn.mjs         → CI fails unless new guardrails
-                                                    trace to a documented lesson
+```mermaid
+flowchart LR
+    A["🔍 SENSE<br/>harness-status.mjs"] --> B["📋 PROPOSE<br/>emit-tasks.mjs"]
+    B --> C["🤖 ACT<br/>any AI agent opens a PR"]
+    C --> D["✅ VERIFY<br/>CI gate, blocking"]
+    D --> E["🧠 LEARN<br/>harness-learn.mjs"]
+    E -. "new guardrail must trace to a documented lesson" .-> A
+
+    style A fill:#4f46e5,stroke:#312e81,color:#fff
+    style B fill:#7c3aed,stroke:#4c1d95,color:#fff
+    style C fill:#0891b2,stroke:#164e63,color:#fff
+    style D fill:#16a34a,stroke:#14532d,color:#fff
+    style E fill:#e11d48,stroke:#881337,color:#fff
 ```
 
 | Stage | Command (or `.\scripts\harness.ps1 …`) | What it does |
@@ -90,7 +127,73 @@ still only changes by a human-reviewed PR.
 
 ---
 
-## Optional: repowise MCP (agent exploration aid, not part of the gate)
+## 🏗️ Architecture
+
+```mermaid
+flowchart TD
+    subgraph HARNESS["Harness control layer"]
+        direction LR
+        AG["AGENTS.md<br/>engineering rules"]
+        SPEC["specs/<br/>single source of truth"]
+        GR["10 self-tested guardrails"]
+    end
+
+    subgraph APPS["projects/ — 6 independent apps, one workspace"]
+        direction LR
+        PH[portfolio-hub]
+        MD[mood-diner]
+        TP[travel-packing-app]
+        SR[smart-recipe-app]
+        LF[legal-financial-rag]
+        EC[elder-care-planner]
+    end
+
+    HARNESS -->|gates every PR| APPS
+    APPS -->|"ci.yml — per-app matrix"| CI["GitHub Actions"]
+    APPS -->|"sdd-sentinel.yml — spec + guardrail gates"| CI
+    CI -->|"deploy-pages.yml"| PAGES["GitHub Pages<br/>(all 6 apps)"]
+    CI -->|"android-release*.yml"| APK["MoodDiner Android APK"]
+
+    style HARNESS fill:#312e81,stroke:#1e1b4b,color:#fff
+    style APPS fill:#0e7490,stroke:#164e63,color:#fff
+    style CI fill:#16a34a,stroke:#14532d,color:#fff
+    style PAGES fill:#4f46e5,stroke:#312e81,color:#fff
+    style APK fill:#4f46e5,stroke:#312e81,color:#fff
+```
+
+### Directory Structure
+
+- `projects/`: npm workspace (`projects/*` in the root `package.json`) containing all web & mobile applications. Shared devDependencies (`react`, `typescript`, `vitest`, `@playwright/test`, `eslint`, …) dedupe into a single root `node_modules` via one root `package-lock.json`; each app keeps its own `package.json` and independent version ranges — run `npm install` once at the repo root rather than per app.
+  - `projects/portfolio-hub`: Master Showcase Web Portal (Port 3009).
+  - `projects/mood-diner`: Smart Restaurant Recommender & Table Booking Engine (Port 5178).
+  - `projects/travel-packing-app`: Smart Wardrobe Packing Assistant (Port 3000).
+  - `projects/smart-recipe-app`: Smart Kitchen Recipe Manager (Port 3005).
+  - `projects/legal-financial-rag`: 100% Client-Side Private RAG for Legal Counsel & Financial Compliance (Port 3010).
+  - `projects/elder-care-planner`: Offline-first elder care cost, runway and family cost-sharing planner, with cited cost data, per-figure confidence tags and a "how was this calculated?" derivation behind every headline number (Port 3011).
+- `specs/`: Markdown specifications for every application. These are the **single source of truth**.
+- `scripts/`: Master harness CLI plus verification, cleanup, mobile, and scaffolding scripts (`harness.ps1`, `test-app.ps1`, `validate-specs.ps1`, `clean-app.ps1`, `build-mobile.ps1`, `scaffold-app.ps1`), and the agentic-loop core plus the full per-app suite (`harness-status.mjs`, `emit-tasks.mjs`, `harness-learn.mjs`, `harness-history.mjs`, `test-app.mjs`, `serve-dist.mjs` — zero-dependency Node, cross-platform). Also includes diff-shaped CI gates (`check-containment.mjs`, `check-diff-size.mjs`, `check-enum-blast-radius.mjs`, `check-guardrail-integrity.mjs`, `check-secrets.mjs`) and non-blocking sensors (`check-instruction-tamper.mjs`, `check-spec-ordering.mjs`, `check-readme-freshness.mjs`, `check-dependency-audit.mjs`), plus the advisory `generate-context-digest.mjs` for context staleness detection.
+- `tasks/`: Auto-generated, bring-your-own-agent work orders emitted by the loop, plus the agent contract (`tasks/README.md`).
+- `.agents/`: Harness control layer. `AGENTS.md` holds the engineering rules AI coding agents must follow in this repo — §6 ("Learned Lessons") is a lean index of one-line entries; the full text of each lesson lives in its own file under `.agents/lessons/`, so a fresh agent session isn't paying the token cost of every lesson's full prose before doing any real work (see [`docs/SLIM_RULEBOOK_PROPOSAL.md`](docs/SLIM_RULEBOOK_PROPOSAL.md)). `.agents/skills/` holds cross-tool, model-invoked harness-discipline skills — `sdd-harness-guide`, `harness-doctor`, `dependency-doctor`, `scope-creep-detector`, `architecture-scanner`, and `spec-review` (compares a diff against its app's spec — the one axis `check-spec-ordering.mjs`, `validate-specs.ps1`, and the harness's own spec-drift sense don't cover, since none of them read the diff's content against the spec's).
+- `IDENTITY.md`, `CONTEXT.md`, `_config/`, `stages/`: an [ICM](https://github.com/ktnCodes/icm-template) (Interpretable Context Methodology) navigation layer for AI agents — a workspace map (`IDENTITY.md`) and task-routing table (`CONTEXT.md`) at the repo root, plus a `CONTEXT.md` contract and `output/` pointer per stage of the Agentic Loop above (`stages/sense/`, `stages/propose/`, `stages/act/`, `stages/verify/`, `stages/learn/`). It sits **on top of** `.agents/AGENTS.md`, not in place of it — every rule-bearing statement in it links back to the rulebook rather than restating it. Maintained via the project-scoped `.claude/skills/{icm-scaffold,icm-sync,icm-context-scaffold}` skills.
+
+---
+
+## ✅ Engineering Standards (enforced, not aspirational)
+
+1. **Spec-Driven Development (SDD)**: Specs dictate architecture, data models, and acceptance criteria before code is written.
+2. **Contract-First Schema Validation (Zod)**: Every app defines its data models as runtime Zod schemas and infers its TypeScript types from them (`z.infer<typeof Schema>`), validating untrusted input (storage, imports) at the boundary.
+3. **Behavior-Driven Development (BDD)**: All E2E and unit scenarios follow `Given [Context] -> When [Action] -> Then [Outcome]`.
+4. **Unit-Test-Driven Development**: Every change to a logic module (`src/lib`, `src/utils`, `src/services`, `src/engine`, `src/data`, …) starts with a failing Vitest case, and any behaviour a PR claims to protect must be proved by breaking the code and watching the test go red. This is **gated**, not just asked for: `senseUnitTests` fails the build on any logic module that no unit test reaches, any unit test missing `Given/When/Then`, and any Vitest config without an explicit `include`. Its line-level half, the `no-op-assertion` guardrail, blocks too: an `expect()` with no matcher, or a type annotated against itself, is a test that cannot fail. The check shipped non-blocking and was promoted once the backlog it found (15 untested modules, 12 unformatted test files) was closed — a check gates when it describes a regression, not while it still describes history.
+5. **Mandatory Testing & Verification**: Each app must pass `node scripts/test-app.mjs <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility. Cross-platform, so the authoritative gate runs anywhere Node does (`.\scripts\test-app.ps1 -AppName <AppName>` wraps it).
+6. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
+7. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict`, plus diff-shaped gates (`check-containment.mjs`, `check-diff-size.mjs`, `check-enum-blast-radius.mjs`, `check-guardrail-integrity.mjs`, `check-secrets.mjs`) and non-blocking sensors (`check-instruction-tamper.mjs` for rule weakening/gate bypass, `check-spec-ordering.mjs` for logic changes without spec or test touches, `check-readme-freshness.mjs` for source changes without README updates, `check-dependency-audit.mjs` for known vulnerabilities in the resolved dependency tree) on pull requests — the build **fails** if any app is missing a spec, if a guardrail is violated, if harness infrastructure is touched without acknowledgment, or if a diff exceeds 800 changed lines without override. Compliance is a gate, not a claim.
+8. **Cited Figures Carry Their Own Confidence**: Where an app shows a number that came from outside it, that number carries a provenance tag (`verified` / `needs_verification` / `derived`) and the UI surfaces it next to the figure. The rule that makes this more than decoration: **a figure derived from a cited one needs its own tag**, never its row's. A published median tagged `verified` does not make a spread computed around it verified too — that is laundering an uncertain figure into a confident one, and it is the failure mode most likely to survive review, because the sentence reads well. Where no trustworthy figure exists, the honest output is a labelled fallback or an empty dataset with a comment saying why — `STATE_MEDIANS` in `elder-care-planner` is deliberately empty, because a made-up state number is worse than an absent one.
+9. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see above).
+
+---
+
+<details>
+<summary><strong>Optional: repowise MCP (agent exploration aid, not part of the gate)</strong></summary>
 
 [`.mcp.json`](.mcp.json) wires in [repowise](https://github.com/repowise-dev/repowise) — a
 codebase-intelligence MCP server (dependency graph, git hotspots/ownership, dead-code and
@@ -124,3 +227,5 @@ addition, deliberately kept outside the harness:
   reinjected path back out of both files. Idempotent and self-tested
   (`scripts/fix-repowise-mcp-paths.test.mjs`), scoped to the `repowise` server entry only so it can't
   touch some other MCP server's own legitimate absolute-path argument.
+
+</details>
