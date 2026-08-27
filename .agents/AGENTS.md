@@ -140,6 +140,7 @@ As an AI agent operating within this repository, you must strictly adhere to the
 - **Ease-In Timing On Enter Animations Feels Jarring** `[guardrail: ease-in-on-enter]` — see [`.agents/lessons/ease-in-on-enter.md`](lessons/ease-in-on-enter.md).
 - **Hidden Text Overflow Must Indicate Truncation** `[guardrail: text-truncate-missing]` — see [`.agents/lessons/text-truncate-missing.md`](lessons/text-truncate-missing.md).
 - **A Dead `public/` File Ships in Every Build, and No Line-Level Rule Can See It** — see [`.agents/lessons/a-dead-public-file-ships-in-every-build-and-no-line-level.md`](lessons/a-dead-public-file-ships-in-every-build-and-no-line-level.md).
+- **Node's Built-In `localStorage` Global Can Shadow jsdom's, Invisibly to a Pinned-Node CI** — see [`.agents/lessons/node-built-in-localstorage-global-can-shadow-jsdoms.md`](lessons/node-built-in-localstorage-global-can-shadow-jsdoms.md).
 
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.

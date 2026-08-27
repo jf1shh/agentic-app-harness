@@ -13,7 +13,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/guardrails-10%20self--tested-8b5cf6" alt="10 self-tested guardrails">
-  <img src="https://img.shields.io/badge/learned%20lessons-57-6366f1" alt="57 learned lessons">
+  <img src="https://img.shields.io/badge/learned%20lessons-58-6366f1" alt="58 learned lessons">
   <img src="https://img.shields.io/badge/apps-6%20live-14b8a6" alt="6 live apps">
   <img src="https://img.shields.io/badge/CI%20workflows-11-0ea5e9" alt="11 CI workflows">
   <img src="https://img.shields.io/badge/embedded%20LLM-none-64748b" alt="No embedded LLM">
@@ -32,7 +32,7 @@ enforced until it's a concrete, line-checkable rule (a *guardrail*), and a rule 
 block anyone's work until it's proven itself against real history — it starts as a non-blocking
 *sensor*, and only gets promoted once it stops describing a backlog and starts describing an actual
 regression. Every exception is logged with a reason instead of waved through, every rule traces back
-to the specific incident that motivated it (57 of them, in `.agents/lessons/`), and the agent that
+to the specific incident that motivated it (58 of them, in `.agents/lessons/`), and the agent that
 does the work is never the one who signs off on it — it opens a PR, a human merges. It's the same
 "verify before you approve, document the precedent, separate the doer from the signer" logic behind
 17 years of insurance claims adjudication, aimed at code review instead of claims review.

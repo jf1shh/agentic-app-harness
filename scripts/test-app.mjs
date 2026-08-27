@@ -208,7 +208,23 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
 
   step('Lint & static analysis', 'npm run lint');
   step('Type check', 'npx tsc --noEmit');
-  step('Unit tests (Vitest)', 'npx vitest run');
+  // Node 22+ ships its own experimental `localStorage`/`sessionStorage` globals,
+  // present by default and non-functional without `--localstorage-file` — they
+  // shadow whatever a Vitest `environment: 'jsdom'` test tries to install under
+  // the same name, so any unit test that touches the real Storage API resolves
+  // `localStorage` to Node's broken stub instead of jsdom's, even though the app
+  // code is fine in an actual browser. `--no-experimental-webstorage` lets
+  // jsdom's own Storage take over as intended. Guarded by a feature probe
+  // because the flag doesn't exist on Node 20 (what CI pins) and an
+  // unrecognized flag aborts `node` entirely before it runs anything.
+  const supportsNoExperimentalWebstorage = spawnSync(
+    process.execPath, ['--no-experimental-webstorage', '-e', ''],
+  ).status === 0;
+  step('Unit tests (Vitest)', 'npx vitest run', {
+    env: supportsNoExperimentalWebstorage
+      ? { NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --no-experimental-webstorage`.trim() }
+      : {},
+  });
 
   if (!skipE2e) {
     console.log(`\n${C.cyan}[E2E & accessibility (Playwright)]${C.reset}`);
