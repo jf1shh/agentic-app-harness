@@ -19,29 +19,6 @@
   <img src="https://img.shields.io/badge/embedded%20LLM-none-64748b" alt="No embedded LLM">
 </p>
 
-## Why this exists
-
-Most "AI built this app" projects are one long prompt session with no way to tell whether the AI
-drifted, cut a corner, or quietly regressed something between commit 40 and commit 260. This repo
-is the opposite bet: the six apps below are not the point — **the point is the system that keeps an
-AI coding agent honest across hundreds of unsupervised commits**, so the six apps are a side effect
-of that system working.
-
-That system runs on the same discipline as claims adjudication, not software craft: nothing gets
-enforced until it's a concrete, line-checkable rule (a *guardrail*), and a rule doesn't get to
-block anyone's work until it's proven itself against real history — it starts as a non-blocking
-*sensor*, and only gets promoted once it stops describing a backlog and starts describing an actual
-regression. Every exception is logged with a reason instead of waved through, every rule traces back
-to the specific incident that motivated it (57 of them, in `.agents/lessons/`), and the agent that
-does the work is never the one who signs off on it — it opens a PR, a human merges. It's the same
-"verify before you approve, document the precedent, separate the doer from the signer" logic behind
-17 years of insurance claims adjudication, aimed at code review instead of claims review.
-
-If you read one file beyond this README, make it [`.agents/AGENTS.md`](.agents/AGENTS.md) §8–9 — it's
-the governance policy this repo is actually about; the apps are the test case.
-
----
-
 A **spec-driven development (SDD) harness** for building and maintaining production-grade web & mobile apps with AI coding assistants — where the quality bar (runtime schemas, unit + E2E tests, accessibility, spec coverage) is **enforced in CI, not just documented**.
 
 > **What "agentic" means here:** the apps in this repo are built and maintained by AI coding agents working under strict rules in [`.agents/AGENTS.md`](.agents/AGENTS.md). This project is the *harness* around that workflow — the specs, scripts, and CI gates that keep AI-assisted development rigorous and drift-free. The harness also **closes its own improvement loop** (see **The Agentic Loop** below): it senses drift and regressions and generates agent work orders **deterministically, with no embedded LLM or API key** — the AI agent is a pluggable actuator, not a hardcoded dependency.
