@@ -6,7 +6,7 @@ import { SpecModal } from './components/SpecModal';
 import { SkillsGrid } from './components/SkillsGrid';
 import { CaseStudySection } from './components/CaseStudySection';
 import { useCountUp } from './hooks/useCountUp';
-import { ShieldCheck, Layers, Github, Mail, Linkedin } from 'lucide-react';
+import { Layers, Github, Mail, Linkedin } from 'lucide-react';
 
 const LINKEDIN_URL = 'https://www.linkedin.com/in/jared-f-17680b7a';
 
@@ -18,14 +18,15 @@ interface AnimatedStatProps {
   value: number;
   suffix?: string;
   color: string;
+  compact?: boolean;
 }
 
-const AnimatedStat: React.FC<AnimatedStatProps> = ({ label, value, suffix = '', color }) => {
+const AnimatedStat: React.FC<AnimatedStatProps> = ({ label, value, suffix = '', color, compact = false }) => {
   const animated = useCountUp(value);
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '2px', padding: '1rem' }}>
-      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{label}</div>
-      <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color, letterSpacing: '0.02em' }}>{animated}{suffix}</div>
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '2px', padding: compact ? '0.6rem 0.75rem' : '1rem' }}>
+      <div style={{ fontSize: compact ? '0.7rem' : '0.8rem', color: 'var(--text-muted)' }}>{label}</div>
+      <div className="font-display" style={{ fontSize: compact ? '1.15rem' : '1.5rem', fontWeight: 800, color, letterSpacing: '0.02em' }}>{animated}{suffix}</div>
     </div>
   );
 };
@@ -71,89 +72,67 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* About the Builder */}
-      <section id="about-section" aria-labelledby="about-heading" className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center' }}>
-        <div
-          aria-hidden="true"
-          style={{
-            width: '64px',
-            height: '64px',
-            flexShrink: 0,
-            borderRadius: '2px',
-            background: 'linear-gradient(135deg, #ff2b46 0%, #7a0c1e 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.5rem',
-            fontWeight: 800,
-            color: '#ffffff',
-            boxShadow: '0 0 16px rgba(255,43,70,0.5)',
-          }}
-          className="font-display"
-        >
-          JF
-        </div>
-        <div style={{ flex: '1 1 480px' }}>
-          <h2 id="about-heading" className="font-display" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
-            Jared Fisher — AI/Full-Stack Engineer
-          </h2>
-          <p style={{ color: 'var(--text-body)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1rem', maxWidth: '760px' }}>
-            This repo is a working demonstration, not a slideshow: six production apps built and maintained by
-            AI coding agents under one enforced spec-driven, test-first, accessibility-gated standard, plus a
-            deterministic harness that senses drift in that standard and turns it into agent work orders on its
-            own. Open to AI-assisted software engineering roles — I'm glad to walk through any of it.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <a
-              href={LINKEDIN_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary"
-              style={{ textDecoration: 'none' }}
-            >
-              <Linkedin size={18} /> Connect on LinkedIn
-            </a>
-            <a
-              href="mailto:xjaredfisher@gmail.com"
-              className="btn-secondary"
-              style={{ textDecoration: 'none' }}
-            >
-              <Mail size={18} /> Email Me
-            </a>
+      {/* Hero: identity + proof, in one glance — recruiter-scan first, deep dive below */}
+      <section id="about-section" aria-labelledby="about-heading" className="glass-panel" style={{ padding: '2rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', marginBottom: '1.75rem' }}>
+          <div
+            aria-hidden="true"
+            style={{
+              width: '64px',
+              height: '64px',
+              flexShrink: 0,
+              borderRadius: '2px',
+              background: 'linear-gradient(135deg, #ff2b46 0%, #7a0c1e 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem',
+              fontWeight: 800,
+              color: '#ffffff',
+              boxShadow: '0 0 16px rgba(255,43,70,0.5)',
+            }}
+            className="font-display"
+          >
+            JF
           </div>
-        </div>
-      </section>
-
-      {/* Hero Banner / Metrics Bar */}
-      <section className="glass-panel" style={{ padding: '2rem', marginBottom: '3rem', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ maxWidth: '800px', marginBottom: '1.75rem' }}>
-          <span className="badge badge-amber" style={{ marginBottom: '0.75rem' }}>
-            <ShieldCheck size={14} /> Spec-Driven Development (SDD) Verified
-          </span>
-          <h2 className="font-display" style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem', lineHeight: 1.2 }}>
-            Production-Grade Web & Native Android App Suite
-          </h2>
-          <p style={{ color: 'var(--text-body)', fontSize: '1rem', lineHeight: 1.6 }}>
-            Every app in this harness is generated against single-source-of-truth Markdown specifications, featuring automated Vitest unit testing, Playwright accessibility audits (`@axe-core`), Capacitor Android containerization, and freemium subscription architecture.
-          </p>
+          <div style={{ flex: '1 1 480px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+              <h2 id="about-heading" className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                Jared Fisher
+              </h2>
+              <span className="badge badge-amber">AI Product Manager</span>
+            </div>
+            <p style={{ color: 'var(--text-body)', fontSize: '1rem', lineHeight: 1.5, marginBottom: '1rem', maxWidth: '640px' }}>
+              Insurance claims adjudicator turned self-taught AI builder. This repo is the proof, not a slideshow —
+              I'm glad to walk through any of it.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <a
+                href={LINKEDIN_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+                style={{ textDecoration: 'none' }}
+              >
+                <Linkedin size={18} /> Connect on LinkedIn
+              </a>
+              <a
+                href="mailto:xjaredfisher@gmail.com"
+                className="btn-secondary"
+                style={{ textDecoration: 'none' }}
+              >
+                <Mail size={18} /> Email Me
+              </a>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '1rem' }}>
-          <AnimatedStat label="Active Monorepo Apps" value={PROJECTS_DATA.length} suffix=" Apps" color="#ff2b46" />
-          <AnimatedStat
-            label="Cumulative Test Suite"
-            value={TOTAL_UNIT_TESTS + TOTAL_E2E_TESTS}
-            suffix={` Tests (${TOTAL_UNIT_TESTS} Unit / ${TOTAL_E2E_TESTS} E2E)`}
-            color="#4dfff0"
-          />
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '2px', padding: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Accessibility Rate</div>
-            <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-verified)' }}>100% WCAG AA</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '2px', padding: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Google Play Readiness</div>
-            <div className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>Capacitor APK</div>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(130px, 100%), 1fr))', gap: '0.75rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+          <AnimatedStat label="Live Apps" value={PROJECTS_DATA.length} suffix=" Apps" color="#ff2b46" compact />
+          <AnimatedStat label="Full Test Suite" value={TOTAL_UNIT_TESTS + TOTAL_E2E_TESTS} suffix=" Tests" color="#4dfff0" compact />
+          <AnimatedStat label="Accessibility" value={100} suffix="% WCAG AA" color="var(--text-main)" compact />
+          <AnimatedStat label="CI Guardrails" value={LOOP_STATS.guardrailCount} suffix=" Rules" color="var(--text-main)" compact />
+          <AnimatedStat label="Learned Lessons" value={LOOP_STATS.lessonCount} suffix=" Lessons" color="var(--text-main)" compact />
         </div>
       </section>
 
@@ -197,14 +176,12 @@ export const App: React.FC = () => {
       <SkillsGrid />
 
       {/* The Agentic Loop, By the Numbers */}
-      <section aria-labelledby="loop-dashboard-heading" style={{ marginBottom: '3rem' }}>
+      <section id="loop-dashboard-section" aria-labelledby="loop-dashboard-heading" style={{ marginBottom: '3rem' }}>
         <h2 id="loop-dashboard-heading" className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
           The Agentic Loop, By the Numbers
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '760px' }}>
-          These figures are read directly out of <code>.agents/AGENTS.md</code> and <code>scripts/harness-status.mjs</code>
-          {' '}by a generator script, never hand-typed — a Vitest test recomputes them independently and fails the build
-          if the committed numbers drift from the source files.
+          Read straight from <code>.agents/AGENTS.md</code> and <code>scripts/harness-status.mjs</code> — a test fails the build if these drift from source.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '1rem' }}>
           <AnimatedStat label="Guardrails Enforced in CI" value={LOOP_STATS.guardrailCount} suffix=" Guardrails" color="var(--text-main)" />
@@ -218,7 +195,7 @@ export const App: React.FC = () => {
       {/* Footer */}
       <footer style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
         <div style={{ fontWeight: 700, color: 'var(--text-body)', marginBottom: '0.5rem' }}>
-          Jared Fisher — AI/Full-Stack Engineer
+          Jared Fisher — AI Product Manager
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
           <a href="https://github.com/jf1shh" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>

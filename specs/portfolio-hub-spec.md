@@ -106,3 +106,33 @@ reskin, not a restructure. `SpecModal`'s CI/CD metric grid moves onto the same
 `repeat(auto-fit, minmax(min(N,100%),1fr))` pattern the rest of the page already uses, since a fixed
 two-column `repeat(2, 1fr)` was the one place that pattern hadn't been applied — a genuine mobile-width
 fix surfaced while touching this file, not a scope expansion.
+
+### 4.6 Recruiter-Scan Hero (2026-08-29 revision)
+
+Explicit follow-up direction from the site's author: recruiters reportedly give a portfolio page
+roughly 7–20 seconds on first pass and scan in the order **name → title → proof → contact**, not
+paragraphs. The page previously spent three stacked `glass-panel` sections (top header, a separate
+"About the Builder" panel, and a "Hero Banner / Metrics Bar" panel) restating overlapping identity
+and stats copy before a visitor reached the first project. This revision merges the About panel and
+the Hero Banner into **one** hero (`#about-section`, unchanged id/anchor for the existing e2e
+contract) so the full identity — name, target role, one-sentence positioning, contact CTAs, and the
+five headline proof numbers (live apps, total tests, WCAG AA, CI guardrails, learned lessons) — reads
+in a single glance above the project grid, with no separate scroll needed to reach a CTA. The old
+Hero Banner's "SDD Verified" badge / long headline / methodology paragraph is cut, not relocated —
+that claim is already made concretely by every project card's own PWA/Android/Monetized badges
+immediately below.
+
+The **Loop Dashboard** section (guardrail/lesson/app counts, further down the page) intentionally
+still exists and still shows overlapping numbers to the hero strip — this is deliberate, small
+repetition, not an oversight: the hero strip is for the 7-second scan, the Loop Dashboard is for a
+reader who scrolled that far specifically to understand the *mechanism* behind the numbers, and its
+own intro copy was shortened to one sentence for the same reason.
+
+Each project card's `description` field (`src/data/projectsData.ts`) was rewritten from a
+comma-separated feature dump (2–3 sentences) to one punchy sentence — the card's `tagline` already
+functions as the skimmable headline; `description` is now a single supporting clause, not a second
+paragraph. Nothing about the card's structure, its collapsed-by-default code-snippet/ML-architecture
+disclosures, or its verification-metrics box changed — those were already skim-friendly
+(`<details>`/`<summary>`, closed by default) and are the pattern this revision extends, not replaces.
+`SkillsGrid` and `CaseStudySection` already followed this same collapsed-summary-first pattern before
+this revision and needed no structural change, only shorter intro copy.

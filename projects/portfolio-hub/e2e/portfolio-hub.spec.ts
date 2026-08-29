@@ -118,11 +118,16 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
 
-    await expect(page.locator('#loop-dashboard-heading')).toBeVisible();
-    await expect(page.getByText('Guardrails Enforced in CI')).toBeVisible();
-    await expect(page.getByText(/\d+ Guardrails/)).toBeVisible();
-    await expect(page.getByText(/\d+ Lessons/)).toBeVisible();
-    await expect(page.getByText(/\d+ Apps/).first()).toBeVisible();
+    // Scoped to the Loop Dashboard section specifically: the hero strip also
+    // surfaces guardrail/lesson/app counts for a 7-second recruiter scan
+    // (see portfolio-hub-spec.md §4.6), so an unscoped page-wide text search
+    // now matches twice — deliberately, not a regression.
+    const loopSection = page.locator('#loop-dashboard-section');
+    await expect(loopSection.locator('#loop-dashboard-heading')).toBeVisible();
+    await expect(loopSection.getByText('Guardrails Enforced in CI')).toBeVisible();
+    await expect(loopSection.getByText(/\d+ Guardrails/)).toBeVisible();
+    await expect(loopSection.getByText(/\d+ Lessons/)).toBeVisible();
+    await expect(loopSection.getByText(/\d+ Apps/)).toBeVisible();
   });
 
   test('Given the footer, When the page loads, Then it credits the author by name and links a real GitHub profile, LinkedIn profile, and contact email', async ({ page }) => {
