@@ -19,26 +19,29 @@
   <img src="https://img.shields.io/badge/embedded%20LLM-none-64748b" alt="No embedded LLM">
 </p>
 
+Built by [Jared Fisher](https://github.com/jf1shh) — 17 years adjudicating insurance claims,
+teaching myself to build and ship production AI tooling, now looking for a full-time seat doing
+that work. This repo is the evidence, not a demo reel.
+
 ## Why this exists
 
-Most "AI built this app" projects are one long prompt session with no way to tell whether the AI
-drifted, cut a corner, or quietly regressed something between commit 40 and commit 260. This repo
-is the opposite bet: the six apps below are not the point — **the point is the system that keeps an
-AI coding agent honest across hundreds of unsupervised commits**, so the six apps are a side effect
-of that system working.
+**The six apps below aren't the point.** The point is the system that keeps an AI coding agent
+honest across hundreds of unsupervised commits — most "AI built this app" projects are one long
+prompt session with no way to tell whether the AI drifted, cut a corner, or quietly regressed
+something between commit 40 and commit 260. This repo is the opposite bet, and it runs on the same
+discipline I spent 17 years applying to insurance claims adjudication, not software craft: nothing
+gets enforced until it's a concrete, checkable rule, and a rule doesn't get to block anyone's work
+until it's proven itself against real history — it starts as a non-blocking check, and only gets
+promoted once it stops describing a backlog and starts describing an actual regression. Every
+exception is logged with a reason instead of waved through, every rule traces back to the specific
+incident that motivated it (58 of them, in `.agents/lessons/`), and the agent that does the work is
+never the one who signs off on it — it opens a PR, a human merges. Same "verify before you approve,
+document the precedent, separate the doer from the signer" logic, aimed at code review instead of
+claims review.
 
-That system runs on the same discipline as claims adjudication, not software craft: nothing gets
-enforced until it's a concrete, line-checkable rule (a *guardrail*), and a rule doesn't get to
-block anyone's work until it's proven itself against real history — it starts as a non-blocking
-*sensor*, and only gets promoted once it stops describing a backlog and starts describing an actual
-regression. Every exception is logged with a reason instead of waved through, every rule traces back
-to the specific incident that motivated it (58 of them, in `.agents/lessons/`), and the agent that
-does the work is never the one who signs off on it — it opens a PR, a human merges. It's the same
-"verify before you approve, document the precedent, separate the doer from the signer" logic behind
-17 years of insurance claims adjudication, aimed at code review instead of claims review.
-
-If you read one file beyond this README, make it [`.agents/AGENTS.md`](.agents/AGENTS.md) §8–9 — it's
-the governance policy this repo is actually about; the apps are the test case.
+**Skimming?** The live apps are in [🌐 Live Showcase](#-live-showcase) below — click through, each
+one is a real deployment. **Want the mechanism, not the summary?** The full governance policy this
+section compresses is [`.agents/AGENTS.md`](.agents/AGENTS.md) §8–9.
 
 ---
 

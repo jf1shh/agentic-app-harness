@@ -5,7 +5,7 @@ const RAW_PROJECTS: ProjectItem[] = [
     id: 'legal-financial-rag',
     name: 'LexiVault Financial RAG',
     tagline: '100% Private Client-Side Legal RAG & Security Engine',
-    description: 'Zero-telemetry legal contract analysis, clause-preserving chunker, BM25 text ranker, cosine vector similarity, automated PII redaction, PBKDF2 100k key derivation, and blockchain-style audit log.',
+    description: 'Hybrid BM25 + vector retrieval over encrypted contracts — zero telemetry, nothing leaves the device.',
     category: 'Legal',
     techStack: ['React', 'Vite', 'TypeScript', 'Vitest', 'Playwright', 'Axe-Core', 'WebCrypto', 'PWA'],
     metrics: {
@@ -55,7 +55,7 @@ const RAW_PROJECTS: ProjectItem[] = [
     id: 'mood-diner',
     name: 'MoodDiner',
     tagline: 'Weather-Aware Restaurant Recommender & Instant Table Booking Engine',
-    description: 'Combines Google & Yelp composite review scores, open status checks, weather-aware cuisine matching (92°F summer suppression vs 35°F stews boost), authentic real-world spot importer, and instant table reservation engine.',
+    description: 'Blends live review scores, open-now checks, and real weather into one instant recommendation.',
     category: 'Dining',
     techStack: ['React', 'Vite', 'TypeScript', 'Vitest', 'Playwright', 'Axe-Core', 'Capacitor Android', 'PWA'],
     metrics: {
@@ -100,7 +100,7 @@ const RAW_PROJECTS: ProjectItem[] = [
     id: 'travel-packing-app',
     name: 'Travel Packing App',
     tagline: 'Smart Wardrobe & Knapsack Weight-Optimized Packing Assistant',
-    description: 'Uses mathematical knapsack algorithms, weather forecasting, color compatibility matrix, and background removal to generate optimized travel packing lists adhering to airline carry-on limits.',
+    description: 'Knapsack-optimized packing lists from real weather, airline limits, and a color-match matrix.',
     category: 'Utility',
     techStack: ['Next.js', 'React', 'TypeScript', 'Vitest', 'Playwright', 'Axe-Core', 'PWA'],
     metrics: {
@@ -144,7 +144,7 @@ const RAW_PROJECTS: ProjectItem[] = [
     id: 'smart-recipe-app',
     name: 'Smart Kitchen Recipe Manager',
     tagline: 'AI Ingredient-Matching, Meal Planner & Shopping List Generator',
-    description: 'Pantry inventory tracking, instant meal generation from available ingredients, calorie/macro breakdowns, and automated shopping list generation.',
+    description: 'Turns whatever is in your pantry into a meal plan, macro breakdown, and a shopping list.',
     category: 'Kitchen',
     techStack: ['Next.js', 'React', 'TypeScript', 'Vitest', 'Playwright', 'Axe-Core', 'PWA'],
     metrics: {
@@ -195,7 +195,7 @@ export function recommendRecipes(inventory: InventoryItem[], recipes: RecipeEntr
     id: 'elder-care-planner',
     name: 'Elder Care Cost Planner',
     tagline: 'What Care Really Costs, How Long the Money Lasts, and How a Family Shares It',
-    description: 'All-in cost modelling beyond the advertised rate, month-by-month funding runway, home-vs-facility break-even, benefit timing traps, a fair sibling split, and a shortlist of the communities a family actually toured — scored, weighted, and priced back through the plan. Fully offline, no account, no referral revenue.',
+    description: 'Models true cost, funding runway, and a fair family split — fully offline, no referral revenue.',
     category: 'Family Finance',
     techStack: ['Next.js', 'React', 'TypeScript', 'Zod', 'Vitest', 'Playwright', 'Axe-Core'],
     metrics: {
