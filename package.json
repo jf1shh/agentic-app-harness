@@ -14,9 +14,13 @@
   "scripts": {
     "prepare": "node scripts/install-git-hooks.mjs"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "overrides": {
     "sharp": "^0.35.0",
     "adm-zip": "^0.6.0",
+    "fast-uri": "^3.1.7",
     "xcode": {
       "uuid": "^11.1.1"
     }
