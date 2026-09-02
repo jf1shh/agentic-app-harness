@@ -53,7 +53,7 @@ It hosts six real, deployed applications and holds every one of them to the same
 
 <p align="center">
   <a href="https://jf1shh.github.io/agentic-app-harness/">
-    <img src=".github/screenshots/portfolio-hub.png" alt="Agentic App Harness portfolio hub — spec-driven monorepo dashboard showing 5 active apps, 371 total unit/E2E tests, 100% WCAG AA accessibility, and Capacitor Android readiness" width="100%">
+    <img src=".github/screenshots/portfolio-hub.png" alt="Agentic App Harness portfolio hub — spec-driven monorepo dashboard showing the five showcase apps that the hub itself makes six, 371 total unit/E2E tests, 100% WCAG AA accessibility, and Capacitor Android readiness" width="100%">
   </a>
   <br>
   <sub>Live at <a href="https://jf1shh.github.io/agentic-app-harness/">jf1shh.github.io/agentic-app-harness</a></sub>
