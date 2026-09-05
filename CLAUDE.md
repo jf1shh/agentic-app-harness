@@ -339,50 +339,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Agent Skills
 
-> Installed globally at `~/.claude/skills/`. Invoke by name in any session.
-> Source repos: [mattpocock/skills](https://github.com/mattpocock/skills), [obra/superpowers](https://github.com/obra/superpowers), [garrytan/gstack](https://github.com/garrytan/gstack)
+Installed globally at `~/.claude/skills/`. The authoritative roster lives in
+`~/.claude/CLAUDE.md`, which loads in every session — read it there rather than keeping a
+copy here. A duplicated list goes stale silently: this section previously advertised 13
+skills that had been archived, so sessions were being pointed at commands that no longer
+existed.
 
-### Before Any Task
-Check for relevant skills before starting work. See `using-superpowers` for the full rule.
-
-### Planning & Design
-- `/grill-with-docs` — Requirements grilling + domain model building (mattpocock)
-- `/brainstorming` — Socratic design refinement (superpowers)
-- `/gstack-office-hours` — Product interrogation with forcing questions (gstack)
-- `/gstack-autoplan` — Auto-generate implementation plan (gstack)
-- `/writing-plans` — Break work into 2-5 min tasks (superpowers)
-
-### Implementation
-- `/tdd` — Red-green-refactor TDD loop (mattpocock)
-- `/test-driven-development` — RED-GREEN-REFACTOR enforcement (superpowers)
-- `/implement` — Build from spec with TDD (mattpocock)
-- `/gstack-ship` — Tests → PR → merge workflow (gstack)
-
-### Debugging
-- `/diagnosing-bugs` — Systematic bug diagnosis (mattpocock)
-- `/systematic-debugging` — 4-phase root cause process (superpowers)
-- `/gstack-investigate` — Root cause debugging (gstack)
-
-### Code Quality
-- `/code-review` — Two-axis code review (mattpocock)
-- `/requesting-code-review` — Pre-review checklist (superpowers)
-- `/gstack-review` — Pre-landing PR review (gstack)
-- `/gstack-cso` — OWASP + STRIDE security audit (gstack)
-
-### Architecture
-- `/improve-codebase-architecture` — Scan for deepening opportunities (mattpocock)
-- `/codebase-design` — Module design discipline (mattpocock)
-- `/domain-modeling` — Build shared project vocabulary (mattpocock)
-
-### Workflow
-- `/to-spec` — Turn conversation into a spec (mattpocock)
-- `/to-tickets` — Break plan into tickets (mattpocock)
-- `/triage` — Move issues through state machine (mattpocock)
-- `/using-git-worktrees` — Parallel development branches (superpowers)
-- `/finishing-a-development-branch` — Merge/PR decision (superpowers)
-
-### Security & Safety
-- `/gstack-freeze` — Code freeze protection (gstack)
-- `/gstack-guard` — Guard against unwanted changes (gstack)
-- `/verification-before-completion` — Ensure it is actually fixed (superpowers)
-
+Before starting a task, check whether an installed skill covers it.
