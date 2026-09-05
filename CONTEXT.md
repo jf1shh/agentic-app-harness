@@ -14,6 +14,7 @@
 | Add or fix a guardrail | `scripts/harness-status.mjs` (`GUARDRAILS`) + `scripts/harness-status.test.mjs` | `.agents/AGENTS.md` §8 "Protocol: adding a learned lesson" |
 | Claim an open work order | `tasks/*.md` | `tasks/README.md` |
 | Look up a repo convention or term | `_config/conventions.md`, `_config/glossary.md` | — |
+| Match the writing voice of docs or specs | `_config/voice.md` | — |
 | Scaffold a brand-new app | `scripts/scaffold-app.ps1` | `specs/templates/`, `.agents/AGENTS.md` §4 |
 | Touch CI / workflows | `.github/workflows/` | `AGENTS.md` "CI" section |
 | Ship an app to the Google Play Store (Android release) | `PLAY-STORE-DEPLOY.md` | `projects/<app>/store-listing/README.md` |
