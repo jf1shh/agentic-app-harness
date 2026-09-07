@@ -13,13 +13,13 @@ import { Restaurant, WeatherCondition, Reservation, TransportMode } from './type
 import { evaluateWeatherSuitability } from './utils/weatherEngine';
 import { parseReviewCommentsForMood } from './utils/reviewVibeParser';
 import { isRestaurantOpenNow } from './utils/openStatus';
-import { loadCustomRestaurants, saveCustomRestaurants, loadReservations, saveReservations } from './lib/storage';
+import { browserStorage, loadCustomRestaurants, saveCustomRestaurants, loadReservations, saveReservations } from './lib/storage';
 import { Sun, AlertCircle } from 'lucide-react';
 
 export const App: React.FC = () => {
   // State
   const [restaurants, setRestaurants] = useState<Restaurant[]>(() => [
-    ...loadCustomRestaurants(localStorage),
+    ...loadCustomRestaurants(browserStorage()),
     ...INITIAL_RESTAURANTS,
   ]);
 
@@ -35,16 +35,16 @@ export const App: React.FC = () => {
   const [isBookingsModalOpen, setIsBookingsModalOpen] = useState<boolean>(false);
   const [isAddRealModalOpen, setIsAddRealModalOpen] = useState<boolean>(false);
 
-  const [reservations, setReservations] = useState<Reservation[]>(() => loadReservations(localStorage));
+  const [reservations, setReservations] = useState<Reservation[]>(() => loadReservations(browserStorage()));
 
   useEffect(() => {
-    saveReservations(localStorage, reservations);
+    saveReservations(browserStorage(), reservations);
   }, [reservations]);
 
   const handleAddCustomRestaurant = (newRestaurant: Restaurant) => {
     setRestaurants((prev) => [newRestaurant, ...prev]);
-    const existingCustom = loadCustomRestaurants(localStorage);
-    saveCustomRestaurants(localStorage, [newRestaurant, ...existingCustom]);
+    const existingCustom = loadCustomRestaurants(browserStorage());
+    saveCustomRestaurants(browserStorage(), [newRestaurant, ...existingCustom]);
   };
 
   // Filter & Weather / Comment Vibe Ranking Logic

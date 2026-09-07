@@ -17,21 +17,17 @@ export async function addInventoryItem(formData: FormData) {
   const category = formData.get('category') as string
   const quantity = formData.get('quantity') as string
   
-  const inventory = readInventory()
-  inventory.push({
-    id: generateId(),
-    name,
-    category,
-    quantity,
-    addedAt: new Date().toISOString()
-  })
-  writeInventory(inventory)
+  const item: InventoryItem = {
+    id: generateId(), name, category, quantity: quantity || undefined,
+    addedAt: new Date().toISOString(),
+  }
+  return writeInventory([...readInventory(), item]) ? item : null
 }
 
 export async function deleteInventoryItem(id: string) {
   let inventory = readInventory()
   inventory = inventory.filter((item: InventoryItem) => item.id !== id)
-  writeInventory(inventory)
+  return writeInventory(inventory)
 }
 
 export async function getMealPlan() {
@@ -39,19 +35,18 @@ export async function getMealPlan() {
 }
 
 export async function addMealPlanEntry(date: string, recipeId: string, mealType: string) {
-  const plan = readMealPlan()
-  plan.push({ id: generateId(), date, recipeId, mealType })
-  writeMealPlan(plan)
+  const entry: MealPlanEntry = { id: generateId(), date, recipeId, mealType }
+  return writeMealPlan([...readMealPlan(), entry]) ? entry : null
 }
 
 export async function deleteMealPlanEntry(id: string) {
   let plan = readMealPlan()
   plan = plan.filter((entry: MealPlanEntry) => entry.id !== id)
-  writeMealPlan(plan)
+  return writeMealPlan(plan)
 }
 
 export async function saveRecipeMarkdown(filename: string, content: string) {
-  writeRecipe(filename, content)
+  return writeRecipe(filename, content)
 }
 
 export async function fetchAllRecipes() {

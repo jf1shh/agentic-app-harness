@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   loadCustomRestaurants,
+  browserStorage,
   saveCustomRestaurants,
   loadReservations,
   saveReservations,
@@ -147,4 +148,10 @@ describe('saveReservations', () => {
     saveReservations(storage, [validReservation]);
     expect(JSON.parse(storage.getItem(RESERVATIONS_KEY)!)).toEqual([validReservation]);
   });
+});
+
+it('Given a denied localStorage getter, When acquiring persistence, Then use session memory without crashing', () => {
+  const storage = browserStorage(() => { throw new Error('denied'); });
+  storage.setItem('session-review', 'saved');
+  expect(storage.getItem('session-review')).toBe('saved');
 });

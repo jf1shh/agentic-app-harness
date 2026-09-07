@@ -1,6 +1,6 @@
 # Smart Recipe App (`smart-recipe-app`)
 
-A local-first, privacy-focused kitchen assistant. Track your fridge and pantry, get recipe recommendations from what you already have, save markdown recipes from a public recipe search, and plan meals by day. All user data persists in `localStorage` (validated against the contract-first Zod schemas on every read). The only outbound request is the user-initiated recipe search. Ships as a static web app and as a Capacitor Android WebView wrapper.
+A local-first, privacy-focused kitchen assistant. Track your fridge and pantry, get recipe recommendations from what you already have, save markdown recipes from a public recipe search, and plan meals by day. All user data persists in `localStorage` (validated against the contract-first Zod schemas on every read). Online recipe search sends the search term to TheMealDB and loads returned recipe images. Ships as a static web app and as a Capacitor Android WebView wrapper.
 
 > Spec: [`specs/smart-recipe-app.md`](../../specs/smart-recipe-app.md) — the single source of truth.
 >
@@ -19,8 +19,10 @@ A local-first, privacy-focused kitchen assistant. Track your fridge and pantry, 
 | `/recipes/search` | Linked from the recipes page | Online recipe search via TheMealDB; each result is normalized into a local markdown recipe |
 | `/planner` | `src/app/planner/page.tsx` + `PlannerClient.tsx` | Assign saved recipes to dates and meal types |
 
-### Server actions (`src/app/actions.ts`)
-A small set of `async` server actions provides the data layer for the route pages — they ultimately read from `localStorage`-shaped sources on the client during static export, but the actions interface (`getInventory`, `getMealPlan`, `fetchAllRecipes`) is the single seam the routes consume. This is the deliberate design that lets the app ship as a fully static export (`output: 'export'` in `next.config.ts`); there is no Node-filesystem / `'use server'` runtime.
+### Browser data boundary (`src/app/actions.ts`)
+These are ordinary client-callable async functions, not Next.js server actions. Interactive
+pages restore browser storage after hydration. Add/remove operations retain persisted IDs
+and surface failed writes. External search results are Zod-validated before rendering.
 
 ### Recommendation engine (`src/lib/recommend.ts`)
 Pure, dependency-free:

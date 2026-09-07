@@ -404,3 +404,22 @@ describe('Given a plan saved before this app encrypted at rest', () => {
     expect(storage.getItem(PLANNER_STATE_KEY)!.startsWith(ENCRYPTED_PREFIX)).toBe(true);
   });
 });
+
+it('Given an older asynchronous save, When a newer save completes first, Then the older result cannot overwrite it', async () => {
+  const storage = memoryStorage();
+  let release!: (key: CryptoKey | null) => void;
+  const pending = new Promise<CryptoKey | null>((resolve) => { release = resolve; });
+  const oldSave = savePlannerStateEncrypted(storage, { ...INITIAL_STATE, monthlyIncomeCents: 100 }, () => pending);
+  await savePlannerStateEncrypted(storage, { ...INITIAL_STATE, monthlyIncomeCents: 200 }, async () => null);
+  release(null); await oldSave;
+  const result = loadPlannerState(storage);
+  expect(result.status === 'restored' && result.state.monthlyIncomeCents).toBe(200);
+});
+it('Given a pending save, When the user erases the plan, Then its completion cannot recreate erased data', async () => {
+  const storage = memoryStorage();
+  let release!: (key: CryptoKey | null) => void;
+  const pending = new Promise<CryptoKey | null>((resolve) => { release = resolve; });
+  const saving = savePlannerStateEncrypted(storage, INITIAL_STATE, () => pending);
+  clearPlannerState(storage); release(null); await saving;
+  expect(storage.getItem(PLANNER_STATE_KEY)).toBeNull();
+});

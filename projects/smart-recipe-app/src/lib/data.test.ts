@@ -116,3 +116,10 @@ describe('writeRecipe', () => {
     expect(() => writeRecipe('x.md', 'content')).not.toThrow();
   });
 });
+
+it('Given storage quota failure, When saving a recipe, Then report failure without changing the seed catalog', () => {
+  const before = JSON.stringify(readRecipes());
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  expect(writeRecipe('classic-pesto-pasta.md', '# Lost')).toBe(false);
+  expect(JSON.stringify(readRecipes())).toBe(before);
+});

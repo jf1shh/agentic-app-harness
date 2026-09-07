@@ -142,3 +142,9 @@ only when that specific feature is invoked, never on page load or mid-flow.
 - **Tone:** plain, upbeat, feature-forward copy ("Website Verified Open," "AI Weather Suitability") —
   consistent with a discovery/booking app rather than a decision-support tool under stress, which is
   why this app's voice does not follow `elder-care-planner`'s neutral third-party register.
+
+## September 6 robustness regression
+
+Given the browser denies access to the `localStorage` property itself, opening the app
+still displays the demo and allows session interactions. Acquiring storage must be guarded
+before passing it to persistence helpers; blocked storage falls back to session memory.

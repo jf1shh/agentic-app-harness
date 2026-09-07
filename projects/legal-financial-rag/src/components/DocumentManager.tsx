@@ -36,7 +36,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     const { sanitizedText: sanitizedContent } = sanitizeInput(newContent);
     const { sanitizedText: sanitizedTitle } = sanitizeInput(newTitle);
 
-    const docId = `doc-custom-${Date.now()}`;
+    const docId = `doc-custom-${crypto.randomUUID()}`;
     const hash = await calculateSHA256(sanitizedContent);
 
     const createdChunks = chunkDocument(sanitizedContent, {
@@ -94,6 +94,12 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
                   padding: '0.85rem 1rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
+                }}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selectedDocId === doc.id}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedDocId(doc.id); }
                 }}
                 onClick={() => setSelectedDocId(doc.id)}
               >

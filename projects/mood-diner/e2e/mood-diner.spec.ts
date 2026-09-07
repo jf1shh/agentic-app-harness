@@ -120,3 +120,12 @@ test.describe('BDD Spec: MoodDiner Recommendation & Reservation Engine', () => {
     expect(accessibilityScanResults.violations).toEqual([]);
   });
 });
+
+test('Given blocked browser storage, When opening the app, Then recommendations remain usable', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(window, 'localStorage', {
+    configurable: true, get() { throw new DOMException('Blocked', 'SecurityError'); },
+  }));
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Something went wrong' })).toHaveCount(0);
+  await expect(page.locator('.restaurant-grid .glass-panel')).toHaveCount(7);
+});

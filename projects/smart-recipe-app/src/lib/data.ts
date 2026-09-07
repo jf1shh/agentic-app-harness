@@ -7,9 +7,9 @@ import type { z } from 'zod';
 // a tampered value) is rejected and the caller falls back to seed data instead
 // of letting a malformed object flow into the UI.
 function parseStored<T>(raw: string | null, schema: z.ZodType<T>, fallback: T): T {
-  if (!raw) return fallback;
+  if (!raw) return structuredClone(fallback);
   const result = schema.safeParse(JSON.parse(raw));
-  return result.success ? result.data : fallback;
+  return result.success ? result.data : structuredClone(fallback);
 }
 
 const INITIAL_INVENTORY: InventoryItem[] = [
@@ -36,62 +36,59 @@ const INITIAL_MEAL_PLAN: MealPlanEntry[] = [
 ];
 
 export function readInventory(): InventoryItem[] {
-  if (typeof window === 'undefined') return INITIAL_INVENTORY;
+  if (typeof window === 'undefined') return structuredClone(INITIAL_INVENTORY);
   try {
     return parseStored(localStorage.getItem('smart_recipe_inventory'), InventorySchema, INITIAL_INVENTORY);
   } catch {
-    return INITIAL_INVENTORY;
+    return structuredClone(INITIAL_INVENTORY);
   }
 }
 
-export function writeInventory(inventory: InventoryItem[]) {
-  if (typeof window === 'undefined') return;
+export function writeInventory(inventory: InventoryItem[]): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.setItem('smart_recipe_inventory', JSON.stringify(inventory));
-  } catch (e) {
-    console.error(e);
-  }
+    return true;
+  } catch { return false; }
 }
 
 export function readMealPlan(): MealPlanEntry[] {
-  if (typeof window === 'undefined') return INITIAL_MEAL_PLAN;
+  if (typeof window === 'undefined') return structuredClone(INITIAL_MEAL_PLAN);
   try {
     return parseStored(localStorage.getItem('smart_recipe_meal_plan'), MealPlanSchema, INITIAL_MEAL_PLAN);
   } catch {
-    return INITIAL_MEAL_PLAN;
+    return structuredClone(INITIAL_MEAL_PLAN);
   }
 }
 
-export function writeMealPlan(mealPlan: MealPlanEntry[]) {
-  if (typeof window === 'undefined') return;
+export function writeMealPlan(mealPlan: MealPlanEntry[]): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.setItem('smart_recipe_meal_plan', JSON.stringify(mealPlan));
-  } catch (e) {
-    console.error(e);
-  }
+    return true;
+  } catch { return false; }
 }
 
 export function readRecipes(): RecipeEntry[] {
-  if (typeof window === 'undefined') return INITIAL_RECIPES;
+  if (typeof window === 'undefined') return structuredClone(INITIAL_RECIPES);
   try {
     return parseStored(localStorage.getItem('smart_recipe_recipes'), RecipesSchema, INITIAL_RECIPES);
   } catch {
-    return INITIAL_RECIPES;
+    return structuredClone(INITIAL_RECIPES);
   }
 }
 
-export function writeRecipe(filename: string, content: string) {
-  if (typeof window === 'undefined') return;
+export function writeRecipe(filename: string, content: string): boolean {
+  if (typeof window === 'undefined') return false;
   try {
-    const recipes = readRecipes();
+    // Reads can return the shared seed array; never mutate it before persistence succeeds.
+    const recipes = readRecipes().map((recipe) => ({ ...recipe }));
     const existingIdx = recipes.findIndex(r => r.filename === filename);
-    if (existingIdx >= 0) {
-      recipes[existingIdx].content = content;
-    } else {
-      recipes.push({ filename, content });
-    }
+    if (existingIdx >= 0) recipes[existingIdx] = { filename, content };
+    else recipes.push({ filename, content });
     localStorage.setItem('smart_recipe_recipes', JSON.stringify(recipes));
-  } catch (e) {
-    console.error(e);
+    return true;
+  } catch {
+    return false;
   }
 }

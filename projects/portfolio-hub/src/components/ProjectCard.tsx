@@ -34,10 +34,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpenSpec })
 
       {/* Metrics Row */}
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '2px', padding: '0.75rem', marginBottom: '1.25rem' }}>
-        <div className="font-display" style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Verification Metrics</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-body)' }}>
+        <div className="font-display" style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px' }}>Test snapshot · September 6, 2026</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-body)' }}>
           <span>Vitest: <strong style={{ color: 'var(--accent-verified)' }}>{project.metrics.unitTests} Unit Tests</strong></span>
-          <span>A11y: <strong style={{ color: 'var(--accent-verified)' }}>WCAG 2.0 AA</strong></span>
+          <span>A11y: <strong style={{ color: 'var(--accent-verified)' }}>Automated AA checks</strong></span>
         </div>
       </div>
 

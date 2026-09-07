@@ -55,11 +55,11 @@ export async function processRAGQuery(
 
     citations.forEach((c, idx) => {
       answerText += `[${idx + 1}] ${c.documentTitle} - ${c.sectionTitle} (Page ${c.pageNumber})\n`;
-      answerText += `Relevance Score: ${Math.round(c.score * 100)}% | Privilege: ${c.privilegeLevel}\n`;
+      answerText += `Ranking Score: ${c.score.toFixed(2)} | Privilege: ${c.privilegeLevel}\n`;
       answerText += `Excerpt: "${c.snippet.replace(/\n+/g, ' ')}"\n\n`;
     });
 
-    answerText += `Legal Summary: The provisions retrieved directly address the parameters requested in Section "${topCitation.sectionTitle}". Counsel is advised to verify exact covenant thresholds and privilege classifications prior to formal disclosure.`;
+    answerText += `Retrieval note: The top-ranked excerpt is from Section "${topCitation.sectionTitle}". Counsel is advised to verify exact covenant thresholds and privilege classifications prior to formal disclosure.`;
 
     confidenceScore = Math.min(0.98, topCitation.score + 0.25);
   }
@@ -69,7 +69,7 @@ export async function processRAGQuery(
   const piiRedactionCount = (answerText.match(/\[REDACTED_[A-Z_]+_\d+\]/g) || []).length;
 
   const securityAuditHash = await calculateSHA256(
-    `${queryId}:${queryText}:${citations.length}:${executionTimeMs}:${Date.now()}`
+    JSON.stringify({ queryId, queryText, answerText, citations })
   );
 
   return {

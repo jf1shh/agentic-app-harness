@@ -9,9 +9,9 @@ import { WatermarkOverlay } from './components/WatermarkOverlay';
 import { AuditLogEntry, DocumentChunk, FinancialDocument, RAGResponse, SecurityPrivilegeLevel } from './lib/schemas';
 import { SAMPLE_DOCUMENTS } from './lib/datasets/authenticSampleDocs';
 import { chunkDocument } from './lib/rag/chunker';
-import { createChainedAuditEntry } from './lib/security/hashChain';
+import { calculateSHA256 } from './lib/security/encryption';
+import { createAuditAppender } from './lib/security/auditAppender';
 import { useAutoLock } from './lib/hooks/useAutoLock';
-import { wipeSensitiveState } from './lib/security/memoryZeroizer';
 import { VaultPassphraseRecord, registerVaultPassphrase, verifyVaultPassphrase } from './lib/security/vaultAuth';
 
 export const App: React.FC = () => {
@@ -27,6 +27,8 @@ export const App: React.FC = () => {
   const [documents, setDocuments] = useState<FinancialDocument[]>(SAMPLE_DOCUMENTS);
   const [chunks, setChunks] = useState<DocumentChunk[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [appendAudit] = useState(() => createAuditAppender((entry) => setAuditLogs((prev) => [entry, ...prev])));
+  const initialized = useRef(false);
   const [lastResponse, setLastResponse] = useState<RAGResponse | null>(null);
 
   const [isLocked, setIsLocked] = useState(false);
@@ -41,9 +43,12 @@ export const App: React.FC = () => {
 
   // Initialize sample document chunks and chained audit ledger
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
     async function initVault() {
       const initialChunks: DocumentChunk[] = [];
-      SAMPLE_DOCUMENTS.forEach((doc) => {
+      const preparedDocuments: FinancialDocument[] = [];
+      for (const doc of SAMPLE_DOCUMENTS) {
         const created = chunkDocument(doc.content, {
           documentId: doc.id,
           documentTitle: doc.title,
@@ -52,34 +57,37 @@ export const App: React.FC = () => {
           privilegeLevel: doc.privilegeLevel,
         });
         initialChunks.push(...created);
-      });
+        preparedDocuments.push({ ...doc, chunksCount: created.length,
+          fileSize: new TextEncoder().encode(doc.content).length,
+          sha256Hash: await calculateSHA256(doc.content) });
+      }
+      setDocuments(preparedDocuments);
       setChunks(initialChunks);
 
       // Create Genesis Chained Audit Entry
-      const genesisLog = await createChainedAuditEntry(null, {
+      await appendAudit({
         action: 'DOCUMENT_INDEXED',
         userRole: 'MANAGING_PARTNER',
-        details: `Initialized authentic financial vault with ${SAMPLE_DOCUMENTS.length} legal filings (${initialChunks.length} chunks indexed locally).`,
+        details: `Initialized sample financial workspace with ${SAMPLE_DOCUMENTS.length} legal filings (${initialChunks.length} chunks indexed locally).`,
       });
-      setAuditLogs([genesisLog]);
+
     }
     initVault();
-  }, []);
+  }, [appendAudit]);
 
   const handleLockVault = async (reason: 'idle' | 'manual') => {
     setIsLocked(true);
+    setLastResponse(null);
     setLockReason(reason);
 
-    const prevLog = auditLogs[0] || null;
-    const lockLog = await createChainedAuditEntry(prevLog, {
+    await appendAudit({
       action: 'VAULT_LOCKED',
       userRole,
       details:
         reason === 'idle'
-          ? 'Vault auto-locked after 5 minutes of inactivity. In-memory keys zeroized.'
-          : 'Vault manually locked by user. In-memory keys zeroized.',
+          ? 'Vault auto-locked after 5 minutes of inactivity. Session view hidden.'
+          : 'Vault manually locked by user. Session view hidden.',
     });
-    setAuditLogs((prev) => [lockLog, ...prev]);
   };
 
   // useAutoLock resets its idle timer whenever the callback identity it's
@@ -109,13 +117,11 @@ export const App: React.FC = () => {
   const handleUnlockSuccess = async (_key: CryptoKey, _passphrase: string) => {
     setIsLocked(false);
 
-    const prevLog = auditLogs[0] || null;
-    const unlockLog = await createChainedAuditEntry(prevLog, {
+    await appendAudit({
       action: 'VAULT_UNLOCKED',
       userRole,
-      details: 'Vault unlocked successfully. Derived 256-bit AES-GCM Key via PBKDF2 (100,000 iterations).',
+      details: 'Session view unlocked after passphrase verification.',
     });
-    setAuditLogs((prev) => [unlockLog, ...prev]);
   };
 
   const togglePrivilege = (level: SecurityPrivilegeLevel) => {
@@ -131,39 +137,27 @@ export const App: React.FC = () => {
     setDocuments((prev) => [newDoc, ...prev]);
     setChunks((prev) => [...newChunks, ...prev]);
 
-    const prevLog = auditLogs[0] || null;
-    const log = await createChainedAuditEntry(prevLog, {
+    await appendAudit({
       action: 'DOCUMENT_UPLOAD',
       userRole,
       details: `Ingested & indexed document "${newDoc.title}" (${newChunks.length} chunks created).`,
     });
-    setAuditLogs((prev) => [log, ...prev]);
   };
 
   const handleQueryProcessed = async (response: RAGResponse) => {
     setLastResponse(response);
-    const prevLog = auditLogs[0] || null;
-    const log = await createChainedAuditEntry(prevLog, {
+    await appendAudit({
       action: 'QUERY_EXECUTED',
       userRole,
       details: `Executed RAG query "${response.queryText.slice(0, 40)}..." (${response.citations.length} citations returned).`,
     });
-    setAuditLogs((prev) => [log, ...prev]);
   };
-
-  // Secure memory wipe when leaving tab / unloading window
-  useEffect(() => {
-    const handleUnload = () => {
-      if (lastResponse) wipeSensitiveState(lastResponse as unknown as Record<string, unknown>);
-    };
-    window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
-  }, [lastResponse]);
 
   return (
     <div className="app-container" style={{ position: 'relative' }}>
-      <WatermarkOverlay label="CONFIDENTIAL & ATTORNEY-CLIENT PRIVILEGED - LEXIVAULT HARDENED" />
+      <WatermarkOverlay label="LEXIVAULT RESEARCH DEMO" />
 
+      {!isLocked && <>
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -172,6 +166,11 @@ export const App: React.FC = () => {
         onLockVault={() => handleLockVault('manual')}
       />
 
+      <p role="note" style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
+        Session-only research demo. Documents disappear on reload. Roles and privilege filters
+        demonstrate retrieval controls; this is not an authenticated or encrypted document vault.
+        Use sample or non-sensitive material.
+      </p>
       <main className="main-wrapper" id="main-content">
         {activeTab === 'query' && (
           <div role="tabpanel" id="panel-query-workbench" aria-labelledby="tab-query-workbench" tabIndex={0}>
@@ -206,6 +205,7 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+      </>}
 
       <VaultLockModal
         isLocked={isLocked}

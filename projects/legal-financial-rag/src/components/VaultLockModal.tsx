@@ -54,6 +54,7 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
   return (
     <div
       id="vault-lock-backdrop"
+      role="dialog" aria-modal="true" aria-labelledby="vault-lock-heading"
       style={{
         position: 'fixed',
         top: 0,
@@ -98,7 +99,7 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
           <Lock size={32} aria-hidden="true" />
         </div>
 
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+        <h2 id="vault-lock-heading" style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.5rem' }}>
           LexiVault is Locked
         </h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.75rem' }}>
@@ -107,7 +108,7 @@ export const VaultLockModal: React.FC<VaultLockModalProps> = ({
             : 'You locked the vault. '}
           {isFirstUnlock
             ? 'Set a Vault Passphrase now — you will need to enter this exact passphrase to unlock for the rest of this session.'
-            : 'Enter your Vault Passphrase to derive your AES-256 decryption key.'}
+            : 'Enter your session passphrase to show the workspace. Reloading resets this demo.'}
         </p>
 
         <form onSubmit={handleUnlock} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

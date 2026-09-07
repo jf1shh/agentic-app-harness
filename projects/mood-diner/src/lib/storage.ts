@@ -71,3 +71,14 @@ export function loadReservations(storage: StorageLike): Reservation[] {
 export function saveReservations(storage: StorageLike, reservations: Reservation[]): void {
   saveArray(storage, RESERVATIONS_KEY, reservations);
 }
+
+// Accessing the browser property can throw before a Storage method is called.
+// Keep a session fallback so blocked persistence still permits demo interactions.
+const sessionValues = new Map<string, string>();
+const sessionStorage: StorageLike = {
+  getItem: (key) => sessionValues.get(key) ?? null,
+  setItem: (key, value) => { sessionValues.set(key, value); },
+};
+export function browserStorage(acquire: () => StorageLike = () => window.localStorage): StorageLike {
+  try { return acquire(); } catch { return sessionStorage; }
+}

@@ -142,6 +142,8 @@ As an AI agent operating within this repository, you must strictly adhere to the
 - **A Dead `public/` File Ships in Every Build, and No Line-Level Rule Can See It** — see [`.agents/lessons/a-dead-public-file-ships-in-every-build-and-no-line-level.md`](lessons/a-dead-public-file-ships-in-every-build-and-no-line-level.md).
 - **Node's Built-In `localStorage` Global Can Shadow jsdom's, Invisibly to a Pinned-Node CI** — see [`.agents/lessons/node-built-in-localstorage-global-can-shadow-jsdoms.md`](lessons/node-built-in-localstorage-global-can-shadow-jsdoms.md).
 
+- **Failure must not look like success** — see [`.agents/lessons/failure-must-not-look-like-success.md`](lessons/failure-must-not-look-like-success.md).
+
 ## 7. Mandatory Session Wrap-up & Continuous Learning
 - **Update Documentation & READMEs**: At the end of every session or major milestone, and whenever new features are added, agents MUST update all relevant `README.md` files and `.md` documentation (e.g., project specifications in `specs/`, walkthroughs, implementation plans, and project READMEs) to accurately reflect the latest project state, feature set, architecture, and live deployment endpoints.
 - **Create Agent Handoff File**: Agents MUST create or update a dedicated handoff file (e.g., `HANDOFF.md` in the project root or relevant app directory) detailing current project state, key changes, open bugs/blockers, and exact next steps so any future AI agent can seamlessly take over the work without loss of context.
@@ -545,10 +547,8 @@ persist sensitive data to `localStorage`/IndexedDB on the user's own device.
   Nominatim, Open-Meteo, and currency/advisory APIs for weather, geocoding, and exchange rates;
   `smart-recipe-app` calls TheMealDB for recipe search; `mood-diner`'s service worker fetches for
   cache-fallback only; `legal-financial-rag`, `elder-care-planner`, and `portfolio-hub` make none at
-  application runtime (`legal-financial-rag`'s own README notes Google Fonts still loads once over
-  network on first visit, which is why its claim is "no *document or query* content leaves the
-  device," not "zero requests ever" — say what you actually mean, per the Cite Confidence lesson in
-  §6). The boundary that matters: every existing call sends anonymous lookup parameters (a place
+  application runtime (LexiVault external fonts were removed in the September 6 review; static hosting
+  still receives normal asset requests). The boundary that matters: every existing call sends anonymous lookup parameters (a place
   name, a date, a currency code, a search term) and nothing from a user's financial, health, or care
   plan. Widening what a network call sends — or adding a new call — is a spec change to that app's
   `specs/<app>-spec.md`, not something to add quietly alongside an unrelated feature.
@@ -561,8 +561,8 @@ persist sensitive data to `localStorage`/IndexedDB on the user's own device.
   never to send off-device.
 
 - **Sensitive data written to persistent client storage needs the same at-rest treatment the app
-  already gives that data on its other paths.** `legal-financial-rag` encrypts its vault at rest
-  (PBKDF2 + a tamper-evident hash chain, see §6's Node WebCrypto lesson).
+  already gives that data on its other paths.** `legal-financial-rag` is session-only and does not encrypt or persist documents. Its
+  passphrase verifies a view lock; hashing and encryption helpers do not constitute a vault.
   `elder-care-planner`'s own share/export path (`src/lib/share.ts`) has always encrypted a plan
   with AES-GCM + PBKDF2 before it leaves the device — but until a security audit on 2026-08-14
   (PR #214) found it, `savePlan`/`savePlannerState` in `src/lib/storage.ts` wrote that same data

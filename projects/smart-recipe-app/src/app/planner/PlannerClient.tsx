@@ -1,25 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MealPlanEntry, RecipeEntry } from '@/lib/types'
-import { addMealPlanEntry, deleteMealPlanEntry } from '../actions'
+import { addMealPlanEntry, deleteMealPlanEntry, getMealPlan, fetchAllRecipes } from '../actions'
 
-export default function PlannerClient({ initialPlan, recipes }: { initialPlan: MealPlanEntry[], recipes: RecipeEntry[] }) {
+export default function PlannerClient({ initialPlan, recipes: initialRecipes }: { initialPlan: MealPlanEntry[], recipes: RecipeEntry[] }) {
+  const [recipes, setRecipes] = useState(initialRecipes)
+  const [error, setError] = useState('')
   const [plan, setPlan] = useState<MealPlanEntry[]>(initialPlan)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [recipeId, setRecipeId] = useState(recipes.length > 0 ? recipes[0].filename : '')
   const [mealType, setMealType] = useState('Dinner')
 
+  useEffect(() => {
+    void getMealPlan().then(setPlan)
+    void fetchAllRecipes().then((saved) => { setRecipes(saved); setRecipeId(saved[0]?.filename ?? '') })
+  }, [])
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!recipeId) return
-    await addMealPlanEntry(date, recipeId, mealType)
-    setPlan(prev => [...prev, { id: `mp-${Date.now()}`, date, recipeId, mealType }])
+    if (!await addMealPlanEntry(date, recipeId, mealType)) { setError('Could not save this meal.'); return }
+    setError('')
+    setPlan(await getMealPlan())
   }
 
   const handleDelete = async (id: string) => {
-    await deleteMealPlanEntry(id)
-    setPlan(prev => prev.filter(entry => entry.id !== id))
+    if (!await deleteMealPlanEntry(id)) { setError('Could not remove this meal.'); return }
+    setError('')
+    setPlan(await getMealPlan())
   }
 
   // Group plan by date
@@ -36,6 +45,7 @@ export default function PlannerClient({ initialPlan, recipes }: { initialPlan: M
     <div className="grid grid-sidebar">
       <div className="glass-panel" style={{ alignSelf: 'start' }}>
         <h2>Schedule a Meal</h2>
+        {error && <p role="alert">{error}</p>}
         {recipes.length === 0 ? (
           <p>Please save some recipes first in the catalog.</p>
         ) : (

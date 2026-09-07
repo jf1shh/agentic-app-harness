@@ -2224,3 +2224,14 @@ change, and declining full reverse-mortgage loan modeling in favor of the inform
 above. Full HECM loan modeling itself remains declined, not built — if it is ever revisited, the
 bar stated above still applies (a citable, dated primary source, a `FigureConfidence` tag, and a
 professional referral that survives the estimate).
+
+## September 6 persistence integrity
+
+Concurrent first-use tabs must resolve to the same device key: key publication checks for
+a previously stored winner inside the same read/write transaction that creates a key.
+An unreadable saved plan must remain untouched until the user explicitly resets it;
+displaying defaults must not trigger an autosave over the recovery copy.
+
+Async saves use per-storage write ordering: an older encryption completion cannot overwrite
+a newer save or recreate a plan after erase. The synchronous pagehide flush invalidates
+pending async writes too. This is ordering within a tab, not collaborative multi-tab editing.

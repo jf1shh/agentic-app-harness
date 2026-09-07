@@ -136,3 +136,10 @@ disclosures, or its verification-metrics box changed — those were already skim
 (`<details>`/`<summary>`, closed by default) and are the pattern this revision extends, not replaces.
 `SkillsGrid` and `CaseStudySection` already followed this same collapsed-summary-first pattern before
 this revision and needed no structural change, only shorter intro copy.
+
+## September 6 evidence accuracy
+
+Portfolio claims describe shipped behavior: MoodDiner has bundled data/weather presets and
+simulated bookings; LexiVault is session-only; Smart Recipe has no macro/shopping-list feature.
+Show dated test snapshots and automated WCAG checks, never a fabricated compliance percentage
+or a perpetual zero-vulnerability claim. Demo feature tiers do not constitute monetization.

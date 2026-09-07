@@ -209,3 +209,12 @@ test.describe('LexiVault Financial RAG - Hardened BDD E2E & Accessibility Test S
     expect(overflow, 'overflow after a query with citations rendered').toBeLessThanOrEqual(1);
   });
 });
+
+
+test('Given a session workspace, When locked, Then its contents leave the DOM and the session lock remains accessible', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#main-content')).toBeVisible();
+  await page.getByRole('button', { name: /Lock Vault/i }).click();
+  await expect(page.locator('#main-content')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'LexiVault is Locked' })).toBeVisible();
+});

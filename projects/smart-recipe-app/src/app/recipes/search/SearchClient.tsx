@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { searchMeals } from '@/lib/mealSearch'
 import { saveRecipeMarkdown } from '@/app/actions'
 
 export default function SearchClient() {
@@ -15,11 +16,11 @@ export default function SearchClient() {
     setLoading(true)
     setMessage('')
     try {
-      const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`)
-      const data = await res.json()
-      setResults(data.meals || [])
-      if (!data.meals) setMessage('No recipes found.')
+      const meals = await searchMeals(query)
+      setResults(meals)
+      if (!meals.length) setMessage('No recipes found.')
     } catch {
+      setResults([])
       setMessage('Failed to search recipes.')
     }
     setLoading(false)
@@ -53,8 +54,8 @@ ${meal.strInstructions}
 
 ${meal.strYoutube ? `[Watch on YouTube](${meal.strYoutube})` : ''}
 `
-    await saveRecipeMarkdown(filename, markdown)
-    setMessage(`Saved ${meal.strMeal} to catalog!`)
+    const saved = await saveRecipeMarkdown(filename, markdown)
+    setMessage(saved ? `Saved ${meal.strMeal} to catalog!` : 'Could not save this recipe. Browser storage may be blocked or full.')
   }
 
   return (
@@ -66,6 +67,8 @@ ${meal.strYoutube ? `[Watch on YouTube](${meal.strYoutube})` : ''}
             className="input-field" 
             value={query} 
             onChange={e => setQuery(e.target.value)}
+            aria-label="Search recipes"
+            maxLength={200}
             placeholder="Search for a recipe (e.g. Chicken, Pasta)..." 
             required 
           />

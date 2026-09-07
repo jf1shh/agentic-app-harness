@@ -26,13 +26,13 @@ scores the ranking directly — no model, no network, stable in CI.
 
 The gate (`scripts/rag-eval-gate.mjs`) runs the eval and enforces two floors:
 
-- **precision@K** — share of golden queries whose expected document lands in the top-K (K=3). Floor: **90%**.
+- **hit-rate@K** — share of golden queries whose expected document lands in the top-K (K=3). Floor: **90%**.
 - **MRR** — mean reciprocal rank of the expected document. Floor: **0.75**.
 
-Current baseline (128-dim feature-hashed embedding): **precision@K 100%, MRR 1.000**
+Current baseline (128-dim feature-hashed embedding): **hit-rate@K 100%, MRR 1.000**
 (every expected doc ranks #1), so the floors leave headroom to catch a real
 regression without flaking. For reference, the previous 32-dim char-code embedding
-scored MRR 0.975 on the same set — the corpus is only four documents, so precision@K
+scored MRR 0.975 on the same set — the corpus is only four documents, so hit-rate@K
 saturates and MRR is the more discriminating signal here; the embedding's benefit
 grows with corpus size.
 
@@ -51,5 +51,10 @@ npm run eval
 
 Add a query + its expected `documentId`/`section` to `goldenset.json`. Keep labels
 in sync when the corpus in `authenticSampleDocs.ts` changes. To tighten the gate as
-the engine improves, raise `MIN_PRECISION_AT_K` / `MIN_MRR` in
+the engine improves, raise `MIN_HIT_RATE_AT_K` / `MIN_MRR` in
 `scripts/rag-eval-gate.mjs`.
+
+This is a small deterministic ranking regression suite: hit-rate@K measures whether the
+expected document appears, not the fraction of all returned passages that are relevant.
+It does not evaluate generated answers, legal correctness, adversarial robustness, or
+retrieval quality on a representative large corpus.

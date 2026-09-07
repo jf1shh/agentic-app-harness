@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Harness gate: LexiVault retrieval-precision (RAG).
+// Harness gate: LexiVault retrieval-hit-rate (RAG).
 //
 // Runs the promptfoo eval in projects/legal-financial-rag (a deterministic,
 // LLM-free run of the app's real hybrid search engine over a golden query set),
 // then enforces quality thresholds:
-//   - precision@K : share of golden queries whose expected document is in the topK
+//   - hit-rate@K : share of golden queries whose expected document is in the topK
 //   - MRR         : mean reciprocal rank of the expected document
 //
 // Exits non-zero (blocking) if either metric falls below its floor, so a change
@@ -26,7 +26,7 @@ const CONFIG = process.argv[2] || 'eval/promptfooconfig.yaml';
 
 // Quality floors. Set just below the current deterministic baseline so the gate
 // catches a real ranking regression without flaking. Raise as the engine improves.
-const MIN_PRECISION_AT_K = 0.9; // ≥ 90% of golden queries retrieve the right doc in topK
+const MIN_HIT_RATE_AT_K = 0.9; // ≥ 90% of golden queries retrieve the right doc in topK
 const MIN_MRR = 0.75; // mean reciprocal rank of the expected document
 
 const C = {
@@ -82,7 +82,7 @@ function extractResults(data) {
 }
 
 function main() {
-  header('Harness Gate — RAG Retrieval Precision');
+  header('Harness Gate — RAG Retrieval Hit Rate');
 
   let entry;
   try {
@@ -147,12 +147,12 @@ function main() {
     }
   }
 
-  const precisionAtK = total ? hits / total : 0;
+  const hitRateAtK = total ? hits / total : 0;
   const mrr = total ? rrSum / total : 0;
 
   console.log(
     `Golden queries: ${total} | In-topK: ${hits}/${total} | ` +
-      `precision@K: ${(precisionAtK * 100).toFixed(1)}% | MRR: ${mrr.toFixed(3)}`,
+      `hit-rate@K: ${(hitRateAtK * 100).toFixed(1)}% | MRR: ${mrr.toFixed(3)}`,
   );
 
   if (failures.length) {
@@ -160,24 +160,24 @@ function main() {
     for (const f of failures) console.log(`${C.gray}  • ${f.q}\n      ${f.reason}${C.reset}`);
   }
 
-  const precisionOk = precisionAtK >= MIN_PRECISION_AT_K;
+  const hitRateOk = hitRateAtK >= MIN_HIT_RATE_AT_K;
   const mrrOk = mrr >= MIN_MRR;
 
   console.log('');
   console.log(
-    `precision@K ${precisionOk ? C.green + 'PASS' : C.red + 'FAIL'}${C.reset} ` +
-      `(${(precisionAtK * 100).toFixed(1)}% ≥ ${(MIN_PRECISION_AT_K * 100).toFixed(0)}%)`,
+    `hit-rate@K ${hitRateOk ? C.green + 'PASS' : C.red + 'FAIL'}${C.reset} ` +
+      `(${(hitRateAtK * 100).toFixed(1)}% ≥ ${(MIN_HIT_RATE_AT_K * 100).toFixed(0)}%)`,
   );
   console.log(
     `MRR         ${mrrOk ? C.green + 'PASS' : C.red + 'FAIL'}${C.reset} ` +
       `(${mrr.toFixed(3)} ≥ ${MIN_MRR.toFixed(2)})`,
   );
 
-  if (precisionOk && mrrOk) {
-    console.log(`\n${C.green}RAG retrieval-precision gate PASSED.${C.reset}`);
+  if (hitRateOk && mrrOk) {
+    console.log(`\n${C.green}RAG retrieval-hit-rate gate PASSED.${C.reset}`);
     process.exit(0);
   }
-  console.error(`\n${C.red}RAG retrieval-precision gate FAILED: retrieval quality below floor.${C.reset}`);
+  console.error(`\n${C.red}RAG retrieval-hit-rate gate FAILED: retrieval quality below floor.${C.reset}`);
   process.exit(1);
 }
 

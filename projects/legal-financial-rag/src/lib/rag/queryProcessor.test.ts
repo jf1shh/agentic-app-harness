@@ -115,3 +115,13 @@ describe('processRAGQuery — multiple citations are numbered in order', () => {
     expect(response.answerText).toContain('[2] Credit Agreement - Section 6.01 (Page 20)');
   });
 });
+
+it('Given a query response, When its audit fingerprint is checked, Then it binds the actual answer and citation content', async () => {
+  const { calculateSHA256 } = await import('../security/encryption');
+  const response = await processRAGQuery({ queryText: 'leverage', chunks: chunkDocument('Leverage ratio is 3.25x.', baseMeta), allowedPrivilegeLevels: ['CONFIDENTIAL'] });
+  const fingerprint = (answerText: string) => calculateSHA256(JSON.stringify({
+    queryId: response.queryId, queryText: response.queryText, answerText, citations: response.citations,
+  }));
+  expect(response.securityAuditHash).toBe(await fingerprint(response.answerText));
+  expect(response.securityAuditHash).not.toBe(await fingerprint('Changed answer'));
+});

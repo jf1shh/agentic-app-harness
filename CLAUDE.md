@@ -10,6 +10,13 @@ architecture that the rulebook itself doesn't spell out.
 
 @AGENTS.md
 
+## Current review state
+
+September 6 hardening is recorded in [docs/monorepo-hardening.md](docs/monorepo-hardening.md).
+The six app gates and the harness self-tests were exercised locally. A green sensor scan
+is not an end-to-end assurance claim: the review found integration bugs despite zero baseline
+findings. Read HANDOFF.md for the current branch, checks, and remaining limits.
+
 ## What this repo is
 
 A monorepo of six independent apps, each built and maintained by AI coding agents under the rules in
@@ -192,7 +199,7 @@ about why apps are *not* forced onto one shared version). Six apps:
 | `mood-diner` | Vite + React 18 + Capacitor | Restaurant recommender/booking; also ships as an Android app |
 | `travel-packing-app` | Next.js 16 + React 19 | Packing optimizer; ONNX/background-removal in-browser ML |
 | `smart-recipe-app` | Next.js 16 + React 19 | Recipe manager; local embedding corpus (`@huggingface/transformers`) |
-| `legal-financial-rag` | Vite + React 18 | 100% client-side RAG, no network calls; PBKDF2 + tamper-evident hash chain |
+| `legal-financial-rag` | Vite + React 18 | Session-only retrieval demo; PBKDF2 view lock + hash-chain consistency (no encrypted document persistence) |
 | `elder-care-planner` | Next.js 16 + React 19 | Cost/runway planner; every headline figure carries a confidence tag and a derivation trail |
 
 **Spec-driven flow**: `specs/<app-name>-spec.md` is read *before* any code change to that app — it
