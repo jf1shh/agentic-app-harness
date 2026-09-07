@@ -157,12 +157,12 @@ export default function Home() {
   // `restored` — without it the first save would fire with the defaults and
   // overwrite the family's stored plan before the load had run.
   useEffect(() => {
-    if (!restored) return;
+    if (!restored || restoreFailed) return;
     const storage = browserStorage();
     if (!storage) return;
     const timer = setTimeout(() => void savePlannerStateEncrypted(storage, state), 300);
     return () => clearTimeout(timer);
-  }, [state, restored]);
+  }, [state, restored, restoreFailed]);
 
   // Flush immediately when the page goes away.
   //
@@ -192,8 +192,8 @@ export default function Home() {
   const canSave = useRef(false);
   useEffect(() => {
     latest.current = state;
-    canSave.current = restored;
-  }, [state, restored]);
+    canSave.current = restored && !restoreFailed;
+  }, [state, restored, restoreFailed]);
 
   useEffect(() => {
     const flushSync = () => {
@@ -664,7 +664,8 @@ export default function Home() {
           <p className="callout no-print" data-testid="restore-failed">
             A saved plan was found on this device but could not be read — it may have been written
             by a newer version of this page, or edited by hand. Rather than load part of it and
-            present the result as though it were complete, this page has started from its defaults.
+            present the result as though it were complete, this page displays defaults without overwriting
+            the saved copy. Saving stays paused until you explicitly reset this device’s plan.
           </p>
         ) : null}
 
@@ -682,9 +683,9 @@ export default function Home() {
             <strong>These figures are saved in this browser</strong>, encrypted with a key
             generated on this device that never leaves it, so the plan is still here on the next
             visit. That is the same device and the same browser only — nothing is synced, and
-            nothing is uploaded. Encryption protects the saved figures from being read directly
-            off the device; it does not replace erasing the plan before handing back a shared or
-            borrowed computer, since this browser can still open it.
+            nothing is uploaded. The tab-close recovery write and an unavailable device key can
+            leave plaintext in storage. Same-origin scripts and this browser can access the key;
+            erase the plan before handing back a shared or borrowed computer.
           </p>
           {confirmingErase ? (
             <p>

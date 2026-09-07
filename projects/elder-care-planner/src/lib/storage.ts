@@ -117,7 +117,15 @@ export function loadPlannerState(storage: StorageLike): RestoreResult {
   return state === null ? { status: 'invalid' } : { status: 'restored', state };
 }
 
+const writeVersions = new WeakMap<StorageLike, number>();
+function nextWrite(storage: StorageLike): number {
+  const version = (writeVersions.get(storage) ?? 0) + 1;
+  writeVersions.set(storage, version);
+  return version;
+}
+
 export function savePlannerState(storage: StorageLike, state: PlannerState): void {
+  nextWrite(storage);
   storage.setItem(PLANNER_STATE_KEY, JSON.stringify(state));
 }
 
@@ -164,12 +172,15 @@ export async function savePlannerStateEncrypted(
   state: PlannerState,
   getKey: DeviceKeyProvider = getOrCreateDeviceKey,
 ): Promise<void> {
-  const key = await getKey();
+  const version = nextWrite(storage);
   const json = JSON.stringify(state);
-  storage.setItem(PLANNER_STATE_KEY, key ? await encryptWithKey(key, json) : json);
+  const key = await getKey();
+  const payload = key ? await encryptWithKey(key, json) : json;
+  if (writeVersions.get(storage) === version) storage.setItem(PLANNER_STATE_KEY, payload);
 }
 
 export function clearPlannerState(storage: StorageLike): void {
+  nextWrite(storage);
   storage.removeItem(PLANNER_STATE_KEY);
   // The plan key is cleared alongside it: "forget everything on this device"
   // has to mean everything, or the promise is false.

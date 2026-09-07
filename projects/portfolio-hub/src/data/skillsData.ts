@@ -51,9 +51,9 @@ const RAW_SKILLS: Skill[] = [
   {
     id: 'security-privacy-engineering',
     title: 'Security & Privacy-First Architecture',
-    summary: 'Sensitive data stays on-device by construction, not by policy — encrypted with real key derivation, never phoned home.',
+    summary: 'Local data handling with explicit storage, encryption, export, and session-only boundaries.',
     evidence: [
-      'legal-financial-rag runs its full RAG pipeline 100% client-side with zero network calls, AES-GCM 256 document encryption, PBKDF2 key derivation at 100,000 iterations, and a tamper-evident hash-chain audit log.',
+      'legal-financial-rag demonstrates session-only retrieval, PBKDF2 passphrase verification, and serialized audit-chain hashing; it does not persist encrypted documents or authenticate users.',
       'Every app runs an automated dependency security audit as part of `test-app.mjs`, gating the merge on 0 high-severity vulnerabilities.',
     ],
   },

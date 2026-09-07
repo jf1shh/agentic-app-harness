@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { browserStorage } from '../storage';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   loadPlanTier,
@@ -30,20 +31,20 @@ export const MonetizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // matters most here: this provider sits at the root of the tree, so an
   // unguarded throw from a browser that denies storage would blank the whole
   // app rather than degrading to the free tier.
-  const [plan, setPlan] = useState<PlanTier>(() => loadPlanTier(localStorage));
+  const [plan, setPlan] = useState<PlanTier>(() => loadPlanTier(browserStorage()));
 
   const [creditsRemaining, setCreditsRemaining] = useState<number>(() =>
-    loadCreditsForToday(localStorage, new Date().toISOString().slice(0, 10)),
+    loadCreditsForToday(browserStorage(), new Date().toISOString().slice(0, 10)),
   );
 
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
 
   useEffect(() => {
-    savePlanTier(localStorage, plan);
+    savePlanTier(browserStorage(), plan);
   }, [plan]);
 
   useEffect(() => {
-    saveCredits(localStorage, creditsRemaining);
+    saveCredits(browserStorage(), creditsRemaining);
   }, [creditsRemaining]);
 
   const openPaywall = () => setIsPaywallOpen(true);

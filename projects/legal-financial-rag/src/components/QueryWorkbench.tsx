@@ -245,7 +245,7 @@ export const QueryWorkbench: React.FC<QueryWorkbenchProps> = ({
                   <Clock size={14} aria-hidden="true" /> {ragResponse.executionTimeMs} ms
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <Shield size={14} aria-hidden="true" /> Confidence: {Math.round(ragResponse.confidenceScore * 100)}%
+                  <Shield size={14} aria-hidden="true" /> Heuristic score: {ragResponse.confidenceScore.toFixed(2)} (not calibrated confidence)
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <Hash size={14} aria-hidden="true" /> Stamp: {ragResponse.securityAuditHash.slice(0, 10)}...

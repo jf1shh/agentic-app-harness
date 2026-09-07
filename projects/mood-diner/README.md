@@ -139,3 +139,8 @@ npm run test:e2e      # Playwright + axe a11y, incl. production-bundle smoke tes
 ```bash
 node scripts/test-app.mjs mood-diner   # security + lint + tsc + Vitest + Playwright + a11y
 ```
+
+## September 6 review
+
+See [the monorepo remediation record](../../docs/monorepo-hardening.md) for current
+behavior, executed validation, and remaining limits.

@@ -117,11 +117,19 @@ export function auditApp(appName, appDir, spawn = spawnSync, opts = {}) {
     const stderr = (result.stderr || '').trim();
     const advisories = exitCode === 0 || stdout ? parseAdvisories(stdout) : [];
 
-    return { appName, advisories, exitCode, stderr, timedOut };
+    let validReport = false;
+    try {
+      const report = JSON.parse(stdout);
+      validReport = report !== null && typeof report === 'object' && !report.error
+        && report.vulnerabilities !== null && typeof report.vulnerabilities === 'object'
+        && !Array.isArray(report.vulnerabilities);
+    } catch { /* An unreadable audit is incomplete, not evidence of safety. */ }
+    const auditFailed = !!result.error || timedOut || ![0, 1].includes(exitCode) || !validReport;
+    return { appName, advisories, exitCode, stderr, timedOut, auditFailed };
   } catch (err) {
     return {
       appName, advisories: [], exitCode: -1,
-      stderr: err.message, timedOut: false,
+      stderr: err.message, timedOut: false, auditFailed: true,
     };
   }
 }
@@ -190,6 +198,13 @@ export function generateReport(reportData, opts = {}) {
   const { quiet = false } = opts;
   const lines = [];
   const { results, summary } = reportData;
+  const incomplete = results.filter((r) => r.auditFailed || r.timedOut);
+  if (incomplete.length || results.length === 0) {
+    lines.push(`SECURITY-SMOKE: incomplete — ${incomplete.length} audit(s) failed; ${summary.total} high/critical advisories observed. No clean result available.`);
+    for (const result of incomplete) lines.push(`  ${result.appName}: audit unavailable${result.timedOut ? ' (timeout)' : ''}`);
+    return { allGreen: false, lines };
+  }
+
 
   if (quiet) {
     if (summary.total === 0) {
@@ -229,7 +244,7 @@ export function generateReport(reportData, opts = {}) {
 
   lines.push(`${C.bold}Summary:${C.reset} ${summary.total} total (${summary.critical} critical, ${summary.high} high) across ${summary.appsWithFindings}/${results.length} app(s).`);
 
-  if (r => r.timedOut) {
+  if (results.some((r) => r.timedOut)) {
     const timedOutApps = results.filter((r) => r.timedOut).map((r) => r.appName);
     if (timedOutApps.length) {
       lines.push(`${C.yellow}Timed out: ${timedOutApps.join(', ')}${C.reset}`);
@@ -249,7 +264,8 @@ export function generateJsonReport(reportData) {
     summary,
     apps: results.map((r) => ({
       app: r.appName,
-      clean: r.advisories.length === 0,
+      clean: !r.auditFailed && !r.timedOut && r.advisories.length === 0,
+      auditFailed: !!r.auditFailed,
       advisoryCount: r.advisories.length,
       timedOut: r.timedOut,
       advisories: r.advisories,
@@ -298,6 +314,7 @@ function main() {
     if (lines.length) process.stdout.write(lines.join('\n') + '\n');
   }
 
+  if (results.length === 0 || results.some((r) => r.auditFailed || r.timedOut)) process.exit(2);
   if (total > 0) process.exit(1);
 }
 

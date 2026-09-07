@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   encryptWithKey,
+  installDeviceKey,
   decryptWithKey,
   deviceKeyAvailable,
   getOrCreateDeviceKey,
@@ -89,4 +90,24 @@ describe('deviceKeyAvailable and getOrCreateDeviceKey, when IndexedDB is unsuppo
   it('Given a runtime with no IndexedDB, When the device key is requested, Then null is returned rather than throwing', async () => {
     expect(await getOrCreateDeviceKey()).toBeNull();
   });
+});
+
+it('Given another tab has installed a key, When publishing a generated candidate, Then reuse the winner without overwriting it', async () => {
+  const winner = await generateTestKey();
+  const candidate = await generateTestKey();
+  let writes = 0;
+  let mode: IDBTransactionMode | undefined;
+  const request = { result: winner, onsuccess: null as (() => void) | null };
+  const tx = {
+    oncomplete: null as (() => void) | null,
+    objectStore: () => ({ get: () => request, put: () => { writes++; } }),
+  };
+  const db = { transaction: (_store: string, requestedMode: IDBTransactionMode) => {
+    mode = requestedMode;
+    queueMicrotask(() => { request.onsuccess?.(); tx.oncomplete?.(); });
+    return tx;
+  } } as unknown as IDBDatabase;
+  expect(await installDeviceKey(db, candidate)).toBe(winner);
+  expect(writes).toBe(0);
+  expect(mode).toBe('readwrite');
 });

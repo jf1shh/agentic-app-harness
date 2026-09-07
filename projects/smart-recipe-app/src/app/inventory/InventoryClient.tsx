@@ -1,46 +1,49 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { InventoryItem } from '@/lib/types'
-import { addInventoryItem, deleteInventoryItem } from '../actions'
+import { addInventoryItem, deleteInventoryItem, getInventory } from '../actions'
 
 export default function InventoryClient({ initialInventory }: { initialInventory: InventoryItem[] }) {
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory)
+  const [error, setError] = useState('')
+  useEffect(() => { void getInventory().then(setInventory) }, [])
   const formRef = useRef<HTMLFormElement>(null)
   
   const handleAdd = async (formData: FormData) => {
-    await addInventoryItem(formData)
-    const name = formData.get('name') as string
-    const category = formData.get('category') as string
-    const quantity = formData.get('quantity') as string
-    setInventory(prev => [...prev, { id: `inv-${Date.now()}`, name, category, quantity, addedAt: new Date().toISOString() }])
+    const item = await addInventoryItem(formData)
+    if (!item) { setError('Could not save. Browser storage may be blocked or full.'); return }
+    setError('')
+    setInventory(await getInventory())
     formRef.current?.reset()
   }
 
   const handleDelete = async (id: string) => {
-    await deleteInventoryItem(id)
-    setInventory(prev => prev.filter(item => item.id !== id))
+    if (!await deleteInventoryItem(id)) { setError('Could not remove this item.'); return }
+    setError('')
+    setInventory(await getInventory())
   }
 
   return (
     <div className="grid grid-sidebar">
       <div className="glass-panel" style={{ alignSelf: 'start' }}>
         <h2>Add Item</h2>
+        {error && <p role="alert">{error}</p>}
         <form ref={formRef} action={handleAdd}>
           <div className="input-group">
-            <label className="input-label">Item Name</label>
-            <input type="text" name="name" className="input-field" required placeholder="e.g. Tomatoes" />
+            <label htmlFor="inventory-name" className="input-label">Item Name</label>
+            <input id="inventory-name" type="text" name="name" className="input-field" required placeholder="e.g. Tomatoes" />
           </div>
           <div className="input-group">
-            <label className="input-label">Category</label>
-            <select name="category" className="input-field" required>
+            <label htmlFor="inventory-category" className="input-label">Category</label>
+            <select id="inventory-category" name="category" className="input-field" required>
               <option value="fridge">Fridge</option>
               <option value="pantry">Pantry</option>
             </select>
           </div>
           <div className="input-group">
-            <label className="input-label">Quantity (optional)</label>
-            <input type="text" name="quantity" className="input-field" placeholder="e.g. 2 lbs" />
+            <label htmlFor="inventory-quantity" className="input-label">Quantity (optional)</label>
+            <input id="inventory-quantity" type="text" name="quantity" className="input-field" placeholder="e.g. 2 lbs" />
           </div>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Add to Inventory</button>
         </form>

@@ -1,3 +1,24 @@
+# LexiVault: current implementation contract
+
+September 6 portfolio review: retain the session-only demo architecture. The earlier
+enterprise roadmap below is historical and is not a statement of implemented assurance.
+
+- Documents, queries, and audit entries live in memory and disappear on reload. There is
+  no persistent encrypted vault. WebCrypto helpers demonstrate cryptographic primitives.
+- Locking hides/unmounts the workspace and clears the last result. A session passphrase
+  controls the view; it does not encrypt the corpus or guarantee JavaScript memory erasure.
+- User-selectable roles and privilege filters demonstrate retrieval behavior; they are not
+  authenticated authorization. Use sample/non-sensitive material.
+- Audit append operations serialize across async actions to preserve one consistent chain.
+  Hashes detect inconsistent edits, not a fully recomputed chain or identity forgery.
+- Scores are uncalibrated ranking heuristics. Retrieval excerpts do not establish legal
+  correctness, and delimiter/sanitizer rules do not prove prompt-injection immunity.
+- Remove external typography requests. CSP is defense in depth, not protection against
+  browser extensions, same-origin scripts, or every possible network channel.
+- Sample provenance has not been independently verified; display them as illustrative.
+
+## Historical roadmap (superseded implementation claims)
+
 # Project Specification: LexiVault Financial RAG (legal-financial-rag)
 
 ## 1. Product Overview
@@ -8,12 +29,12 @@
 ## 2. Core Features
 - [x] **100% Local Ingestion & Smart Chunking**: Parse and chunk financial contracts (10-K filings, M&A agreements, loan covenants, audit reports) into semantic paragraphs with legal clause headers and page markers.
 - [x] **Client-Side Hybrid RAG Search Engine**: Combine TF-IDF/BM25 keyword search with local vector embedding similarity (cosine distance) for zero-latency, 100% private retrieval.
-- [x] **Security & Privilege Control Matrix**: Enforce strict document classification tags (`CONFIDENTIAL`, `ATTORNEY_CLIENT_PRIVILEGE`, `WORK_PRODUCT`, `PUBLIC_RESTRICTED`, `HIGHLY_RESTRICTED`) and user role permissions during query execution.
+- [ ] **Security & Privilege Control Matrix**: Enforce strict document classification tags (`CONFIDENTIAL`, `ATTORNEY_CLIENT_PRIVILEGE`, `WORK_PRODUCT`, `PUBLIC_RESTRICTED`, `HIGHLY_RESTRICTED`) and user role permissions during query execution.
 - [x] **Automated PII & Tax ID Redaction Pipeline**: Detect and mask SSNs, Tax IDs/EINs, bank accounts, and sensitive monetary figures with interactive review controls.
 - [x] **Grounded Citation & Clause Explorer**: Natural language query interface with verbatim source citations, snippet highlights, section deep-linking, and confidence scoring.
 - [x] **Cryptographic Audit Log & Verification Export**: Generate SHA-256 verification hashes for query results and export audit-ready evidence packages in PDF/JSON/Markdown.
 - [x] **Pre-loaded Authentic Financial Legal Dataset**: Ready-to-query authentic contracts (Tesla Credit Agreement, Apple 10-K Snippet, Stripe M&A Agreement, BioTech Term Sheet).
-- [x] **5 Enterprise Defense-in-Depth Security Hardening Layers**: Zero-exfiltration CSP headers, PBKDF2 100,000-iteration key derivation, auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
+- [ ] **5 Enterprise Defense-in-Depth Security Hardening Layers**: Zero-exfiltration CSP headers, PBKDF2 100,000-iteration key derivation, auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
 
 ## 3. Architecture & Tech Stack
 - **Frontend:** React 18 + Vite + TypeScript

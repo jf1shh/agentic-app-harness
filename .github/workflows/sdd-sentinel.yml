@@ -39,6 +39,12 @@ jobs:
       # deps (promptfoo + zod), so install just that one app. The full per-app test
       # suite runs in parallel in the Harness Testing Suite workflow (ci.yml) — this
       # job deliberately does not duplicate it.
+      - name: Review regression checks
+        run: |
+          node scripts/security-smoke.test.mjs
+          node scripts/release-metadata.test.mjs
+          node scripts/serve-dist.test.mjs
+
       - name: Install RAG eval dependencies
         shell: pwsh
         run: |

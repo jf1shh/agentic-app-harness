@@ -55,7 +55,7 @@ export const App: React.FC = () => {
             <h1 className="font-display" style={{ fontSize: '1.75rem', fontWeight: 800, background: 'linear-gradient(90deg, var(--text-main), var(--accent-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               Agentic App Harness
             </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Spec-Driven Monorepo • Production & Play Store Portfolio</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Spec-Driven Monorepo • Web & Android Demo Portfolio</p>
           </div>
         </div>
 
@@ -129,8 +129,8 @@ export const App: React.FC = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(130px, 100%), 1fr))', gap: '0.75rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
           <AnimatedStat label="Live Apps" value={PROJECTS_DATA.length} suffix=" Apps" color="#ff2b46" compact />
-          <AnimatedStat label="Full Test Suite" value={TOTAL_UNIT_TESTS + TOTAL_E2E_TESTS} suffix=" Tests" color="#4dfff0" compact />
-          <AnimatedStat label="Accessibility" value={100} suffix="% WCAG AA" color="var(--text-main)" compact />
+          <AnimatedStat label="Recorded test snapshot" value={TOTAL_UNIT_TESTS + TOTAL_E2E_TESTS} suffix=" Tests" color="#4dfff0" compact />
+          <div style={{ alignSelf: 'center', fontSize: '0.9rem' }}>Automated WCAG AA checks<br /><small>Not an accessibility certification</small></div>
           <AnimatedStat label="CI Guardrails" value={LOOP_STATS.guardrailCount} suffix=" Rules" color="var(--text-main)" compact />
           <AnimatedStat label="Learned Lessons" value={LOOP_STATS.lessonCount} suffix=" Lessons" color="var(--text-main)" compact />
         </div>

@@ -361,3 +361,8 @@ loan modelling (proposed for decline on the same grounds, spec §11.16).
 community contract rather than a survey median, and the comparison panel is the only place such a
 contract can be entered. Offering it in triage would produce a $0-a-month scenario with no way to
 correct it.
+
+## September 6 review
+
+See [the monorepo remediation record](../../docs/monorepo-hardening.md) for current
+behavior, executed validation, and remaining limits.

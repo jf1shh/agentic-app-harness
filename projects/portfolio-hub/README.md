@@ -93,3 +93,8 @@ Run the harness gate from the repo root:
 ```bash
 node scripts/test-app.mjs portfolio-hub   # security audit + lint + tsc + Vitest + Playwright + a11y
 ```
+
+## September 6 review
+
+See [the monorepo remediation record](../../docs/monorepo-hardening.md) for current
+behavior, executed validation, and remaining limits.

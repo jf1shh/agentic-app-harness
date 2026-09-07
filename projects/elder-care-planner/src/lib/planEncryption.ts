@@ -7,8 +7,8 @@
  * does not share — the same separation `photos.ts` uses, for the same
  * reason). There is no passphrase and nothing for a family to remember or
  * lose; the trade-off, stated plainly, is that this protects the figures
- * from another app or process reading raw `localStorage` (or a stray backup
- * of it), but not from someone with access to the same unlocked browser
+ * from a copy of raw `localStorage` without its key store, but not from
+ * same-origin scripts or someone with access to the same unlocked browser
  * profile — see `.agents/AGENTS.md` §11 and spec §4.1a for why that trade
  * was chosen over a `legal-financial-rag`-style passphrase gate.
  *
@@ -75,19 +75,22 @@ function getStoredKey(db: IDBDatabase): Promise<CryptoKey | null> {
   });
 }
 
-function putKey(db: IDBDatabase, key: CryptoKey): Promise<boolean> {
+/** Resolve competing first-use tabs inside one serialized read/write transaction. */
+export function installDeviceKey(db: IDBDatabase, candidate: CryptoKey): Promise<CryptoKey | null> {
   return new Promise((resolve) => {
     let tx: IDBTransaction;
-    try {
-      tx = db.transaction(STORE, 'readwrite');
-    } catch {
-      resolve(false);
-      return;
-    }
-    tx.objectStore(STORE).put(key, KEY_ID);
-    tx.oncomplete = () => resolve(true);
-    tx.onabort = () => resolve(false);
-    tx.onerror = () => resolve(false);
+    try { tx = db.transaction(STORE, 'readwrite'); }
+    catch { resolve(null); return; }
+    let selected: CryptoKey | null = null;
+    const store = tx.objectStore(STORE);
+    const request = store.get(KEY_ID);
+    request.onsuccess = () => {
+      selected = (request.result as CryptoKey | undefined) ?? candidate;
+      if (!request.result) store.put(candidate, KEY_ID);
+    };
+    tx.oncomplete = () => resolve(selected);
+    tx.onabort = () => resolve(null);
+    tx.onerror = () => resolve(null);
   });
 }
 
@@ -101,8 +104,7 @@ async function loadOrCreateKey(): Promise<CryptoKey | null> {
       'encrypt',
       'decrypt',
     ]);
-    const stored = await putKey(db, key);
-    return stored ? key : null;
+    return await installDeviceKey(db, key);
   } catch {
     return null;
   } finally {

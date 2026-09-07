@@ -1,3 +1,7 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import type { InventoryItem, RecipeEntry } from '@/lib/types'
 import { fetchAllRecipes, getInventory } from '../actions'
 import Link from 'next/link'
 import {
@@ -9,9 +13,14 @@ import {
   type RecipeRecommendation,
 } from '@/lib/recommend'
 
-export default async function RecipesPage() {
-  const recipes = await fetchAllRecipes()
-  const inventory = await getInventory()
+export default function RecipesPage() {
+  const [recipes, setRecipes] = useState<RecipeEntry[]>([])
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  useEffect(() => {
+    void getInventory().then(setInventory)
+    void fetchAllRecipes().then(setRecipes)
+  }, [])
+
   const recipesByFilename = new Map(recipes.map((r) => [r.filename, r]))
 
   // Rank recipes the pantry already covers using the same recommendation

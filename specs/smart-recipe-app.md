@@ -88,3 +88,15 @@ interface MealPlan {
 
 ## 8. Open Questions / Unresolved Architecture
 - For the public API, we will use a free, open API like `TheMealDB` to avoid requiring API keys from the user for the MVP, though it may lack some advanced filtering. If Spoonacular is preferred, an API key input in settings may be needed.
+
+## September 6 external-data and persistence boundaries
+
+TheMealDB results are validated with Zod before rendering, nullable fields are normalized,
+and query text is encoded as one URL parameter. Non-success responses, invalid payloads,
+and timeouts show a failure state. A recipe save reports success only when persistence
+succeeds; failed writes never mutate the shared seed catalog.
+
+Browser-persisted inventory, meal plans, recipes, and dashboard recommendations are loaded
+on client hydration, rather than frozen into the static build's seed data. New inventory
+and meal-plan rows retain their persisted IDs in the UI. Add/remove operations propagate
+write failures and reload the actual saved state; they do not manufacture duplicate IDs.

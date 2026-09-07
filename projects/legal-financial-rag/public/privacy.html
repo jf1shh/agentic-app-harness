@@ -66,38 +66,25 @@
         in-memory state while the tab or app is open. <strong>Nothing is written to disk:</strong>
         the app does not use <code>localStorage</code>, <code>sessionStorage</code>, or
         IndexedDB. Closing the tab, reloading the page, or backgrounding and force-closing the
-        Android app clears everything, with no way to recover it. A 5-minute inactivity
-        auto-lock and an unload handler additionally overwrite sensitive buffers (the derived
-        vault key and the last query response) in memory before that point.
+        Android app clears everything, with no way to recover it. The session lock hides the workspace and clears the last displayed result. It does not
+        encrypt documents or guarantee erasure of JavaScript memory.
       </p>
       <p>
         A vault passphrase you enter is used locally, via PBKDF2, to derive an AES-GCM key
-        that also never leaves memory. There is no password recovery, because there is nothing
+        for session-passphrase verification; it does not encrypt the document corpus. There is no password recovery, because there is nothing
         to recover it from — we never receive the passphrase or the derived key, and neither
         is stored anywhere.
       </p>
 
       <h2>Third-party connections</h2>
-      <p>The app has no analytics, no ad networks, and no third-party API calls. One thing reaches the network:</p>
-      <ul>
-        <li>
-          <strong>Fonts</strong> are loaded from Google Fonts (<code>fonts.googleapis.com</code>,
-          <code>fonts.gstatic.com</code>) for the app's typography. As with loading a font on
-          any website, that request tells Google your IP address and device user-agent; it
-          carries none of your documents, queries, or audit log. See the
-          <a href="https://policies.google.com/privacy" rel="noopener noreferrer">Google Privacy Policy</a>.
-        </li>
-      </ul>
-      <p>
-        The app's Content-Security-Policy (<code>connect-src 'self' data: blob:</code>) blocks
-        any script-initiated network request outside the app's own origin, so no document
-        content, query, or audit data can be exfiltrated even by a bug — this is enforced by
-        the browser, not just a policy statement.
-      </p>
+      <p>The app has no analytics, advertising SDK, third-party API calls, or externally loaded
+        fonts. The static host receives normal requests for application assets. The CSP limits
+        network access but is not a guarantee against same-origin scripts, extensions, or every
+        possible data-exfiltration channel.</p>
 
       <h2>Permissions</h2>
       <p>
-        On Android the app requests only <code>INTERNET</code>, required to load the fonts
+        On Android the app requests only <code>INTERNET</code>, available to the WebView; document processing does not require a remote service
         described above. It requests no location, storage, contacts, or other sensitive
         permission.
       </p>

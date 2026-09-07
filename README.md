@@ -13,7 +13,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/guardrails-10%20self--tested-8b5cf6" alt="10 self-tested guardrails">
-  <img src="https://img.shields.io/badge/learned%20lessons-58-6366f1" alt="58 learned lessons">
+  <img src="https://img.shields.io/badge/learned%20lessons-59-6366f1" alt="59 learned lessons">
   <img src="https://img.shields.io/badge/apps-6%20live-14b8a6" alt="6 live apps">
   <img src="https://img.shields.io/badge/CI%20workflows-11-0ea5e9" alt="11 CI workflows">
   <img src="https://img.shields.io/badge/embedded%20LLM-none-64748b" alt="No embedded LLM">
@@ -22,6 +22,10 @@
 Built by [Jared Fisher](https://github.com/jf1shh) — 17 years adjudicating insurance claims,
 teaching myself to build and ship production AI tooling, now looking for a full-time seat doing
 that work. This repo is the evidence, not a demo reel.
+
+> September 6 review: [findings, fixes, and current validation](docs/monorepo-hardening.md).
+> These are portfolio demos. Automated accessibility checks are not certification;
+> LexiVault is session-only and MoodDiner bookings are simulated.
 
 ## Why this exists
 
@@ -34,7 +38,7 @@ gets enforced until it's a concrete, checkable rule, and a rule doesn't get to b
 until it's proven itself against real history — it starts as a non-blocking check, and only gets
 promoted once it stops describing a backlog and starts describing an actual regression. Every
 exception is logged with a reason instead of waved through, every rule traces back to the specific
-incident that motivated it (58 of them, in `.agents/lessons/`), and the agent that does the work is
+incident that motivated it (59 of them, in `.agents/lessons/`), and the agent that does the work is
 never the one who signs off on it — it opens a PR, a human merges. Same "verify before you approve,
 document the precedent, separate the doer from the signer" logic, aimed at code review instead of
 claims review.
@@ -53,7 +57,7 @@ It hosts six real, deployed applications and holds every one of them to the same
 
 <p align="center">
   <a href="https://jf1shh.github.io/agentic-app-harness/">
-    <img src=".github/screenshots/portfolio-hub.png" alt="Agentic App Harness portfolio hub — spec-driven monorepo dashboard showing the five showcase apps that the hub itself makes six, 371 total unit/E2E tests, 100% WCAG AA accessibility, and Capacitor Android readiness" width="100%">
+    <img src=".github/screenshots/portfolio-hub.png" alt="Agentic App Harness portfolio hub — spec-driven monorepo dashboard showing the five showcase apps that the hub itself makes six, dated test snapshots, automated accessibility checks, and Android container links" width="100%">
   </a>
   <br>
   <sub>Live at <a href="https://jf1shh.github.io/agentic-app-harness/">jf1shh.github.io/agentic-app-harness</a></sub>
@@ -211,7 +215,7 @@ flowchart TD
 3. **Behavior-Driven Development (BDD)**: All E2E and unit scenarios follow `Given [Context] -> When [Action] -> Then [Outcome]`.
 4. **Unit-Test-Driven Development**: Every change to a logic module (`src/lib`, `src/utils`, `src/services`, `src/engine`, `src/data`, …) starts with a failing Vitest case, and any behaviour a PR claims to protect must be proved by breaking the code and watching the test go red. This is **gated**, not just asked for: `senseUnitTests` fails the build on any logic module that no unit test reaches, any unit test missing `Given/When/Then`, and any Vitest config without an explicit `include`. Its line-level half, the `no-op-assertion` guardrail, blocks too: an `expect()` with no matcher, or a type annotated against itself, is a test that cannot fail. The check shipped non-blocking and was promoted once the backlog it found (15 untested modules, 12 unformatted test files) was closed — a check gates when it describes a regression, not while it still describes history.
 5. **Mandatory Testing & Verification**: Each app must pass `node scripts/test-app.mjs <AppName>` — security audit, ESLint, type-check, Vitest, and Playwright E2E + `@axe-core` accessibility. Cross-platform, so the authoritative gate runs anywhere Node does (`.\scripts\test-app.ps1 -AppName <AppName>` wraps it).
-6. **5 Defense-in-Depth Security Hardening Layers**: LexiVault includes zero-exfiltration CSP headers, PBKDF2 passphrase key derivation (100,000 iterations), auto-lock timer, ReDoS/prompt injection shield, and tamper-evident blockchain-style hash chaining.
+6. **Security demonstrations with explicit limits**: LexiVault demonstrates session locking, input filtering, PII heuristics, and audit-chain consistency. It does not persist encrypted documents, authenticate roles, guarantee memory erasure, or certify legal correctness.
 7. **Enforced in CI**: The `Harness Testing Suite` workflow runs the full gate for every app on each push, and the `SDD Sentinel` workflow runs `validate-specs.ps1 -Strict`, plus diff-shaped gates (`check-containment.mjs`, `check-diff-size.mjs`, `check-enum-blast-radius.mjs`, `check-guardrail-integrity.mjs`, `check-secrets.mjs`) and non-blocking sensors (`check-instruction-tamper.mjs` for rule weakening/gate bypass, `check-spec-ordering.mjs` for logic changes without spec or test touches, `check-readme-freshness.mjs` for source changes without README updates, `check-dependency-audit.mjs` for known vulnerabilities in the resolved dependency tree) on pull requests — the build **fails** if any app is missing a spec, if a guardrail is violated, if harness infrastructure is touched without acknowledgment, or if a diff exceeds 800 changed lines without override. Compliance is a gate, not a claim.
 8. **Cited Figures Carry Their Own Confidence**: Where an app shows a number that came from outside it, that number carries a provenance tag (`verified` / `needs_verification` / `derived`) and the UI surfaces it next to the figure. The rule that makes this more than decoration: **a figure derived from a cited one needs its own tag**, never its row's. A published median tagged `verified` does not make a spread computed around it verified too — that is laundering an uncertain figure into a confident one, and it is the failure mode most likely to survive review, because the sentence reads well. Where no trustworthy figure exists, the honest output is a labelled fallback or an empty dataset with a comment saying why — `STATE_MEDIANS` in `elder-care-planner` is deliberately empty, because a made-up state number is worse than an absent one.
 9. **Continuous Learning Loops**: Edge cases and lessons are persisted back into `.agents/AGENTS.md` so the same mistake isn't repeated — and, where mechanically detectable, promoted into an enforced guardrail (see above).

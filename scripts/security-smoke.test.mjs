@@ -333,6 +333,20 @@ const NO_TITLE_JSON = JSON.stringify({
 
 /* ---- Summary -------------------------------------------------------------- */
 
+// Given an unavailable or invalid audit, When reporting, Then never certify it clean.
+for (const response of [
+  { status: 1, stdout: '', stderr: 'offline' },
+  { status: 0, stdout: 'not JSON', stderr: '' },
+  { status: 1, stdout: '{"error":{"code":"ENOAUDIT"}}', stderr: '' },
+  { status: null, error: { code: 'ETIMEDOUT' }, stdout: '', stderr: '' },
+]) {
+  const result = auditApp('unavailable', '/fake', () => response);
+  const report = { results: [result], summary: { total: 0, critical: 0, high: 0, appsWithFindings: 0 } };
+  ok(result.auditFailed === true, 'Given invalid audit, When parsed, Then mark incomplete');
+  ok(!generateReport(report, { quiet: true }).allGreen, 'Given incomplete audit, When summarized, Then no green');
+  ok(!generateJsonReport(report).apps[0].clean, 'Given incomplete audit, When exported, Then not clean');
+}
+
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed.`);
   process.exit(1);

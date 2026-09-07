@@ -70,7 +70,12 @@ function serve(port, mount) {
       return res.end('ready');
     }
 
-    let path = decodeURIComponent(new URL(req.url, `http://localhost:${port}`).pathname);
+    let path;
+    try { path = decodeURIComponent(new URL(req.url, `http://localhost:${port}`).pathname); }
+    catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      return res.end('invalid URL');
+    }
 
     if (mount) {
       if (path === mount) path = '/';
@@ -127,10 +132,10 @@ function serve(port, mount) {
 }
 
 if (prefix) {
-  serve(rootPort + 1, prefix).listen(rootPort + 1, () => {
+  serve(rootPort + 1, prefix).listen(rootPort + 1, '127.0.0.1', () => {
     console.log(`[serve-dist] deploy subpath : http://localhost:${rootPort + 1}${prefix}/`);
   });
 }
-serve(rootPort, '').listen(rootPort, () => {
+serve(rootPort, '').listen(rootPort, '127.0.0.1', () => {
   console.log(`[serve-dist] root origin   : http://localhost:${rootPort}/`);
 });

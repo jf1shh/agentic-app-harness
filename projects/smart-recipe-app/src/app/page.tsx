@@ -1,10 +1,19 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import type { InventoryItem, RecipeEntry } from '@/lib/types'
 import { getInventory, fetchAllRecipes } from './actions'
 import Link from 'next/link'
 import { recommendRecipes } from '@/lib/recommend'
 
-export default async function Home() {
-  const inventory = await getInventory()
-  const recipes = await fetchAllRecipes()
+export default function Home() {
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [recipes, setRecipes] = useState<RecipeEntry[]>([])
+  useEffect(() => {
+    void getInventory().then(setInventory)
+    void fetchAllRecipes().then(setRecipes)
+  }, [])
+
 
   const recommendations = recommendRecipes(inventory, recipes).slice(0, 3)
 
