@@ -20,7 +20,7 @@ Listing questionnaire answers remain drafts for the actual Console questions.
 
 ## Verification
 
-- Full app gate: **554 Vitest tests / 33 files**, **142 browser/accessibility tests**, lint and
+- Full app gate: **557 Vitest tests / 33 files**, **143 browser/accessibility tests**, lint and
   type check passed. Output: `ALL HARNESS CHECKS PASSED FOR elder-care-planner!` with a
   non-blocking workspace dependency-audit warning (15 advisories: 4 moderate, 10 high,
   1 critical). This does not certify the entire workspace as patched.
@@ -30,11 +30,11 @@ Listing questionnaire answers remain drafts for the actual Console questions.
   the domains back to `file` reproduced the three failures; correct rules were restored.
   The first mutation check exposed an XML test-input omission, which was corrected.
 - `gradlew assembleDebug bundleRelease testDebugUnitTest testReleaseUnitTest --no-daemon`:
-  `BUILD SUCCESSFUL in 12s`, 221 tasks. Both app test variants report 4 tests, 0 failures.
+  `BUILD SUCCESSFUL in 7s`, 221 tasks. Both app test variants report 4 tests, 0 failures.
 - APK v2 signature verifies. APK XML dumps confirm the corrected root exclusions are packaged.
 - Exact APK web-payload smoke: root assets, phone viewport, calculations, encrypted persistence
   after reload; zero external requests/page/HTTP errors. **Browser payload test only**.
-- Harness gate: 6 apps, 0 findings/blocking. Learn: 10 guardrails trace to lessons.
+- Harness gate: 6 apps, 1 pre-existing informational LexiVault drift finding, 0 blocking. Learn: 10 guardrails trace to lessons.
   Documentation gate: 1 claim verified. Diff whitespace check passed.
 - Live app and policy URLs return HTTP 200. The hosted policy still says **7 August 2026**;
   the corrected local policy has not been deployed.
@@ -47,9 +47,9 @@ Local ignored evidence: `android/build-evidence/`, including `play-*.log`, `shar
 Current artifacts (local-only until copied to the scoped hub artifact folder):
 
 - `android/app/build/outputs/apk/debug/app-debug.apk`, debug signed.
-  SHA-256: `fd172ec1152449a5b9762a610b229454e172ef17cc6b36b375031423cc7ba39d`.
+  SHA-256: `73773bc32b53d79e9a4a019560a818486d5ed50a6a39d2febc784129e9973590`.
 - `android/app/build/outputs/bundle/release/app-release.aab`, **unsigned preparation artifact**.
-  SHA-256: `3cc8e59575ac2677f4b9821604c2657a2f0edea2159a3946fc8171351e8cf344`.
+  SHA-256: `5ec9db6d87412fa7b34338099afaff655ac8eba01a266d9360d409021ab0bddf`.
 
 ## Remaining gates and exact next actions
 
@@ -88,6 +88,16 @@ Current artifacts (local-only until copied to the scoped hub artifact folder):
    Production access and app review require Google's approval.
    [Google testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
 
-Source is uncommitted on `harness-audit-fixes` over
-`ce0d198a3c4ab97c850413bd5d9589c66a10d2d2`. No push, merge, Pages deployment, price setting,
-release signing, or Play upload occurred. Resume with the pending sign-in, dataset and price answers.
+## Git delivery update (2026-10-06 UTC)
+
+Jared explicitly authorized commit, push and merge. The original work is preserved in
+`6286920` on `harness-audit-fixes`; only that scoped patch was applied on
+`fix/elder-care-android-play-preparation`, based on current master
+`07029c5e8b2128957e9cfb0a4f85e9858542f5c6`. Newer storage-recovery, async-save and key-race
+hardening remains intact. The integrated counts/build/hashes above supersede the earlier
+554/142 verification snapshot. Android release CI now runs `testReleaseUnitTest` beside
+`bundleRelease` so the backup regression tests execute on PRs.
+
+Git integration and the existing master Pages deployment are authorized. Price selection,
+release signing and Play upload remain pending; the publication gates above still apply.
+The latest actual Git/CI/deployment outcome is recorded in the shared project checkpoint.

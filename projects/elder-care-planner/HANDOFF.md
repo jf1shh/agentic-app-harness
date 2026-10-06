@@ -1,3 +1,16 @@
+## 2026-10-06 — Git delivery authorized; integrated with current master
+
+Jared requested commit, push and merge. Preserved original work as 6286920 on
+harness-audit-fixes and applied only that scoped patch to
+fix/elder-care-android-play-preparation from master 07029c5. All newer persistence/key
+hardening is retained. Final integrated app gate: 557 Vitest tests and 143 Playwright/a11y
+checks passed. Android APK/AAB plus both test variants passed (4 app tests per variant);
+APK signature and exact-payload smoke passed. The release workflow now includes native
+regression tests. Fast gates pass with one pre-existing informational LexiVault drift
+finding and no blockers. The current artifact hashes and remaining Play gates are in
+PLAY-RELEASE.md. CI/merge/deployment outcomes belong in the shared project checkpoint.
+Earlier paragraphs below are dated preparation snapshots, not current Git status.
+
 ## 2026-10-06 — Play release preparation (publication pending)
 
 See [PLAY-RELEASE.md](PLAY-RELEASE.md) for the authoritative release gates and evidence.

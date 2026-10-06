@@ -330,8 +330,8 @@ npm run build:capacitor && npx cap sync android   # Capacitor export → sync in
 Coverage bullets (counts from `npx vitest run` and the E2E spec directory, not projectsData.ts —
 portfolio-hub's catalog metrics for this app are stale and tracked separately):
 
-- **551 unit tests** (Vitest, 33 test files) on engines, storage, and every derivation; BDD-formatted.
-- **23 E2E specs** including axe on the default view, the large-text view, the fully-expanded view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
+- **557 unit tests** (Vitest, 33 test files) on engines, storage, and every derivation; BDD-formatted.
+- **24 E2E specs / 143 tests** including axe on the default view, the large-text view, the fully-expanded view, with a derivation panel open, and with the ledger in use; 200% zoom overflow check; production-bundle smoke test.
 - **Printing is tested as behaviour, not assumed from CSS** (`e2e/printing.spec.ts`): the app's
   print button, the browser's `beforeprint`, and the print stylesheet are each exercised
   separately, because a collapsed `<details>` prints collapsed and no stylesheet reliably says

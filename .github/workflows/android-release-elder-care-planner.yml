@@ -28,4 +28,6 @@ jobs:
     uses: ./.github/workflows/_android-bundle.yml
     with:
       app: elder-care-planner
+      # Run the native regression tests alongside the release bundle.
+      gradle_tasks: bundleRelease testReleaseUnitTest
     secrets: inherit
