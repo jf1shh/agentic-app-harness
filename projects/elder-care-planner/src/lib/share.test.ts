@@ -18,6 +18,9 @@ import {
   SHARE_FRAGMENT_PREFIX,
 } from './share';
 import { DEFAULT_ASSUMPTIONS, type Plan } from './schemas';
+import { Capacitor } from '@capacitor/core';
+
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: vi.fn(() => false) } }));
 
 const PLAN: Plan = {
   schemaVersion: 1,
@@ -135,6 +138,31 @@ describe('Given the URL hash a recipient actually opens', () => {
 });
 
 describe('Given a fragment ready to hand to a sibling', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
+  });
+
+  it('When shared from Android, Then a sibling receives a public HTTPS link rather than localhost', () => {
+    vi.stubGlobal('window', { location: { origin: 'https://localhost', pathname: '/' } });
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    const fragment = `${SHARE_FRAGMENT_PREFIX}abc.def.ghi`;
+    const url = new URL(buildShareUrl(fragment));
+    expect(url.origin).toBe('https://jf1shh.github.io');
+    expect(url.pathname).toBe('/agentic-app-harness/elder-care-planner/');
+    expect(url.search).toBe('');
+    expect(url.hash).toBe(`#${fragment}`);
+  });
+
+  it('When shared from the web, Then the current host and deployment path are preserved', () => {
+    vi.stubGlobal('window', { location: { origin: 'https://example.org', pathname: '/care/' } });
+    expect(buildShareUrl('share=v1.abc.def.ghi')).toBe('https://example.org/care/#share=v1.abc.def.ghi');
+  });
+
+  it('When rendered without a browser, Then only the fragment is returned', () => {
+    expect(buildShareUrl('share=v1.abc.def.ghi')).toBe('#share=v1.abc.def.ghi');
+  });
+
   it('When built into a URL, Then the fragment is never sent as a query param or path segment', () => {
     const fragment = `${SHARE_FRAGMENT_PREFIX}abc.def.ghi`;
     const url = buildShareUrl(fragment);

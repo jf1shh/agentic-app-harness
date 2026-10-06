@@ -1,10 +1,14 @@
 # Elder Care Cost Planner
 
-What care really costs, how long the money lasts, and how a family can share it. A private, offline-first planner that takes five inputs and produces an answer in under a minute, then refines with fee detail, break-even analysis, benefit timing, and a sibling contribution ledger. Nothing is sent over the network. There is no account. Ships as a static web app and as a Capacitor Android WebView wrapper.
+Play publication status and remaining gates: [PLAY-RELEASE.md](PLAY-RELEASE.md).
 
-> Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single source of truth (currently rev 10).
+What care really costs, how long the money lasts, and how a family can share it. A private, offline-first planner that takes five inputs and produces a planning estimate, then refines with fee detail, break-even analysis, benefit timing, and a sibling contribution ledger. Calculations and storage run locally; families can choose to export or share an encrypted snapshot. There is no account. Ships as a static web app and as a Capacitor Android WebView wrapper.
+
+> Spec: [`specs/elder-care-planner-spec.md`](../../specs/elder-care-planner-spec.md) — the single source of truth (currently rev 13).
 >
 > Live: <https://jf1shh.github.io/agentic-app-harness/elder-care-planner/>
+
+Android: [local APK build and testing instructions](ANDROID-LOCAL-BUILD.md).
 
 ---
 

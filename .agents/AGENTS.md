@@ -560,6 +560,13 @@ persist sensitive data to `localStorage`/IndexedDB on the user's own device.
   contradiction check §1 already requires for any feature, because it changes what that app promises
   never to send off-device.
 
+- **Validate native directory and URL boundaries, not their appearance.** Android WebView data
+  lives under the app root; a `file/app_webview` backup exclusion targets a different directory
+  from `root/app_webview`. A native `localhost` share URL is equally device-private. Resolve
+  exclusions against representative stored files and exercise native sender URLs in tests.
+  See the existing [artifact-at-every-origin lesson](lessons/test-the-artifact-you-ship-at-every-origin-it-ships-to.md)
+  for the elder-care-planner regression evidence and remaining device validation.
+
 - **Sensitive data written to persistent client storage needs the same at-rest treatment the app
   already gives that data on its other paths.** `legal-financial-rag` is session-only and does not encrypt or persist documents. Its
   passphrase verifies a view lock; hashing and encryption helpers do not constitute a vault.

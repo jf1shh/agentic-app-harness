@@ -18,6 +18,8 @@
  * vitest.config.ts), and `window` does not exist in the latter.
  */
 import { SharedPlanPayloadSchema, type Plan, type SharedPlanPayload } from './schemas';
+import { Capacitor } from '@capacitor/core';
+import { pagesBasePath } from '../../deploy.config';
 
 export const SHARE_FRAGMENT_PREFIX = 'share=v1.';
 
@@ -165,8 +167,11 @@ export function extractShareFragment(hash: string): string | null {
   return trimmed.startsWith(SHARE_FRAGMENT_PREFIX) ? trimmed : null;
 }
 
-/** The full URL a sender copies and sends — same page, fragment appended. */
+/** Native localhost is device-private; siblings must open the public web app. */
 export function buildShareUrl(fragment: string): string {
   if (typeof window === 'undefined') return `#${fragment}`;
+  if (Capacitor.isNativePlatform()) {
+    return `https://jf1shh.github.io${pagesBasePath}/#${fragment}`;
+  }
   return `${window.location.origin}${window.location.pathname}#${fragment}`;
 }

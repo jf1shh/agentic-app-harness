@@ -1,8 +1,13 @@
 # Elder Care Planner — Play Console listing kit
 
+Status (2026-10-06): draft only. Public launch is blocked on the cost-dataset reuse decision,
+signed release bundle, native acceptance checks, and Play Console declarations. See
+[PLAY-RELEASE.md](../PLAY-RELEASE.md). Nothing in this kit has been submitted. Pricing suggestion:
+$2.99 USD once, awaiting Jared's choice; no subscription or in-app billing is implemented.
+
 Generated the same way as `projects/mood-diner/store-listing/`: assets built from the app's real
-brand color and real UI, copy written to only claim what the app actually does, and Q&A answers
-cross-checked against `public/privacy.html` rather than guessed.
+brand color and real UI, copy reviewed against the implemented app and `public/privacy.html`. Console questionnaire
+answers below are preparation notes; confirm the actual wording before submitting.
 
 ## Assets
 
@@ -15,7 +20,8 @@ cross-checked against `public/privacy.html` rather than guessed.
 | `screenshots/3-real-cost.png` | 1080×1920 | The "Make the cost more accurate" refine panel — shows the advertised-vs-real cost gap the app is built around surfacing. |
 
 All three screenshots are real captures from the running app (`npm run dev`), not mockups — no
-network calls are involved in generating them, since this app makes none at all (see below).
+plan data is sent to a server by the application. These are web captures; replace them with
+captures from the tested Android release before submission.
 
 ## Category
 **Finance.** The app is a cost/runway calculator and financial planning tool; the Medicare/Medicaid
@@ -31,7 +37,7 @@ What care really costs, how long the money lasts, and how to share it
 ## Full description (≤4000 chars)
 ```
 Elder Care Planner takes five numbers — state, care type, monthly income, savings, and how many
-family members are sharing the cost — and gives a real answer in under a minute: what care
+family members are sharing the cost — and gives a planning estimate: what care
 actually costs once the fees beyond the advertised rate are counted, how long savings and income
 together cover it, and each family member's share.
 
@@ -61,42 +67,63 @@ contributed instead of money — and log what's actually been paid against what'
 
 BUILT FOR A CRISIS, NOT A SPREADSHEET
 There is no sign-up, no account, and nothing to lose to a bad connection: the entire tool runs
-without ever contacting a server. Your plan, any facility photos, and any receipts you attach stay
-on your device and are saved automatically as you type — reload the page and everything is still
-there.
+offline in the installed app. Your entries, facility photos, and receipts are stored locally,
+with no analytics or advertising. Autosave encrypts the planner form when a device key is
+available; a closing-page save can use plaintext to preserve your last edit. Photos and receipts
+are not separately encrypted.
 
-Works as an installed app or straight from your browser.
+OPTIONAL FAMILY SNAPSHOTS
+Create an encrypted snapshot link for a family member and send the passphrase separately.
+The snapshot is read-only, not live syncing, and excludes facility and receipt photos.
+JSON exports and printed copies are not encrypted by the app.
+
+Works as an installed app or straight from your browser. Estimates are for planning and are
+not medical, legal, or individualized financial advice. Confirm actual provider quotes and
+benefit eligibility before making decisions.
 ```
-(2,021 chars)
+(2554 characters, under 4,000)
 
-## Content rating questionnaire (IARC) — answers to select
-This one is unusually clean — a financial planning tool with no fictional or dynamic content feed:
+## Content rating questionnaire (IARC) — draft notes
 
-| Question | Answer | Why |
-|---|---|---|
-| Violence | None | — |
-| Sexual content | None | — |
-| Profanity / crude humor | None | — |
-| References to alcohol / drugs / tobacco | None | — |
-| Gambling / simulated gambling | None | — |
-| User-generated content shared with other users | No | Facility notes, photos, and receipts are local-only; there is no sharing or multi-user surface |
-| Shares user's location | No | No location permission requested |
-| Digital purchases | No | No paywall, plan tier, or purchase flow of any kind in the app |
+Confirm the questions as shown in Play Console. Built-in content contains no violence,
+sexual content, profanity, gambling, or substance-use depictions. There are no ads, location
+sharing, public feeds, or in-app purchases. An upfront download price is separate from in-app
+purchases. Do not assume or promise a particular rating before completing IARC.
 
-Every answer here should land the app at the lowest rating tier with no content descriptors at
-all — there is no caveat to flag, unlike mood-diner's paywall or smart-recipe's live recipe feed.
+**Optional user sharing exists.** Families can send an encrypted plan snapshot to a chosen
+recipient. Photos and receipts remain outside that snapshot. Evaluate any user-interaction
+or user-generated-content questions against their exact definitions; the previous blanket
+"no sharing or multi-user surface" answer was inaccurate.
 
-## Data safety form — answers to select
-Straight from `public/privacy.html`: **"No data collected"** across every category. This app makes
-**zero network requests of any kind** — stronger than most of the other five apps, which at least
-load an image or call a search API. Everything (`elder-care-planner:plan:v1` in localStorage,
-facility photos and receipts in IndexedDB) stays on-device and is never transmitted.
+## Data safety form — draft notes
 
-The Android manifest (`android/app/src/main/AndroidManifest.xml`) no longer declares the
-`INTERNET` permission — it shipped as the unmodified Capacitor scaffold default, unused by the app
-and in tension with the privacy policy's "no outbound network requests" claim, so it was dropped
-during the Play Store readiness audit. Confirmed unused first: no `fetch`/`XMLHttpRequest`, no
-remote fonts or images, and the only external URLs in the app (`StartingGuidePanel`,
-`LedgerReceipt`) are plain `<a target="_blank">` links, which Capacitor's default WebViewClient
-hands off to the system browser via an `ACTION_VIEW` intent rather than loading in-app — so they
-need the browser's own INTERNET permission, not this app's.
+The installed app has no backend, analytics, ad SDK, crash-reporting SDK, or INTERNET permission.
+Calculations and persistence run locally. The actual form key is
+`elder-care-planner:state:v1`; photos, receipts, and the device key are held in IndexedDB.
+Normal form autosave uses AES-GCM; key-unavailable and closing-page saves can be plaintext.
+Photos and receipts are not separately encrypted.
+
+The developer does not receive these entries through the app. Proposed declaration:
+**no developer collection or sharing through the application**. Confirm Google's definitions
+and user-initiated-sharing exceptions against the current Console questionnaire before saving.
+Do not characterize local financial/health entries as collected merely because they exist
+on-device, and do not claim no information can ever leave the device: users can send links,
+export JSON, print, or open external resource links. Support email is a separate communication.
+
+Android backup XML excludes `root/app_webview/` for legacy backup, cloud backup, and device
+transfer. Directory-resolution regression tests pass; an actual backup/restore exercise on
+Android remains pending. The manifest references both XML files. External resource links are
+handed to the system browser, whose network behavior has its own privacy policy.
+
+## Other declarations to complete
+
+- Financial features: inspect the cost planning, family contributions, and benefits guidance
+  against the current form. Finance store category alone does not answer every declaration.
+- Health features: inspect whether care-planning content and the weekly coverage grid fall under
+  the current care coordination/management definitions. Do not select "none" without checking.
+- App access: no account or login required; review the actual form before submission.
+- Target audience: intended for adult family caregivers; Jared must confirm the intended ages.
+- Privacy policy: the local updated source is `public/privacy.html`. Its intended hosted URL is
+  `https://jf1shh.github.io/agentic-app-harness/elder-care-planner/privacy.html`; deployment and
+  the live policy matching this revision must be verified before submission.
+- Support email: `xjaredfisher@gmail.com`, as already recorded in the app's policy/package metadata.
