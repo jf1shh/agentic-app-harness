@@ -8,6 +8,8 @@ The central web portal for the **Agentic App Harness** monorepo — a master cat
 
 ---
 
+Author positioning matches Jared's October 10, 2026 LinkedIn update: claims expert moving into AI enablement and product, with 17 years at Liberty Mutual and 11 as senior appraiser. The About panel describes AI-assisted building and links [his current LinkedIn profile](https://www.linkedin.com/in/jaredfisher-ai/).
+
 ## What this app actually ships
 
 - **A live, filterable catalog** of the 5 web apps in the monorepo, sourced from a single Zod-validated data file (`src/data/projectsData.ts`). Each card renders a tagline, full description, tech stack chip list, metrics (unit tests, E2E tests, a11y score, security audit), and badges for `pwaReady`, `capacitorAndroid`, and `monetized`. Cards lift on hover/focus with a glow shadow (`.project-card-interactive`), disabled under `prefers-reduced-motion`.

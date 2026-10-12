@@ -136,7 +136,7 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
     await expect(page.locator('footer').getByText('Jared Fisher')).toBeVisible();
     const githubLink = page.locator('footer a[href="https://github.com/jf1shh"]');
     await expect(githubLink).toBeVisible();
-    const linkedinLink = page.locator('footer a[href="https://www.linkedin.com/in/jared-f-17680b7a"]');
+    const linkedinLink = page.locator('footer a[href="https://www.linkedin.com/in/jaredfisher-ai/"]');
     await expect(linkedinLink).toBeVisible();
     const mailLink = page.locator('footer a[href="mailto:xjaredfisher@gmail.com"]');
     await expect(mailLink).toBeVisible();
@@ -147,7 +147,10 @@ test.describe('BDD Spec: Master Portfolio Showcase Hub Portal', () => {
 
     await expect(page.locator('#about-heading')).toBeVisible();
     await expect(page.getByText(/Jared Fisher/).first()).toBeVisible();
-    const aboutLinkedinLink = page.locator('#about-section a[href="https://www.linkedin.com/in/jared-f-17680b7a"]');
+    await expect(page.locator('#about-section')).toContainText('17 years at Liberty Mutual, 11 as senior appraiser');
+    await expect(page.locator('#about-section')).toContainText('Moving into AI enablement and product');
+    await expect(page.getByText('AI Product Manager', { exact: true })).toHaveCount(0);
+    const aboutLinkedinLink = page.locator('#about-section a[href="https://www.linkedin.com/in/jaredfisher-ai/"]');
     await expect(aboutLinkedinLink).toBeVisible();
   });
 
