@@ -1,0 +1,39 @@
+# docker-agent trial for the harness PROPOSE stage (GitHub radar 2026-10-12, item 3).
+# TRIAL ONLY — not wired into CI or scripts. Run with telemetry OFF (docker-agent defaults it ON):
+#   TELEMETRY_ENABLED=false LEMONADE_API_KEY=local docker-agent run --exec \
+#     experiments/docker-agent/propose.yaml "Write the work order for finding <finding-id>"
+# Model: the PC-local Lemonade server (OpenAI-compatible), so no prompt leaves the machine.
+# Toolset: docker-agent's filesystem toolset, read-only (the agent cannot write tasks/ itself;
+# the deterministic emit-tasks.mjs stays the only writer).
+providers:
+  lemonade:
+    api_type: openai_chatcompletions
+    base_url: http://127.0.0.1:13305/api/v1/
+    token_key: LEMONADE_API_KEY        # Lemonade ignores it; any non-empty value
+
+models:
+  local_coder:
+    provider: lemonade
+    model: Qwen3-Coder-30B-A3B-Instruct-GGUF
+    max_tokens: 4096
+    temperature: 0.1
+
+agents:
+  root:
+    model: local_coder
+    description: Harness PROPOSE stage — turn one Sense finding into a bring-your-own-agent work order.
+    readonly: true
+    toolsets:
+      - type: filesystem
+    instruction: |
+      You are the PROPOSE stage of the agentic-app-harness (repo root = current directory).
+      1. Read harness-status.json and find the finding whose "id" the user names.
+      2. Read tasks/README.md (the work-order contract) and, if the finding has a specRef, that spec file.
+      3. Output ONLY the Markdown work order, no preamble, with exactly these parts:
+         - "# Work Order: <finding title>"
+         - a bullet list: Finding ID, App, Type, Severity, Acceptance gate, Spec (if specRef)
+         - "## Context": the finding detail, plus for each unchecked spec item the exact spec
+           lines/sections it refers to (quote them, with file path) so an agent need not search
+         - "## Definition of done": numbered steps; the acceptance gate command that must pass;
+           "node scripts/emit-tasks.mjs --prune"; "Open a PR — never self-merge".
+      Never invent files, commands or spec items: only cite what you read. Do not write files.
