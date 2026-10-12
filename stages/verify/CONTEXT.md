@@ -26,6 +26,8 @@ Re-run the deterministic checks as a blocking CI gate. A PR cannot merge while t
     changes without a corresponding README update (non-blocking sensor).
   - `node scripts/test-app.mjs <AppName>` per app — security audit, lint, type-check, Vitest,
     Playwright + axe a11y.
+  - `node scripts/sandbox-run.test.mjs` — self-test for the MXC sandbox runner (network denied by
+    default; live checks run only when `MXC_SDK_PATH` is set). Not yet wired into CI.
   - `.\scripts\validate-specs.ps1 -Strict` — every app has a spec, README, Zod usage, BDD specs.
 - **Writes**: a pass/fail CI status on the PR, and (informationally, never blocking) inline
   reviewdog annotations via `scripts/harness-status-rdjson.mjs`.
