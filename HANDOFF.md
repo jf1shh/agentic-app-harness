@@ -23,3 +23,11 @@ Next priorities: review the change before merging; decide whether to design an a
 persistent encrypted LexiVault; address travel input resource limits/geocoding validation;
 revisit Elder Care plaintext fallback and multi-tab recovery/erasure behavior; validate
 infrastructure, Android devices, manual accessibility, and external data provenance separately.
+
+## Public portfolio alignment — 2026-10-12
+
+Jared confirmed the October 10 LinkedIn wording as the source for this update. README and portfolio About/footer now say 17 years at Liberty Mutual, 11 as senior appraiser; building with AI coding agents since March 2026; moving into AI enablement and product. The portfolio links https://www.linkedin.com/in/jaredfisher-ai/. Its spec, README, and existing contact browser checks are aligned.
+
+Verification on the isolated refresh checkout: full `node scripts/test-app.mjs portfolio-hub` with Node 20.20.2/npm 10.8.2 passed lint, type check, 65 unit tests and 13 browser tests including automated accessibility and the production Pages subpath. The dependency audit reported existing advisories (non-blocking in this gate); dependency versions were not changed. A mutation restoring the old App.tsx title/link failed both updated contact tests; restoring the final file passed 2/2. The six-app VERIFY scan reported 0 blocking findings and 1 existing informational LexiVault drift finding; LEARN and documentation-claim gates passed.
+
+Next action: human review/approval and merge of the public portfolio alignment PR after its required checks pass; then verify Pages deployment and rendered public links. No new runtime, retrieval, release, or application feature was introduced. Earlier handoff evidence above is historical.

@@ -8,7 +8,7 @@ import { CaseStudySection } from './components/CaseStudySection';
 import { useCountUp } from './hooks/useCountUp';
 import { Layers, Github, Mail, Linkedin } from 'lucide-react';
 
-const LINKEDIN_URL = 'https://www.linkedin.com/in/jared-f-17680b7a';
+const LINKEDIN_URL = 'https://www.linkedin.com/in/jaredfisher-ai/';
 
 const TOTAL_UNIT_TESTS = PROJECTS_DATA.reduce((sum, p) => sum + p.metrics.unitTests, 0);
 const TOTAL_E2E_TESTS = PROJECTS_DATA.reduce((sum, p) => sum + p.metrics.e2eTests, 0);
@@ -100,11 +100,11 @@ export const App: React.FC = () => {
               <h2 id="about-heading" className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Jared Fisher
               </h2>
-              <span className="badge badge-amber">AI Product Manager</span>
+              <span className="badge badge-amber">AI Enablement & Product</span>
             </div>
             <p style={{ color: 'var(--text-body)', fontSize: '1rem', lineHeight: 1.5, marginBottom: '1rem', maxWidth: '640px' }}>
-              Insurance claims adjudicator turned self-taught AI builder. This repo is the proof, not a slideshow —
-              I'm glad to walk through any of it.
+              17 years at Liberty Mutual, 11 as senior appraiser. Since March 2026, I build with AI coding agents.
+              Moving into AI enablement and product; open to APM, AI operations, and claims roles.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
               <a
@@ -195,7 +195,7 @@ export const App: React.FC = () => {
       {/* Footer */}
       <footer style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
         <div style={{ fontWeight: 700, color: 'var(--text-body)', marginBottom: '0.5rem' }}>
-          Jared Fisher — AI Product Manager
+          Jared Fisher — AI Enablement & Product
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
           <a href="https://github.com/jf1shh" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>

@@ -19,9 +19,13 @@
   <img src="https://img.shields.io/badge/embedded%20LLM-none-64748b" alt="No embedded LLM">
 </p>
 
-Built by [Jared Fisher](https://github.com/jf1shh) — 17 years adjudicating insurance claims,
-teaching myself to build and ship production AI tooling, now looking for a full-time seat doing
-that work. This repo is the evidence, not a demo reel.
+Built by [Jared Fisher](https://www.linkedin.com/in/jaredfisher-ai/) with AI coding agents.
+I spent 17 years at Liberty Mutual, 11 as senior appraiser, and started building with AI in March
+2026. I define the requirements, direct the build, and verify the results. I am moving into AI
+enablement and product, and am open to Associate Product Manager, AI operations, and claims roles.
+
+[GitHub profile](https://github.com/jf1shh) · [LinkedIn](https://www.linkedin.com/in/jaredfisher-ai/) ·
+[Live portfolio](https://jf1shh.github.io/agentic-app-harness/) · [ClaimsRAG](https://github.com/jf1shh/claims-rag)
 
 > September 6 review: [findings, fixes, and current validation](docs/monorepo-hardening.md).
 > These are portfolio demos. Automated accessibility checks are not certification;
@@ -33,7 +37,7 @@ that work. This repo is the evidence, not a demo reel.
 honest across hundreds of unsupervised commits — most "AI built this app" projects are one long
 prompt session with no way to tell whether the AI drifted, cut a corner, or quietly regressed
 something between commit 40 and commit 260. This repo is the opposite bet, and it runs on the same
-discipline I spent 17 years applying to insurance claims adjudication, not software craft: nothing
+discipline I learned across 17 years at Liberty Mutual, including 11 as senior appraiser: nothing
 gets enforced until it's a concrete, checkable rule, and a rule doesn't get to block anyone's work
 until it's proven itself against real history — it starts as a non-blocking check, and only gets
 promoted once it stops describing a backlog and starts describing an actual regression. Every
