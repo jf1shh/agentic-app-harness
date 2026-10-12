@@ -128,8 +128,9 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: pwsh
         env:
+          BASE_REF: ${{ github.base_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node ./scripts/check-enum-blast-radius.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-enum-blast-radius.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # "Who guards the guards": blocks a PR that deletes a guardrail, shrinks a
       # gate self-test's assertion count, or otherwise edits gate logic without
@@ -140,8 +141,9 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: pwsh
         env:
+          BASE_REF: ${{ github.base_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node ./scripts/check-guardrail-integrity.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-guardrail-integrity.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Blocks a PR that introduces a high-confidence credential pattern
       # (Anthropic/OpenAI/Google/xAI/AWS/GitHub/Slack keys, PEM private-key
@@ -151,7 +153,9 @@ jobs:
       - name: Secret-Scanning Gate (no committed credentials on added lines)
         if: github.event_name == 'pull_request'
         shell: pwsh
-        run: node ./scripts/check-secrets.mjs --base origin/${{ github.base_ref }} --head HEAD
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node ./scripts/check-secrets.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Blocks a PR that touches harness infrastructure (scripts/*.mjs,
       # .agents/AGENTS.md, CLAUDE.md, CI workflows, git hooks, spec templates)
@@ -161,8 +165,9 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: pwsh
         env:
+          BASE_REF: ${{ github.base_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node ./scripts/check-containment.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-containment.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Blocks a PR whose net changed lines (excluding generated/lock files)
       # exceed 800 without a [large-diff-acknowledged] marker in the PR body —
@@ -171,8 +176,9 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: pwsh
         env:
+          BASE_REF: ${{ github.base_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node ./scripts/check-diff-size.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-diff-size.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Non-blocking sensor: detects when an agent PR subtly weakens a prose
       # rule in instruction files (removes MUST/NEVER/always/mandatory/blocking/
@@ -183,7 +189,9 @@ jobs:
         if: github.event_name == 'pull_request'
         continue-on-error: true
         shell: pwsh
-        run: node ./scripts/check-instruction-tamper.mjs --base origin/${{ github.base_ref }} --head HEAD
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node ./scripts/check-instruction-tamper.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Non-blocking sensor: flags apps where logic modules changed without
       # a matching spec touch or test file touch. Approximates fspec's
@@ -194,8 +202,9 @@ jobs:
         continue-on-error: true
         shell: pwsh
         env:
+          BASE_REF: ${{ github.base_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node ./scripts/check-spec-ordering.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-spec-ordering.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Non-blocking sensor: flags PRs where app source or harness infra
       # changed without a corresponding README update. §7 and §10.2
@@ -206,8 +215,9 @@ jobs:
         continue-on-error: true
         shell: pwsh
         env:
+          BASE_REF: ${{ github.base_ref }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: node ./scripts/check-readme-freshness.mjs --base origin/${{ github.base_ref }} --head HEAD
+        run: node ./scripts/check-readme-freshness.mjs --base "origin/$env:BASE_REF" --head HEAD
 
       # Non-blocking sensor: runs `npm audit --json` once against the shared
       # root lockfile (works from the lockfile alone, no install needed) and

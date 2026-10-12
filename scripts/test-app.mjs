@@ -131,7 +131,7 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
   ];
 
   function resolveBrowsers() {
-    const install = run('npx playwright install --with-deps chromium', { capture: true, allowFail: true });
+    const install = run(['npx', 'playwright', 'install', '--with-deps', 'chromium'], { capture: true, allowFail: true });
     if (install.ok) return {};
     const found = SYSTEM_CHROMIUM.find((p) => p && existsSync(p));
     if (found) {
@@ -143,9 +143,10 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
   }
 
   // --- step runner -----------------------------------------------------------
-  function run(command, { capture = false, allowFail = false, env = {} } = {}) {
-    const r = spawnSync(command, {
-      cwd: appPath, shell: true,
+  function run([cmd, ...args], { capture = false, allowFail = false, env = {} } = {}) {
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true -- shell only on win32 for npm/npx .cmd shims (CVE-2024-27980); argv is constant literals from this file, no external input
+    const r = spawnSync(cmd, args, {
+      cwd: appPath, shell: process.platform === 'win32',
       stdio: capture ? 'pipe' : 'inherit',
       env: { ...process.env, ...env },
     });
@@ -155,9 +156,9 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
   }
 
   const results = [];
-  function step(name, command, { advisory = false, env = {} } = {}) {
+  function step(name, argv, { advisory = false, env = {} } = {}) {
     console.log(`\n${C.cyan}[${name}]${C.reset}`);
-    const { ok } = run(command, { env });
+    const { ok } = run(argv, { env });
     if (ok) {
       console.log(`${C.green}  ${name} PASSED${C.reset}`);
     } else if (advisory) {
@@ -197,17 +198,17 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
     // can skip a platform's optional native binary, which then fails at build time.
     // Run from the app dir — npm 7+ detects the workspace root (repo-root
     // package.json) and manages the single root lockfile regardless of cwd.
-    step('Install dependencies', 'npm install');
+    step('Install dependencies', ['npm', 'install']);
   }
 
   if (!skipAudit) {
     // Advisory: a transitive advisory is usually unrelated to the change under
     // test and unfixable from here. The real gates are below.
-    step('Security & dependency audit', 'npm audit --audit-level=high', { advisory: true });
+    step('Security & dependency audit', ['npm', 'audit', '--audit-level=high'], { advisory: true });
   }
 
-  step('Lint & static analysis', 'npm run lint');
-  step('Type check', 'npx tsc --noEmit');
+  step('Lint & static analysis', ['npm', 'run', 'lint']);
+  step('Type check', ['npx', 'tsc', '--noEmit']);
   // Node 22+ ships its own experimental `localStorage`/`sessionStorage` globals,
   // present by default and non-functional without `--localstorage-file` — they
   // shadow whatever a Vitest `environment: 'jsdom'` test tries to install under
@@ -220,7 +221,7 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
   const supportsNoExperimentalWebstorage = spawnSync(
     process.execPath, ['--no-experimental-webstorage', '-e', ''],
   ).status === 0;
-  step('Unit tests (Vitest)', 'npx vitest run', {
+  step('Unit tests (Vitest)', ['npx', 'vitest', 'run'], {
     env: supportsNoExperimentalWebstorage
       ? { NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --no-experimental-webstorage`.trim() }
       : {},
@@ -229,7 +230,7 @@ function runAppGate(appName, { skipE2e, skipAudit }) {
   if (!skipE2e) {
     console.log(`\n${C.cyan}[E2E & accessibility (Playwright)]${C.reset}`);
     const browserEnv = resolveBrowsers();
-    step('E2E & a11y tests', 'npx playwright test', { env: browserEnv });
+    step('E2E & a11y tests', ['npx', 'playwright', 'test'], { env: browserEnv });
   }
 
   clean('post-test');

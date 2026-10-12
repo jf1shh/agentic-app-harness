@@ -65,6 +65,7 @@ function runOne(app, { full }) {
   console.log(`\n=== Mutation testing: ${app} ${full ? '(full run)' : '(incremental)'} ===`);
   const args = ['stryker', 'run'];
   if (!full) args.push('--incremental');
+  // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true -- shell only on win32 for the npx.cmd shim (CVE-2024-27980); argv is constant literals, no external input
   const result = spawnSync('npx', args, { cwd: appPath, stdio: 'inherit', shell: process.platform === 'win32' });
 
   const reportPath = join(appPath, 'reports', 'mutation', 'mutation.json');
