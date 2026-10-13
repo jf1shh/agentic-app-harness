@@ -4,6 +4,7 @@ import { Restaurant, WeatherCondition, Reservation, MenuItem } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
 import { formatOpeningHours } from '../utils/openStatus';
 import { parseReviewCommentsForMood } from '../utils/reviewVibeParser';
+import { safeHttpUrl } from '../utils/safeUrl';
 
 type TabType = 'overview' | 'menu' | 'busy' | 'book';
 
@@ -295,7 +296,7 @@ export const RestaurantModal: React.FC<RestaurantModalProps> = ({
             <div role="tabpanel" id="panel-menu" aria-labelledby="tab-menu" tabIndex={0}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                  Extracted live from <a href={restaurant.websiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>{restaurant.websiteUrl}</a>
+                  Extracted live from <a href={safeHttpUrl(restaurant.websiteUrl)} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa' }}>{restaurant.websiteUrl}</a>
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {menuCategories.map((cat) => (

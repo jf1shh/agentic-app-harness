@@ -165,4 +165,9 @@ describe('sanitizeInput', () => {
       expect(result.warnings).toContain('Neutralized suspicious prompt injection payload.');
     });
   });
+
+  it('Given a tag that only forms after one stripping pass, When sanitized, Then no tag survives', () => {
+    const result = sanitizeInput('<<b>script>alert(1)<</b>/script>');
+    expect(result.sanitizedText).not.toMatch(/<script/i);
+  });
 });

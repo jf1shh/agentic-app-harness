@@ -31,9 +31,14 @@ export function sanitizeInput(text: string): SanitizationResult {
   sanitizedText = sanitizedText.replace(/[\u200B-\u200D\u2060\uFEFF]/g, ' ');
 
   // 2. Strip HTML tags & inline event handlers
+  // Repeat until stable: one pass over "<<b>script>" would leave "<script>" behind.
   const htmlTagRegex = /<[^>]*>/g;
   if (htmlTagRegex.test(sanitizedText)) {
-    sanitizedText = sanitizedText.replace(htmlTagRegex, '');
+    let previous: string;
+    do {
+      previous = sanitizedText;
+      sanitizedText = sanitizedText.replace(htmlTagRegex, '');
+    } while (sanitizedText !== previous);
     warnings.push('Stripped HTML tags from input.');
   }
 

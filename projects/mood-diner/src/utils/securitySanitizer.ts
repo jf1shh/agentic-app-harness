@@ -5,16 +5,36 @@
 export function sanitizeInput(input: string): string {
   if (!input || typeof input !== 'string') return '';
 
-  return input
-    // Remove script tags cleanly without unsafe regex back-tracking
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    // Remove inline event handlers (e.g. onerror=, onload=, onclick=)
-    .replace(/\s*on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+  return stripScriptBlocks(input)
+    // Neutralize inline event handlers (onerror=, onload=, ...) by renaming them; the replacement
+    // cannot re-form a handler, so one pass is complete.
+    .replace(/on([a-z]+)\s*=/gi, 'data-blocked-$1=')
     // Neutralize javascript: protocols
     .replace(/javascript\s*:/gi, 'no-javascript:')
-    // Encode HTML entities for safe rendering
+    // Encode every remaining angle bracket, so no markup can survive in any form
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/**
+ * Removes <script ...>...</script ...> blocks (and an unterminated trailing <script ...>), case-insensitively,
+ * rescanning from the start after every removal so a block that only forms once another is removed
+ * (e.g. "<scr<script></script>ipt>") is removed too.
+ */
+function stripScriptBlocks(input: string): string {
+  let output = input;
+  for (;;) {
+    const lower = output.toLowerCase();
+    const start = lower.indexOf('<script');
+    if (start === -1) return output;
+    const close = lower.indexOf('</script', start + 7);
+    let end = output.length;
+    if (close !== -1) {
+      const gt = lower.indexOf('>', close);
+      end = gt === -1 ? output.length : gt + 1;
+    }
+    output = output.slice(0, start) + output.slice(end);
+  }
 }
 
 export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
