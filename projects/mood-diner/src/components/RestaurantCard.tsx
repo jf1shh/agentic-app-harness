@@ -4,6 +4,7 @@ import { Restaurant, WeatherCondition } from '../types';
 import { evaluateWeatherSuitability } from '../utils/weatherEngine';
 import { isRestaurantOpenNow } from '../utils/openStatus';
 import { parseReviewCommentsForMood } from '../utils/reviewVibeParser';
+import { safeHttpUrl } from '../utils/safeUrl';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -162,7 +163,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
         <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
           Website:{' '}
           <a
-            href={restaurant.websiteUrl}
+            href={safeHttpUrl(restaurant.websiteUrl)}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#60a5fa', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px' }}

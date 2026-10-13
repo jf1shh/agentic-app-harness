@@ -5,14 +5,25 @@
 export function sanitizeInput(input: string): string {
   if (!input || typeof input !== 'string') return '';
 
-  return input
-    // Remove script tags cleanly without unsafe regex back-tracking
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    // Remove inline event handlers (e.g. onerror=, onload=, onclick=)
-    .replace(/\s*on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+  // Strip script blocks and inline handlers repeatedly until nothing changes, so a payload that only
+  // forms a tag or handler after one removal pass (e.g. "<scr<script></script>ipt>") cannot survive.
+  let output = input;
+  let previous: string;
+  do {
+    previous = output;
+    output = output
+      // Script blocks, including closing tags with whitespace/attributes such as "</script >"
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, '')
+      // Unterminated opening script tags
+      .replace(/<script\b[^>]*>?/gi, '')
+      // Inline event handlers (e.g. onerror=, onload=, onclick=)
+      .replace(/\s*on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  } while (output !== previous);
+
+  return output
     // Neutralize javascript: protocols
     .replace(/javascript\s*:/gi, 'no-javascript:')
-    // Encode HTML entities for safe rendering
+    // Encode every remaining angle bracket, so no markup can survive in any form
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }

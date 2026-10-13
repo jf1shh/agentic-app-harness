@@ -66,4 +66,18 @@ describe('Security Input Sanitizer Suite', () => {
     expect(sanitized.isOpen).toBe(true);
     expect(sanitized.closedUntil).toBeNull();
   });
+
+  it('Given a script tag that only forms after one removal pass, When sanitized, Then no script markup survives', () => {
+    const sanitized = sanitizeInput('<scr<script>x</script>ipt>alert(1)</script>Bistro');
+    expect(sanitized).not.toMatch(/<script/i);
+    expect(sanitized).toContain('Bistro');
+  });
+
+  it('Given a closing script tag with trailing whitespace, When sanitized, Then the script body is removed', () => {
+    expect(sanitizeInput('<script>alert(1)</script >Bistro')).not.toContain('alert');
+  });
+
+  it('Given a handler that only forms after one removal pass, When sanitized, Then no handler survives', () => {
+    expect(sanitizeInput('<img src=x oonerror=1nerror=alert(1)>')).not.toMatch(/onerror\s*=/i);
+  });
 });
