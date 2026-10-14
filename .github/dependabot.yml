@@ -13,134 +13,45 @@ updates:
   # deliberately (the overrides exist for CVE patches, see PR #182/#278) and
   # are easy to track by hand; that's a small trade against eliminating
   # duplicate PRs across five dependency families and all six apps.
+  #
+  # 2026-10-14 (owner: run clean, no backlog): the six per-app entries became one
+  # entry with `directories`, so limits and groups are shared. Routine minor and
+  # patch bumps land as one grouped PR per app per week, and
+  # dependabot-automerge.yml merges those once CI passes. Major version bumps
+  # get no routine PRs (security updates still arrive); take majors deliberately.
   - package-ecosystem: "npm"
-    directory: "/projects/mood-diner"
+    directories:
+      - "/projects/mood-diner"
+      - "/projects/portfolio-hub"
+      - "/projects/travel-packing-app"
+      - "/projects/smart-recipe-app"
+      - "/projects/legal-financial-rag"
+      - "/projects/elder-care-planner"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+      day: "monday"
+    open-pull-requests-limit: 8
     groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
+      minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      security-minor-patch:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
     ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/projects/portfolio-hub"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/projects/travel-packing-app"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/projects/smart-recipe-app"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/projects/legal-financial-rag"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/projects/elder-care-planner"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-    ignore:
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+      day: "monday"
+    open-pull-requests-limit: 2
+    groups:
+      minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# A newer push to the same branch or PR cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
