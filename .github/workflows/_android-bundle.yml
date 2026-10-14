@@ -65,8 +65,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Vite apps build straight into webDir 'dist'. The Next.js apps define
+      # build:capacitor, which exports into their webDir '.next-capacitor'.
+      # (A bare `vite build` here never worked for them; the setup-android@v3
+      # failure one step earlier hid that until 2026-10-14.)
       - name: Build web bundle
-        run: npx vite build
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.['build:capacitor'] ? 0 : 1)"; then
+            npm run build:capacitor
+          else
+            npx vite build
+          fi
 
       - name: Sync web bundle into the Android container
         run: npx cap sync android
