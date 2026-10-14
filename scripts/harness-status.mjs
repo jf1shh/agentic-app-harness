@@ -438,9 +438,16 @@ export function senseMobileRelease(app, projPath, workflowsDir,
   // the same workflows directory — this sensor would then never fire again even
   // for a brand-new native app added with no CI of its own.
   const wfFiles = workflowsDir && existsSync(workflowsDir) ? readdirSync(workflowsDir) : [];
+  // A thin per-app trigger that calls a local reusable workflow
+  // (`uses: ./.github/workflows/_android-bundle.yml` with `app: <app>`) counts
+  // when the called file has the build steps: the build moved there on 2026-10-14.
+  const buildRe = /gradlew|bundleRelease|assembleRelease|cap\s+sync/;
   const hasAndroidCi = wfFiles.some((f) => {
     const c = readSafe(join(workflowsDir, f));
-    return /gradlew|bundleRelease|assembleRelease|cap\s+sync/.test(c) && c.includes(`projects/${app}`);
+    if (!c.includes(`projects/${app}`)) return false;
+    if (buildRe.test(c)) return true;
+    return [...c.matchAll(/uses:\s*\.\/\.github\/workflows\/([\w.-]+\.ya?ml)/g)]
+      .some(([, called]) => buildRe.test(readSafe(join(workflowsDir, called))));
   });
   if (!hasAndroidCi) {
     add('no-android-ci', 'medium',

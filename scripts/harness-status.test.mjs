@@ -364,6 +364,31 @@ try {
     failures++;
   }
 
+  // (c2) A thin per-app trigger that calls a local reusable workflow counts
+  // when the called file has the build steps (the 2026-10-14 _android-bundle.yml
+  // shape); a trigger whose called file has no build steps still fires.
+  const reuseRoot = join(tmp, 'reuse');
+  mkdirSync(reuseRoot, { recursive: true });
+  const reuseWf = buildFixture(reuseRoot, {
+    signed: true, versionCode: 12, appName: 'Mood Diner', icon: 'custom',
+    manifestIcons: 'present', privacy: true, ci: false });
+  mkdirSync(reuseWf, { recursive: true });
+  writeFileSync(join(reuseWf, '_bundle.yml'),
+    'on: { workflow_call: { inputs: { app: { type: string } } } }\njobs:\n  b:\n    steps:\n      - run: npx cap sync android && ./gradlew bundleRelease\n');
+  writeFileSync(join(reuseWf, 'release-reuse-app.yml'),
+    "on: { push: { paths: ['projects/reuse-app/**'] } }\njobs:\n  bundle:\n    uses: ./.github/workflows/_bundle.yml\n    with: { app: reuse-app }\n");
+  writeFileSync(join(reuseWf, 'release-hollow-app.yml'),
+    "on: { push: { paths: ['projects/hollow-app/**'] } }\njobs:\n  bundle:\n    uses: ./.github/workflows/_lint.yml\n");
+  writeFileSync(join(reuseWf, '_lint.yml'), 'on: { workflow_call: {} }\njobs:\n  l:\n    steps:\n      - run: npm run lint\n');
+  const reuseIds = senseMobileRelease('reuse-app', reuseRoot, reuseWf, [reuseRoot]).map((f) => f.id);
+  if (reuseIds.some((id) => id.endsWith('no-android-ci'))) {
+    console.error('✗ mobile-readiness: a trigger calling a reusable Android build workflow was not counted'); failures++;
+  }
+  const hollowIds = senseMobileRelease('hollow-app', reuseRoot, reuseWf, [reuseRoot]).map((f) => f.id);
+  if (!hollowIds.some((id) => id.endsWith('no-android-ci'))) {
+    console.error('✗ mobile-readiness: a trigger calling a reusable workflow with no build steps satisfied no-android-ci'); failures++;
+  }
+
   // (d) Every finding must be non-blocking — this sensor informs, never gates.
   const blocking = senseMobileRelease('bad-app', badRoot, badWf, [badRoot]).filter(isBlocking);
   if (blocking.length) {

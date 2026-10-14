@@ -1,0 +1,40 @@
+name: Dependabot auto-merge
+
+# Merges Dependabot's grouped minor/patch PRs (branch contains "/minor-patch")
+# once the CI workflow below has passed on that exact commit. Major bumps,
+# security-only PRs and anything ungrouped stay open for a human.
+# workflow_run is used instead of `gh pr merge --auto` because auto-merge needs
+# branch protection with required checks, which free private repos don't have:
+# without it, --auto would merge before CI finished.
+# Owner decision 2026-10-14 (run clean: no Dependabot backlog).
+
+on:
+  workflow_run:
+    workflows: ["Harness Testing Suite"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
+      contains(github.event.workflow_run.head_branch, '/minor-patch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the PR at the commit CI passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(gh pr list -R "$REPO" --head "$BRANCH" --state open --json number,headRefOid,author \
+            --jq ".[] | select(.headRefOid == \"$SHA\" and (.author.login | test(\"dependabot\"))) | .number")
+          if [ -z "$pr" ]; then echo "No open Dependabot PR at $SHA; nothing to merge."; exit 0; fi
+          gh pr merge "$pr" -R "$REPO" --squash --delete-branch --match-head-commit "$SHA"
