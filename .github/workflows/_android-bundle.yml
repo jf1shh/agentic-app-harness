@@ -22,6 +22,11 @@ on:
         description: Directory under projects/
         required: true
         type: string
+      gradle_tasks:
+        description: Gradle tasks to run in android/
+        required: false
+        type: string
+        default: bundleRelease
 
 permissions:
   contents: read
@@ -94,13 +99,15 @@ jobs:
         env:
           # versionCode must strictly increase per upload; the run number does that.
           ANDROID_VERSION_CODE: ${{ github.run_number }}
+          GRADLE_TASKS: ${{ inputs.gradle_tasks }}
           ANDROID_KEYSTORE_FILE: ${{ steps.keystore.outputs.path }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew bundleRelease --no-daemon
+          # shellcheck disable=SC2086 # GRADLE_TASKS is a space-separated task list
+          ./gradlew $GRADLE_TASKS --no-daemon
 
       - name: Report signing status
         working-directory: projects/${{ inputs.app }}/android

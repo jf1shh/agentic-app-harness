@@ -32,14 +32,14 @@
   <body>
     <main>
       <h1>Elder Care Planner Privacy Policy</h1>
-      <p class="updated">Last updated: 7 August 2026</p>
+      <p class="updated">Last updated: 6 October 2026</p>
 
       <div class="summary">
         <p style="margin:0">
-          <strong>In short:</strong> Elder Care Planner makes no network requests at all.
-          There are no accounts, no analytics, and no advertising. Everything you enter —
-          your plan, facility photos, and receipts — stays on your device and is never
-          transmitted anywhere, including to us.
+          <strong>Your plan stays local unless you choose to share it.</strong>
+          There are no accounts, analytics, or advertising. Calculations run on your device,
+          and we do not receive your plan, facility photos, or receipts. You can choose to
+          export a plan or send an encrypted family snapshot.
         </p>
       </div>
 
@@ -52,17 +52,20 @@
 
       <h2>Information we collect</h2>
       <p>
-        <strong>We do not collect any personal information, and cannot.</strong> The app has
-        no user accounts, no sign-in, no analytics or crash-reporting SDK, no advertising SDK,
-        and makes no outbound network requests of any kind — care costs, savings, income, and
-        family details you enter are financially and medically sensitive, and the app is built
-        so none of it can leave your device even by accident.
+        <strong>We do not collect your plan or personal information through the app.</strong>
+        There are no user accounts, sign-in, analytics, crash-reporting, or advertising SDKs.
+        The installed Android app makes no network requests for calculations or storage.
+        The web version downloads its application files from its host when you open it;
+        the host may receive ordinary connection information such as your IP address.
+        Your care costs, savings, income, and family details are not included in those requests.
+        Information you choose to email to our support address is received by us and our email provider.
       </p>
 
       <h2>Information stored on your device</h2>
       <p>
-        The app saves the following in your browser's or the app's local storage. It stays
-        on your device and is not readable by us.
+        The app saves the following in your browser's or the app's local storage.
+        We have no access to this storage. Browser settings, operating-system tools, and
+        any exports or shares you create can affect where copies are kept.
       </p>
       <div class="scroll">
         <table>
@@ -71,10 +74,10 @@
           </thead>
           <tbody>
             <tr>
-              <td><code>elder-care-planner:plan:v1</code> (localStorage)</td>
+              <td><code>elder-care-planner:state:v1</code> (localStorage)</td>
               <td>
-                Your full plan: care costs, savings, income, benefit timing, the sibling
-                contribution ledger, and any notes you add. This can include sensitive
+                Your planner form: care costs, savings, income, benefit timing, the sibling
+                contribution ledger, facility notes, and other entries. This can include sensitive
                 financial and medical detail you choose to enter.
               </td>
             </tr>
@@ -90,11 +93,24 @@
         </table>
       </div>
 
-      <h2>Third-party connections</h2>
+      <h2>Sharing, exports, and external links</h2>
       <p>
-        None. The app has no analytics, no ad networks, and makes no network requests of any
-        kind — every calculation runs on your device using data you typed in or figures built
-        into the app itself.
+        Sharing is optional. A family link contains a snapshot of your plan encrypted with
+        the passphrase you choose. The encrypted payload is in the URL fragment (after #),
+        which is not sent to the web host in an HTTP request. Send the passphrase separately.
+        The recipient can read the snapshot with the passphrase; it is not live syncing.
+        Facility shortlist photos and receipt photos are excluded from these snapshots.
+      </p>
+      <p>
+        Anyone with the link and passphrase can read or forward the snapshot. Messaging
+        services you use may retain the link you send. A downloaded JSON export is
+        unencrypted, and printing or saving a PDF creates another copy. Deleting your
+        local data does not delete copies held by recipients or in exported files.
+      </p>
+      <p>
+        Resource links open external websites, which have their own privacy policies.
+        The app does not send your plan to those sites. Its calculations use your entries
+        and bundled figures, without analytics or advertising connections.
       </p>
 
       <h2>Permissions</h2>
@@ -124,10 +140,18 @@
 
       <h2>Security</h2>
       <p>
-        Because the app stores data only on your device and transmits none of it, the main
-        protection is your device's own security — its lock screen and app sandboxing. Data
-        stored locally is not encrypted separately by the app, so anyone with access to an
-        unlocked device could open the app and view your plan, photos, and receipts.
+        Normal autosave encrypts the planner form with AES-GCM using a device-bound key held
+        in IndexedDB. This is not a passphrase lock: someone with access to your unlocked
+        app or browser can still view the plan. If the key is unavailable, or the page is
+        closing and a synchronous save is needed, the form can be saved in plaintext
+        so the last edit is not lost. A later successful encrypted save replaces it.
+        Facility photos and receipts are not separately encrypted by the app.
+        Protect your device with a lock screen and keep exported files private.
+      </p>
+      <p>
+        Android backup rules exclude the app's WebView storage from cloud backup and
+        device-to-device transfer. Your browser or other device tools may have their own
+        backup behavior. Do not rely on app uninstall to erase exported or shared copies.
       </p>
 
       <h2>Changes to this policy</h2>

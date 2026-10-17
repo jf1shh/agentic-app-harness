@@ -1,5 +1,13 @@
 apply plugin: 'com.android.application'
 
+// BackupRulesTest reads source XML directly. Register these files so changing
+// an exclusion invalidates Gradle's cached unit-test result.
+tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+    inputs.files(fileTree('src/main/res/xml') {
+        include 'backup_rules.xml', 'data_extraction_rules.xml'
+    })
+}
+
 // ---------------------------------------------------------------------------
 // Release signing credentials.
 //

@@ -1,4 +1,75 @@
+## 2026-10-06 — Git delivery authorized; integrated with current master
+
+Jared requested commit, push and merge. Preserved original work as 6286920 on
+harness-audit-fixes and applied only that scoped patch to
+fix/elder-care-android-play-preparation from master 07029c5. All newer persistence/key
+hardening is retained. Final integrated app gate: 557 Vitest tests and 143 Playwright/a11y
+checks passed. Android APK/AAB plus both test variants passed (4 app tests per variant);
+APK signature and exact-payload smoke passed. The release workflow now includes native
+regression tests. Fast gates pass with one pre-existing informational LexiVault drift
+finding and no blockers. The current artifact hashes and remaining Play gates are in
+PLAY-RELEASE.md. CI/merge/deployment outcomes belong in the shared project checkpoint.
+Earlier paragraphs below are dated preparation snapshots, not current Git status.
+
+## 2026-10-06 — Play release preparation (publication pending)
+
+See [PLAY-RELEASE.md](PLAY-RELEASE.md) for the authoritative release gates and evidence.
+Updated Android sharing URLs to the existing public web app; corrected all three backup
+exclusions to root/app_webview, with regression tests and explicit Gradle XML inputs.
+Privacy policy and listing drafts now disclose existing encryption/plaintext fallback,
+optional snapshots/exports, and unencrypted attachments. Hosted policy still August 7;
+no deployment or Play submission occurred.
+
+Current verification: full app gate 554 Vitest +142 Playwright/a11y; Gradle debug APK,
+unsigned release AAB, debug/release app tests (4 per variant) pass. Native URL and backup
+red/green/mutation evidence captured. APK signature and packaged XML verified; extracted
+payload browser smoke passes, native device acceptance still pending. Full workspace
+security audit remains WARN with 15 advisories. Release AAB is explicitly unsigned.
+
+User has a developer account and approved google.play redirect. Google sign-in, existing
+app/upload-key status, cost-table reuse decision, price choice ($2.99 once recommended),
+native/human acceptance, policy deployment and Console declarations remain pending.
+No signing secrets generated/read and no key can be assumed until existing app status
+is known. Source remains uncommitted on harness-audit-fixes. Portable review package:
+Work Hub Clean/Projects/agentic-app-harness/Artifacts/Elder Care Planner/20261006T041717Z.
+
 # Agent Handoff — Elder Care Cost Planner
+
+## 2026-10-06: verified local Android debug APK
+
+Built the existing app on the desktop at baseline `ce0d198a3c4ab97c850413bd5d9589c66a10d2d2`
+(`harness-audit-fixes`). A live audit found GHSA-rvm3-566m-v7fv in the old native
+runtime; this app's Capacitor core/CLI/Android set is now pinned to 8.5.2. The
+shared lockfile adds only this app's nested packages, and `cap sync` regenerated
+the native dependency path to use them. Other app manifests were not changed.
+
+Final dependency-set verification:
+
+- `node scripts/test-app.mjs elder-care-planner` printed
+  `ALL HARNESS CHECKS PASSED FOR elder-care-planner!`: 551 Vitest tests and
+  142 Playwright/accessibility tests, lint and type check passed. The shared
+  dependency audit remains advisory and reports other workspace vulnerabilities.
+- `bash ./gradlew assembleDebug testDebugUnitTest --no-daemon` printed
+  `BUILD SUCCESSFUL in 6s` (102 tasks: 61 executed, 41 up-to-date).
+- `apksigner verify --verbose` verifies the rebuilt APK using signature scheme v2.
+- The exact APK's extracted web assets passed root-URL loading, phone-viewport
+  rendering, calculation and persistence-after-reload checks with zero external
+  requests, page errors or HTTP errors. This is Chromium, not an Android WebView.
+- All six workspace lint commands passed after the workspace dependency change.
+
+APK: `android/app/build/outputs/apk/debug/app-debug.apk` (4.8 MB),
+SHA-256 `ca03084c0c4824634641b10ff3cede874f1a42182cb009292bf7e9d719f6eecb`.
+Logs and preview: ignored `android/build-evidence/`. Toolchain and repeatable
+commands: [ANDROID-LOCAL-BUILD.md](ANDROID-LOCAL-BUILD.md).
+
+Native device/emulator launch and human usability gates remain unverified.
+This is a debug-signed local test build; public release gates still apply.
+Changes are uncommitted; no push, merge, deployment or worker dispatch occurred.
+Portable APK and evidence are saved in the Work Hub's
+`Projects/agentic-app-harness/Artifacts/Elder Care Planner/20261006T035700Z/`.
+Source remains local-only unless a separate source share is configured.
+
+---
 
 **State:** V1 complete and green, plus the Independent Living comparison (spec §6.5b), the
 facility shortlist (spec §11.2), the collapsed information architecture (spec §5.1a), the
