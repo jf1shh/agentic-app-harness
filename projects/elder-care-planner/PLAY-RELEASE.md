@@ -8,7 +8,7 @@ The release AAB builds successfully but is unsigned and cannot be uploaded.
 App ID `com.harness.eldercareplanner`; version code `1`, name `1.0.0`; minimum API 24,
 target API 36. Confirm package ownership, upload key, and previous version codes in Console.
 
-Astra retained the narrow native privacy and sharing fixes: Android family links now use the
+The release retains the narrow native privacy and sharing fixes: Android family links now use the
 existing public web URL instead of device-private localhost, with encrypted data only in the
 fragment. Web senders retain their current host/path. Backup exclusions now target
 `root/app_webview/` for legacy, cloud and device transfer. The XML is registered as a Gradle
@@ -59,8 +59,8 @@ Current artifacts (local-only until copied to the scoped hub artifact folder):
    restrict reuse. Supply applicable permission evidence or choose the proposed user-entered-cost
    version. Silently removing the table changes the five-field default-estimate contract.
    No permission request has been sent and no dataset has been replaced.
-2. **Console access — Jared.** The approved redirect worked; Google sign-in is open in the
-   Codex browser. Sign in yourself and report whether Elder Care Planner exists. Account type,
+2. **Console access — Jared.** The approved redirect worked; Google sign-in was left open in a
+   browser session. Sign in yourself and report whether Elder Care Planner exists. Account type,
    creation date, app/package ownership and production access are unverified. GitHub signing-secret
    metadata lookup failed with HTTP 401, so remote signing-secret availability is unknown.
 3. **Signing — inspect Console first.** No local release keystore/properties file was found.

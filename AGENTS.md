@@ -1,7 +1,7 @@
 # AGENTS.md — Rules for every AI agent touching this repo
 
 > **Universal entry point.** This file is the cross-tool standard ([agents.md](https://agents.md)) read
-> natively by OpenAI Codex, Cursor, GitHub Copilot, Gemini CLI, Aider, Windsurf, Zed, Warp, RooCode,
+> natively by Cursor, GitHub Copilot, Gemini CLI, Aider, Windsurf, Zed, Warp, RooCode,
 > Factory, Google Jules, Devin, **Google Antigravity**, and by **Claude Code** as a fallback. Whatever
 > agent you are, these rules are binding — and they are **enforced in CI, not just documented**, so a
 > non-compliant change fails the build regardless of which tool wrote it.
