@@ -45,7 +45,7 @@ in `awesome-llm-apps`, `mattpocock/skills`, `caveman`, `strix`, `emilkowalski/sk
 ### 2.4 Token Budget Tracker (sensor)
 - **Inspiration:** `caveman`'s `caveman learn` usage analysis
 - **What it does:** A non-blocking sensor that reads agent session logs (Claude Code's
-  `~/.claude/projects/` conversation JSON, Codex session metadata) and reports per-session token
+  `~/.claude/projects/` conversation JSON) and reports per-session token
   budgets, identifying sessions where the always-loaded context grew past a threshold.
 - **Sensor only — never gates a merge.** Observability, not enforcement.
 
