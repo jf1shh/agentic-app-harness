@@ -21,16 +21,16 @@
   },
   "dependencies": {
     "@capacitor/core": "8.5.3",
-    "next": "16.4.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "zod": "4.6.7"
   },
   "overrides": {
     "postcss": "8.5.23"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
+    "@axe-core/playwright": "4.14.0",
     "@capacitor/android": "8.5.3",
     "@capacitor/cli": "8.5.3",
     "@huggingface/transformers": "4.3.1",
@@ -44,9 +44,9 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "16.4.2",
     "jsdom": "29.1.1",
     "typescript": "5.9.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   }
 }
