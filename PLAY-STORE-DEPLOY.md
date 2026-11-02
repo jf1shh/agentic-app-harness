@@ -7,7 +7,15 @@
 ## 0. Smart Recipe first release — owner-only checklist
 
 Agents must not do any of these steps: they create or handle signing keys, GitHub secrets, or the
-Play Console account. Do them in order. Commands assume a shell in a folder outside the repo, so the
+Play Console account. Do them in order.
+
+**Guided version:** `projects/smart-recipe-app/store-listing/release-wizard.sh` walks these same
+seven steps, checks each one where it can (keystore opens, secrets listed, run signed, `jarsigner`
+verifies the AAB), and remembers progress between runs (state lives in
+`~/.local/state/smart-recipe-release/`, never in the repo, never any secret). Preview it with
+`--dry-run`; `--help` lists `--from N`, `--reset` and `--keystore PATH`. Merge this PR before step
+2's build — the build reads the `secret_suffix` line this PR adds, and the wizard stops if `master`
+lacks it. Commands assume a shell in a folder outside the repo, so the
 keystore never lands in the working tree.
 
 1. **Create the upload keystore** (any machine with a JDK; it prompts for a password — use one
