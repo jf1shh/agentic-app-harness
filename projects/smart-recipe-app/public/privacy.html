@@ -32,7 +32,7 @@
   <body>
     <main>
       <h1>Smart Recipe Privacy Policy</h1>
-      <p class="updated">Last updated: 7 August 2026</p>
+      <p class="updated">Last updated: 2 November 2026</p>
 
       <div class="summary">
         <p style="margin:0">
@@ -74,7 +74,7 @@
             </tr>
             <tr>
               <td><code>smart_recipe_recipes</code></td>
-              <td>Recipes you've saved, including any pulled in from a search and any you write yourself.</td>
+              <td>Recipes you've saved, including the two sample recipes the app starts with.</td>
             </tr>
             <tr>
               <td><code>smart_recipe_meal_plan</code></td>
@@ -85,7 +85,7 @@
       </div>
 
       <h2>Third-party connections</h2>
-      <p>The app has no analytics and no ad networks. One thing reaches the network, only when you run a recipe search:</p>
+      <p>The app has no analytics and no ad networks. Only the recipe search reaches the network, and only when you use it:</p>
       <ul>
         <li>
           <strong>Recipe search</strong> sends the search text you type to TheMealDB
@@ -93,6 +93,12 @@
           <a href="https://www.themealdb.com/api.php" rel="noopener noreferrer">TheMealDB's API terms</a>.
           No inventory, saved recipes, or meal plan data is sent with the request — only
           the search text.
+        </li>
+        <li>
+          <strong>Search result photos</strong> are loaded from TheMealDB's image server
+          while you look at search results. Like any image on the web, that request
+          includes your device's IP address and browser details; it carries no app data.
+          Saved recipes are shown without photos, so viewing them makes no request.
         </li>
       </ul>
 

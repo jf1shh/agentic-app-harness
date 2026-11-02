@@ -10,12 +10,17 @@ and real UI, copy checked against what the app actually does, Q&A answers cross-
 |---|---|---|
 | `icon-512.png` | 512×512 | Recreated at full resolution from the real launcher icon (rust/orange `#c2410c` background, white "SR" monogram) — no existing web-facing icon file to reuse (`public/` only had the default `create-next-app` placeholder SVGs). |
 | `feature-graphic.png` | 1024×500 | Built from the same icon + brand color. No store badges, no fabricated ratings. |
-| `screenshots/1-dashboard.png` | 1080×1920 | The dashboard's default state — a stocked pantry (basil, garlic, olive oil, parmesan, pine nuts) driving a real "Cook with what you have" recommendation. |
-| `screenshots/2-inventory.png` | 1080×1920 | The fridge/pantry tracker, add-item form and current stock list. |
+| `screenshots/1-dashboard.png` | 1080×1920 | The dashboard's default state — inventory and saved-recipe counts from the seed data. |
+| `screenshots/2-inventory.png` | 1080×1920 | The fridge/pantry tracker's add-item form. |
 | `screenshots/3-recipes.png` | 1080×1920 | The saved recipe catalog, showing the inventory-overlap match line on a recipe that's cookable right now. |
-| `screenshots/4-planner.png` | 1080×1920 | The meal planner, with a recipe scheduled against a real date. |
+| `screenshots/4-planner.png` | 1080×1920 | The meal planner's schedule form, pre-filled with today's date. |
+| `screenshots/5-search.png` | 1080×1920 | A live TheMealDB search for "pasta", with the result's real photo. |
 
-All four screenshots are real captures from the running app's default seed data, not mockups.
+All five are real captures, not mockups. Recaptured 2026-11-02 by `capture-screenshots.mjs` from the
+Capacitor build (the bundle the Android app ships) at a phone viewport — 360×640 CSS px at 3×. The
+August set was taken from `next dev` at a 1080 px-wide desktop viewport, so it showed the desktop
+layout and the Next.js dev-tools badge, and it predated the September/October UI changes.
+Rerun the script after any visible UI change (usage is in its header).
 
 ## Category
 **Food & Drink.** Recipe management, pantry tracking, and meal planning are squarely in this
@@ -43,7 +48,7 @@ they are to make.
 
 SEARCH AND SAVE REAL RECIPES
 Look up recipes from a public recipe database and save the ones you like — each one is normalized
-into your own local recipe catalog, so it's yours to keep, edit, or reference offline afterward.
+into your own local recipe catalog, so it's yours to keep and read offline afterward.
 
 PLAN MEALS BY DAY
 Assign your saved recipes to specific dates and meal types, so "what's for dinner" is answered
@@ -56,7 +61,7 @@ search text you type when you look up a recipe — no inventory or meal-plan dat
 
 Works as an installed app or straight from your browser.
 ```
-(1,324 chars)
+(1,313 chars)
 
 ## Content rating questionnaire (IARC) — answers to select
 | Question | Answer | Why |
@@ -77,11 +82,31 @@ catalog, not just the two seeded recipes) can surface content the app didn't aut
 disclose defensively than have the rating challenged later over a search result.
 
 ## Data safety form — answers to select
-**"No data collected"** across every category. `public/privacy.html` documents this precisely: no
-accounts, no analytics or ad SDK, and the only outbound request is the search text you type,
-triggered only when you run a recipe search — no inventory, saved-recipe, or meal-plan data
-travels with it. `smart_recipe_inventory`, `smart_recipe_recipes`, and `smart_recipe_meal_plan`
-all stay in local storage on-device.
+
+**Rechecked 2026-11-02 against the code and Google's Data safety help page
+(support.google.com/googleplay/android-developer/answer/10787469).** Two defensible answers; pick one:
+
+1. **Recommended — declare search text.** Collected: **App activity → In-app search history**.
+   Processed ephemerally: **Yes**. Required or optional: **Optional** (only sent when the user runs a
+   search). Purpose: **App functionality**. Shared: **No** — Google exempts a transfer to a third party
+   "based on a specific user-initiated action", and the search only runs when the user presses Search.
+   Everything else: not collected.
+2. **"No data collected"** (the August answer). The developer runs no server and never receives the
+   search text, which is the reading `public/privacy.html` takes.
+
+Why option 1: Google's help page defines "collect" as "transmitting data from your app off a user's
+device" — it does not say *to the developer*. The search text does leave the device (to
+`www.themealdb.com`), so a reviewer reading the definition literally can call "No data collected"
+inaccurate. Over-declaring a small, optional, ephemeral item costs nothing; a mismatch can block review.
+Either way, the facts the form rests on are unchanged: no accounts, no analytics or ad SDK, no
+location, and the only outbound requests are (a) the search text the user types, sent to TheMealDB
+only on Search, and (b) the result photos, loaded from TheMealDB's image server while results are on
+screen. `smart_recipe_inventory`, `smart_recipe_recipes`, and `smart_recipe_meal_plan` stay in local
+storage on-device and are excluded from Android backup (`android/app/src/main/res/xml/`).
+
+Encryption in transit: **Yes** (both requests are HTTPS). Users can request deletion: not applicable
+under option 2; under option 1 answer **No** — nothing is retained by the developer to delete
+(uninstalling or clearing app data removes everything stored on-device).
 
 Worth naming for the reviewer, same as the content-rating caveat above: the recipe *search*
 endpoint (`www.themealdb.com`) is a live third-party API outside this app's control, so while the
