@@ -10,5 +10,6 @@
   automatic cloud backup would copy that data to the user's Google account.
 -->
 <full-backup-content>
-    <exclude domain="file" path="app_webview/" />
+    <!-- app_webview is under the private app root, not getFilesDir(). -->
+    <exclude domain="root" path="app_webview/" />
 </full-backup-content>
