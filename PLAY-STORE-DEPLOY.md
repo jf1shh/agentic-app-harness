@@ -1,8 +1,79 @@
 # Play Store Deployment Guide — All 5 Android Apps
 
-> **Status: last audited 2026-08-20.** Everything that lives in this repository
-> is in place and gate-green. The remaining blockers (keystore secrets, Play
-> Console intake) are external and covered in [§3 – The CI workflow](#3-the-ci-workflow-the-path-we-chose).
+> **Status: Smart Recipe re-audited 2026-11-02 and chosen to ship first** (see §0 and §6). The
+> other four apps were last audited 2026-08-20. The remaining blockers (keystore, secrets, Play
+> Console, testers) are owner-only.
+
+## 0. Smart Recipe first release — owner-only checklist
+
+Agents must not do any of these steps: they create or handle signing keys, GitHub secrets, or the
+Play Console account. Do them in order.
+
+**Guided version:** `projects/smart-recipe-app/store-listing/release-wizard.sh` walks these same
+seven steps, checks each one where it can (keystore opens, secrets listed, run signed, `jarsigner`
+verifies the AAB), and remembers progress between runs (state lives in
+`~/.local/state/smart-recipe-release/`, never in the repo, never any secret). Preview it with
+`--dry-run`; `--help` lists `--from N`, `--reset` and `--keystore PATH`. Merge this PR before step
+2's build — the build reads the `secret_suffix` line this PR adds, and the wizard stops if `master`
+lacks it. Commands assume a shell in a folder outside the repo, so the
+keystore never lands in the working tree.
+
+1. **Create the upload keystore** (any machine with a JDK; it prompts for a password — use one
+   password for both prompts and store it in your password manager). Back up the `.jks` file
+   somewhere safe; it is the only key that can sign Smart Recipe updates.
+   ```bash
+   keytool -genkeypair -v -keystore smart-recipe-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Smart Recipe, OU=Mobile, O=Agentic App Harness, C=US"
+   ```
+2. **Add the 4 GitHub secrets** (the two password commands prompt; paste the keystore password):
+   ```bash
+   base64 -w0 smart-recipe-upload.jks | gh secret set ANDROID_KEYSTORE_BASE64_SMART_RECIPE_APP --repo jf1shh/agentic-app-harness
+   ```
+   ```bash
+   gh secret set ANDROID_KEYSTORE_PASSWORD_SMART_RECIPE_APP --repo jf1shh/agentic-app-harness
+   ```
+   ```bash
+   gh secret set ANDROID_KEY_PASSWORD_SMART_RECIPE_APP --repo jf1shh/agentic-app-harness
+   ```
+   ```bash
+   gh secret set ANDROID_KEY_ALIAS_SMART_RECIPE_APP --repo jf1shh/agentic-app-harness --body upload
+   ```
+   Then build a signed bundle and check the run summary says **"Built a SIGNED release bundle."**:
+   ```bash
+   gh workflow run android-release-smart-recipe-app.yml --repo jf1shh/agentic-app-harness --ref master
+   ```
+   Download the `.aab` from that run (`gh run list --workflow android-release-smart-recipe-app.yml
+   --repo jf1shh/agentic-app-harness -L 1` gives the run id):
+   ```bash
+   gh run download RUN_ID --repo jf1shh/agentic-app-harness -n smart-recipe-app-release-aab
+   ```
+3. **Play Console intake** (play.google.com/console). Every answer is in
+   `projects/smart-recipe-app/store-listing/README.md`.
+   - **Home → Create app**: name *Smart Recipe*, default language English (US), App, Free.
+   - **Grow users → Store presence → Main store listing**: short + full description, icon
+     (`icon-512.png`), feature graphic, the 5 phone screenshots. Category: **Food & Drink**.
+   - **Policy and programs → App content**: Privacy policy
+     `https://jf1shh.github.io/agentic-app-harness/smart-recipe-app/privacy.html`; App access →
+     *All functionality is available without special access*; Ads → *No*; Content rating → the IARC
+     answers; Target audience → 13+ (not designed for children); Data safety → the README's
+     **option 1** (declares in-app search text) unless you prefer option 2.
+   - **Test and release → Setup → App signing**: accept Play App Signing (Google holds the app
+     signing key; your keystore from step 1 is the *upload* key).
+4. **Upload to closed testing**: **Test and release → Testing → Closed testing → Create track** (or
+   use the default *Closed testing - Alpha*) → **Testers** tab → add an email list → **Create new
+   release** → upload the `.aab` → **Next → Save → Start rollout**. Choose countries on the
+   **Countries / regions** tab.
+5. **Recruit 12 testers**: copy the opt-in link from the **Testers** tab and send it to 12+ real
+   people with Android phones. Each one opens the link, taps *Become a tester*, then installs from
+   Play. Recruit 15–20 so one dropout does not reset the count.
+6. **Wait 14 days**: the 12 must stay opted in for 14 days in a row. Ask them to use all four
+   screens (inventory, recipes, search, planner) and send feedback — the production application
+   asks about both. Meanwhile, read **Test and release → Testing → Pre-launch report** and fix
+   anything it flags.
+7. **Apply for production**: **Dashboard → Apply for production** (shows once step 6 is met).
+   Answer the three parts (closed test, the app, production readiness). Google says review "usually
+   takes seven days or less". After approval: **Test and release → Production → Create new release**.
+
+---
 
 This repo ships **5 Android apps** via Capacitor. Each app has a committed
 `android/` Gradle container and its own GitHub Actions workflow that produces an
@@ -52,9 +123,19 @@ is done, what is verified, and the exact end-to-end release workflow.
 
 **Known caveats (not blockers once the steps in §3 are done):**
 
-- The release workflows have only ever run on **pull requests** (all green) —
-  no push-to-`main` run has produced an artifact yet. The first push or manual
-  dispatch will produce the first real AAB.
+- *(Updated 2026-11-02.)* Smart Recipe's workflow has now run on a push to
+  `master` (2026-10-20, green) and produced an AAB artifact — **unsigned**,
+  because no keystore secrets exist yet. (Recent failing runs of the same
+  workflow on 2026-10-20/26 and 2026-11-02 were all on Dependabot PRs for
+  `elder-care-planner`, failing at `npm install` with
+  `Cannot read properties of null (reading 'edgesOut')` — a lockfile problem
+  in those PRs, not in Smart Recipe.)
+- *(Found 2026-11-02.)* The backup-exclusion row above was wrong for four
+  apps: their rules excluded `domain="file" path="app_webview/"`, which is
+  `files/app_webview/`, while the WebView keeps its storage under the app root
+  (`root/app_webview/`). Elder Care Planner was already fixed; Smart Recipe is
+  fixed in the 2026-11-02 PR. MoodDiner, SmartPack and LexiVault still carry
+  the wrong domain.
 - **MoodDiner screenshots `1-home.png` and `2-weather-engine.png`** were
   captured in a network-restricted sandbox, so their Unsplash restaurant photos
   render blank. Recapture before upload:
@@ -141,6 +222,14 @@ i.e. the four secret names get the suffix shown, e.g.
 `ANDROID_KEYSTORE_BASE64_SMART_RECIPE_APP` etc. Each `…_BASE64` value is the
 base64 blob from §3.1.
 
+> **2026-11-02:** since the 2026-10-14 consolidation into the shared
+> `_android-bundle.yml`, the suffix is applied only when the app's trigger
+> workflow passes `secret_suffix:`. Smart Recipe's does
+> (`secret_suffix: _SMART_RECIPE_APP`); MoodDiner needs none. **SmartPack,
+> LexiVault and Elder Care Planner do not pass it yet**, so today they would
+> read MoodDiner's unsuffixed secrets — add the one `secret_suffix:` line to
+> each trigger before setting their secrets.
+
 **Verify signing works:** run the workflow (§3.3) and check the run summary —
 it must print "Built a SIGNED release bundle." If it prints UNSIGNED, one of
 the four secrets is missing or empty.
@@ -166,13 +255,15 @@ apps:
 
 ### 3.4 Trigger a build & upload
 
-1. Push to `main` (touching the app's files) — **or** go to
+1. Push to `master` (touching the app's files) — **or** go to
    **Actions → Android Release Bundle (<app>) → Run workflow** (uses
    `workflow_dispatch`; no push needed).
 2. Wait for the run to finish; download the `.aab` from the run's **Artifacts**
    section (artifact names: `<app>-release-aab`).
 3. Play Console → the app → **Production** (or **Internal testing** first) →
-   **Create new release** → upload the `.aab` → review → roll out.
+   **Create new release** → upload the `.aab` → review → roll out. A new
+   *personal* developer account cannot use Production until it passes the
+   closed-test rule in §6.2.
 
 ### 3.5 Subsequent releases
 
@@ -221,3 +312,76 @@ Then open `projects/<app>/android` in Android Studio and either:
 
 Remember to bump `versionCode` for every upload (local default is 1). The CI
 path (§3) does all of this automatically and is the recommended route.
+
+---
+
+## 6. Smart Recipe release audit (2026-11-02)
+
+### 6.1 Checks rerun
+
+| Check | Result on 2026-11-02 |
+|---|---|
+| `node scripts/harness-status.mjs --gate` | PASSED — 0 blocking, 1 informational finding |
+| `node scripts/test-app.mjs smart-recipe-app` | ALL PASSED — lint, type-check, Vitest 56/56, Playwright + axe 7/7 |
+| `npm run build:capacitor` (in `projects/smart-recipe-app`) | exit 0, static export to `.next-capacitor/` |
+| Privacy policy URL | HTTP 200 |
+| Latest push run of `android-release-smart-recipe-app.yml` | green (2026-10-20, `master`), AAB artifact uploaded, **unsigned** |
+| `AndroidManifest.xml` permissions | `INTERNET` only |
+| Network calls in the app | TheMealDB search (`search.php?s=<text>`) on Search only, plus result photos from TheMealDB while results are shown |
+| On-device storage | three `localStorage` keys (inventory, recipes, meal plan) |
+
+Fixed in the same PR: the WebView backup exclusion (wrong domain, §1), the per-app secret names
+(§3.2 note), listing copy that claimed recipes can be edited (they cannot), the privacy policy's
+"recipes you write yourself" (no such feature) and its missing line about result photos, and the
+screenshots (recaptured; see the store-listing README).
+
+### 6.2 Google Play testing rule for new personal accounts
+
+**Checked 2026-11-02** on Google's page *App testing requirements for new personal developer
+accounts* (support.google.com/googleplay/android-developer/answer/14151465). It says:
+
+- It applies to **personal** developer accounts **created after November 13, 2023**. Production
+  (and pre-registration) stay locked until the requirement is met.
+- You must run a **closed test** with **at least 12 testers** who have been **opted in continuously
+  for at least 14 days**. At least 12 must be opted in when you apply; a tester who opts out before
+  14 days does not count.
+- You then **apply for production** from the Dashboard. The form has three parts: about your closed
+  test (recruiting, engagement, feedback), about your app (audience, value, expected installs), and
+  production readiness (what changed after testing). Review "usually takes seven days or less".
+- The page does **not** mention organization accounts. The exemption for organization (D-U-N-S
+  verified) accounts is our understanding from Google's wider account-type guidance, not something
+  this page states — check the account type in Play Console before counting on it.
+- The page does not say "real people" in those words, but testers join through a Google account
+  opt-in link and install through Play, and the production form asks how they engaged and what
+  feedback they gave. **Treat testers as 12+ real people on real phones.** Agents can do testing
+  *work* — Play's pre-launch report (automated crawls on Google's devices), the Playwright suite,
+  scripted UI runs — but none of that counts toward the 12. Do not use bot or emulator accounts to
+  pad the number.
+
+### 6.3 Review risk: "minimum functionality" / "just a web wrapper"
+
+**Verdict: low risk.** Google's concern is apps that only load a website, or do too little to be
+useful. Smart Recipe is neither:
+
+- The whole UI ships inside the APK (static export synced by `cap sync`) and loads from
+  `https://localhost` in the WebView. It never loads a remote site.
+- Four real tools (pantry tracker, recipe catalog with inventory matching, recipe search, meal
+  planner). Three of the four work fully offline; data stays on the device.
+- No login wall, no dead ends: every in-app link is an internal `next/link` route (checked in the
+  source on 2026-11-02), and the two external URLs (privacy policy, TheMealDB API terms) return 200.
+
+What would lower the risk further (none blocks submission):
+
+1. **Friendlier offline search.** With no network, search shows "Failed to search recipes." A
+   message like "You're offline — search needs internet. Your saved recipes still work." reads as
+   a deliberate app, not a broken page.
+2. **Hide developer wording.** The planner's recipe picker shows file slugs
+   (`classic-pesto-pasta`), and recipe cards say "View Recipe Markdown" and show raw markdown. Show
+   the recipe title and rendered text instead.
+3. **Native feel.** The top text-link nav bar looks like a website. A bottom tab bar, and checking
+   that the Android back button steps back through screens instead of closing the app, would feel
+   native. Test both on a real phone during the closed test.
+4. **Listing copy.** The full description ends "Works as an installed app or straight from your
+   browser." Dropping that line on Play avoids inviting the "it's a website" reading.
+5. **Pre-launch report.** Read it before applying for production; fix any crash or accessibility
+   item it lists.

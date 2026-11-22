@@ -27,6 +27,15 @@ on:
         required: false
         type: string
         default: bundleRelease
+      secret_suffix:
+        description: >-
+          Appended to the four ANDROID_KEY* secret names so each app signs with
+          its own upload key, e.g. _SMART_RECIPE_APP reads
+          ANDROID_KEYSTORE_BASE64_SMART_RECIPE_APP. Empty reads the unsuffixed
+          names (MoodDiner's). Needs `secrets: inherit` in the caller.
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -42,7 +51,7 @@ jobs:
       # Lifted to env because the `secrets` context is NOT available in a step
       # `if:` condition — only github/env/steps/... are. Checking `secrets.X`
       # directly there silently never matches.
-      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      KEYSTORE_BASE64: ${{ secrets[format('ANDROID_KEYSTORE_BASE64{0}', inputs.secret_suffix)] }}
 
     steps:
       - name: Checkout code
@@ -101,9 +110,9 @@ jobs:
           ANDROID_VERSION_CODE: ${{ github.run_number }}
           GRADLE_TASKS: ${{ inputs.gradle_tasks }}
           ANDROID_KEYSTORE_FILE: ${{ steps.keystore.outputs.path }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets[format('ANDROID_KEYSTORE_PASSWORD{0}', inputs.secret_suffix)] }}
+          ANDROID_KEY_ALIAS: ${{ secrets[format('ANDROID_KEY_ALIAS{0}', inputs.secret_suffix)] }}
+          ANDROID_KEY_PASSWORD: ${{ secrets[format('ANDROID_KEY_PASSWORD{0}', inputs.secret_suffix)] }}
         run: |
           chmod +x ./gradlew
           # shellcheck disable=SC2086 # GRADLE_TASKS is a space-separated task list
@@ -115,7 +124,7 @@ jobs:
           if [ -n "${{ steps.keystore.outputs.path }}" ]; then
             echo "Built a SIGNED release bundle." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Built an UNSIGNED release bundle — no ANDROID_KEYSTORE_BASE64 secret is set." >> "$GITHUB_STEP_SUMMARY"
+            echo "Built an UNSIGNED release bundle — no ANDROID_KEYSTORE_BASE64${{ inputs.secret_suffix }} secret is set." >> "$GITHUB_STEP_SUMMARY"
             echo "The native build is verified, but this artifact cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
           fi
 
