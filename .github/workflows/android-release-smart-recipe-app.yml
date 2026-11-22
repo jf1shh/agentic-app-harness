@@ -28,4 +28,5 @@ jobs:
     uses: ./.github/workflows/_android-bundle.yml
     with:
       app: smart-recipe-app
+      secret_suffix: _SMART_RECIPE_APP
     secrets: inherit

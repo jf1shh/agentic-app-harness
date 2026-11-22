@@ -143,3 +143,19 @@ Portfolio claims describe shipped behavior: MoodDiner has bundled data/weather p
 simulated bookings; LexiVault is session-only; Smart Recipe has no macro/shopping-list feature.
 Show dated test snapshots and automated WCAG checks, never a fabricated compliance percentage
 or a perpetual zero-vulnerability claim. Demo feature tiers do not constitute monetization.
+
+## Machine-readable page (no-JS summary and structured data)
+
+The hub is a client-rendered SPA, so a crawler or AI tool that does not run JavaScript sees only the
+empty `#root`. `projects/portfolio-hub/index.html` therefore carries, beside the existing Open Graph
+tags:
+
+- a `<noscript>` block with the page title, the meta description, the hero's one-line bio and the
+  five app links with their `projectsData.ts` descriptions, in plain HTML;
+- one JSON-LD `SoftwareSourceCode` block (`hasPart`: one `WebApplication` per app) whose `author`
+  is `{"@id": "https://jf1shh.github.io/#person"}`, the Person defined on the root portfolio site;
+- `<link rel="canonical">` and `<link rel="alternate" type="text/plain">` to the root `/llms.txt`.
+
+Rules: every value in these blocks must already be shown on the page or in the README. No hidden
+text and no instructions aimed at AI tools. When an app's `description` in `projectsData.ts`
+changes, update the same sentence in the `<noscript>` list and the JSON-LD.
